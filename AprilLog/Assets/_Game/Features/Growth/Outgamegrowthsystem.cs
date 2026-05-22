@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 아웃게임 캐릭터 레벨업 -- 재화 소모 즉시 레벨업
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System;
 using UnityEngine;
 
@@ -14,14 +17,13 @@ public class OutGameGrowthSystem : MonoBehaviour
     public event Action<int> OnCharacterLevelUp;
 
     // ---------- SerializeField ----------
-    [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private CurrencyModel _currency;
     [SerializeField] private PlayerProgressModel _progress;
 
     // ---------- Public ----------
     public bool CanLevelUp()
     {
-        var data = _configRepo.GetOutGrowth(_progress.CharacterLevel);
+        var data = DataManager.Instance.ConfigRepo.GetOutGrowth(_progress.CharacterLevel);
         if (data == null) return false;
 
         return _currency.CanAfford(data.RequiredGold, data.RequiredParchment);
@@ -31,7 +33,7 @@ public class OutGameGrowthSystem : MonoBehaviour
     {
         if (!CanLevelUp()) return;
 
-        var data = _configRepo.GetOutGrowth(_progress.CharacterLevel);
+        var data = DataManager.Instance.ConfigRepo.GetOutGrowth(_progress.CharacterLevel);
 
         _currency.SpendGold(data.RequiredGold);
         _currency.SpendParchment(data.RequiredParchment);

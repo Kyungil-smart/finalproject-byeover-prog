@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 인챈트 선택 팝업 View -- 선택지 표시 + 유저 입력
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,7 +20,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
     [Header("참조")]
     [SerializeField] private EnchantModel _enchantModel;
-    [SerializeField] private CharacterRepo _characterRepo;
     [SerializeField] private ScreenNavigator _navigator;
 
     [Header("UI")]
@@ -33,7 +35,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         if (!_isInitialized)
         {
             _isInitialized = true;
-            _presenter = new EnchantSelectPresenter(this, _enchantModel, _characterRepo, _navigator);
+            _presenter = new EnchantSelectPresenter(this, _enchantModel, DataManager.Instance.CharacterRepo, _navigator);
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
         }
     }

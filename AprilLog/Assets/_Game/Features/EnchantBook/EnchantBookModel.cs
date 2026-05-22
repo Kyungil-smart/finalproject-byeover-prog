@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 인챈트 도감 Model -- 전체 목록 + 보유 여부
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,7 +17,6 @@ public class EnchantBookModel : MonoBehaviour
     public event Action OnBookUpdated;
 
     [Header("참조")]
-    [SerializeField] private CharacterRepo _characterRepo;
     [SerializeField] private EnchantModel _enchantModel;
 
     private List<EnchantBookDisplayData> _allEntries = new List<EnchantBookDisplayData>();
@@ -27,7 +29,7 @@ public class EnchantBookModel : MonoBehaviour
     public void RefreshEntries()
     {
         _allEntries.Clear();
-        var allMasters = _characterRepo.GetAllEnchantMasters();
+        var allMasters = DataManager.Instance.CharacterRepo.GetAllEnchantMasters();
 
         foreach (var pair in allMasters)
         {
