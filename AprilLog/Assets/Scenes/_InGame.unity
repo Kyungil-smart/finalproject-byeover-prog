@@ -452,11 +452,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b3a745e8e2285e4eaa058724ffa9caa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatSystem
-  _sortSystemObj: {fileID: 0}
+  _sortSystemObj: {fileID: 579918531}
   _skillSystem: {fileID: 1515552496}
-  _comboModel: {fileID: 0}
-  _combinationModel: {fileID: 0}
-  _playerModel: {fileID: 0}
+  _comboModel: {fileID: 550814360}
+  _combinationModel: {fileID: 830662636}
+  _playerModel: {fileID: 1508674580}
   _characterRepo: {fileID: 1753351656}
   _autoAttackEnabled: 0
 --- !u!1 &471475215
@@ -1733,8 +1733,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 158ddf7edfd5ca64d85f19bb697d6cf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkillSystem
-  _characterRepo: {fileID: 0}
-  _combatSystem: {fileID: 0}
+  _characterRepo: {fileID: 1753351656}
+  _combatSystem: {fileID: 458159163}
   _firePoint: {fileID: 0}
 --- !u!1 &1526545945
 GameObject:
@@ -2558,7 +2558,7 @@ MonoBehaviour:
   - {fileID: 1152430208}
   - {fileID: 1997423986}
   - {fileID: 665814797}
-  _characterRepo: {fileID: 0}
+  _characterRepo: {fileID: 1753351656}
 --- !u!4 &2077593745
 Transform:
   m_ObjectHideFlags: 0
@@ -2590,7 +2590,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StageRunner
   _spawner: {fileID: 2077593744}
   _stageRepo: {fileID: 316310800}
-  _playerModel: {fileID: 0}
+  _playerModel: {fileID: 1508674580}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
