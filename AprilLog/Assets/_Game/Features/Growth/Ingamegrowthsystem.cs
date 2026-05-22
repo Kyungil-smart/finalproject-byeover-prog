@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 인게임 레벨/EXP 관리
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System;
 using UnityEngine;
 
@@ -18,7 +21,6 @@ public class InGameGrowthSystem : MonoBehaviour
     [Header("참조")]
     [SerializeField] private MonsterSpawner _spawner;
     [SerializeField] private ScreenNavigator _navigator;
-    [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private PlayerModel _playerModel;
 
     [Header("설정")]
@@ -70,7 +72,7 @@ public class InGameGrowthSystem : MonoBehaviour
 
         CurrentEXP += amount;
 
-        var levelData = _configRepo.GetInLevel(CurrentLevel);
+        var levelData = DataManager.Instance.ConfigRepo.GetInLevel(CurrentLevel);
         if (levelData == null) return;
 
         int required = levelData.RequiredEXP;
@@ -91,7 +93,7 @@ public class InGameGrowthSystem : MonoBehaviour
                 _navigator.ShowEnchantSelection();
 
             // 다음 레벨 데이터
-            levelData = _configRepo.GetInLevel(CurrentLevel);
+            levelData = DataManager.Instance.ConfigRepo.GetInLevel(CurrentLevel);
             if (levelData == null) break;
             required = levelData.RequiredEXP;
         }
@@ -102,7 +104,7 @@ public class InGameGrowthSystem : MonoBehaviour
     // 데드락 페널티: 경험치 10% 감소 (0 이하로는 안 내려감)
     public void ApplyDeadlockPenalty()
     {
-        var levelData = _configRepo.GetInLevel(CurrentLevel);
+        var levelData = DataManager.Instance.ConfigRepo.GetInLevel(CurrentLevel);
         if (levelData == null) return;
 
         int penalty = Mathf.RoundToInt(levelData.RequiredEXP * 0.1f);

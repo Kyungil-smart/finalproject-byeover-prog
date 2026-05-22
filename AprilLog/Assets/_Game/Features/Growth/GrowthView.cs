@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 캐릭터 성장 View -- 레벨업 UI
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,7 +18,6 @@ public class GrowthView : MonoBehaviour, IGrowthView
     [SerializeField] private OutGameGrowthSystem _growthSystem;
     [SerializeField] private CurrencyModel _currency;
     [SerializeField] private PlayerProgressModel _progress;
-    [SerializeField] private ConfigRepo _configRepo;
 
     [Header("UI")]
     [SerializeField] private TMP_Text _levelText;
@@ -32,7 +34,7 @@ public class GrowthView : MonoBehaviour, IGrowthView
         if (!_isInitialized)
         {
             _isInitialized = true;
-            _presenter = new GrowthPresenter(this, _growthSystem, _currency, _progress, _configRepo);
+            _presenter = new GrowthPresenter(this, _growthSystem, _currency, _progress, DataManager.Instance.ConfigRepo);
             _levelUpButton.onClick.AddListener(() => OnLevelUpClicked?.Invoke());
             _closeButton.onClick.AddListener(() => OnCloseClicked?.Invoke());
         }

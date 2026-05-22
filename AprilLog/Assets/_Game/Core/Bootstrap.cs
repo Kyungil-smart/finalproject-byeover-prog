@@ -1,9 +1,13 @@
 // 담당자 : 정승우
 // 설명   : Boot 씬 초기화 - 앱 시작 시 전부 여기서 순서대로 세팅
 
+// 1차 수정자 : 김영찬
+// 수정 내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, _boot 씬에서만 초기화 하면 되도록 수정
+
 
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Boot 씬에서 모든 매니저와 데이터를 의존성 순서대로 초기화한 뒤 Lobby 씬으로 전환한다.
@@ -12,12 +16,8 @@ using UnityEngine;
 public class Bootstrap : MonoBehaviour
 {
     // ---------- SerializeField ----------
-    [Header("Repository (SO -> Dictionary 변환)")]
-    [SerializeField] private CharacterRepo _characterRepo;
-    [SerializeField] private StageRepo _stageRepo;
-    [SerializeField] private ConfigRepo _configRepo;
-
     [Header("시스템")]
+    [SerializeField] private DataManager _data;
     [SerializeField] private LocalizationManager _localization;
     [SerializeField] private PoolManager _poolManager;
 
@@ -33,9 +33,7 @@ public class Bootstrap : MonoBehaviour
 
         // [1] Repository 초기화
         // SO는 이미 메모리에 올라와있어서 파싱 없이 Dictionary 변환만 함. 빠름.
-        _characterRepo.Initialize();
-        _stageRepo.Initialize();
-        _configRepo.Initialize();
+        _data.InitRepo();
         Debug.Log("[Bootstrap] Repository 초기화 완료");
 
         // [2] 로컬라이제이션

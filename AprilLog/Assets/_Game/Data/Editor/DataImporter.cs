@@ -56,18 +56,23 @@ public static class DataImporter
         totalRows += ImportTable<CharacterMasterTable, CharacterMasterData>("character_master");
         totalRows += ImportTable<CharacterStatusTable, CharacterStatusData>("character_status");
         totalRows += ImportTable<MonsterStatusTable, MonsterStatusData>("monster_status");
+
         totalRows += ImportTable<SkillMasterTable, SkillMasterData>("skill_master");
         totalRows += ImportTable<SkillDataTable, SkillData>("skill_data");
         totalRows += ImportTable<EffectDataTable, EffectData>("effect_table");
+
         totalRows += ImportTable<EnchantMasterTable, EnchantMasterData>("enchant_master");
         totalRows += ImportTable<EnchantLevelTable, EnchantLevelData>("enchant_level");
         totalRows += ImportTable<EnchantWeightTable, EnchantWeightData>("enchant_weight");
+
         totalRows += ImportTable<ChapterTable, ChapterData>("chapter_master");
         totalRows += ImportTable<StageDataTable, StageData>("stage_master");
         totalRows += ImportTable<StageMonsterTable, StageMonsterData>("stage_monster");
         totalRows += ImportTable<MonsterScalingTable, MonsterScalingData>("monster_scaling");
+
         totalRows += ImportTable<InLevelTable, InLevelData>("in_level");
         totalRows += ImportTable<OutGrowthDataTable, OutGrowthData>("out_growth");
+
         totalRows += ImportTable<AchievementDataTable, AchievementData>("achievement");
         totalRows += ImportTable<ChangeRewardTable, ChangeRewardData>("change_reward");
         totalRows += ImportTable<LanguageTable, LanguageEntry>("language");
@@ -83,9 +88,11 @@ public static class DataImporter
         where TSO : DataTable<TData>
         where TData : class
     {
-        string jsonPath = Path.Combine(JSON_FOLDER, jsonFileName + ".json");
+        // 추가 : 홍정옥
+        // 내용 : JSON 루트 폴더만 보지 않고 하위 폴더까지 검색하도록
+        string jsonPath = FindJsonPathRecursive(jsonFileName);
 
-        if (!File.Exists(jsonPath))
+        if (string.IsNullOrEmpty(jsonPath))
         {
             // 파일 없으면 조용히 건너뜀 (아직 안 만든 테이블일 수 있음)
             return 0;
@@ -96,27 +103,97 @@ public static class DataImporter
 
         if (wrapper == null || wrapper.data == null)
         {
-            Debug.LogError($"[DataImporter] {jsonFileName}.json 파싱 실패. JSON 형식 확인.");
+            Debug.LogError($"[DataImporter] {jsonPath} 파싱 실패. JSON 형식 확인.");
             return 0;
         }
 
-        // SO 에셋 찾기 or 새로 만들기
         string soTypeName = typeof(TSO).Name;
-        string soPath = Path.Combine(SO_FOLDER, soTypeName + ".asset");
+
+        // 추가 : 홍정옥
+        // 내용 : JSON 파일이 위치한 하위 폴더 구조를 기준으로 SO도 같은 하위 폴더에 생성
+        string soPath = GetSoPathByJsonPath(jsonPath, soTypeName + ".asset");
+
         var so = AssetDatabase.LoadAssetAtPath<TSO>(soPath);
 
         if (so == null)
         {
             so = ScriptableObject.CreateInstance<TSO>();
             AssetDatabase.CreateAsset(so, soPath);
-            Debug.Log($"[DataImporter] {soTypeName}.asset 신규 생성");
+            Debug.Log($"[DataImporter] {soPath} 신규 생성");
         }
 
         so.rows = new List<TData>(wrapper.data);
         EditorUtility.SetDirty(so);
 
-        Debug.Log($"[DataImporter] {soTypeName}: {wrapper.data.Length}행 갱신");
+        Debug.Log($"[DataImporter] {soTypeName}: {wrapper.data.Length}행 갱신 ({jsonPath})");
         return wrapper.data.Length;
+    }
+
+    // 추가 : 홍정옥
+    // 내용 : JSON 루트 폴더뿐 아니라 하위 폴더까지 검색해서 지정한 JSON 파일을 찾는다.
+    // 예시 : Assets/_Project/Data/JSON/Character/common_status.json 검색 가능
+    private static string FindJsonPathRecursive(string fileNameWithoutExtension)
+    {
+        string targetFileName = fileNameWithoutExtension + ".json";
+
+        if (!Directory.Exists(JSON_FOLDER))
+        {
+            return null;
+        }
+
+        string[] matches = Directory.GetFiles(
+            JSON_FOLDER,
+            targetFileName,
+            SearchOption.AllDirectories
+        );
+
+        if (matches == null || matches.Length == 0)
+        {
+            return null;
+        }
+
+        if (matches.Length > 1)
+        {
+            Debug.LogError(
+                $"[DataImporter] JSON 파일명 중복: {targetFileName}\n" +
+                string.Join("\n", matches) +
+                "\n같은 테이블 JSON 파일은 프로젝트 전체에서 하나만 유지해야 합니다."
+            );
+
+            return null;
+        }
+
+        return matches[0].Replace("\\", "/");
+    }
+
+    // 추가 : 홍정옥
+    // 내용 : JSON 파일이 들어있는 하위 폴더 구조를 SO 폴더에도 동일하게 반영
+    private static string GetSoPathByJsonPath(string jsonPath, string soFileName)
+    {
+        string normalizedJsonRoot = JSON_FOLDER.Replace("\\", "/").TrimEnd('/');
+        string normalizedJsonPath = jsonPath.Replace("\\", "/");
+
+        string jsonDirectory = Path.GetDirectoryName(normalizedJsonPath);
+        jsonDirectory = jsonDirectory.Replace("\\", "/");
+
+        string relativeFolder = "";
+
+        if (jsonDirectory.StartsWith(normalizedJsonRoot, StringComparison.Ordinal))
+        {
+            relativeFolder = jsonDirectory.Substring(normalizedJsonRoot.Length).TrimStart('/');
+        }
+
+        string soFolder = string.IsNullOrEmpty(relativeFolder)
+            ? SO_FOLDER
+            : Path.Combine(SO_FOLDER, relativeFolder).Replace("\\", "/");
+
+        if (!Directory.Exists(soFolder))
+        {
+            Directory.CreateDirectory(soFolder);
+            AssetDatabase.Refresh();
+        }
+
+        return Path.Combine(soFolder, soFileName).Replace("\\", "/");
     }
 }
 
@@ -138,16 +215,40 @@ public static class DataValidator
         var enchantIds = LoadPKs<EnchantMasterData>(jsonFolder, "enchant_master", d => d.EnchantID);
 
         // FK 참조 검증 -- 이게 핵심. ID가 잘못되면 런타임에 터짐.
-        errors += CheckFK<CommonStatusData>(jsonFolder, "common_status",
-            d => d.Character_ID, characterIds, "CharacterMaster");
-        errors += CheckFK<CharacterStatusData>(jsonFolder, "character_status",
-            d => d.Character_ID, characterIds, "CharacterMaster");
+        errors += CheckFK<CommonStatusData>(
+            jsonFolder,
+            "common_status",
+            d => d.Character_ID,
+            characterIds,
+            "CharacterMaster"
+        );
+
+        errors += CheckFK<CharacterStatusData>(
+            jsonFolder,
+            "character_status",
+            d => d.Character_ID,
+            characterIds,
+            "CharacterMaster"
+        );
 
         // 범위 검증
-        errors += CheckRange<CharacterStatusData>(jsonFolder, "character_status",
-            d => d.CriticalRate, 0f, 1f, "CriticalRate");
-        errors += CheckRange<CharacterStatusData>(jsonFolder, "character_status",
-            d => d.PercentagePierce, 0f, 1f, "PercentagePierce");
+        errors += CheckRange<CharacterStatusData>(
+            jsonFolder,
+            "character_status",
+            d => d.CriticalRate,
+            0f,
+            1f,
+            "CriticalRate"
+        );
+
+        errors += CheckRange<CharacterStatusData>(
+            jsonFolder,
+            "character_status",
+            d => d.PercentagePierce,
+            0f,
+            1f,
+            "PercentagePierce"
+        );
 
         if (errors == 0)
         {
@@ -161,15 +262,26 @@ public static class DataValidator
     private static HashSet<int> LoadPKs<T>(string folder, string fileName, Func<T, int> keySelector)
     {
         var set = new HashSet<int>();
-        string path = Path.Combine(folder, fileName + ".json");
-        if (!File.Exists(path)) return set;
+
+        // 추가 : 홍정옥
+        // 내용 : PK 검증 시 JSON 하위 폴더까지 검색
+        string path = FindJsonPathRecursive(folder, fileName);
+
+        if (string.IsNullOrEmpty(path))
+        {
+            return set;
+        }
 
         var wrapper = JsonUtility.FromJson<DataArray<T>>(File.ReadAllText(path));
-        if (wrapper?.data == null) return set;
+        if (wrapper?.data == null)
+        {
+            return set;
+        }
 
         for (int i = 0; i < wrapper.data.Length; i++)
         {
             int key = keySelector(wrapper.data[i]);
+
             if (!set.Add(key))
             {
                 Debug.LogError($"[Validator] PK 중복: {fileName}에 ID={key}가 2개 이상");
@@ -180,19 +292,35 @@ public static class DataValidator
     }
 
     // FK 참조 검증
-    private static int CheckFK<T>(string folder, string fileName,
-        Func<T, int> fkSelector, HashSet<int> validPKs, string refTableName)
+    private static int CheckFK<T>(
+        string folder,
+        string fileName,
+        Func<T, int> fkSelector,
+        HashSet<int> validPKs,
+        string refTableName
+    )
     {
         int errors = 0;
-        string path = Path.Combine(folder, fileName + ".json");
-        if (!File.Exists(path)) return 0;
+
+        // 추가 : 홍정옥
+        // 내용 : FK 검증 시 JSON 하위 폴더까지 검색
+        string path = FindJsonPathRecursive(folder, fileName);
+
+        if (string.IsNullOrEmpty(path))
+        {
+            return 0;
+        }
 
         var wrapper = JsonUtility.FromJson<DataArray<T>>(File.ReadAllText(path));
-        if (wrapper?.data == null) return 0;
+        if (wrapper?.data == null)
+        {
+            return 0;
+        }
 
         for (int i = 0; i < wrapper.data.Length; i++)
         {
             int fk = fkSelector(wrapper.data[i]);
+
             if (fk != 0 && !validPKs.Contains(fk))
             {
                 Debug.LogError($"[Validator] FK 에러: {fileName}[{i}]의 ID={fk}가 {refTableName}에 없음");
@@ -204,19 +332,36 @@ public static class DataValidator
     }
 
     // 범위 검증
-    private static int CheckRange<T>(string folder, string fileName,
-        Func<T, float> valueSelector, float min, float max, string fieldName)
+    private static int CheckRange<T>(
+        string folder,
+        string fileName,
+        Func<T, float> valueSelector,
+        float min,
+        float max,
+        string fieldName
+    )
     {
         int errors = 0;
-        string path = Path.Combine(folder, fileName + ".json");
-        if (!File.Exists(path)) return 0;
+
+        // 추가 : 홍정옥
+        // 내용 : 범위 검증 시 JSON 하위 폴더까지 검색
+        string path = FindJsonPathRecursive(folder, fileName);
+
+        if (string.IsNullOrEmpty(path))
+        {
+            return 0;
+        }
 
         var wrapper = JsonUtility.FromJson<DataArray<T>>(File.ReadAllText(path));
-        if (wrapper?.data == null) return 0;
+        if (wrapper?.data == null)
+        {
+            return 0;
+        }
 
         for (int i = 0; i < wrapper.data.Length; i++)
         {
             float val = valueSelector(wrapper.data[i]);
+
             if (val < min || val > max)
             {
                 Debug.LogError($"[Validator] 범위 에러: {fileName}[{i}]의 {fieldName}={val}이 {min}~{max} 밖");
@@ -225,6 +370,42 @@ public static class DataValidator
         }
 
         return errors;
+    }
+
+    // 추가 : 홍정옥
+    // 내용 : DataValidator에서도 JSON 하위 폴더까지 검색해서 검증할 파일을 찾음
+    private static string FindJsonPathRecursive(string folder, string fileNameWithoutExtension)
+    {
+        string targetFileName = fileNameWithoutExtension + ".json";
+
+        if (!Directory.Exists(folder))
+        {
+            return null;
+        }
+
+        string[] matches = Directory.GetFiles(
+            folder,
+            targetFileName,
+            SearchOption.AllDirectories
+        );
+
+        if (matches == null || matches.Length == 0)
+        {
+            return null;
+        }
+
+        if (matches.Length > 1)
+        {
+            Debug.LogError(
+                $"[Validator] JSON 파일명 중복: {targetFileName}\n" +
+                string.Join("\n", matches) +
+                "\n같은 테이블 JSON 파일은 하나만 유지해야 합니다."
+            );
+
+            return null;
+        }
+
+        return matches[0].Replace("\\", "/");
     }
 }
 
@@ -244,7 +425,6 @@ public static class ExcelToJsonConverter
     [MenuItem("Tools/Data/Convert Excel to JSON")]
     public static void ConvertAll()
     {
-
         Debug.Log("[ExcelToJson] EPPlus 미설치. Assets/Plugins/Editor/에 EPPlus.dll 넣고 주석 해제 필요.");
         Debug.Log("[ExcelToJson] 당장은 JSON 파일을 직접 만들어서 Data/JSON/ 에 넣으면 됨.");
     }

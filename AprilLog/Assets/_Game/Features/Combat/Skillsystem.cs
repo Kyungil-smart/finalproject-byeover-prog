@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 스킬 데이터 조회 + 투사체 생성
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,7 +15,6 @@ public class SkillSystem : MonoBehaviour
 {
     // ---------- SerializeField ----------
     [Header("참조")]
-    [SerializeField] private CharacterRepo _characterRepo;
     [SerializeField] private CombatSystem _combatSystem;
 
     [Header("발사 위치")]
@@ -71,7 +73,7 @@ public class SkillSystem : MonoBehaviour
     {
         if (data == null) return;
 
-        var master = _characterRepo.GetSkillMaster(data.StandardID);
+        var master = DataManager.Instance.CharacterRepo.GetSkillMaster(data.StandardID);
         int damage = _combatSystem.CalculateDamage(data.Dmg);
 
         // 투사체 생성
