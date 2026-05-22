@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 챕터 -> 스테이지 -> 웨이브 진행 FSM
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System;
 using System.Collections;
 using UnityEngine;
@@ -20,7 +23,6 @@ public class StageRunner : MonoBehaviour
     // ---------- SerializeField ----------
     [Header("참조")]
     [SerializeField] private MonsterSpawner _spawner;
-    [SerializeField] private StageRepo _stageRepo;
     [SerializeField] private PlayerModel _playerModel;
 
     // ---------- 상태 ----------
@@ -64,7 +66,7 @@ public class StageRunner : MonoBehaviour
         _state = State.StageStart;
         _currentWaveIndex = 0;
 
-        var stageData = _stageRepo.GetStage(GetStageId());
+        var stageData = DataManager.Instance.StageRepo.GetStage(GetStageId());
         _stageTimeLimit = stageData.TimeLimit;
         _stageTimer = 0f;
 
@@ -77,7 +79,7 @@ public class StageRunner : MonoBehaviour
         _state = State.WaveRunning;
         OnWaveChanged?.Invoke(_currentWaveIndex);
 
-        var monsters = _stageRepo.GetStageMonsters(GetStageId());
+        var monsters = DataManager.Instance.StageRepo.GetStageMonsters(GetStageId());
         _spawner.StartWave(monsters, _currentWaveIndex);
     }
 
@@ -94,7 +96,7 @@ public class StageRunner : MonoBehaviour
         _state = State.WaveComplete;
         _currentWaveIndex++;
 
-        var stageData = _stageRepo.GetStage(GetStageId());
+        var stageData = DataManager.Instance.StageRepo.GetStage(GetStageId());
 
         if (_currentWaveIndex >= stageData.WaveCount)
             ClearStage();
@@ -115,7 +117,7 @@ public class StageRunner : MonoBehaviour
         // 다음 스테이지
         _currentStageIndex++;
 
-        var chapter = _stageRepo.GetChapter(_chapterId);
+        var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
         if (_currentStageIndex >= chapter.StageCount)
         {
             EndChapter(true);
@@ -146,7 +148,7 @@ public class StageRunner : MonoBehaviour
     // 현재 스테이지 진행률 (0~1). HUD 진행도 바에 사용.
     public float GetStageProgress()
     {
-        var chapter = _stageRepo.GetChapter(_chapterId);
+        var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
         if (chapter == null || chapter.StageCount == 0) return 0f;
         return (float)_currentStageIndex / chapter.StageCount;
     }

@@ -276,54 +276,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1602456506}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &316310798
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 316310799}
-  - component: {fileID: 316310800}
-  m_Layer: 0
-  m_Name: 'StageRepo '
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &316310799
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 316310798}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1396925044}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &316310800
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 316310798}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d82adcc485d5f7a45a466f8e10caf574, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StageRepo
-  _chapterTable: {fileID: 0}
-  _stageTable: {fileID: 0}
-  _stageMonsterTable: {fileID: 0}
-  _monsterScalingTable: {fileID: 0}
 --- !u!1 &341681045
 GameObject:
   m_ObjectHideFlags: 0
@@ -353,9 +305,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b3140836446df94988249a40ef5b2f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InGameBootstrap
-  _characterRepo: {fileID: 1753351656}
-  _stageRepo: {fileID: 316310800}
-  _configRepo: {fileID: 1363612381}
   _playerModel: {fileID: 1508674580}
   _sortModel: {fileID: 1314986501}
   _comboModel: {fileID: 550814360}
@@ -457,7 +406,6 @@ MonoBehaviour:
   _comboModel: {fileID: 550814360}
   _combinationModel: {fileID: 830662636}
   _playerModel: {fileID: 1508674580}
-  _characterRepo: {fileID: 1753351656}
   _autoAttackEnabled: 0
 --- !u!1 &471475215
 GameObject:
@@ -1037,7 +985,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InGameGrowthSystem
   _spawner: {fileID: 2077593744}
   _navigator: {fileID: 1955512119}
-  _configRepo: {fileID: 1363612381}
   _playerModel: {fileID: 1508674580}
   _maxLevel: 30
   _baseExpPerKill: 50
@@ -1498,7 +1445,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HintSystem
   _model: {fileID: 1314986501}
-  _playerModel: {fileID: 0}
+  _playerModel: {fileID: 1508674580}
   _normalDelay: 7
   _urgentDelay: 4
 --- !u!1 &1358222148
@@ -1531,88 +1478,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1602456506}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1363612380
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1363612382}
-  - component: {fileID: 1363612381}
-  m_Layer: 0
-  m_Name: ConfigRepo
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1363612381
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1363612380}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 250ce29f8f95453478f83cb509aacd89, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ConfigRepo
-  _inLevelTable: {fileID: 0}
-  _outGrowthTable: {fileID: 0}
-  _achievementTable: {fileID: 0}
-  _changeRewardTable: {fileID: 0}
---- !u!4 &1363612382
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1363612380}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1396925044}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1396925043
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1396925044}
-  m_Layer: 0
-  m_Name: --- DataLayer ---
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1396925044
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1396925043}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.16315, y: -2.54342, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1753351655}
-  - {fileID: 316310799}
-  - {fileID: 1363612382}
-  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1401764791
 GameObject:
@@ -1733,7 +1598,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 158ddf7edfd5ca64d85f19bb697d6cf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkillSystem
-  _characterRepo: {fileID: 1753351656}
   _combatSystem: {fileID: 458159163}
   _firePoint: {fileID: 0}
 --- !u!1 &1526545945
@@ -2058,60 +1922,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 762593140}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1753351654
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1753351655}
-  - component: {fileID: 1753351656}
-  m_Layer: 0
-  m_Name: CharacterRepo
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1753351655
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1753351654}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1396925044}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1753351656
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1753351654}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af9dbfac70216f34ab48954bf941b27d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterRepo
-  _characterMasterTable: {fileID: 0}
-  _commonStatusTable: {fileID: 0}
-  _characterStatusTable: {fileID: 0}
-  _monsterStatusTable: {fileID: 0}
-  _skillMasterTable: {fileID: 0}
-  _skillDataTable: {fileID: 0}
-  _effectTable: {fileID: 0}
-  _enchantMasterTable: {fileID: 0}
-  _enchantLevelTable: {fileID: 0}
-  _enchantWeightTable: {fileID: 0}
 --- !u!1 &1757808001
 GameObject:
   m_ObjectHideFlags: 0
@@ -2558,7 +2368,7 @@ MonoBehaviour:
   - {fileID: 1152430208}
   - {fileID: 1997423986}
   - {fileID: 665814797}
-  _characterRepo: {fileID: 1753351656}
+  _characterRepo: {fileID: 0}
 --- !u!4 &2077593745
 Transform:
   m_ObjectHideFlags: 0
@@ -2589,7 +2399,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageRunner
   _spawner: {fileID: 2077593744}
-  _stageRepo: {fileID: 316310800}
+  _stageRepo: {fileID: 0}
   _playerModel: {fileID: 1508674580}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -2598,7 +2408,6 @@ SceneRoots:
   - {fileID: 1140711342}
   - {fileID: 1757808002}
   - {fileID: 1069591329}
-  - {fileID: 1396925044}
   - {fileID: 579918530}
   - {fileID: 2077593745}
   - {fileID: 140313796}

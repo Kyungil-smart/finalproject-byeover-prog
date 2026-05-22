@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 전투 발동 판정 + 데미지 계산
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,7 +22,6 @@ public class CombatSystem : MonoBehaviour
     [SerializeField] private ComboModel _comboModel;
     [SerializeField] private CombinationModel _combinationModel;
     [SerializeField] private PlayerModel _playerModel;
-    [SerializeField] private CharacterRepo _characterRepo;
 
     [Header("자동공격")]
     [Tooltip("자동공격 켜짐 여부. 인챈트 선택 전에는 꺼져있음")]
@@ -77,7 +79,7 @@ public class CombatSystem : MonoBehaviour
         {
             int idx = _combinationModel.GetCompletedRecipeIndex();
             int skillId = _combinationModel.GetRecipeSkillId(idx);
-            var combiSkill = _characterRepo.GetSkill(skillId);
+            var combiSkill = DataManager.Instance.CharacterRepo.GetSkill(skillId);
             _skillSystem.FireSkill(combiSkill, AttackType.Combi);
             _combinationModel.ConsumeRecipe(idx);
         }
@@ -95,7 +97,7 @@ public class CombatSystem : MonoBehaviour
         float dmg = baseDmg + comboBonus;
 
         // 치명타
-        var stats = _characterRepo.GetCharacterStatus(1);
+        var stats = DataManager.Instance.CharacterRepo.GetCharacterStatus(1);
         if (Random.value < stats.CriticalRate)
             dmg *= (1f + stats.CriticalDamageBonus);
 
@@ -109,7 +111,7 @@ public class CombatSystem : MonoBehaviour
     public void EnableAutoAttack()
     {
         _autoAttackEnabled = true;
-        var stats = _characterRepo.GetCharacterStatus(1);
+        var stats = DataManager.Instance.CharacterRepo.GetCharacterStatus(1);
         _autoAttackInterval = stats.BaseAttackSpeed;
     }
 }
