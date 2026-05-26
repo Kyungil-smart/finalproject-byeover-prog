@@ -8,21 +8,21 @@ using System.Collections.Generic;
 /// <summary>
 /// 유니티 엔진을 전혀 모르며 연산과 상태(State) 판단만 담당하는 최상위 핵심 두뇌 영역
 /// </summary>
-public class WaveModel
+public class StageModel
 {
     private StageData _stageData;
     
-    public WaveModel(StageData stageData)
+    public StageModel(StageData stageData)
     {
         _stageData = stageData;
     }
     
     // ---------- 이벤트 ----------
-    public event Action<List<StageMonsterData>> OnStageDataSet;
+    
     
     
     // ---------- Private ----------
-    private List<StageMonsterData> _waveMonsters;
+    private List<SpawnTracker> _trackers = new List<SpawnTracker>();
     private int _currentWaveIndex;
     private int _totalWaveCount;
     private float _stageTimer;
@@ -30,18 +30,11 @@ public class WaveModel
     private int _thisWaveAliveMonster = 0;
 
     // ---------- 웨이브 제어 ----------
-    public void StartWave(List<StageMonsterData> allMonsters, int waveIndex)
+    public void StartWave()
     {
-        _waveMonsters = new List<StageMonsterData>();
-        for (int i = 0; i < allMonsters.Count; i++)
-        {
-            if (allMonsters[i].WaveIndex == waveIndex)
-            {
-                _waveMonsters.Add(allMonsters[i]);
-            }
-        }
         
-        OnStageDataSet?.Invoke(_waveMonsters);
+        
+        
     }
     
     private void StartNextWave()
@@ -75,4 +68,13 @@ public class WaveModel
     {
         _stageTimeLimit = _stageData.TimeLimit;
     }
+}
+
+// 스폰 규칙별 진행 상태 추적
+[System.Serializable]
+public struct SpawnTracker
+{
+    public StageSpawnRuleData rule;
+    public float timer;
+    public int aliveCount;
 }

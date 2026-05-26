@@ -25,7 +25,7 @@ public class WaveSpawner : MonoBehaviour
     [SerializeField] StageLoopManager _stageLoopManager;
 
     // ---------- Private ----------
-    private List<StageMonsterData> _waveMonsters;
+    
     private int _spawnIndex;
     private float _spawnTimer;
     private List<MonsterAI> _aliveMonsters = new List<MonsterAI>(32);
@@ -33,20 +33,7 @@ public class WaveSpawner : MonoBehaviour
     // ---------- 이벤트 함수 ----------
     private void Update()
     {
-        if (_waveMonsters == null || _spawnIndex >= _waveMonsters.Count) return;
-
-        var next = _waveMonsters[_spawnIndex];
-        if (_spawnTimer >= next.SpawnDelay)
-        {
-            SpawnMonster(next);
-            _spawnTimer = 0f;
-            _spawnIndex++;
-            
-            if (_spawnIndex >= _waveMonsters.Count)
-            {
-                OnSpawnRoutineFinished?.Invoke();
-            }
-        }
+        
     }
 
     // ---------- 타이머 관련 ----------
@@ -56,31 +43,17 @@ public class WaveSpawner : MonoBehaviour
     }
     
     // ---------- 웨이브 제어 ----------
-    public void StartSpawning(List<StageMonsterData> waveMonsters)
+    public void StartSpawning()
     {
-        _waveMonsters = waveMonsters;
+        
 
         _spawnIndex = 0;
         _spawnTimer = 0f;
     }
 
-    private void SpawnMonster(StageMonsterData data)
+    private void SpawnMonster()
     {
-        int pointIdx = Mathf.Clamp(data.SpawnPoint - 1, 0, _spawnPoints.Length - 1);
-        Vector3 pos = _spawnPoints[pointIdx].position;
-
-        string poolKey = $"Monster_{data.MonsterID}";
-        var obj = PoolManager.Instance.Spawn(poolKey, pos, Quaternion.identity);
-        if (obj == null) return;
-
-        var ai = obj.GetComponent<MonsterAI>();
-        if (ai == null) return;
-
-        var stats = DataManager.Instance.CharacterRepo.GetCommonStatus(data.MonsterID);
-        ai.Initialize(stats, data.MonsterID);
-        ai.OnDeath += HandleMonsterDeath;
-
-        _aliveMonsters.Add(ai);
+        
     }
 
     private void HandleMonsterDeath(MonsterAI monster)
