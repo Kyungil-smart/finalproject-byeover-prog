@@ -55,11 +55,11 @@ public class InGameBootstrap : MonoBehaviour
         _playerModel.Initialize(playerStats);
 
         // 추가 : 홍정옥
-        // 내용 : 저장된 캐릭터 성장 레벨 기준으로 JSON/SO 아웃게임 성장 보너스를 PlayerModel에 반영
+        // 내용 : 저장된 캐릭터 성장 레벨 기준으로 OutLevel JSON/SO 성장 보너스를 PlayerModel에 반영
         int characterLevel = GetCharacterLevel();
-        DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
-            out int hpBonus, out int shieldBonus, out int attackBonus);
-        _playerModel.ApplyStatBonus(hpBonus, shieldBonus, attackBonus);
+        DataManager.Instance.ConfigRepo.GetOutLevelBonusUntilLevel(characterLevel,
+            out int maxHPBonus, out int attackBonus);
+        _playerModel.ApplyOutLevelBonus(maxHPBonus, attackBonus);
 
         _combinationModel.Initialize();
         _enchantModel.Initialize();

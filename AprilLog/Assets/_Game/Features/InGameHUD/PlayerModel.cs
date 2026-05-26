@@ -16,13 +16,22 @@ public class PlayerModel : MonoBehaviour, IDamageable
     // ---------- 데이터 ----------
     public int CurrentHP { get; private set; }
     public int MaxHP { get; private set; }
+    public int Attack { get; private set; }
     public bool IsDead => CurrentHP <= 0;
+
+    private int _baseMaxHP;
+    private int _baseAttack;
 
     // ---------- 초기화 ----------
     public void Initialize(CommonStatusData data)
     {
-        MaxHP = data.MaxHP;
-        CurrentHP = data.MaxHP;
+        _baseMaxHP = data.MaxHP;
+        _baseAttack = data.Attack;
+
+        MaxHP = _baseMaxHP;
+        CurrentHP = MaxHP;
+        Attack = _baseAttack;
+
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 
@@ -45,19 +54,15 @@ public class PlayerModel : MonoBehaviour, IDamageable
     }
     
     // 추가 : 홍정옥
-    // 내용 : 아웃게임 성장 데이터로 증가한 HP/Shield/Attack 보너스를 PlayerModel에 적용
-    public void ApplyStatBonus(int hpBonus, int shieldBonus, int attackBonus)
+    // 내용 : OutLevel JSON/SO에서 읽어온 MaxHP, Attack 성장 보너스를 PlayerModel에 적용
+    public void ApplyOutLevelBonus(int maxHPBonus, int attackBonus)
     {
-        MaxHP += hpBonus;
-        CurrentHP += hpBonus;
+        MaxHP = _baseMaxHP + maxHPBonus;
+        CurrentHP = Mathf.Min(CurrentHP + maxHPBonus, MaxHP);
 
-        MaxShield += shieldBonus;
-        CurrentShield += shieldBonus;
-
-        Attack = BaseAttack + attackBonus;
+        Attack = _baseAttack + attackBonus;
 
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
-        OnShieldChanged?.Invoke(CurrentShield, MaxShield);
     }
 
     // ---------- 회복 ----------

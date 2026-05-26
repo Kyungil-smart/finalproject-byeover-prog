@@ -18,11 +18,11 @@ public class WaveModel
     }
     
     // ---------- 이벤트 ----------
-    public event Action<List<StageMonsterData>> OnStageDataSet;
+    public event Action<List<StageSpawnRuleData>> OnStageDataSet;
     
     
     // ---------- Private ----------
-    private List<StageMonsterData> _waveMonsters;
+    private List<StageSpawnRuleData> _spawnRules;
     private int _currentWaveIndex;
     private int _totalWaveCount;
     private float _stageTimer;
@@ -30,18 +30,13 @@ public class WaveModel
     private int _thisWaveAliveMonster = 0;
 
     // ---------- 웨이브 제어 ----------
-    public void StartWave(List<StageMonsterData> allMonsters, int waveIndex)
+    // 추가 : 홍정옥
+    // 내용 : 확정된 StageSpawnRule 데이터 구조에 맞춰 스폰 규칙 목록을 WaveSpawner로 전달
+    public void StartWave(List<StageSpawnRuleData> spawnRules, int waveIndex)
     {
-        _waveMonsters = new List<StageMonsterData>();
-        for (int i = 0; i < allMonsters.Count; i++)
-        {
-            if (allMonsters[i].WaveIndex == waveIndex)
-            {
-                _waveMonsters.Add(allMonsters[i]);
-            }
-        }
+        _spawnRules = spawnRules ?? new List<StageSpawnRuleData>();
         
-        OnStageDataSet?.Invoke(_waveMonsters);
+        OnStageDataSet?.Invoke(_spawnRules);
     }
     
     private void StartNextWave()

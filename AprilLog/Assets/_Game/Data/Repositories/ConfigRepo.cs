@@ -34,4 +34,21 @@ public class ConfigRepo : MonoBehaviour
     public AchievementData GetAchievement(int id) => _achievements[id];
     public IReadOnlyDictionary<int, AchievementData> GetAllAchievements() => _achievements;
     public IReadOnlyList<ChangeRewardData> GetAllChangeRewards() => _changeRewardTable.rows;
+
+    // 추가 : 홍정옥
+    // 내용 : 확정된 OutLevel 데이터 규칙에 따라 현재 캐릭터 레벨까지의 MaxHP, Attack 성장 보너스를 누적 조회
+    public void GetOutLevelBonusUntilLevel(int characterLevel, out int maxHPBonus, out int attackBonus)
+    {
+        maxHPBonus = 0;
+        attackBonus = 0;
+
+        for (int level = 1; level < characterLevel; level++)
+        {
+            var data = GetOutLevel(level);
+            if (data == null) continue;
+
+            maxHPBonus += data.MaxHP;
+            attackBonus += data.Attack;
+        }
+    }
 }
