@@ -1,4 +1,4 @@
-// 담당자 : 정승우
+// 담당자 : 최동훈
 // 설명   : Sort 퍼즐 View -- 슬롯 표시 + 드래그 피드백
 
 using UnityEngine;
