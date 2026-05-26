@@ -1,5 +1,5 @@
 // 담당자 : 정승우
-// 설명   : 데이터 테이블 구조체 모음 -- 기획서 v1.03 기준 전면 수정 (2026.05.26)
+// 설명   : 데이터 테이블 구조체 모음
 
 using System;
 using System.Collections.Generic;
@@ -148,6 +148,7 @@ public class EnchantWeightData
     public float UnownedWeight;
 }
 
+
 [Serializable]
 public class ChapterData
 {
@@ -176,6 +177,7 @@ public class StageData
     public int Stage_ID;        // PK
     public int StageOrder;
     public int TimeLimit;
+    public int WaveCount;       // 이 스테이지의 웨이브 수
     public int WaveGroup_ID;    // 현재 미사용, 향후 확장용
 }
 
@@ -226,7 +228,6 @@ public class MonsterStageScalingData
     public float DefenseGrowthValue;
 }
 
-
 // 인게임 레벨
 [Serializable]
 public class InLevelData
@@ -276,7 +277,6 @@ public class AchievementData
     public int RewardGold;
     public int RewardParchment;
 }
-
 // 로컬라이제이션
 
 [Serializable]
