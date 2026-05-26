@@ -35,4 +35,23 @@ public class ConfigRepo : MonoBehaviour
     public OutGrowthData GetOutGrowth(int charLevel) => _outGrowth.TryGetValue(charLevel, out var d) ? d : null;
     public AchievementData GetAchievement(int id) => _achievements[id];
     public IReadOnlyDictionary<int, AchievementData> GetAllAchievements() => _achievements;
+
+    // 추가 : 홍정옥
+    // 내용 : 확정된 공식 없이 OutGrowth JSON/SO 행을 누적해 현재 캐릭터 레벨의 성장 보너스를 계산
+    public void GetOutGrowthBonusUntilLevel(int characterLevel, out int hpBonus, out int shieldBonus, out int attackBonus)
+    {
+        hpBonus = 0;
+        shieldBonus = 0;
+        attackBonus = 0;
+
+        for (int level = 1; level < characterLevel; level++)
+        {
+            var data = GetOutGrowth(level);
+            if (data == null) continue;
+
+            hpBonus += data.HPIncrease;
+            shieldBonus += data.ShieldIncrease;
+            attackBonus += data.AttackIncrease;
+        }
+    }
 }

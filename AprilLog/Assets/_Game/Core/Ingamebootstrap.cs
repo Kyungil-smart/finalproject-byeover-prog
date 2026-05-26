@@ -53,6 +53,14 @@ public class InGameBootstrap : MonoBehaviour
         // [3] Model 초기화
         var playerStats = DataManager.Instance.CharacterRepo.GetCommonStatus(1);  // 주인공 ID = 1
         _playerModel.Initialize(playerStats);
+
+        // 추가 : 홍정옥
+        // 내용 : 저장된 캐릭터 성장 레벨 기준으로 JSON/SO 아웃게임 성장 보너스를 PlayerModel에 반영
+        int characterLevel = GetCharacterLevel();
+        DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
+            out int hpBonus, out int shieldBonus, out int attackBonus);
+        _playerModel.ApplyStatBonus(hpBonus, shieldBonus, attackBonus);
+
         _combinationModel.Initialize();
         _enchantModel.Initialize();
 
@@ -76,5 +84,15 @@ public class InGameBootstrap : MonoBehaviour
         _sortSystem.Initialize(seed);
 
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
+    }
+
+    // 추가 : 홍정옥
+    // 내용 : 클라우드 유저 데이터가 있으면 캐릭터 성장 레벨을 가져오고, 없으면 기본 레벨을 사용
+    private int GetCharacterLevel()
+    {
+        if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
+            return 1;
+
+        return GameManager.Instance.CloudData.characterLevel;
     }
 }

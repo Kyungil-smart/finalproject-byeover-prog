@@ -212,6 +212,9 @@ public class OutGrowthData
     public int RequiredGold;
     public int RequiredParchment;
     public int HPIncrease;
+    // 추가 : 홍정옥
+    // 내용 : 아웃게임 성장 JSON/SO에서 읽어온 Shield 증가량을 보관하기 위한 필드
+    public int ShieldIncrease;
     public int AttackIncrease;
 }
 
