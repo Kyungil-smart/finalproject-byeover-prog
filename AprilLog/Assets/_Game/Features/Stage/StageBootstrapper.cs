@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// StageLoopManager에 의해 생명주기가 통제되는 수동적 의존성 주입(Dependency Injection) 및 조립 팩토리
 /// </summary>
-public class WaveSystemBootstrapper : MonoBehaviour
+public class StageBootstrapper : MonoBehaviour
 {
     // ---------- MVP 컴포넌트 ----------
     [SerializeField] WavePresenter _currentPresenter;
@@ -23,7 +23,7 @@ public class WaveSystemBootstrapper : MonoBehaviour
         // (필요하다면 몬스터 스폰 데이터도 로드)
         
         // 3. 새 WaveModel 생성 및 데이터 주입
-        WaveModel newModel = new WaveModel(stageData);
+        StageModel newModel = new StageModel(stageData);
         
         // // 4. 새 WavePresenter 생성 (이때 매니저에게 받은 Action을 Presenter까지 전달)
         // _currentPresenter = new WavePresenter(newModel, _spawner, _ui, onStageComplete);
