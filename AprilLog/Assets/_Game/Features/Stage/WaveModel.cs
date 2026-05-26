@@ -10,6 +10,13 @@ using System.Collections.Generic;
 /// </summary>
 public class WaveModel
 {
+    private StageData _stageData;
+    
+    public WaveModel(StageData stageData)
+    {
+        _stageData = stageData;
+    }
+    
     // ---------- 이벤트 ----------
     public event Action<List<StageMonsterData>> OnStageDataSet;
     
@@ -31,7 +38,6 @@ public class WaveModel
             if (allMonsters[i].WaveIndex == waveIndex)
             {
                 _waveMonsters.Add(allMonsters[i]);
-                _thisWaveAliveMonster++;
             }
         }
         
@@ -42,6 +48,16 @@ public class WaveModel
     {
         
         
+    }
+
+    public void SpawnMonsterCount()
+    {
+        _thisWaveAliveMonster++;
+    }
+    
+    public void DeathMonsterCount(MonsterAI monster)
+    {
+        _thisWaveAliveMonster--;
     }
     
     // ---------- 타이머 관련 ----------
@@ -57,6 +73,6 @@ public class WaveModel
 
     private void GetStageTimeLimit()
     {
-        
+        _stageTimeLimit = _stageData.TimeLimit;
     }
 }

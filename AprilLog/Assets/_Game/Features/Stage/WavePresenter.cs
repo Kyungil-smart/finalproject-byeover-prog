@@ -28,6 +28,7 @@ public class WavePresenter : MonoBehaviour
         _model.OnStageDataSet += _spawner.StartSpawning;
         _onStageTimeChange += _model.GetCurrentTime;
         _onStageTimeChange += _spawner.GetCurrentTime;
+        _spawner.OnMonsterDied += _model.DeathMonsterCount;
     }
 
     private void OnDisable()
@@ -35,6 +36,7 @@ public class WavePresenter : MonoBehaviour
         _model.OnStageDataSet -= _spawner.StartSpawning;
         _onStageTimeChange -= _model.GetCurrentTime;
         _onStageTimeChange -= _spawner.GetCurrentTime;
+        _spawner.OnMonsterDied -= _model.DeathMonsterCount;
     }
     
     private void Update()
@@ -46,5 +48,10 @@ public class WavePresenter : MonoBehaviour
     {
         StageTimer += Time.deltaTime;
         _onStageTimeChange?.Invoke(StageTimer);
+    }
+    
+    public void Release()
+    {
+        
     }
 }
