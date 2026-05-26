@@ -33,10 +33,10 @@ public class GrowthPresenter
     public void Refresh()
     {
         _view.SetCurrentLevel(_progress.CharacterLevel);
-        var data = _configRepo.GetOutGrowth(_progress.CharacterLevel);
+        var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
         if (data != null)
         {
-            _view.SetRequiredResources(data.RequiredGold, data.RequiredParchment);
+            _view.SetRequiredResources(data.ConsumeGold, data.ConsumeParchment);
             _view.EnableLevelUpButton(_growth.CanLevelUp());
         }
     }

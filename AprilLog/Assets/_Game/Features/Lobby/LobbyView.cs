@@ -44,18 +44,17 @@ public class LobbyView : MonoBehaviour, ILobbyView
             _localization.OnLanguageChanged -= ApplyTexts;
     }
 
-    private void ApplyTexts() { /* 로컬라이제이션 텍스트 적용 */ }
+    private void ApplyTexts() { }
 
     public void SetPlayerInfo(string name, int level) => _levelText.SetText("Lv.{0}", level);
-    public void SetStageButtons(StageDisplayData[] stages) { /* 스테이지 버튼 생성 */ }
+    public void SetStageButtons(StageDisplayData[] stages) { }
     public void SetCurrency(int gold, int parchment)
     {
         _goldText.SetText("{0}", gold);
         _parchmentText.SetText("{0}", parchment);
     }
-    public void ShowResumePrompt() { /* 이어하기 팝업 */ }
+    public void ShowResumePrompt() { OnResumeClicked?.Invoke(); }
 
-    // 버튼 콜백
     public void OnStageButtonClicked(int stageId) => OnStageSelected?.Invoke(stageId);
     public void OnGrowthButtonClicked() => OnGrowthClicked?.Invoke();
     public void OnBookButtonClicked() => OnBookClicked?.Invoke();
