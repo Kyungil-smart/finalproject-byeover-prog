@@ -28,10 +28,11 @@ public class BookView : MonoBehaviour, IBookView
 
     private void OnDestroy() => _presenter?.Dispose();
 
-    public void SetEnchantList(EnchantBookDisplayData[] enchants) { /* 리스트 UI 갱신 */ }
-    public void SetFilter(BookFilter filter) { /* 필터 버튼 상태 갱신 */ }
-    public void ShowEnchantDetail(EnchantBookDisplayData data) { /* 상세 팝업 */ }
+    public void SetEnchantList(EnchantBookDisplayData[] enchants) { }
+    public void SetFilter(BookFilter filter) { }
+    public void ShowEnchantDetail(EnchantBookDisplayData data) { }
 
     public void OnFilterButtonClicked(int filterIdx) => OnFilterChanged?.Invoke((BookFilter)filterIdx);
     public void OnItemClicked(int enchantId) => OnEnchantClicked?.Invoke(enchantId);
+    public void OnCloseButtonClicked() => OnCloseClicked?.Invoke();
 }

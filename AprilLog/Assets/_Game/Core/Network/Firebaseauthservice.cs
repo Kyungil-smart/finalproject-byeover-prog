@@ -12,29 +12,15 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// 구글 로그인(Google Sign-In)과 게스트 로그인(Firebase 익명 인증)을 처리한다.
-/// GameManager가 이걸 통해서 인증함.
-///
-/// 담당자가 해야 할 것:
-/// - Firebase Console > Authentication > Google 로그인 활성화
-/// - google-signin-unity 플러그인 임포트
-/// - Web Client ID를 Inspector에 입력
-/// - FIREBASE_ENABLED define 추가
-/// </summary>
 public class FirebaseAuthService : MonoBehaviour
 {
-    // ---------- 이벤트 ----------
     public event Action<string> OnLoginSuccess;
     public event Action<string> OnLoginFailed;
     public event Action OnLogout;
 
-    // ---------- SerializeField ----------
     [Header("설정")]
-    [Tooltip("google-services.json에서 oauth_client type=3의 client_id")]
     [SerializeField] private string _webClientId;
 
-    // ---------- 상태 ----------
     public string UserUID { get; private set; }
     public bool IsLoggedIn => !string.IsNullOrEmpty(UserUID);
     public bool IsFirebaseReady { get; private set; }
@@ -43,27 +29,23 @@ public class FirebaseAuthService : MonoBehaviour
     private FirebaseAuth _auth;
 #endif
 
-    // ---------- Firebase 초기화 ----------
     public IEnumerator InitializeFirebase()
     {
 #if FIREBASE_ENABLED
         var task = FirebaseApp.CheckAndFixDependenciesAsync();
         yield return new WaitUntil(() => task.IsCompleted);
-
         if (task.Result != DependencyStatus.Available)
         {
             Debug.LogError("[Auth] Firebase 사용 불가: " + task.Result);
             IsFirebaseReady = false;
+            OnLoginFailed?.Invoke("Firebase 초기화 실패");
             yield break;
         }
-
         _auth = FirebaseAuth.DefaultInstance;
         IsFirebaseReady = true;
-
         if (_auth.CurrentUser != null)
         {
             UserUID = _auth.CurrentUser.UserId;
-            Debug.Log("[Auth] 이전 세션 복원됨: " + UserUID);
             OnLoginSuccess?.Invoke(UserUID);
         }
 #else
@@ -73,7 +55,6 @@ public class FirebaseAuthService : MonoBehaviour
 #endif
     }
 
-    // ---------- 구글 로그인 ----------
     public IEnumerator GoogleSignInCoroutine()
     {
 #if FIREBASE_ENABLED
@@ -82,38 +63,22 @@ public class FirebaseAuthService : MonoBehaviour
             RequestIdToken = true,
             WebClientId = _webClientId
         };
-
         var signInTask = GoogleSignIn.DefaultInstance.SignIn();
         yield return new WaitUntil(() => signInTask.IsCompleted);
-
         if (signInTask.IsFaulted || signInTask.IsCanceled)
         {
-            string error = signInTask.Exception != null
-                ? signInTask.Exception.Message
-                : "유저가 취소함";
-            Debug.LogWarning("[Auth] 구글 로그인 실패: " + error);
-            OnLoginFailed?.Invoke(error);
+            OnLoginFailed?.Invoke(signInTask.Exception?.Message ?? "유저가 취소함");
             yield break;
         }
-
-        string idToken = signInTask.Result.IdToken;
-
-        var credential = GoogleAuthProvider.GetCredential(idToken, null);
+        var credential = GoogleAuthProvider.GetCredential(signInTask.Result.IdToken, null);
         var authTask = _auth.SignInWithCredentialAsync(credential);
         yield return new WaitUntil(() => authTask.IsCompleted);
-
         if (authTask.IsFaulted)
         {
-            string error = authTask.Exception != null
-                ? authTask.Exception.Message
-                : "Firebase 인증 실패";
-            Debug.LogError("[Auth] Firebase 인증 실패: " + error);
-            OnLoginFailed?.Invoke(error);
+            OnLoginFailed?.Invoke(authTask.Exception?.Message ?? "Firebase 인증 실패");
             yield break;
         }
-
         UserUID = authTask.Result.User.UserId;
-        Debug.Log("[Auth] 구글 로그인 성공: " + UserUID);
         OnLoginSuccess?.Invoke(UserUID);
 #else
         Debug.Log("[Auth] 구글 로그인 더미 모드");
@@ -123,25 +88,17 @@ public class FirebaseAuthService : MonoBehaviour
 #endif
     }
 
-    // ---------- 게스트 로그인 ----------
     public IEnumerator GuestSignInCoroutine()
     {
 #if FIREBASE_ENABLED
         var task = _auth.SignInAnonymouslyAsync();
         yield return new WaitUntil(() => task.IsCompleted);
-
         if (task.IsFaulted)
         {
-            string error = task.Exception != null
-                ? task.Exception.Message
-                : "익명 인증 실패";
-            Debug.LogError("[Auth] 게스트 로그인 실패: " + error);
-            OnLoginFailed?.Invoke(error);
+            OnLoginFailed?.Invoke(task.Exception?.Message ?? "익명 인증 실패");
             yield break;
         }
-
         UserUID = task.Result.User.UserId;
-        Debug.Log("[Auth] 게스트 로그인 성공: " + UserUID);
         OnLoginSuccess?.Invoke(UserUID);
 #else
         Debug.Log("[Auth] 게스트 로그인 더미 모드");
@@ -151,18 +108,15 @@ public class FirebaseAuthService : MonoBehaviour
 #endif
     }
 
-    // ---------- 로그아웃 ----------
     public void SignOut()
     {
 #if FIREBASE_ENABLED
         _auth?.SignOut();
 #endif
         UserUID = null;
-        Debug.Log("[Auth] 로그아웃");
         OnLogout?.Invoke();
     }
 
-    // ---------- 유틸 ----------
     public bool HasPreviousSession()
     {
 #if FIREBASE_ENABLED

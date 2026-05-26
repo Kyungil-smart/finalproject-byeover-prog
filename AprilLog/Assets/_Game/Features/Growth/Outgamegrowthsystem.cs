@@ -6,43 +6,38 @@
 
 using System;
 using UnityEngine;
-
+ 
 /// <summary>
-/// 로비에서 양피지 + 골드를 소모해서 캐릭터를 레벨업한다.
-/// 경험치 없이 재화만 있으면 바로 올라감.
+/// 로비에서 골드 + 양피지를 소모해서 캐릭터를 레벨업한다.
 /// </summary>
 public class OutGameGrowthSystem : MonoBehaviour
 {
-    // ---------- 이벤트 ----------
     public event Action<int> OnCharacterLevelUp;
-
-    // ---------- SerializeField ----------
+ 
+    [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private CurrencyModel _currency;
     [SerializeField] private PlayerProgressModel _progress;
-
-    // ---------- Public ----------
+ 
     public bool CanLevelUp()
     {
-        var data = DataManager.Instance.ConfigRepo.GetOutGrowth(_progress.CharacterLevel);
+        var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
         if (data == null) return false;
-
-        return _currency.CanAfford(data.RequiredGold, data.RequiredParchment);
+        return _currency.CanAfford(data.ConsumeGold, data.ConsumeParchment);
     }
-
+ 
     public void LevelUp()
     {
         if (!CanLevelUp()) return;
-
-        var data = DataManager.Instance.ConfigRepo.GetOutGrowth(_progress.CharacterLevel);
-
-        _currency.SpendGold(data.RequiredGold);
-        _currency.SpendParchment(data.RequiredParchment);
-
+ 
+        var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
+ 
+        _currency.SpendGold(data.ConsumeGold);
+        _currency.SpendParchment(data.ConsumeParchment);
         _progress.SetCharacterLevel(_progress.CharacterLevel + 1);
-
+ 
         if (GameManager.Instance != null)
             GameManager.Instance.SyncToCloud(null);
-
+ 
         OnCharacterLevelUp?.Invoke(_progress.CharacterLevel);
     }
 }
