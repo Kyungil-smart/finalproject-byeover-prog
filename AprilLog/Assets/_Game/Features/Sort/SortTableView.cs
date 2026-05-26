@@ -26,8 +26,12 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [Header("유닛 스프라이트")]
     [SerializeField] private Sprite[] _unitSprites;
 
+    [Header("드래그 연출용 가짜 유닛")]
+    [SerializeField] private SpriteRenderer _dragFeedbackSR;
+
     // ---------- Private ----------
     private SortTablePresenter _presenter;
+    private int _currentDraggingUnitType = -1;
 
     // ---------- 생명주기 ----------
     private void Awake()
@@ -82,8 +86,43 @@ public class SortTableView : MonoBehaviour, ISortTableView
         if (sr != null) sr.enabled = false;
     }
 
-    public void ShowDragFeedback(int fromTable, int fromSlot, Vector2 dragPos) { /* 드래그 중 유닛 따라다니기 */ }
-    public void HideDragFeedback() { /* 드래그 끝 */ }
+    public void ShowDragFeedback(int fromTable, int fromSlot, Vector2 dragPos)
+    {
+        int idx = fromTable * SortModel.SLOTS_PER_TABLE + fromSlot;
+        if (idx >= _puzzleSlots.Length) return;
+
+        var originalSR = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
+        if (originalSR == null || !originalSR.enabled) return;
+
+        originalSR.enabled = false;
+
+        if (_dragFeedbackSR != null)
+        {
+            _dragFeedbackSR.sprite = originalSR.sprite;
+            _dragFeedbackSR.enabled = true;
+        }
+
+        UpdateDragFeedbackPosition(dragPos);
+    }
+
+    public void UpdateDragFeedbackPosition(Vector2 dragPos)
+    {
+        if (_dragFeedbackSR != null && _dragFeedbackSR.enabled)
+        {
+            Vector3 worldPos = Camera.main.ScreenToWorldPoint(dragPos);
+            _dragFeedbackSR.transform.position = worldPos;
+        }
+    }
+
+    public void HideDragFeedback() 
+    {
+        if (_dragFeedbackSR != null)
+        {
+            _dragFeedbackSR.enabled = false;
+            _dragFeedbackSR.sprite = null;
+        }
+    }
+
     public void PlayClearAnimation(int tableIdx) { /* 정렬 성공 연출 */ }
     public void LockSlot(int tableIdx, int slotIdx) { /* 거미줄 표시 */ }
     public void UnlockSlot(int tableIdx, int slotIdx) { /* 거미줄 해제 */ }
