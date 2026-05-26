@@ -14,7 +14,7 @@ public class WavePresenter : MonoBehaviour
     private event Action<float> _onStageTimeChange;
     
     // ---------- MVP 컴포넌트 ----------
-    WaveModel _model;
+    StageModel _model;
     
     [Header("MVP 컴포넌트 직렬화")]
     [SerializeField] WaveSpawner _spawner;
@@ -25,7 +25,7 @@ public class WavePresenter : MonoBehaviour
     // ---------- 이벤트 구독/해제 ----------
     private void OnEnable()
     {
-        _model.OnStageDataSet += _spawner.StartSpawning;
+        
         _onStageTimeChange += _model.GetCurrentTime;
         _onStageTimeChange += _spawner.GetCurrentTime;
         _spawner.OnMonsterDied += _model.DeathMonsterCount;
@@ -33,7 +33,7 @@ public class WavePresenter : MonoBehaviour
 
     private void OnDisable()
     {
-        _model.OnStageDataSet -= _spawner.StartSpawning;
+        
         _onStageTimeChange -= _model.GetCurrentTime;
         _onStageTimeChange -= _spawner.GetCurrentTime;
         _spawner.OnMonsterDied -= _model.DeathMonsterCount;

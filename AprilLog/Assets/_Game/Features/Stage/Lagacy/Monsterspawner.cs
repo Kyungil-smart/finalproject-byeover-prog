@@ -163,11 +163,11 @@ public class MonsterSpawner : MonoBehaviour
     }
 }
 
-// 스폰 규칙별 진행 상태 추적
-[System.Serializable]
-public struct SpawnTracker
-{
-    public StageSpawnRuleData rule;
-    public float timer;
-    public int aliveCount;
-}
+// 스폰 규칙별 진행 상태 추적 - StageModel에서 사용함으로 해당 스크립트 파일로 이동함. 차후 레거시 제거가능성 있음
+// [System.Serializable]
+// public struct SpawnTracker
+// {
+//     public StageSpawnRuleData rule;
+//     public float timer;
+//     public int aliveCount;
+// }
