@@ -5,6 +5,10 @@
 // 수정내용 : 웨이브별 스폰량 증가 + 스폰 간격 감소 로직 추가.
 //           StartStage() -> StartWave()로 변경. 웨이브 인덱스에 따라 GrowthType 적용.
 
+// 2차 수정자 : 김영찬
+// 수정내용 : 타이머를 StagePresenter에서 뿌리는 형태로 변경하여 모든 Model과 View의 시간 어긋남 방지
+// WaveSystem의 V를 담당
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,10 +27,6 @@ public class MonsterSpawner : MonoBehaviour
     [Tooltip("화면 상단 밖 스폰 포인트 7개 (왼->오)")]
     [SerializeField] private Transform[] _spawnPoints;
 
-    [Header("참조")]
-    [SerializeField] private CharacterRepo _characterRepo;
-    [SerializeField] private StageRepo _stageRepo;
-
     // ---------- Private ----------
     private List<SpawnTracker> _activeRules = new List<SpawnTracker>();
     private List<MonsterAI> _aliveMonsters = new List<MonsterAI>(32);
@@ -40,7 +40,7 @@ public class MonsterSpawner : MonoBehaviour
         _isRunning = true;
         _activeRules.Clear();
 
-        var rules = _stageRepo.GetSpawnRulesForStage(stageId);
+        var rules = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageId);
 
         for (int i = 0; i < rules.Count; i++)
         {
@@ -73,14 +73,14 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // ---------- Update ----------
-    private void Update()
+    public void Tick(float deltaTime)
     {
         if (!_isRunning) return;
 
         for (int i = 0; i < _activeRules.Count; i++)
         {
             var tracker = _activeRules[i];
-            tracker.timer += Time.deltaTime;
+            tracker.timer += deltaTime;
 
             if (tracker.timer >= tracker.spawnInterval
                 && tracker.aliveCount < tracker.rule.MaxAlive
@@ -126,7 +126,7 @@ public class MonsterSpawner : MonoBehaviour
     private void SpawnOne(ref SpawnTracker tracker)
     {
         // 풀에서 가중치 기반으로 몬스터 뽑기
-        int monsterId = _stageRepo.PickMonsterFromPool(tracker.rule.MonsterPool_ID, _rng);
+        int monsterId = DataManager.Instance.StageRepo.PickMonsterFromPool(tracker.rule.MonsterPool_ID, _rng);
         if (monsterId < 0) return;
 
         // 스폰 위치 결정
@@ -140,7 +140,7 @@ public class MonsterSpawner : MonoBehaviour
         var ai = obj.GetComponent<MonsterAI>();
         if (ai == null) return;
 
-        var stats = _characterRepo.GetCommonStatus(monsterId);
+        var stats = DataManager.Instance.CharacterRepo.GetCommonStatus(monsterId);
         ai.Initialize(stats, monsterId);
         ai.OnDeath += HandleMonsterDeath;
 
