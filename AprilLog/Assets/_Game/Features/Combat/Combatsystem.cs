@@ -94,7 +94,10 @@ public class CombatSystem : MonoBehaviour
     public int CalculateDamage(int baseDmg)
     {
         int comboBonus = _comboModel.GetComboBonus();
-        float dmg = baseDmg + comboBonus;
+        
+        // 추가 : 홍정옥
+        // 내용 : PlayerModel의 공격력을 스킬 기본 데미지에 더해 JSON/SO 캐릭터 공격력이 전투에 반영되도록 연결
+        float dmg = _playerModel.Attack + baseDmg + comboBonus;
 
         // 치명타
         var stats = DataManager.Instance.CharacterRepo.GetCharacterStatus(1);
