@@ -3,6 +3,7 @@
 // 기대 효과 : 해당 Instance를 통해 Repository를 불러오는 것으로 데이터 파편화 방지 및 휴먼 에러 예방
 // 수정 사항 : 에디터 전용 AssetDatabase 동적 로딩 적용으로 데이터메니저가 필요한 단일 테스트씬에서도 부트씬을 거치지 않고 자체 테스트 가능하도록 함
 // 최종 수정일 : 26.05.24
+// 수정 사항 : 수정자: 최동훈30번째줄 string prefabPath = "Assets/Prefabs/DataManager.prefab"; > "Assets/_Game/Prefabs/DataManager.prefab"; 경로 수정
 
 using UnityEngine;
 #if UNITY_EDITOR
@@ -26,7 +27,7 @@ public class DataManager : MonoBehaviour
                 {
                     #if UNITY_EDITOR
                     // 프리팹 경로 명시
-                    string prefabPath = "Assets/Prefabs/DataManager.prefab";
+                    string prefabPath = "Assets/_Game/Prefabs/DataManager.prefab";
                     GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                     
                     if (prefab != null)
