@@ -31,21 +31,14 @@ public class StageBootstrapper : MonoBehaviour
     }
 
     // ---------- 시스템 조립 ----------
-    public void InitAndStart(int stageId, System.Random rng, Action onStageComplete)
+    public void InitAndStart(StageData stageData, System.Random rng, Action onStageComplete)
     {
         if (_currentPresenter != null)
         {
             _currentPresenter.Release();
         }
         
-        var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
-        if (stageData == null)
-        {
-            Debug.LogError($"[StageBootstrapper] StageData를 찾을 수 없습니다. ID: {stageId}");
-            return;
-        }
-        
         StageModel newModel = new StageModel(stageData, _loopManager.WaveTransitionDelay);
-        _currentPresenter = new StagePresenter(newModel, _spawner, stageId, rng, onStageComplete);
+        _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
     }
 }

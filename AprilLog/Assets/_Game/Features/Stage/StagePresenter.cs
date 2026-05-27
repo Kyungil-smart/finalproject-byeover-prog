@@ -19,16 +19,16 @@ public class StagePresenter
     // ---------- private ----------
     private StageModel _model;
     private MonsterSpawner _spawner; // 팀장님 코드
-    private int _stageId;
+    private StageData _stageData;
     private System.Random _rng;
     private Action _onStageCompleteCallback;
 
     // ---------- 생성자 ----------
-    public StagePresenter(StageModel model, MonsterSpawner spawner, int stageId, System.Random rng, Action onComplete)
+    public StagePresenter(StageModel model, MonsterSpawner spawner, StageData stageData, System.Random rng, Action onComplete)
     {
         _model = model;
         _spawner = spawner;
-        _stageId = stageId;
+        _stageData = stageData;
         _rng = rng;
         _onStageCompleteCallback = onComplete;
 
@@ -41,7 +41,7 @@ public class StagePresenter
     // ---------- 이벤트 핸들러 ----------
     private void HandleWaveStarted(int waveIndex, int totalWaves)
     {
-        _spawner.StartWave(_stageId, waveIndex, totalWaves, _rng);
+        _spawner.StartWave(_stageData.Stage_ID, waveIndex, totalWaves, _rng);
     }
 
     private void HandleWaveStopped()

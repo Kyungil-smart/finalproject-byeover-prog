@@ -75,7 +75,7 @@ public class StageLoopManager : MonoBehaviour
 
         OnStageChanged?.Invoke(_currentStageIndex);
         
-        _bootstrapper.InitAndStart(stageId, _rng, ClearStage);
+        _bootstrapper.InitAndStart(stageData, _rng, ClearStage);
     }
 
     // ---------- 스테이지 클리어 ----------
