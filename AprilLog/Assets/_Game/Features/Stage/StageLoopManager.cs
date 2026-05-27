@@ -4,6 +4,9 @@
 // 1차 수정자 : 정승우
 // 수정내용 : StartStage -> StartWave로 변경. 스테이지 내 웨이브 분할 추가.
 
+// 2차 수정자 : 김영찬
+// 수정 내용 : 시간과 웨이브 관련 상태를 StageModel에 이관하여 책임 분산
+
 using System;
 using UnityEngine;
 
@@ -15,13 +18,12 @@ public class StageLoopManager : MonoBehaviour
 {
     // ---------- 이벤트 ----------
     public event Action<int> OnStageChanged;
-    public event Action<int, int> OnWaveChanged;    // waveIndex, totalWaves
     public event Action OnStageClearSaved;
     public event Action<bool> OnChapterEnd;
 
     // ---------- SerializeField ----------
     [Header("참조")]
-    [SerializeField] private MonsterSpawner _spawner;
+    [SerializeField] private StageBootstrapper _bootstrapper;
     [SerializeField] private PlayerModel _playerModel;
 
     [Header("웨이브 설정")]
@@ -31,17 +33,14 @@ public class StageLoopManager : MonoBehaviour
     [Tooltip("웨이브 전환 시 대기 시간(초)")]
     [SerializeField] private float _waveTransitionDelay = 2.0f;
 
+    public float WaveTransitionDelay => _waveTransitionDelay;
+
     // ---------- 상태 ----------
-    private enum State { Idle, WaveRunning, WaveTransition, StageClear, ChapterEnd }
+    private enum State { Idle, RunningStage, StageClear, ChapterEnd }
     private State _state;
 
     private int _chapterId;
     private int _currentStageIndex;
-    private int _currentWaveIndex;
-    private int _waveCount;
-    private float _waveTimer;
-    private float _waveTimeLimit;
-    private float _transitionTimer;
     private System.Random _rng;
 
     // ---------- 초기화 ----------
@@ -61,23 +60,11 @@ public class StageLoopManager : MonoBehaviour
             _playerModel.OnPlayerDeath -= HandlePlayerDeath;
     }
 
-    // ---------- FSM ----------
-    private void Update()
-    {
-        switch (_state)
-        {
-            case State.WaveRunning:
-                UpdateWaveRunning();
-                break;
-            case State.WaveTransition:
-                UpdateWaveTransition();
-                break;
-        }
-    }
-
     // ---------- 스테이지 ----------
     private void StartStage()
     {
+        _state = State.RunningStage;
+
         int stageId = GetStageId();
         var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
         if (stageData == null)
@@ -86,62 +73,15 @@ public class StageLoopManager : MonoBehaviour
             return;
         }
 
-        _currentWaveIndex = 0;
-        _waveCount = stageData.WaveCount > 0 ? stageData.WaveCount : _fallbackWaveCount;
-        _waveTimeLimit = (float)stageData.TimeLimit / _waveCount;
-
         OnStageChanged?.Invoke(_currentStageIndex);
-        StartWave();
-    }
-
-    // ---------- 웨이브 ----------
-    private void StartWave()
-    {
-        _state = State.WaveRunning;
-        _waveTimer = 0f;
-
-        int stageId = GetStageId();
-        _spawner.StartWave(stageId, _currentWaveIndex, _waveCount, _rng);
-
-        OnWaveChanged?.Invoke(_currentWaveIndex, _waveCount);
-    }
-
-    private void UpdateWaveRunning()
-    {
-        _waveTimer += Time.deltaTime;
-        if (_waveTimer >= _waveTimeLimit)
-            CompleteWave();
-    }
-
-    private void CompleteWave()
-    {
-        _spawner.StopSpawning();
-        _currentWaveIndex++;
-
-        if (_currentWaveIndex >= _waveCount)
-            ClearStage();
-        else
-        {
-            _state = State.WaveTransition;
-            _transitionTimer = 0f;
-        }
-    }
-
-    private void UpdateWaveTransition()
-    {
-        _transitionTimer += Time.deltaTime;
-        if (_transitionTimer >= _waveTransitionDelay && _spawner.AliveCount == 0)
-        {
-            _transitionTimer = 0f;
-            StartWave();
-        }
+        
+        _bootstrapper.InitAndStart(stageData, _rng, ClearStage);
     }
 
     // ---------- 스테이지 클리어 ----------
     private void ClearStage()
     {
         _state = State.StageClear;
-        _spawner.StopSpawning();
 
         if (GameManager.Instance != null)
             GameManager.Instance.SaveLocal();
@@ -160,7 +100,6 @@ public class StageLoopManager : MonoBehaviour
     private void EndChapter(bool isVictory)
     {
         _state = State.ChapterEnd;
-        _spawner.StopSpawning();
         OnChapterEnd?.Invoke(isVictory);
     }
 
@@ -180,11 +119,5 @@ public class StageLoopManager : MonoBehaviour
         var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
         if (chapter == null || chapter.StageCount == 0) return 0f;
         return (float)_currentStageIndex / chapter.StageCount;
-    }
-
-    public float GetWaveProgress()
-    {
-        if (_waveTimeLimit <= 0f) return 0f;
-        return _waveTimer / _waveTimeLimit;
     }
 }

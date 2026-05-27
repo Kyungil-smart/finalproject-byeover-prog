@@ -10,25 +10,35 @@ using UnityEngine;
 public class StageBootstrapper : MonoBehaviour
 {
     // ---------- MVP 컴포넌트 ----------
-    [SerializeField] WavePresenter _currentPresenter;
+    [Header("참조")]
+    [SerializeField] private MonsterSpawner _spawner;
+    [SerializeField] private StageLoopManager _loopManager;
     
-    // ---------- 조립 구동 ----------
-    public void InitAndStart(int stageId, Action onCompleteCallback)
+    private StagePresenter _currentPresenter;
+    
+    // ---------- 이벤트 함수 ----------
+    private void Update()
     {
-        // 1. 기존 Presenter가 있다면 해제 (Soft Reset)
-        _currentPresenter?.Release();
+        if (_currentPresenter != null)
+        {
+            _currentPresenter.UpdateSystem(Time.deltaTime);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        _currentPresenter.Release();
+    }
+
+    // ---------- 시스템 조립 ----------
+    public void InitAndStart(StageData stageData, System.Random rng, Action onStageComplete)
+    {
+        if (_currentPresenter != null)
+        {
+            _currentPresenter.Release();
+        }
         
-        // 2. DataManager에서 스테이지 데이터 로드
-        var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
-        // (필요하다면 몬스터 스폰 데이터도 로드)
-        
-        // 3. 새 WaveModel 생성 및 데이터 주입
-        StageModel newModel = new StageModel(stageData);
-        
-        // // 4. 새 WavePresenter 생성 (이때 매니저에게 받은 Action을 Presenter까지 전달)
-        // _currentPresenter = new WavePresenter(newModel, _spawner, _ui, onStageComplete);
-        //
-        // // 5. 시스템 구동!
-        // _currentPresenter.StartSystem();
+        StageModel newModel = new StageModel(stageData, _loopManager.WaveTransitionDelay);
+        _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
     }
 }
