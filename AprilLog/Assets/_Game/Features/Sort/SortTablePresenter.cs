@@ -1,5 +1,7 @@
-// 담당자 : 정승우
+// 담당자 : 최동훈
 // 설명   : Sort 퍼즐 Presenter -- Model/System 이벤트 구독해서 View 갱신
+// 수정 사항 : 보드 최초 랜덤 배치(ShuffleBoard) 초기화 로직 연동
+// 최종 변경 일자 : 26.05.27
 
 /// <summary>
 /// SortModel 이벤트를 구독해서 SortTableView를 갱신한다.
@@ -18,6 +20,8 @@ public class SortTablePresenter
         _input = input;
         _hint = hint;
 
+        _model.Initialize();
+        _model.ShuffleBoard();
         _model.OnSlotChanged += HandleSlotChanged;
         _model.OnTableCleared += HandleTableCleared;
         _model.OnWaitingUpdated += HandleWaitingUpdated;
@@ -27,6 +31,7 @@ public class SortTablePresenter
         _input.OnDragCanceled += HandleDragCanceled;
         _hint.OnHintShow += HandleHint;
         _hint.OnHintWaiting += HandleHintWaiting;
+
     }
 
     public void Dispose()
