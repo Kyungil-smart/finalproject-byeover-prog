@@ -10,7 +10,7 @@ using UnityEngine;
 
 public static class DataImporter
 {
-    private const string JSON_FOLDER = "Assets/_Project/Data/JSON";
+    private const string JSON_FOLDER = "Assets/Resources/Data/Tables";
     private const string SO_FOLDER = "Assets/_Project/Data/SO";
 
     [MenuItem("Tools/Data/경로 안내")]
