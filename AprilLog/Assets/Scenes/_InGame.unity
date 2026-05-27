@@ -512,7 +512,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e62eb62db1dda54dbfcbe4ae4b57173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OptionView
-  _navigator: {fileID: 0}
+  _navigator: {fileID: 1955512119}
   _localization: {fileID: 0}
   _bgmSlider: {fileID: 0}
   _sfxSlider: {fileID: 0}
@@ -955,7 +955,9 @@ MonoBehaviour:
   _comboModel: {fileID: 550814360}
   _combinationModel: {fileID: 830662636}
   _playerModel: {fileID: 1508674580}
+  _characterRepo: {fileID: 0}
   _autoAttackEnabled: 0
+  _autoAttackInterval: 1
 --- !u!1 &471475215
 GameObject:
   m_ObjectHideFlags: 0
@@ -1188,8 +1190,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9150d9e410a6ac748ac8215e14ed60a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantSelectView
-  _enchantModel: {fileID: 0}
-  _navigator: {fileID: 0}
+  _enchantModel: {fileID: 673703853}
+  _navigator: {fileID: 1955512119}
   _choiceContainer: {fileID: 0}
   _deleteConfirmPanel: {fileID: 0}
   _skipButton: {fileID: 0}
@@ -1204,7 +1206,7 @@ GameObject:
   - component: {fileID: 629112358}
   - component: {fileID: 629112359}
   m_Layer: 5
-  m_Name: --- CombinationUI ---
+  m_Name: CombinationUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1241,7 +1243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 920b1b0542b525541819206897302f13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombinationView
-  _model: {fileID: 0}
+  _model: {fileID: 830662636}
   _recipeSlots: []
 --- !u!1 &629420830
 GameObject:
@@ -2028,6 +2030,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InGameGrowthSystem
   _spawner: {fileID: 2077593744}
   _navigator: {fileID: 1955512119}
+  _configRepo: {fileID: 0}
   _playerModel: {fileID: 1508674580}
   _maxLevel: 30
   _baseExpPerKill: 50
@@ -4310,7 +4313,7 @@ GameObject:
   - component: {fileID: 1891263352}
   - component: {fileID: 1891263353}
   m_Layer: 5
-  m_Name: --- HUD ---
+  m_Name: HUD
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4347,8 +4350,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1088f81a5ca7cea41beca2713f62b273, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InGameHUDView
-  _playerModel: {fileID: 0}
-  _comboModel: {fileID: 0}
+  _playerModel: {fileID: 1508674580}
+  _comboModel: {fileID: 550814360}
   _hpSlider: {fileID: 0}
   _shieldSlider: {fileID: 0}
   _expSlider: {fileID: 0}
@@ -4724,7 +4727,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2077593745}
-  - component: {fileID: 2077593746}
   - component: {fileID: 2077593744}
   m_Layer: 0
   m_Name: --- DefenseArea ---
@@ -4742,7 +4744,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2077593743}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eca2b75dcc3b6364d8263b898274b787, type: 3}
+  m_Script: {fileID: 11500000, guid: 7d27dbfcd9baff349ba5b7d7d2b24534, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSpawner
   _spawnPoints:
@@ -4753,7 +4755,6 @@ MonoBehaviour:
   - {fileID: 1152430208}
   - {fileID: 1997423986}
   - {fileID: 665814797}
-  _characterRepo: {fileID: 0}
 --- !u!4 &2077593745
 Transform:
   m_ObjectHideFlags: 0
@@ -4771,20 +4772,6 @@ Transform:
   - {fileID: 1526545946}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2077593746
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2077593743}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 374dfd7e1638b2743a7a34dbcab71cfe, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StageRunner
-  _spawner: {fileID: 2077593744}
-  _playerModel: {fileID: 1508674580}
 --- !u!1 &2100441451
 GameObject:
   m_ObjectHideFlags: 0

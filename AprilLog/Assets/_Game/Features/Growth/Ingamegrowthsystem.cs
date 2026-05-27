@@ -4,6 +4,9 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
+// 수정자 : Codex
+// 수정내용 : ConfigRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
+
 using System;
 using UnityEngine;
  
@@ -33,18 +36,24 @@ public class InGameGrowthSystem : MonoBehaviour
  
     public void Initialize()
     {
+        ResolveRepository();
+
         CurrentLevel = 1;
         CurrentEXP = 0;
     }
  
     public void RestoreFromSave(int level, int exp)
     {
+        ResolveRepository();
+
         CurrentLevel = level;
         CurrentEXP = exp;
     }
  
     private void OnEnable()
     {
+        ResolveRepository();
+
         if (_spawner != null)
             _spawner.OnMonsterDied += HandleMonsterDied;
     }
@@ -62,6 +71,13 @@ public class InGameGrowthSystem : MonoBehaviour
  
     public void AddEXP(int amount)
     {
+        ResolveRepository();
+        if (_configRepo == null)
+        {
+            Debug.LogError("[InGameGrowthSystem] ConfigRepo를 찾을 수 없어 EXP 처리를 중단합니다.");
+            return;
+        }
+
         if (CurrentLevel >= _maxLevel) return;
  
         CurrentEXP += amount;
@@ -92,11 +108,26 @@ public class InGameGrowthSystem : MonoBehaviour
  
     public void ApplyDeadlockPenalty()
     {
+        ResolveRepository();
+        if (_configRepo == null)
+        {
+            Debug.LogError("[InGameGrowthSystem] ConfigRepo를 찾을 수 없어 데드락 패널티를 처리할 수 없습니다.");
+            return;
+        }
+
         var levelData = _configRepo.GetInLevel(CurrentLevel);
         if (levelData == null) return;
  
         int penalty = Mathf.RoundToInt(levelData.RequiredEXP * 0.1f);
         CurrentEXP = Mathf.Max(0, CurrentEXP - penalty);
         OnEXPChanged?.Invoke(CurrentEXP, levelData.RequiredEXP);
+    }
+
+    private void ResolveRepository()
+    {
+        if (_configRepo != null) return;
+        if (DataManager.Instance == null) return;
+
+        _configRepo = DataManager.Instance.ConfigRepo;
     }
 }

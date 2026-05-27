@@ -4,6 +4,9 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
+// 수정자 : Codex
+// 수정내용 : CharacterRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
+
 using System.Collections.Generic;
 using UnityEngine;
  
@@ -34,15 +37,22 @@ public class CombatSystem : MonoBehaviour
     private void Awake()
     {
         _sortNotifier = _sortSystemObj as ISortNotifier;
+        ResolveRepository();
     }
  
     private void OnEnable()
     {
+        ResolveRepository();
+        if (_sortNotifier == null)
+            _sortNotifier = _sortSystemObj as ISortNotifier;
+
+        if (_sortNotifier == null) return;
         _sortNotifier.OnSortCompleted += HandleSortCompleted;
     }
  
     private void OnDisable()
     {
+        if (_sortNotifier == null) return;
         _sortNotifier.OnSortCompleted -= HandleSortCompleted;
     }
  
@@ -86,6 +96,13 @@ public class CombatSystem : MonoBehaviour
     // 데미지 공식 -- 기획서 v1.03 기준 (FlatPierce, CriticalDamageBonus 삭제됨)
     public int CalculateDamage(int baseDmg)
     {
+        ResolveRepository();
+        if (_characterRepo == null)
+        {
+            Debug.LogError("[CombatSystem] CharacterRepo를 찾을 수 없어 기본 대미지만 계산합니다.");
+            return Mathf.Max(1, baseDmg);
+        }
+
         int comboBonus = _comboModel.GetComboBonus();
 
         // 추가 : 홍정옥
@@ -107,5 +124,13 @@ public class CombatSystem : MonoBehaviour
     public void EnableAutoAttack()
     {
         _autoAttackEnabled = true;
+    }
+
+    private void ResolveRepository()
+    {
+        if (_characterRepo != null) return;
+        if (DataManager.Instance == null) return;
+
+        _characterRepo = DataManager.Instance.CharacterRepo;
     }
 }

@@ -4,6 +4,9 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
+// 수정자 : Codex
+// 수정내용 : ConfigRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
+
 using System;
 using UnityEngine;
  
@@ -18,8 +21,20 @@ public class OutGameGrowthSystem : MonoBehaviour
     [SerializeField] private CurrencyModel _currency;
     [SerializeField] private PlayerProgressModel _progress;
  
+    private void Awake()
+    {
+        ResolveRepository();
+    }
+
     public bool CanLevelUp()
     {
+        ResolveRepository();
+        if (_configRepo == null)
+        {
+            Debug.LogError("[OutGameGrowthSystem] ConfigRepo를 찾을 수 없어 레벨업 가능 여부를 확인할 수 없습니다.");
+            return false;
+        }
+
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
         if (data == null) return false;
         return _currency.CanAfford(data.RequiredGold, data.RequiredParchment);
@@ -27,6 +42,8 @@ public class OutGameGrowthSystem : MonoBehaviour
  
     public void LevelUp()
     {
+        ResolveRepository();
+
         if (!CanLevelUp()) return;
  
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
@@ -39,5 +56,13 @@ public class OutGameGrowthSystem : MonoBehaviour
             GameManager.Instance.SyncToCloud(null);
  
         OnCharacterLevelUp?.Invoke(_progress.CharacterLevel);
+    }
+
+    private void ResolveRepository()
+    {
+        if (_configRepo != null) return;
+        if (DataManager.Instance == null) return;
+
+        _configRepo = DataManager.Instance.ConfigRepo;
     }
 }

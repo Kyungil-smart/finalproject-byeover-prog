@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 옵션 View -- 사운드 조절, 언어 변경
 
+// 수정자 : Codex
+// 수정내용 : UI 참조가 비어 있을 때 초기화를 건너뛰어 테스트 씬 NullReference 방지
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,6 +32,9 @@ public class OptionView : MonoBehaviour, IOptionView
     {
         if (!_isInitialized)
         {
+            if (!HasRequiredReferences())
+                return;
+
             _isInitialized = true;
             _presenter = new OptionPresenter(this, _navigator, _localization);
 
@@ -52,4 +58,13 @@ public class OptionView : MonoBehaviour, IOptionView
     public void Hide() => gameObject.SetActive(false);
     public void SetBGMVolume(float ratio) => _bgmSlider.SetValueWithoutNotify(ratio);
     public void SetSFXVolume(float ratio) => _sfxSlider.SetValueWithoutNotify(ratio);
+
+    private bool HasRequiredReferences()
+    {
+        if (_bgmSlider != null && _sfxSlider != null && _langButton != null && _closeButton != null)
+            return true;
+
+        Debug.LogWarning("[OptionView] 필수 UI 참조가 비어 있어 초기화를 건너뜁니다.", this);
+        return false;
+    }
 }

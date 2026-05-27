@@ -163,7 +163,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40b4af53061e6504792eabdbf3e7e0e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantBookModel
-  _characterRepo: {fileID: 0}
   _enchantModel: {fileID: 0}
 --- !u!1 &239289334
 GameObject:
@@ -216,7 +215,6 @@ MonoBehaviour:
   _growthSystem: {fileID: 0}
   _currency: {fileID: 0}
   _progress: {fileID: 0}
-  _configRepo: {fileID: 0}
   _levelText: {fileID: 0}
   _costGoldText: {fileID: 0}
   _costParchmentText: {fileID: 0}
@@ -711,6 +709,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0a1b596cf63f0e47b2cb087e1a28d16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SafeAreaFitter
+  _appliedEdges: 15
+  _applyOnEnable: 1
+  _useEditorOverride: 0
+  _editorSafeAreaOverride:
+    serializedVersion: 2
+    x: 0
+    y: 80
+    width: 1080
+    height: 2200
+  _editorScreenSizeOverride: {x: 1080, y: 2280}
 --- !u!1 &1538665651
 GameObject:
   m_ObjectHideFlags: 0
