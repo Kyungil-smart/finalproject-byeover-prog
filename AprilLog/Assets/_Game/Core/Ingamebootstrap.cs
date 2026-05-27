@@ -1,18 +1,22 @@
 // 담당자 : 정승우
 // 설명   : InGame 씬 초기화 -- Repository -> Model -> System 순서
 
-// 1차 수정자 : 김영찬 ->
+// 1차 수정자 : 김영찬
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, _boot 씬에서만 초기화 하면 되도록 수정
+
+// 2차 수정자 : 홍정옥
+// 수정내용 : 아웃게임 성장 보너스를 PlayerModel에 반영하는 로직 추가
+
+// 3차 수정자 : 정승우
+// 수정내용 : 기획서 v1.03 반영. Shield 삭제, Attack/StunPower/SlowPower 보너스 추가.
 
 using UnityEngine;
 
 /// <summary>
 /// InGame 씬 로드 후 모든 시스템을 의존성 순서대로 초기화한다.
-/// 이어하기 데이터가 있으면 세이브에서 복원.
 /// </summary>
 public class InGameBootstrap : MonoBehaviour
 {
-    // ---------- SerializeField ----------
     [Header("Model")]
     [SerializeField] private PlayerModel _playerModel;
     [SerializeField] private SortModel _sortModel;
@@ -23,12 +27,6 @@ public class InGameBootstrap : MonoBehaviour
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;
 
-    // TODO
-    // StageRunner, CombatSystem 등 추가되면 여기에 SerializeField 넣기
-    // [SerializeField] private StageRunner _stageRunner;
-    // [SerializeField] private CombatSystem _combatSystem;
-    // [SerializeField] private InGameGrowthSystem _growthSystem;
-
     private void Start()
     {
         InitializeAll();
@@ -38,8 +36,8 @@ public class InGameBootstrap : MonoBehaviour
     {
         Debug.Log("[InGameBootstrap] === InGame 초기화 시작 ===");
 
-        // [1] Repository 초기화는 DataManager가 싱글톤 화 되었음으로 필요 없음 - 수정자 : 김영찬
-        
+        // [1] Repository 초기화는 DataManager 싱글톤에서 처리됨 (김영찬)
+
         // [2] 이어하기 체크
         bool isResume = GameManager.Instance != null && GameManager.Instance.HasLocalSave();
         InGameSaveData saveData = null;
@@ -51,15 +49,14 @@ public class InGameBootstrap : MonoBehaviour
         }
 
         // [3] Model 초기화
-        var playerStats = DataManager.Instance.CharacterRepo.GetCommonStatus(1);  // 주인공 ID = 1
+        var playerStats = DataManager.Instance.CharacterRepo.GetCommonStatus(1);
         _playerModel.Initialize(playerStats);
 
-        // 추가 : 홍정옥
-        // 내용 : 저장된 캐릭터 성장 레벨 기준으로 OutLevel JSON/SO 성장 보너스를 PlayerModel에 반영
+        // 아웃게임 성장 보너스 적용 (홍정옥)
         int characterLevel = GetCharacterLevel();
-        DataManager.Instance.ConfigRepo.GetOutLevelBonusUntilLevel(characterLevel,
-            out int maxHPBonus, out int attackBonus);
-        _playerModel.ApplyOutLevelBonus(maxHPBonus, attackBonus);
+        DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
+            out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus);
+        _playerModel.ApplyStatBonus(hpBonus, attackBonus, stunBonus, slowBonus);
 
         _combinationModel.Initialize();
         _enchantModel.Initialize();
@@ -73,26 +70,20 @@ public class InGameBootstrap : MonoBehaviour
         // [4] Sort 초기화
         int seed;
         if (isResume && saveData != null)
-        {
             seed = saveData.nextStageSeed;
-        }
         else
-        {
             seed = Random.Range(0, int.MaxValue);
-        }
 
         _sortSystem.Initialize(seed);
 
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }
 
-    // 추가 : 홍정옥
-    // 내용 : 클라우드 유저 데이터가 있으면 캐릭터 성장 레벨을 가져오고, 없으면 기본 레벨을 사용
+    // 클라우드 데이터에서 캐릭터 레벨 가져오기 (홍정옥)
     private int GetCharacterLevel()
     {
         if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
             return 1;
-
         return GameManager.Instance.CloudData.characterLevel;
     }
 }

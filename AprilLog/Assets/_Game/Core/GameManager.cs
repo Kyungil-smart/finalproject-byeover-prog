@@ -1,5 +1,7 @@
 // 담당자 : 정승우
 // 설명   : 앱 전체 관리 -- 상태, 인증, 세이브, 씬 전환
+// 2차 수정자 : 조규민
+// 수정 내용 : 로그인 성공/실패 이벤트 전달, 게스트 로그인 중복 방어, 실제 씬 이름 기준 전환 추가
 
 using System;
 using System.Collections;
@@ -17,6 +19,9 @@ public class GameManager : MonoBehaviour
 
     // ---------- 이벤트 ----------
     public event Action<GameState> OnGameStateChanged;
+    public event Action OnLoginStarted; // 추가: 조규민 - LoginPresenter와 Bootstrap이 로그인 진행 상태를 받을 수 있게 한다.
+    public event Action<string> OnLoginSucceeded; // 추가: 조규민 - 인증 성공 UID를 UI 흐름에 전달한다.
+    public event Action<string> OnLoginFailed; // 추가: 조규민 - 인증 실패 메시지를 UI 흐름에 전달한다.
 
     // ---------- SerializeField ----------
     [Header("네트워크 서비스")]
@@ -78,7 +83,10 @@ public class GameManager : MonoBehaviour
 
         // 인증 이벤트
         if (_authService != null)
+        {
             _authService.OnLoginSuccess += HandleLoginSuccess;
+            _authService.OnLoginFailed += HandleLoginFailed;
+        }
     }
 
     private void OnDisable()
@@ -87,7 +95,10 @@ public class GameManager : MonoBehaviour
             _networkChecker.OnOnline -= HandleOnlineRestored;
 
         if (_authService != null)
+        {
             _authService.OnLoginSuccess -= HandleLoginSuccess;
+            _authService.OnLoginFailed -= HandleLoginFailed;
+        }
     }
 
     // 모바일: 백그라운드 전환 시 즉시 세이브
@@ -109,6 +120,16 @@ public class GameManager : MonoBehaviour
         // Firestore 서비스에 uid 전달
         if (_firestoreService != null)
             _firestoreService.Initialize(uid);
+
+        // 추가: 조규민 - 인증 성공을 Login UI와 Bootstrap 대기 흐름에 알린다.
+        OnLoginSucceeded?.Invoke(uid);
+    }
+
+    private void HandleLoginFailed(string error)
+    {
+        // 추가: 조규민 - 로그인 실패 시 앱 상태를 Login으로 유지하고 UI에 오류를 전달한다.
+        ChangeState(GameState.Login);
+        OnLoginFailed?.Invoke(error);
     }
 
     private void HandleOnlineRestored()
@@ -129,13 +150,13 @@ public class GameManager : MonoBehaviour
     public void LoadLobby()
     {
         ChangeState(GameState.Lobby);
-        StartCoroutine(LoadSceneCoroutine("Lobby"));
+        StartCoroutine(LoadSceneCoroutine("_Lobby")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
     }
 
     public void LoadInGame()
     {
         ChangeState(GameState.InGame);
-        StartCoroutine(LoadSceneCoroutine("InGame"));
+        StartCoroutine(LoadSceneCoroutine("_InGame")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
     }
 
     private IEnumerator LoadSceneCoroutine(string sceneName)
@@ -179,14 +200,36 @@ public class GameManager : MonoBehaviour
 
     public void StartGoogleSignIn()
     {
-        if (_authService != null)
-            StartCoroutine(_authService.GoogleSignInCoroutine());
+        if (_authService == null)
+        {
+            OnLoginFailed?.Invoke("인증 서비스가 연결되지 않았습니다.");
+            return;
+        }
+
+        if (_authService.IsSigningIn)
+        {
+            return;
+        }
+
+        OnLoginStarted?.Invoke(); // 추가: 조규민 - Google 로그인은 추후 대상이지만 진행 상태 이벤트는 동일하게 사용한다.
+        StartCoroutine(_authService.GoogleSignInCoroutine());
     }
 
     public void StartGuestSignIn()
     {
-        if (_authService != null)
-            StartCoroutine(_authService.GuestSignInCoroutine());
+        if (_authService == null)
+        {
+            OnLoginFailed?.Invoke("인증 서비스가 연결되지 않았습니다.");
+            return;
+        }
+
+        if (_authService.IsSigningIn)
+        {
+            return;
+        }
+
+        OnLoginStarted?.Invoke(); // 추가: 조규민 - Login UI가 로딩 상태로 전환할 수 있게 한다.
+        StartCoroutine(_authService.GuestSignInCoroutine());
     }
 
     public void ShowLoginUI()
@@ -205,11 +248,14 @@ public class GameManager : MonoBehaviour
 
         // 로드 완료 이벤트 구독
         bool loaded = false;
-        _firestoreService.OnDataLoaded += (data) =>
+        Action<UserCloudData> onDataLoaded = null;
+        onDataLoaded = (data) =>
         {
             CloudData = data;
             loaded = true;
+            _firestoreService.OnDataLoaded -= onDataLoaded;
         };
+        _firestoreService.OnDataLoaded += onDataLoaded;
 
         yield return StartCoroutine(_firestoreService.LoadCoroutine());
 

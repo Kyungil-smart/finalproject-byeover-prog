@@ -1,26 +1,42 @@
 // 담당자 : 김영찬
 // StageRunner.cs를 대체하는 최상위 컨트롤러
 
+// 1차 수정자 : 정승우
+// 수정내용 : StartStage -> StartWave로 변경. 스테이지 내 웨이브 분할 추가.
+
+// 2차 수정자 : 김영찬
+// 수정 내용 : 시간과 웨이브 관련 상태를 StageModel에 이관하여 책임 분산
+
 using System;
 using UnityEngine;
 
 /// <summary>
-/// 플레이어가 씬에 진입한 순간부터 챕터 내 모든 스테이지가 완료되거나 중도 포기할 때까지의 전체 게임 루프 상태(State)를 관리하는 컨트롤러
+/// 챕터 내 스테이지 -> 웨이브 전체 루프를 관리하는 컨트롤러.
+/// 웨이브 수는 StageData.WaveCount에서 읽고, 없으면 기본값 3.
 /// </summary>
 public class StageLoopManager : MonoBehaviour
 {
     // ---------- 이벤트 ----------
     public event Action<int> OnStageChanged;
     public event Action OnStageClearSaved;
-    public event Action<bool> OnChapterEnd;     // isVictory
+    public event Action<bool> OnChapterEnd;
 
     // ---------- SerializeField ----------
     [Header("참조")]
-    [SerializeField] private WaveSystemBootstrapper _bootstrapper;
+    [SerializeField] private StageBootstrapper _bootstrapper;
     [SerializeField] private PlayerModel _playerModel;
 
+    [Header("웨이브 설정")]
+    [Tooltip("WaveCount가 0일 때 사용하는 기본값")]
+    [SerializeField] private int _fallbackWaveCount = 3;
+
+    [Tooltip("웨이브 전환 시 대기 시간(초)")]
+    [SerializeField] private float _waveTransitionDelay = 2.0f;
+
+    public float WaveTransitionDelay => _waveTransitionDelay;
+
     // ---------- 상태 ----------
-    public enum State { StageStart, WaveRunning, WaveComplete, StageClear, ChapterEnd }
+    private enum State { Idle, RunningStage, StageClear, ChapterEnd }
     private State _state;
 
     private int _chapterId;
@@ -35,7 +51,6 @@ public class StageLoopManager : MonoBehaviour
         _rng = new System.Random(seed);
 
         _playerModel.OnPlayerDeath += HandlePlayerDeath;
-
         StartStage();
     }
 
@@ -45,44 +60,46 @@ public class StageLoopManager : MonoBehaviour
             _playerModel.OnPlayerDeath -= HandlePlayerDeath;
     }
 
+    // ---------- 스테이지 ----------
     private void StartStage()
     {
-        SetState(State.StageStart);
-        
-        int currentStageId = GetStageId();
-        
+        _state = State.RunningStage;
+
+        int stageId = GetStageId();
+        var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
+        if (stageData == null)
+        {
+            EndChapter(true);
+            return;
+        }
+
         OnStageChanged?.Invoke(_currentStageIndex);
         
-        _bootstrapper.InitAndStart(currentStageId, OnStageComplete);
+        _bootstrapper.InitAndStart(stageData, _rng, ClearStage);
     }
 
-    private void OnStageComplete()
+    // ---------- 스테이지 클리어 ----------
+    private void ClearStage()
     {
-        SetState(State.StageClear);
+        _state = State.StageClear;
 
-        // 로컬 세이브
         if (GameManager.Instance != null)
             GameManager.Instance.SaveLocal();
 
         OnStageClearSaved?.Invoke();
 
-        // 다음 스테이지
         _currentStageIndex++;
 
         var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
-        if (_currentStageIndex >= chapter.StageCount)
-        {
+        if (chapter == null || _currentStageIndex >= chapter.StageCount)
             EndChapter(true);
-        }
         else
-        {
             StartStage();
-        }
     }
 
     private void EndChapter(bool isVictory)
     {
-        SetState(State.ChapterEnd);
+        _state = State.ChapterEnd;
         OnChapterEnd?.Invoke(isVictory);
     }
 
@@ -91,22 +108,16 @@ public class StageLoopManager : MonoBehaviour
         EndChapter(false);
     }
 
-    // 스테이지 ID = 챕터ID * 100 + 순번 + 1
+    // ---------- 유틸 ----------
     private int GetStageId()
     {
         return _chapterId * 100 + _currentStageIndex + 1;
     }
 
-    // 현재 스테이지 진행률 (0~1). HUD 진행도 바에 사용.
     public float GetStageProgress()
     {
         var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
         if (chapter == null || chapter.StageCount == 0) return 0f;
         return (float)_currentStageIndex / chapter.StageCount;
-    }
-
-    public State SetState(State state)
-    {
-        return _state = state;
     }
 }

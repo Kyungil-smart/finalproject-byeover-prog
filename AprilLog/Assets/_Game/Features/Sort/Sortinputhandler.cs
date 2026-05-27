@@ -1,8 +1,11 @@
-// 담당자 : 정승우
+// 담당자 : 최동훈
 // 설명   : Sort 유닛 터치 드래그 입력만 처리
+// 수정 사항 : (구)인풋시스템 뉴인풋시스템으로 변경
+// 최종 변경 일자 : 26.05.26
 
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 터치 드래그를 받아서 어디서 어디로 드롭했는지 이벤트로 알린다.
@@ -64,23 +67,29 @@ public class SortInputHandler : MonoBehaviour
     // ---------- 터치 ----------
     private void HandleTouch()
     {
-        if (Input.touchCount == 0) return;
+        if (Touchscreen.current == null || Touchscreen.current.touches.Count == 0) return;
 
-        Touch touch = Input.GetTouch(0);
+        var touchControl = Touchscreen.current.touches[0];
 
-        switch (touch.phase)
+        if (!touchControl.isInProgress) return;
+
+        var phase = touchControl.phase.ReadValue();
+        Vector2 touchPosition = touchControl.position.ReadValue();
+
+        switch (phase)
         {
-            case TouchPhase.Began:
-                BeginInput(touch.position);
+            case UnityEngine.InputSystem.TouchPhase.Began:
+                BeginInput(touchPosition);
                 break;
 
-            case TouchPhase.Moved:
-                MoveInput(touch.position);
+            case UnityEngine.InputSystem.TouchPhase.Moved:
+            case UnityEngine.InputSystem.TouchPhase.Stationary:
+                MoveInput(touchPosition);
                 break;
 
-            case TouchPhase.Ended:
-            case TouchPhase.Canceled:
-                EndInput(touch.position);
+            case UnityEngine.InputSystem.TouchPhase.Ended:
+            case UnityEngine.InputSystem.TouchPhase.Canceled:
+                EndInput(touchPosition);
                 break;
         }
     }
@@ -88,12 +97,18 @@ public class SortInputHandler : MonoBehaviour
     // ---------- 마우스 (에디터 테스트용) ----------
     private void HandleMouse()
     {
-        if (Input.GetMouseButtonDown(0))
-            BeginInput(Input.mousePosition);
-        else if (Input.GetMouseButton(0))
-            MoveInput(Input.mousePosition);
-        else if (Input.GetMouseButtonUp(0))
-            EndInput(Input.mousePosition);
+        if (Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            BeginInput(Mouse.current.position.ReadValue());
+        }
+        else if (Mouse.current.leftButton.isPressed)
+        {
+            MoveInput(Mouse.current.position.ReadValue());
+        }
+        else if (Mouse.current.leftButton.wasReleasedThisFrame)
+        {
+            EndInput(Mouse.current.position.ReadValue());
+        }
     }
 
     // ---------- 공통 입력 처리 ----------
