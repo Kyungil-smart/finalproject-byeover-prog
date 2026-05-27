@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: StageSpawnRuleTable
+  m_EditorClassIdentifier: Assembly-CSharp::StageSpawnRuleTable
+  rows:
+  - StartStage_ID: 101
+    EndStage_ID: 107
+    MonsterPool_ID: 1
+    MaxAlive: 50
+    SpawnInterval: 0.5
+    SpawnAmount: 23
+    GrowthType: Add
+    GrowthValue: 3
+    SpawnPositionType: RandomAll
+  - StartStage_ID: 101
+    EndStage_ID: 107
+    MonsterPool_ID: 2
+    MaxAlive: 50
+    SpawnInterval: 1
+    SpawnAmount: 20
+    GrowthType: Add
+    GrowthValue: 2
+    SpawnPositionType: RandomAll
+  - StartStage_ID: 101
+    EndStage_ID: 107
+    MonsterPool_ID: 3
+    MaxAlive: 50
+    SpawnInterval: 1
+    SpawnAmount: 20
+    GrowthType: Add
+    GrowthValue: 3
+    SpawnPositionType: RandomAll
+  - StartStage_ID: 101
+    EndStage_ID: 107
+    MonsterPool_ID: 4
+    MaxAlive: 50
+    SpawnInterval: 0.5
+    SpawnAmount: 22
+    GrowthType: Add
+    GrowthValue: 3
+    SpawnPositionType: RandomAll
+  - StartStage_ID: 103
+    EndStage_ID: 104
+    MonsterPool_ID: 5
+    MaxAlive: 50
+    SpawnInterval: 1
+    SpawnAmount: 10
+    GrowthType: None
+    GrowthValue: 0
+    SpawnPositionType: RandomAll
+  - StartStage_ID: 102
+    EndStage_ID: 106
+    MonsterPool_ID: 6
+    MaxAlive: 10
+    SpawnInterval: 1
+    SpawnAmount: 5
+    GrowthType: Add
+    GrowthValue: 1
+    SpawnPositionType: RandomAll
+  - StartStage_ID: 104
+    EndStage_ID: 104
+    MonsterPool_ID: 7
+    MaxAlive: 1
+    SpawnInterval: 1
+    SpawnAmount: 1
+    GrowthType: None
+    GrowthValue: 0
+    SpawnPositionType: SP_4
+  - StartStage_ID: 107
+    EndStage_ID: 107
+    MonsterPool_ID: 8
+    MaxAlive: 1
+    SpawnInterval: 1
+    SpawnAmount: 1
+    GrowthType: None
+    GrowthValue: 0
+    SpawnPositionType: SP_4
