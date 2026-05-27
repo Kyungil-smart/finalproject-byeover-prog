@@ -4,7 +4,6 @@
 // 수정내용 : SO 테이블 생성 경로를 런타임 데이터 폴더로 통일하고 1클래스 1파일 규칙 반영
 
 #if UNITY_EDITOR
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEditor;
@@ -16,52 +15,6 @@ public static class DataTableGenerator
 
     private const string DATA_CLASSES_PATH = "Assets/_Game/Data/DataClasses.cs";
     private const string OUTPUT_FOLDER = "Assets/_Game/Data/";
-
-    // ---------- 테이블 매핑 ----------
-
-    /// <summary>
-    /// 데이터 클래스명 -> SO 테이블 클래스명 매핑.
-    /// 새 데이터 클래스를 DataClasses.cs에 추가하면 여기에도 한 줄 추가하면 된다.
-    /// </summary>
-    private static readonly Dictionary<string, string> TableMap = new Dictionary<string, string>
-    {
-        // 캐릭터
-        { "CharacterMasterData",      "CharacterMasterTable" },
-        { "CharacterNameData",        "CharacterNameTable" },
-        { "CommonStatusData",         "CommonStatusTable" },
-        { "CharacterStatusData",      "CharacterStatusTable" },
-        { "MonsterStatusData",        "MonsterStatusTable" },
-
-        // 스킬
-        { "SkillMasterData",          "SkillMasterTable" },
-        { "SkillData",                "SkillDataTable" },
-        { "EffectData",               "EffectDataTable" },
-
-        // 인챈트
-        { "EnchantMasterData",        "EnchantMasterTable" },
-        { "EnchantLevelData",         "EnchantLevelTable" },
-        { "EnchantWeightData",        "EnchantWeightTable" },
-
-        // 챕터 / 스테이지
-        { "ChapterData",             "ChapterTable" },
-        { "MapLanguageData",         "MapLanguageTable" },
-        { "StageData",               "StageDataTable" },
-
-        // 몬스터 풀
-        { "MonsterPoolMasterData",   "MonsterPoolMasterTable" },
-        { "MonsterPoolData",         "MonsterPoolTable" },
-        { "StageSpawnRuleData",      "StageSpawnRuleTable" },
-        { "MonsterStageScalingData", "MonsterStageScalingTable" },
-
-        // 레벨
-        { "InLevelData",             "InLevelTable" },
-        { "OutLevelData",            "OutLevelTable" },
-
-        // 보상 / 업적 / 언어
-        { "ChangeRewardData",        "ChangeRewardTable" },
-        { "AchievementData",         "AchievementDataTable" },
-        { "LanguageEntry",           "LanguageTable" },
-    };
 
     // ---------- 메뉴 ----------
 
@@ -83,10 +36,11 @@ public static class DataTableGenerator
         int created = 0;
         int skipped = 0;
 
-        foreach (var pair in TableMap)
+        for (int i = 0; i < DataTableSchemaRegistry.Schemas.Count; i++)
         {
-            string dataClass = pair.Key;
-            string tableClass = pair.Value;
+            var schema = DataTableSchemaRegistry.Schemas[i];
+            string dataClass = schema.DataClassName;
+            string tableClass = schema.TableClassName;
             string filePath = Path.Combine(OUTPUT_FOLDER, tableClass + ".cs");
 
             if (File.Exists(filePath))

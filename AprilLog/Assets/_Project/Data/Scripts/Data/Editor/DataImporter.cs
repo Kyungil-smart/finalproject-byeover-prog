@@ -4,6 +4,8 @@
 // 수정내용 : JSON 누락 경고와 기존 JSON 폴더 fallback을 추가
 
 #if UNITY_EDITOR
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -80,7 +82,6 @@ public static class DataImporter
             Directory.CreateDirectory(SO_FOLDER);
         AssetDatabase.Refresh();
 
-        int totalRows = 0;
         int errors = 0;
         if (Directory.Exists(JSON_FOLDER))
             errors += DataValidator.ValidateAll(JSON_FOLDER);
@@ -93,42 +94,17 @@ public static class DataImporter
             return;
         }
 
-        // 캐릭터
-        totalRows += ImportTable<CharacterMasterTable, CharacterMasterData>("character_master");
-        totalRows += ImportTable<CharacterNameTable, CharacterNameData>("character_name");
-        totalRows += ImportTable<CommonStatusTable, CommonStatusData>("common_status");
-        totalRows += ImportTable<CharacterStatusTable, CharacterStatusData>("character_status");
-        totalRows += ImportTable<MonsterStatusTable, MonsterStatusData>("monster_status");
+        int totalRows = 0;
+        int missingRequired = 0;
 
-        // 스킬
-        totalRows += ImportTable<SkillMasterTable, SkillMasterData>("skill_master");
-        totalRows += ImportTable<SkillDataTable, SkillData>("skill_data");
-        totalRows += ImportTable<EffectDataTable, EffectData>("effect_table");
+        for (int i = 0; i < DataTableSchemaRegistry.Schemas.Count; i++)
+        {
+            int rows = ImportTable(DataTableSchemaRegistry.Schemas[i], out bool missing);
+            totalRows += rows;
 
-        // 인챈트
-        totalRows += ImportTable<EnchantMasterTable, EnchantMasterData>("enchant_master");
-        totalRows += ImportTable<EnchantLevelTable, EnchantLevelData>("enchant_level");
-        totalRows += ImportTable<EnchantWeightTable, EnchantWeightData>("enchant_weight");
-
-        // 챕터 / 스테이지
-        totalRows += ImportTable<ChapterTable, ChapterData>("chapter_master");
-        totalRows += ImportTable<MapLanguageTable, MapLanguageData>("map_language");
-        totalRows += ImportTable<StageDataTable, StageData>("stage_master");
-
-        // 몬스터 풀 + 스폰
-        totalRows += ImportTable<MonsterPoolMasterTable, MonsterPoolMasterData>("monster_pool_master");
-        totalRows += ImportTable<MonsterPoolTable, MonsterPoolData>("monster_pool");
-        totalRows += ImportTable<StageSpawnRuleTable, StageSpawnRuleData>("stage_spawn_rule");
-        totalRows += ImportTable<MonsterStageScalingTable, MonsterStageScalingData>("monster_stage_scaling");
-
-        // 레벨
-        totalRows += ImportTable<InLevelTable, InLevelData>("in_level");
-        totalRows += ImportTable<OutLevelTable, OutLevelData>("out_level");
-
-        // 보상/업적/언어
-        totalRows += ImportTable<ChangeRewardTable, ChangeRewardData>("change_reward");
-        totalRows += ImportTable<AchievementDataTable, AchievementData>("achievement");
-        totalRows += ImportTable<LanguageTable, LanguageEntry>("language");
+            if (missing && DataTableSchemaRegistry.Schemas[i].IsRequired)
+                missingRequired++;
+        }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -136,48 +112,72 @@ public static class DataImporter
         Debug.Log("===========================================");
         Debug.Log($"[DataImporter] 완료! 총 {totalRows}행 처리.");
         Debug.Log($"  생성된 SO 위치 : {Path.GetFullPath(SO_FOLDER)}");
+        if (missingRequired > 0)
+            Debug.LogError($"[DataImporter] 필수 JSON 누락 {missingRequired}개. DataSource 엑셀 또는 테이블 정의를 확인하세요.");
         Debug.Log("===========================================");
     }
 
-    private static int ImportTable<TSO, TData>(string jsonFileName)
-        where TSO : DataTable<TData>
-        where TData : class
+    private static int ImportTable(DataTableSchema schema, out bool missing)
     {
-        string jsonPath = ResolveJsonPath(jsonFileName, out bool isLegacy);
+        missing = false;
+
+        string jsonPath = ResolveJsonPath(schema.JsonName, out bool isLegacy);
         if (string.IsNullOrEmpty(jsonPath))
         {
-            Debug.LogWarning($"[DataImporter] JSON 없음: {jsonFileName}.json");
+            missing = true;
+            string level = schema.IsRequired ? "필수 JSON 없음" : "선택 JSON 없음";
+            Debug.LogWarning($"[DataImporter] {level}: {schema.JsonName}.json");
             return 0;
         }
 
         if (isLegacy)
-            Debug.LogWarning($"[DataImporter] 기존 JSON 폴더에서 가져옴: {jsonFileName}.json");
+            Debug.LogWarning($"[DataImporter] 기존 JSON 폴더에서 가져옴: {schema.JsonName}.json");
+
+        Type tableType = FindRuntimeType(schema.TableClassName);
+        Type dataType = FindRuntimeType(schema.DataClassName);
+
+        if (tableType == null || dataType == null)
+        {
+            Debug.LogError($"[DataImporter] 타입 없음: {schema.TableClassName}, {schema.DataClassName}");
+            return 0;
+        }
 
         string jsonText = File.ReadAllText(jsonPath);
-        var wrapper = JsonUtility.FromJson<DataArray<TData>>(jsonText);
+        Type wrapperType = typeof(DataArray<>).MakeGenericType(dataType);
+        object wrapper = JsonUtility.FromJson(jsonText, wrapperType);
+        var dataField = wrapperType.GetField("data");
+        var dataArray = dataField?.GetValue(wrapper) as Array;
 
-        if (wrapper == null || wrapper.data == null)
+        if (wrapper == null || dataArray == null)
         {
             Debug.LogError($"[DataImporter] 파싱 실패: {Path.GetFullPath(jsonPath)}");
             return 0;
         }
 
-        string soTypeName = typeof(TSO).Name;
-        string soPath = CombineUnityPath(SO_FOLDER, soTypeName + ".asset");
-        var so = AssetDatabase.LoadAssetAtPath<TSO>(soPath);
+        string soPath = CombineUnityPath(SO_FOLDER, schema.TableClassName + ".asset");
+        var so = AssetDatabase.LoadAssetAtPath(soPath, tableType) as ScriptableObject;
 
         if (so == null)
         {
-            so = ScriptableObject.CreateInstance<TSO>();
+            so = ScriptableObject.CreateInstance(tableType);
             AssetDatabase.CreateAsset(so, soPath);
             Debug.Log($"  [신규] {soPath}");
         }
 
-        so.rows = new List<TData>(wrapper.data);
+        Type listType = typeof(List<>).MakeGenericType(dataType);
+        var rows = Activator.CreateInstance(listType, dataArray);
+        var rowsField = tableType.GetField("rows");
+        rowsField?.SetValue(so, rows);
+
         EditorUtility.SetDirty(so);
 
-        Debug.Log($"  {jsonFileName}.json -> {soPath} ({wrapper.data.Length}행)");
-        return wrapper.data.Length;
+        Debug.Log($"  {schema.JsonName}.json -> {soPath} ({dataArray.Length}행)");
+        return dataArray.Length;
+    }
+
+    private static Type FindRuntimeType(string typeName)
+    {
+        return Type.GetType($"{typeName}, Assembly-CSharp");
     }
 
     private static List<string> CollectJsonFiles()
