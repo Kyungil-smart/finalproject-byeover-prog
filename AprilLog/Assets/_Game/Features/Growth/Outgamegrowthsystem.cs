@@ -20,6 +20,12 @@ public class OutGameGrowthSystem : MonoBehaviour
  
     public bool CanLevelUp()
     {
+        if (_configRepo == null || _currency == null || _progress == null)
+        {
+            Debug.LogWarning("[OutGameGrowthSystem] Required dependency is missing. CanLevelUp returns false.");
+            return false;
+        }
+
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
         if (data == null) return false;
         return _currency.CanAfford(data.ConsumeGold, data.ConsumeParchment);
@@ -30,6 +36,11 @@ public class OutGameGrowthSystem : MonoBehaviour
         if (!CanLevelUp()) return;
  
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
+        if (data == null)
+        {
+            Debug.LogWarning("[OutGameGrowthSystem] OutLevel data is missing. LevelUp skipped.");
+            return;
+        }
  
         _currency.SpendGold(data.ConsumeGold);
         _currency.SpendParchment(data.ConsumeParchment);

@@ -34,22 +34,64 @@ public class GrowthView : MonoBehaviour, IGrowthView
         if (!_isInitialized)
         {
             _isInitialized = true;
-            _presenter = new GrowthPresenter(this, _growthSystem, _currency, _progress, DataManager.Instance.ConfigRepo);
-            _levelUpButton.onClick.AddListener(() => OnLevelUpClicked?.Invoke());
-            _closeButton.onClick.AddListener(() => OnCloseClicked?.Invoke());
+            DataManager dataManager = DataManager.Instance;
+            ConfigRepo configRepo = dataManager != null ? dataManager.ConfigRepo : null;
+
+            if (_growthSystem == null || _currency == null || _progress == null || configRepo == null)
+            {
+                Debug.LogWarning("[GrowthView] Required dependency is missing. GrowthPresenter creation skipped.");
+                return;
+            }
+
+            _presenter = new GrowthPresenter(this, _growthSystem, _currency, _progress, configRepo);
+
+            if (_levelUpButton != null)
+                _levelUpButton.onClick.AddListener(() => OnLevelUpClicked?.Invoke());
+            else
+                Debug.LogWarning("[GrowthView] LevelUp button is not assigned.");
+
+            if (_closeButton != null)
+                _closeButton.onClick.AddListener(() => OnCloseClicked?.Invoke());
+            else
+                Debug.LogWarning("[GrowthView] Close button is not assigned.");
         }
         _presenter?.Refresh();
     }
 
     private void OnDestroy() => _presenter?.Dispose();
 
-    public void SetCurrentLevel(int level) => _levelText.SetText("Lv.{0}", level);
+    public void SetCurrentLevel(int level)
+    {
+        if (_levelText == null)
+        {
+            Debug.LogWarning("[GrowthView] Level text is not assigned.");
+            return;
+        }
+
+        _levelText.SetText("Lv.{0}", level);
+    }
     public void SetRequiredResources(int gold, int parchment)
     {
-        _costGoldText.SetText("{0}", gold);
-        _costParchmentText.SetText("{0}", parchment);
+        if (_costGoldText != null)
+            _costGoldText.SetText("{0}", gold);
+        else
+            Debug.LogWarning("[GrowthView] Cost gold text is not assigned.");
+
+        if (_costParchmentText != null)
+            _costParchmentText.SetText("{0}", parchment);
+        else
+            Debug.LogWarning("[GrowthView] Cost parchment text is not assigned.");
     }
     public void SetCurrentResources(int gold, int parchment) { /* 보유량 표시 */ }
-    public void EnableLevelUpButton(bool canAfford) => _levelUpButton.interactable = canAfford;
+    public void EnableLevelUpButton(bool canAfford)
+    {
+        if (_levelUpButton == null)
+        {
+            Debug.LogWarning("[GrowthView] LevelUp button is not assigned.");
+            return;
+        }
+
+        _levelUpButton.interactable = canAfford;
+    }
     public void PlayLevelUpEffect() { /* 연출 */ }
 }
