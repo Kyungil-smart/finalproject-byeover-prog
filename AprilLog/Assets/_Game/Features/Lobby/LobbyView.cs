@@ -27,6 +27,12 @@ public class LobbyView : MonoBehaviour, ILobbyView
 
     private void Awake()
     {
+        if (_progress == null || _currency == null)
+        {
+            Debug.LogWarning("[LobbyView] Required model is missing. LobbyPresenter creation skipped.");
+            return;
+        }
+
         _presenter = new LobbyPresenter(this, _progress, _currency);
     }
 
@@ -46,12 +52,29 @@ public class LobbyView : MonoBehaviour, ILobbyView
 
     private void ApplyTexts() { }
 
-    public void SetPlayerInfo(string name, int level) => _levelText.SetText("Lv.{0}", level);
+    public void SetPlayerInfo(string name, int level)
+    {
+        if (_levelText == null)
+        {
+            Debug.LogWarning("[LobbyView] Level text is not assigned.");
+            return;
+        }
+
+        _levelText.SetText("Lv.{0}", level);
+    }
+
     public void SetStageButtons(StageDisplayData[] stages) { }
     public void SetCurrency(int gold, int parchment)
     {
-        _goldText.SetText("{0}", gold);
-        _parchmentText.SetText("{0}", parchment);
+        if (_goldText != null)
+            _goldText.SetText("{0}", gold);
+        else
+            Debug.LogWarning("[LobbyView] Gold text is not assigned.");
+
+        if (_parchmentText != null)
+            _parchmentText.SetText("{0}", parchment);
+        else
+            Debug.LogWarning("[LobbyView] Parchment text is not assigned.");
     }
     public void ShowResumePrompt() { OnResumeClicked?.Invoke(); }
 

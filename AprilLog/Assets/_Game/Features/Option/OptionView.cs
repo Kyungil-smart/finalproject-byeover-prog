@@ -30,19 +30,40 @@ public class OptionView : MonoBehaviour, IOptionView
         if (!_isInitialized)
         {
             _isInitialized = true;
+            if (_navigator == null || _localization == null)
+                Debug.LogWarning("[OptionView] Optional dependency is missing. Some option features will be disabled.");
+
             _presenter = new OptionPresenter(this, _navigator, _localization);
 
-            _bgmSlider.onValueChanged.AddListener(v => OnBGMChanged?.Invoke(v));
-            _sfxSlider.onValueChanged.AddListener(v => OnSFXChanged?.Invoke(v));
-            _langButton.onClick.AddListener(() => OnLanguageToggled?.Invoke());
-            _closeButton.onClick.AddListener(() => OnCloseClicked?.Invoke());
+            if (_bgmSlider != null)
+                _bgmSlider.onValueChanged.AddListener(v => OnBGMChanged?.Invoke(v));
+            else
+                Debug.LogWarning("[OptionView] BGM slider is not assigned.");
+
+            if (_sfxSlider != null)
+                _sfxSlider.onValueChanged.AddListener(v => OnSFXChanged?.Invoke(v));
+            else
+                Debug.LogWarning("[OptionView] SFX slider is not assigned.");
+
+            if (_langButton != null)
+                _langButton.onClick.AddListener(() => OnLanguageToggled?.Invoke());
+            else
+                Debug.LogWarning("[OptionView] Language button is not assigned.");
+
+            if (_closeButton != null)
+                _closeButton.onClick.AddListener(() => OnCloseClicked?.Invoke());
+            else
+                Debug.LogWarning("[OptionView] Close button is not assigned.");
         }
 
         // 현재 값으로 슬라이더 세팅
         if (AudioManager.Instance != null)
         {
-            _bgmSlider.SetValueWithoutNotify(AudioManager.Instance.BGMVolume);
-            _sfxSlider.SetValueWithoutNotify(AudioManager.Instance.SFXVolume);
+            if (_bgmSlider != null)
+                _bgmSlider.SetValueWithoutNotify(AudioManager.Instance.BGMVolume);
+
+            if (_sfxSlider != null)
+                _sfxSlider.SetValueWithoutNotify(AudioManager.Instance.SFXVolume);
         }
     }
 
@@ -50,6 +71,25 @@ public class OptionView : MonoBehaviour, IOptionView
 
     public void Show() => gameObject.SetActive(true);
     public void Hide() => gameObject.SetActive(false);
-    public void SetBGMVolume(float ratio) => _bgmSlider.SetValueWithoutNotify(ratio);
-    public void SetSFXVolume(float ratio) => _sfxSlider.SetValueWithoutNotify(ratio);
+    public void SetBGMVolume(float ratio)
+    {
+        if (_bgmSlider == null)
+        {
+            Debug.LogWarning("[OptionView] BGM slider is not assigned.");
+            return;
+        }
+
+        _bgmSlider.SetValueWithoutNotify(ratio);
+    }
+
+    public void SetSFXVolume(float ratio)
+    {
+        if (_sfxSlider == null)
+        {
+            Debug.LogWarning("[OptionView] SFX slider is not assigned.");
+            return;
+        }
+
+        _sfxSlider.SetValueWithoutNotify(ratio);
+    }
 }

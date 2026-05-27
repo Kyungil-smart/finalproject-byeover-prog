@@ -3,6 +3,7 @@
 // 수정자 : 최동훈 - 프리팹 경로 수정
 // 수정자 : 정승우 - InitRepo 이중 호출 방지 + 아키텍처 연동
 
+using System;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -87,11 +88,29 @@ public class DataManager : MonoBehaviour
             return;
         }
 
-        _characterRepo.Initialize();
-        _stageRepo.Initialize();
-        _configRepo.Initialize();
+        InitializeRepo(nameof(_characterRepo), _characterRepo, () => _characterRepo.Initialize());
+        InitializeRepo(nameof(_stageRepo), _stageRepo, () => _stageRepo.Initialize());
+        InitializeRepo(nameof(_configRepo), _configRepo, () => _configRepo.Initialize());
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");
+    }
+
+    private void InitializeRepo(string repoName, MonoBehaviour repo, Action initializeAction)
+    {
+        if (repo == null)
+        {
+            Debug.LogError($"[DataManager] {repoName} is not assigned. Repository initialization skipped.");
+            return;
+        }
+
+        try
+        {
+            initializeAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"[DataManager] {repoName} initialization failed.\n{exception}");
+        }
     }
 }

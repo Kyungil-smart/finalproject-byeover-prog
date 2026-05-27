@@ -21,8 +21,21 @@ public class BookView : MonoBehaviour, IBookView
         if (!_isInitialized)
         {
             _isInitialized = true;
+            if (_bookModel == null)
+            {
+                Debug.LogWarning("[BookView] EnchantBookModel is not assigned. BookPresenter creation skipped.");
+                return;
+            }
+
             _presenter = new BookPresenter(this, _bookModel);
         }
+
+        if (_bookModel == null)
+        {
+            Debug.LogWarning("[BookView] EnchantBookModel is not assigned. Refresh skipped.");
+            return;
+        }
+
         _bookModel.RefreshEntries();
     }
 
