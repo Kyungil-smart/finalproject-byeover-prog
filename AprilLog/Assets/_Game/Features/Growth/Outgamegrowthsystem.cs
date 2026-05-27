@@ -47,6 +47,11 @@ public class OutGameGrowthSystem : MonoBehaviour
         if (!CanLevelUp()) return;
  
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
+        if (data == null)
+        {
+            Debug.LogWarning("[OutGameGrowthSystem] OutLevel data is missing. LevelUp skipped.");
+            return;
+        }
  
         _currency.SpendGold(data.RequiredGold);
         _currency.SpendParchment(data.RequiredParchment);
