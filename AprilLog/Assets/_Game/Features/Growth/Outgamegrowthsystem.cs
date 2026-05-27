@@ -22,7 +22,7 @@ public class OutGameGrowthSystem : MonoBehaviour
     {
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
         if (data == null) return false;
-        return _currency.CanAfford(data.ConsumeGold, data.ConsumeParchment);
+        return _currency.CanAfford(data.RequiredGold, data.RequiredParchment);
     }
  
     public void LevelUp()
@@ -31,8 +31,8 @@ public class OutGameGrowthSystem : MonoBehaviour
  
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
  
-        _currency.SpendGold(data.ConsumeGold);
-        _currency.SpendParchment(data.ConsumeParchment);
+        _currency.SpendGold(data.RequiredGold);
+        _currency.SpendParchment(data.RequiredParchment);
         _progress.SetCharacterLevel(_progress.CharacterLevel + 1);
  
         if (GameManager.Instance != null)
