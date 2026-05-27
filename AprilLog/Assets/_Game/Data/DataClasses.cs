@@ -42,6 +42,7 @@ public class CommonStatusData
     public int Character_ID;
     public int MaxHP;
     public int Attack;
+    public float BaseAttackSpeed;
 }
 
 // 주인공 전용 스탯
@@ -65,11 +66,12 @@ public class CharacterStatusData
 public class MonsterStatusData
 {
     public int Character_ID;
-    public float BaseAttackSpeed;
     public int Defense;
     public float MoveSpeed;
     public int Range;
     public int EXP;
+    public string MovementPattern;  // Straight, Zigzag
+    public int ZigzagAmplitude;
 }
 
 // 스킬 관련
