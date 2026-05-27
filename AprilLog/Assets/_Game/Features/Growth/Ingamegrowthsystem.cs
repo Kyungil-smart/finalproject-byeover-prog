@@ -76,7 +76,7 @@ public class InGameGrowthSystem : MonoBehaviour
             CurrentEXP -= required;
             CurrentLevel++;
  
-            _playerModel.Heal(levelData.HPRecovery);
+            _playerModel.Heal(Mathf.RoundToInt(levelData.HPRecovery));
             OnLevelUp?.Invoke(CurrentLevel);
  
             if (_navigator != null)

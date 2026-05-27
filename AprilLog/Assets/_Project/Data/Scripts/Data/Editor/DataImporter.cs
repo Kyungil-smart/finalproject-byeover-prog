@@ -1,8 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 데이터 자동화 도구 - JSON -> SO 변환 + FK/PK 검증
+// 수정자 : Codex
+// 수정내용 : JSON 누락 경고와 기존 JSON 폴더 fallback을 추가
 
 #if UNITY_EDITOR
-using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -11,6 +12,7 @@ using UnityEngine;
 public static class DataImporter
 {
     private const string JSON_FOLDER = "Assets/Resources/Data/Tables";
+    private const string LEGACY_JSON_FOLDER = "Assets/_Project/Data/JSON";
     private const string SO_FOLDER = "Assets/_Project/Data/SO";
 
     [MenuItem("Tools/Data/경로 안내")]
@@ -19,6 +21,7 @@ public static class DataImporter
         Debug.Log("===========================================");
         Debug.Log("[DataImporter] 경로 안내");
         Debug.Log($"  JSON 입력 폴더 : {Path.GetFullPath(JSON_FOLDER)}");
+        Debug.Log($"  기존 JSON 폴더 : {Path.GetFullPath(LEGACY_JSON_FOLDER)}");
         Debug.Log($"  SO 출력 폴더   : {Path.GetFullPath(SO_FOLDER)}");
         Debug.Log("  JSON 파일을 입력 폴더에 넣고 'Import All' 실행하세요.");
         Debug.Log("===========================================");
@@ -49,30 +52,41 @@ public static class DataImporter
         Debug.Log($"  SO 출력   : {Path.GetFullPath(SO_FOLDER)}");
         Debug.Log("===========================================");
 
-        if (!Directory.Exists(JSON_FOLDER))
+        bool hasPrimaryFolder = Directory.Exists(JSON_FOLDER);
+        bool hasLegacyFolder = Directory.Exists(LEGACY_JSON_FOLDER);
+
+        if (!hasPrimaryFolder && !hasLegacyFolder)
         {
             Directory.CreateDirectory(JSON_FOLDER);
             Debug.LogWarning($"[DataImporter] JSON 폴더가 없어서 생성함. 여기에 JSON 넣으세요:\n  {Path.GetFullPath(JSON_FOLDER)}");
             return;
         }
 
-        // 폴더 안에 있는 JSON 파일 목록 출력
-        var jsonFiles = Directory.GetFiles(JSON_FOLDER, "*.json");
-        if (jsonFiles.Length == 0)
+        var jsonFiles = CollectJsonFiles();
+        if (jsonFiles.Count == 0)
         {
-            Debug.LogWarning($"[DataImporter] JSON 파일이 0개입니다. 여기에 넣으세요:\n  {Path.GetFullPath(JSON_FOLDER)}");
+            Debug.LogWarning(
+                $"[DataImporter] JSON 파일이 0개입니다.\n" +
+                $"  기본 폴더: {Path.GetFullPath(JSON_FOLDER)}\n" +
+                $"  기존 폴더: {Path.GetFullPath(LEGACY_JSON_FOLDER)}");
             return;
         }
 
-        Debug.Log($"[DataImporter] 발견된 JSON 파일 {jsonFiles.Length}개:");
-        for (int i = 0; i < jsonFiles.Length; i++)
-            Debug.Log($"  - {Path.GetFileName(jsonFiles[i])}");
+        Debug.Log($"[DataImporter] 발견된 JSON 파일 {jsonFiles.Count}개:");
+        for (int i = 0; i < jsonFiles.Count; i++)
+            Debug.Log($"  - {jsonFiles[i]}");
 
         if (!Directory.Exists(SO_FOLDER))
             Directory.CreateDirectory(SO_FOLDER);
+        AssetDatabase.Refresh();
 
         int totalRows = 0;
-        int errors = DataValidator.ValidateAll(JSON_FOLDER);
+        int errors = 0;
+        if (Directory.Exists(JSON_FOLDER))
+            errors += DataValidator.ValidateAll(JSON_FOLDER);
+        if (Directory.Exists(LEGACY_JSON_FOLDER))
+            errors += DataValidator.ValidateAll(LEGACY_JSON_FOLDER);
+
         if (errors > 0)
         {
             Debug.LogError($"[DataImporter] 검증 에러 {errors}개. SO 생성 안 함.");
@@ -129,8 +143,15 @@ public static class DataImporter
         where TSO : DataTable<TData>
         where TData : class
     {
-        string jsonPath = Path.Combine(JSON_FOLDER, jsonFileName + ".json");
-        if (!File.Exists(jsonPath)) return 0;
+        string jsonPath = ResolveJsonPath(jsonFileName, out bool isLegacy);
+        if (string.IsNullOrEmpty(jsonPath))
+        {
+            Debug.LogWarning($"[DataImporter] JSON 없음: {jsonFileName}.json");
+            return 0;
+        }
+
+        if (isLegacy)
+            Debug.LogWarning($"[DataImporter] 기존 JSON 폴더에서 가져옴: {jsonFileName}.json");
 
         string jsonText = File.ReadAllText(jsonPath);
         var wrapper = JsonUtility.FromJson<DataArray<TData>>(jsonText);
@@ -142,7 +163,7 @@ public static class DataImporter
         }
 
         string soTypeName = typeof(TSO).Name;
-        string soPath = Path.Combine(SO_FOLDER, soTypeName + ".asset");
+        string soPath = CombineUnityPath(SO_FOLDER, soTypeName + ".asset");
         var so = AssetDatabase.LoadAssetAtPath<TSO>(soPath);
 
         if (so == null)
@@ -157,6 +178,46 @@ public static class DataImporter
 
         Debug.Log($"  {jsonFileName}.json -> {soPath} ({wrapper.data.Length}행)");
         return wrapper.data.Length;
+    }
+
+    private static List<string> CollectJsonFiles()
+    {
+        var files = new List<string>();
+        AddJsonFiles(files, JSON_FOLDER, "기본");
+        AddJsonFiles(files, LEGACY_JSON_FOLDER, "기존");
+        return files;
+    }
+
+    private static void AddJsonFiles(List<string> files, string folder, string label)
+    {
+        if (!Directory.Exists(folder)) return;
+
+        string[] paths = Directory.GetFiles(folder, "*.json");
+        for (int i = 0; i < paths.Length; i++)
+            files.Add($"{label}: {Path.GetFileName(paths[i])}");
+    }
+
+    private static string ResolveJsonPath(string jsonFileName, out bool isLegacy)
+    {
+        isLegacy = false;
+
+        string primaryPath = CombineUnityPath(JSON_FOLDER, jsonFileName + ".json");
+        if (File.Exists(primaryPath))
+            return primaryPath;
+
+        string legacyPath = CombineUnityPath(LEGACY_JSON_FOLDER, jsonFileName + ".json");
+        if (File.Exists(legacyPath))
+        {
+            isLegacy = true;
+            return legacyPath;
+        }
+
+        return null;
+    }
+
+    private static string CombineUnityPath(string folder, string fileName)
+    {
+        return Path.Combine(folder, fileName).Replace("\\", "/");
     }
 }
 
