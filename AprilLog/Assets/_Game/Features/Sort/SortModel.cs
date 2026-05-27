@@ -1,5 +1,7 @@
-// 담당자 : 정승우
+// 담당자 : 최동훈
 // 설명   : Sort 퍼즐 Model -- 슬롯 상태 데이터 + 이벤트
+// 수정 사항 : 보드 내 모든 슬롯을 무작위 유닛으로 채우는 랜덤 배치(ShuffleBoard) 로직 구현
+// 최종 변경 일자 : 26.05.27
 
 using System;
 using System.Collections.Generic;
@@ -91,6 +93,22 @@ public class SortModel : MonoBehaviour
                 _puzzleTables[t][s] = -1;
 
         OnBoardReset?.Invoke();
+    }
+
+    // ---------- 랜덤 배치 및 셔플 ----------
+    public void ShuffleBoard()
+    {
+        for (int t = 0; t < TABLE_COUNT; t++)
+        {
+            for (int s = 0; s < SLOTS_PER_TABLE; s++)
+            {
+                int randomUnitType = UnityEngine.Random.Range(0, UNIT_TYPE_COUNT);
+
+                _puzzleTables[t][s] = randomUnitType;
+
+                OnSlotChanged?.Invoke(t, s, randomUnitType);
+            }
+        }
     }
 
     // ---------- 조회 ----------
