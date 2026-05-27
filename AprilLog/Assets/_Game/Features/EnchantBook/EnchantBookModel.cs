@@ -29,18 +29,38 @@ public class EnchantBookModel : MonoBehaviour
     public void RefreshEntries()
     {
         _allEntries.Clear();
-        var allMasters = DataManager.Instance.CharacterRepo.GetAllEnchantMasters();
+        DataManager dataManager = DataManager.Instance;
+        if (dataManager == null || dataManager.CharacterRepo == null)
+        {
+            Debug.LogWarning("[EnchantBookModel] CharacterRepo is missing. Empty enchant book will be used.");
+            OnBookUpdated?.Invoke();
+            return;
+        }
+
+        if (_enchantModel == null)
+            Debug.LogWarning("[EnchantBookModel] EnchantModel is not assigned. Owned state will be treated as false.");
+
+        var allMasters = dataManager.CharacterRepo.GetAllEnchantMasters();
+        if (allMasters == null)
+        {
+            Debug.LogWarning("[EnchantBookModel] Enchant master data is missing. Empty enchant book will be used.");
+            OnBookUpdated?.Invoke();
+            return;
+        }
 
         foreach (var pair in allMasters)
         {
             var master = pair.Value;
+            if (master == null)
+                continue;
+
             _allEntries.Add(new EnchantBookDisplayData
             {
                 EnchantId = master.EnchantID,
                 Name = master.Name,
                 Type = master.EnchantType,
-                IsOwned = _enchantModel.HasEnchant(master.EnchantID),
-                Level = _enchantModel.GetEnchantLevel(master.EnchantID),
+                IsOwned = _enchantModel != null && _enchantModel.HasEnchant(master.EnchantID),
+                Level = _enchantModel != null ? _enchantModel.GetEnchantLevel(master.EnchantID) : 0,
                 MaxLevel = master.MaxLevel
             });
         }

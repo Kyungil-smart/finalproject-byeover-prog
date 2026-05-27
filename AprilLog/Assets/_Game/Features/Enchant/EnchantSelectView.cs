@@ -4,6 +4,9 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
+// 수정자 : Codex
+// 수정내용 : Model/UI 참조가 비어 있을 때 초기화를 건너뛰어 테스트 씬 NullReference 방지
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,6 +37,9 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     {
         if (!_isInitialized)
         {
+            if (!HasRequiredReferences())
+                return;
+
             _isInitialized = true;
             _presenter = new EnchantSelectPresenter(this, _enchantModel, DataManager.Instance.CharacterRepo, _navigator);
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
@@ -53,4 +59,13 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     // View 버튼에서 호출
     public void SelectChoice(int index) => OnChoiceSelected?.Invoke(index);
     public void ConfirmDelete(int index) => OnDeleteConfirmed?.Invoke(index);
+
+    private bool HasRequiredReferences()
+    {
+        if (_enchantModel != null && _navigator != null && _skipButton != null && DataManager.Instance.CharacterRepo != null)
+            return true;
+
+        Debug.LogWarning("[EnchantSelectView] 필수 참조가 비어 있어 초기화를 건너뜁니다.", this);
+        return false;
+    }
 }

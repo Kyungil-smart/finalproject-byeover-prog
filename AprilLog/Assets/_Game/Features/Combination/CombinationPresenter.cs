@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 조합식 Presenter
 
+// 수정자 : Codex
+// 수정내용 : Model 참조가 비어 있을 때 이벤트 구독 NullReference 방지
+
 public class CombinationPresenter
 {
     private readonly ICombinationView _view;
@@ -11,6 +14,8 @@ public class CombinationPresenter
         _view = view;
         _model = model;
 
+        if (_model == null) return;
+
         _model.OnIngredientFulfilled += HandleFulfilled;
         _model.OnRecipeCompleted += HandleCompleted;
         _model.OnRecipeConsumed += HandleConsumed;
@@ -18,6 +23,8 @@ public class CombinationPresenter
 
     public void Dispose()
     {
+        if (_model == null) return;
+
         _model.OnIngredientFulfilled -= HandleFulfilled;
         _model.OnRecipeCompleted -= HandleCompleted;
         _model.OnRecipeConsumed -= HandleConsumed;

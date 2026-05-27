@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 조합식 View -- 재료 충족 상태 표시
 
+// 수정자 : Codex
+// 수정내용 : CombinationModel 참조가 비어 있을 때 Presenter 생성을 건너뛰어 테스트 씬 NullReference 방지
+
 using UnityEngine;
 
 /// <summary>
@@ -18,6 +21,12 @@ public class CombinationView : MonoBehaviour, ICombinationView
 
     private void Awake()
     {
+        if (_model == null)
+        {
+            Debug.LogWarning("[CombinationView] CombinationModel 참조가 비어 있어 초기화를 건너뜁니다.", this);
+            return;
+        }
+
         _presenter = new CombinationPresenter(this, _model);
     }
 

@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 인게임 HUD Presenter -- Model 구독해서 View 갱신
 
+// 수정자 : Codex
+// 수정내용 : Model 참조가 비어 있을 때 이벤트 구독 NullReference 방지
+
 using UnityEngine;
 
 public class InGameHUDPresenter
@@ -15,6 +18,8 @@ public class InGameHUDPresenter
         _player = player;
         _combo = combo;
 
+        if (_player == null || _combo == null) return;
+
         _player.OnHPChanged += HandleHP;
         _combo.OnComboChanged += HandleCombo;
         _combo.OnComboTimerChanged += HandleTimer;
@@ -22,6 +27,8 @@ public class InGameHUDPresenter
 
     public void Dispose()
     {
+        if (_player == null || _combo == null) return;
+
         _player.OnHPChanged -= HandleHP;
         _combo.OnComboChanged -= HandleCombo;
         _combo.OnComboTimerChanged -= HandleTimer;
