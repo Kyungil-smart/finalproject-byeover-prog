@@ -87,7 +87,11 @@ public class CombatSystem : MonoBehaviour
     public int CalculateDamage(int baseDmg)
     {
         int comboBonus = _comboModel.GetComboBonus();
-        float dmg = baseDmg + comboBonus;
+
+        // 추가 : 홍정옥
+        // 내용 : CommonStatus와 OutLevel에서 PlayerModel에 반영된 Attack을 전투 데미지에 연결
+        float playerAttack = _playerModel != null ? _playerModel.Attack : 0f;
+        float dmg = playerAttack + baseDmg + comboBonus;
  
         var stats = _characterRepo.GetCharacterStatus(1);
  
