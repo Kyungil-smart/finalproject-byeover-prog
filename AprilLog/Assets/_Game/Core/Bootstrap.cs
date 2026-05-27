@@ -4,10 +4,13 @@
 // 1차 수정자 : 김영찬
 // 수정 내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, _boot 씬에서만 초기화 하면 되도록 수정
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 게스트 로그인 자동 실행/무한 대기 제거, 로그인 성공/실패 이벤트 기반 분기 추가
 
+
+using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
 /// Boot 씬에서 모든 매니저와 데이터를 의존성 순서대로 초기화한 뒤 Lobby 씬으로 전환한다.
@@ -20,6 +23,10 @@ public class Bootstrap : MonoBehaviour
     [SerializeField] private DataManager _data;
     [SerializeField] private LocalizationManager _localization;
     [SerializeField] private PoolManager _poolManager;
+
+    [Header("로그인")]
+    [Tooltip("로그인 UI 연결 전 개발 확인용 자동 게스트 로그인 여부")]
+    [SerializeField] private bool _autoGuestSignInForDevelopment; // 추가: 조규민 - Login UI 연결 전 테스트할 때만 Inspector에서 켠다.
 
     // ---------- 시작 ----------
     private void Start()
@@ -60,14 +67,48 @@ public class Bootstrap : MonoBehaviour
             }
             else
             {
-                // 로그인 화면 표시하고 유저가 버튼 누를 때까지 대기
+                LoginRuntimeUIFactory.EnsureExists(); // 추가: 조규민 - 씬에 LoginView가 없으면 최소 로그인 UI를 생성한다.
                 GameManager.Instance.ShowLoginUI();
 
-                // TODO [2026-05-21 정승우] #후순위
-                // 지금은 로그인 UI가 없어서 바로 게스트 로그인으로 넘김
-                // 나중에 Login 씬이나 로그인 팝업이 만들어지면 대기 로직으로 바꿔야 함
-                GameManager.Instance.StartGuestSignIn();
-                yield return new WaitUntil(() => GameManager.Instance.IsLoggedIn);
+                // 추가: 조규민 - Login UI에서 게스트 로그인 버튼을 누를 때까지 기다리고, 실패하면 로비로 넘기지 않는다.
+                bool loginCompleted = false;
+                bool loginSucceeded = false;
+                string loginError = null;
+
+                Action<string> onLoginSucceeded = null;
+                Action<string> onLoginFailed = null;
+
+                onLoginSucceeded = (uid) =>
+                {
+                    loginSucceeded = true;
+                    loginCompleted = true;
+                };
+
+                onLoginFailed = (error) =>
+                {
+                    loginError = error;
+                    loginCompleted = true;
+                };
+
+                GameManager.Instance.OnLoginSucceeded += onLoginSucceeded;
+                GameManager.Instance.OnLoginFailed += onLoginFailed;
+
+                if (_autoGuestSignInForDevelopment)
+                {
+                    GameManager.Instance.StartGuestSignIn();
+                }
+
+                yield return new WaitUntil(() => loginCompleted);
+
+                GameManager.Instance.OnLoginSucceeded -= onLoginSucceeded;
+                GameManager.Instance.OnLoginFailed -= onLoginFailed;
+
+                if (!loginSucceeded)
+                {
+                    Debug.LogWarning("[Bootstrap] 로그인 실패. 로그인 화면 유지: " + loginError);
+                    yield break;
+                }
+
                 Debug.Log("[Bootstrap] 로그인 완료");
             }
         }
