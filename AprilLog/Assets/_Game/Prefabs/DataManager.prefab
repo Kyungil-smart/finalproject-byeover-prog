@@ -44,10 +44,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af9dbfac70216f34ab48954bf941b27d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterRepo
-  _characterMasterTable: {fileID: 0}
-  _commonStatusTable: {fileID: 0}
-  _characterStatusTable: {fileID: 0}
-  _monsterStatusTable: {fileID: 0}
+  _characterMasterTable: {fileID: 11400000, guid: e6a5323f6decfa4458753462521c5f6d, type: 2}
+  _commonStatusTable: {fileID: 11400000, guid: 690bda1b322869343a7b963a11dbace5, type: 2}
+  _characterStatusTable: {fileID: 11400000, guid: b4f8c15678dbe39448d57aa888f52d40, type: 2}
+  _monsterStatusTable: {fileID: 11400000, guid: 31290486419cda74788e6b35ce3eebf2, type: 2}
   _skillMasterTable: {fileID: 0}
   _skillDataTable: {fileID: 0}
   _effectTable: {fileID: 0}
@@ -98,10 +98,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d82adcc485d5f7a45a466f8e10caf574, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageRepo
-  _chapterTable: {fileID: 0}
-  _stageTable: {fileID: 0}
-  _stageMonsterTable: {fileID: 0}
-  _monsterScalingTable: {fileID: 0}
+  _chapterTable: {fileID: 11400000, guid: cf59098f582e45e4fbc65526dd6a958d, type: 2}
+  _stageTable: {fileID: 11400000, guid: 4f0b99107964cd743a520c1115b0a5b2, type: 2}
+  _poolMasterTable: {fileID: 11400000, guid: 5e589096dd9044c47a43d33e73ffcb41, type: 2}
+  _poolTable: {fileID: 11400000, guid: cdabc6a5e18f50e4ba5f7973a12063d5, type: 2}
+  _spawnRuleTable: {fileID: 11400000, guid: 4bdf428f8e099da46b0df54b200ffd62, type: 2}
+  _scalingTable: {fileID: 11400000, guid: ce80a3dce09ac43498f3479e14c03406, type: 2}
 --- !u!1 &5821607152028697500
 GameObject:
   m_ObjectHideFlags: 0
@@ -196,7 +198,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 250ce29f8f95453478f83cb509aacd89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConfigRepo
-  _inLevelTable: {fileID: 0}
-  _outGrowthTable: {fileID: 0}
+  _inLevelTable: {fileID: 11400000, guid: 419f9975f75b85a40a3e4731c6ee64a0, type: 2}
+  _outLevelTable: {fileID: 11400000, guid: c5fd848ea3763d9419afbe341734a8e5, type: 2}
   _achievementTable: {fileID: 0}
-  _changeRewardTable: {fileID: 0}
+  _changeRewardTable: {fileID: 11400000, guid: 0f79afb42e5249e44996d689df8599ac, type: 2}
