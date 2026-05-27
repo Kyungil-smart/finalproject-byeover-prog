@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 모든 데이터 테이블의 행 구조를 정의한다.
@@ -235,8 +236,8 @@ public class MonsterStageScalingData
 public class InLevelData
 {
     public int InLevel;
-    public int RequiredExp;
-    public int HPRecovery;
+    public int RequiredEXP;
+    public float HPRecovery;
 }
 
 // 아웃게임 레벨업 비용 + 스탯 증가량
@@ -245,8 +246,8 @@ public class InLevelData
 public class OutLevelData
 {
     public int OutLevel;
-    public int ConsumeGold;
-    public int ConsumeParchment;
+    public int RequiredGold;
+    public int RequiredParchment;
     public int MaxHP;
     public int Attack;
     public int StunPower;

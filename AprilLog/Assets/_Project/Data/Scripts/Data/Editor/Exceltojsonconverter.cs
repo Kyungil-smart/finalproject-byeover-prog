@@ -1,7 +1,7 @@
-// ========================================
 // 담당자 : 정승우
 // 설명   : Excel → JSON 변환 에디터 도구 (외부 DLL 불필요)
-// ========================================
+// 수정자 : Codex
+// 수정내용 : JSON 출력 인코딩을 UTF-8 BOM 없음으로 고정
 
 #if UNITY_EDITOR
 using System;
@@ -113,11 +113,18 @@ public static class ExcelToJsonConverter
             }
 
             string json = ConvertSheet(sheet);
-            string fileName = ToSnakeCase(sheet.Name) + ".json";
+            string jsonName = DataTableSchemaRegistry.TryGetBySheetName(sheet.Name, out var schema)
+                ? schema.JsonName
+                : DataTableSchemaRegistry.ToDefaultJsonName(sheet.Name);
+            string fileName = jsonName + ".json";
             string outputPath = Path.Combine(JSON_OUTPUT, fileName);
 
-            File.WriteAllText(outputPath, json, Encoding.UTF8);
+            File.WriteAllText(outputPath, json, new UTF8Encoding(false));
             Debug.Log($"[DataConverter] {sheet.Name} -> {fileName}");
+
+            if (!DataTableSchemaRegistry.TryGetByJsonName(jsonName, out _))
+                Debug.LogWarning($"[DataConverter] 등록되지 않은 데이터 시트입니다: {sheet.Name}. JSON은 생성했지만 SO Import 대상은 아닙니다.");
+
             converted++;
         }
 
@@ -271,12 +278,6 @@ public static class ExcelToJsonConverter
                 .Replace("\n", "\\n")
                 .Replace("\r", "")
                 .Replace("\t", "\\t");
-    }
-
-    private static string ToSnakeCase(string input)
-    {
-        string result = Regex.Replace(input.Trim(), @"(?<!^)(?=[A-Z])", "_");
-        return result.ToLower().Replace(" ", "_");
     }
 
     private static void EnsureDirectory(string path)

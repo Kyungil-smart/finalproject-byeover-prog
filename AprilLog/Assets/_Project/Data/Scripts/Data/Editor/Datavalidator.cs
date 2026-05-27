@@ -1,11 +1,12 @@
-// ========================================
 // 담당자 : 정승우
 // 설명   : JSON 데이터 무결성 검증 에디터 도구
-// ========================================
+// 수정자 : Codex
+// 수정내용 : JSON 숫자 파싱을 문화권 영향 없이 처리
 
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -158,7 +159,7 @@ public static class DataValidator
         {
             if (!row.ContainsKey(field)) continue;
 
-            if (float.TryParse(row[field].ToString(), out float val))
+            if (float.TryParse(row[field].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out float val))
             {
                 if (val < min || val > max)
                 {
@@ -265,7 +266,7 @@ public static class DataValidator
     /// </summary>
     private static string NormalizeId(string val)
     {
-        if (double.TryParse(val, out double d) && d == Math.Floor(d))
+        if (double.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out double d) && d == Math.Floor(d))
             return ((int)d).ToString();
         return val;
     }
@@ -396,7 +397,7 @@ public static class SimpleJsonParser
                 while (numEnd < obj.Length && obj[numEnd] != ',' && obj[numEnd] != '}')
                     numEnd++;
                 string numStr = obj.Substring(i, numEnd - i).Trim();
-                if (double.TryParse(numStr, out double d))
+                if (double.TryParse(numStr, NumberStyles.Any, CultureInfo.InvariantCulture, out double d))
                     value = d;
                 else
                     value = numStr;

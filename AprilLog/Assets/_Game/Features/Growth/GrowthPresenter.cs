@@ -50,7 +50,7 @@ public class GrowthPresenter
         var data = _configRepo.GetOutLevel(_progress.CharacterLevel);
         if (data != null)
         {
-            _view.SetRequiredResources(data.ConsumeGold, data.ConsumeParchment);
+            _view.SetRequiredResources(data.RequiredGold, data.RequiredParchment);
             _view.EnableLevelUpButton(_growth != null && _growth.CanLevelUp());
         }
         else

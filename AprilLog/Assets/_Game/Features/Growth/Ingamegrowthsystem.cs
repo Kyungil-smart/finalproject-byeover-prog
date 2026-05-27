@@ -69,14 +69,14 @@ public class InGameGrowthSystem : MonoBehaviour
         var levelData = _configRepo.GetInLevel(CurrentLevel);
         if (levelData == null) return;
  
-        int required = levelData.RequiredExp;
+        int required = levelData.RequiredEXP;
  
         while (CurrentEXP >= required && CurrentLevel < _maxLevel)
         {
             CurrentEXP -= required;
             CurrentLevel++;
  
-            _playerModel.Heal(levelData.HPRecovery);
+            _playerModel.Heal(Mathf.RoundToInt(levelData.HPRecovery));
             OnLevelUp?.Invoke(CurrentLevel);
  
             if (_navigator != null)
@@ -84,7 +84,7 @@ public class InGameGrowthSystem : MonoBehaviour
  
             levelData = _configRepo.GetInLevel(CurrentLevel);
             if (levelData == null) break;
-            required = levelData.RequiredExp;
+            required = levelData.RequiredEXP;
         }
  
         OnEXPChanged?.Invoke(CurrentEXP, required);
@@ -95,8 +95,8 @@ public class InGameGrowthSystem : MonoBehaviour
         var levelData = _configRepo.GetInLevel(CurrentLevel);
         if (levelData == null) return;
  
-        int penalty = Mathf.RoundToInt(levelData.RequiredExp * 0.1f);
+        int penalty = Mathf.RoundToInt(levelData.RequiredEXP * 0.1f);
         CurrentEXP = Mathf.Max(0, CurrentEXP - penalty);
-        OnEXPChanged?.Invoke(CurrentEXP, levelData.RequiredExp);
+        OnEXPChanged?.Invoke(CurrentEXP, levelData.RequiredEXP);
     }
 }
