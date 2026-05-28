@@ -6,13 +6,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 로그인 화면의 순수 UI 표시와 입력 이벤트 전달을 담당한다.
+// 로그인 화면의 필수 UI 표시와 입력 이벤트 전달을 담당한다.
 public class LoginView : MonoBehaviour, ILoginView
 {
     public event Action OnGuestLoginClicked;
     public event Action OnGoogleLoginClicked;
     public event Action<string, string> OnRegisterClicked;
     public event Action<bool> OnTermsAgreementChanged;
+    public event Action OnTermsConfirmed; // 약관 확인 버튼 입력을 Presenter로 전달한다.
     public event Action OnTermsPopupClicked;
     public event Action OnPopupClosed;
 
@@ -25,6 +26,8 @@ public class LoginView : MonoBehaviour, ILoginView
 
     [Header("약관")]
     [SerializeField] private Toggle _termsToggle;
+    [SerializeField] private GameObject _termsAgreementPanel; // 로그인 화면 위에 표시할 약관 동의 모달 패널이다.
+    [SerializeField] private Button _termsConfirmButton; // 약관 체크 후 로그인 버튼을 열기 위한 확인 버튼이다.
 
     [Header("표시")]
     [SerializeField] private GameObject _loadingIndicator;
@@ -41,36 +44,6 @@ public class LoginView : MonoBehaviour, ILoginView
 
     private LoginPresenter _presenter;
     private LoginModel _model;
-
-    // 런타임 생성 UI가 인스펙터 없이 필요한 참조를 주입할 수 있게 한다.
-    public void Configure(Button guestLoginButton, Button googleLoginButton, Button registerButton,
-        Button termsPopupButton, Button popupCloseButton, Toggle termsToggle,
-        GameObject loadingIndicator, GameObject registerPanel, GameObject popupPanel,
-        TMP_InputField playerIdInputField, TMP_InputField passwordInputField,
-        TMP_Text popupMessageText, TMP_Text registerMessageText, TMP_Text appVersionText, TMP_Text uidText)
-    {
-        _guestLoginButton = guestLoginButton;
-        _googleLoginButton = googleLoginButton;
-        _registerButton = registerButton;
-        _termsPopupButton = termsPopupButton;
-        _popupCloseButton = popupCloseButton;
-        _termsToggle = termsToggle;
-        _loadingIndicator = loadingIndicator;
-        _registerPanel = registerPanel;
-        _popupPanel = popupPanel;
-        _playerIdInputField = playerIdInputField;
-        _passwordInputField = passwordInputField;
-        _popupMessageText = popupMessageText;
-        _registerMessageText = registerMessageText;
-        _appVersionText = appVersionText;
-        _uidText = uidText;
-
-        BindButtons();
-        ValidateRequiredReferences();
-        HidePopup();
-        HideRegisterPanel();
-        SetLoading(false);
-    }
 
     // View 생성 시 Model과 버튼 이벤트를 준비한다.
     private void Awake()
@@ -93,7 +66,7 @@ public class LoginView : MonoBehaviour, ILoginView
         _presenter = new LoginPresenter(this, _model);
     }
 
-    // View 제거 시 Presenter 이벤트 구독을 해제한다.
+    // View 제거 시 Presenter와 Unity UI 리스너를 정리한다.
     private void OnDestroy()
     {
         _presenter?.Dispose();
@@ -120,6 +93,10 @@ public class LoginView : MonoBehaviour, ILoginView
 
         if (_termsToggle != null)
             _termsToggle.onValueChanged.AddListener(NotifyTermsAgreementChanged);
+
+        // 약관 모달 확인 버튼 클릭을 Presenter로 전달한다.
+        if (_termsConfirmButton != null)
+            _termsConfirmButton.onClick.AddListener(NotifyTermsConfirmed);
     }
 
     // View 파괴 시 Unity UI 리스너를 제거한다.
@@ -142,6 +119,10 @@ public class LoginView : MonoBehaviour, ILoginView
 
         if (_termsToggle != null)
             _termsToggle.onValueChanged.RemoveListener(NotifyTermsAgreementChanged);
+
+        // 약관 확인 버튼 리스너를 정리한다.
+        if (_termsConfirmButton != null)
+            _termsConfirmButton.onClick.RemoveListener(NotifyTermsConfirmed);
     }
 
     // 핵심 UI 참조 누락을 한 번만 경고한다.
@@ -159,6 +140,13 @@ public class LoginView : MonoBehaviour, ILoginView
         if (_termsToggle == null)
             Debug.LogWarning("[LoginView] 약관 동의 토글 참조가 없습니다.", this);
 
+        // 약관 모달 구성 참조 누락을 Inspector에서 바로 확인할 수 있게 한다.
+        if (_termsAgreementPanel == null)
+            Debug.LogWarning("[LoginView] 약관 동의 패널 참조가 없습니다.", this);
+
+        if (_termsConfirmButton == null)
+            Debug.LogWarning("[LoginView] 약관 확인 버튼 참조가 없습니다.", this);
+
         if (_popupPanel == null)
             Debug.LogWarning("[LoginView] 팝업 패널 참조가 없습니다.", this);
     }
@@ -169,11 +157,13 @@ public class LoginView : MonoBehaviour, ILoginView
         OnGuestLoginClicked?.Invoke();
     }
 
+    // Google 로그인 버튼 입력을 Presenter로 전달한다.
     private void NotifyGoogleLoginClicked()
     {
         OnGoogleLoginClicked?.Invoke();
     }
 
+    // 회원가입 입력 필드 값을 Presenter로 전달한다.
     private void NotifyRegisterClicked()
     {
         string playerId = _playerIdInputField != null ? _playerIdInputField.text : string.Empty;
@@ -199,41 +189,73 @@ public class LoginView : MonoBehaviour, ILoginView
         OnTermsAgreementChanged?.Invoke(hasAcceptedTerms);
     }
 
-    // 약관 동의와 로그인 진행 상태에 따라 게스트 버튼을 제어한다.
+    // 약관 확인 버튼 입력을 Presenter로 전달한다.
+    private void NotifyTermsConfirmed()
+    {
+        OnTermsConfirmed?.Invoke();
+    }
+
+    // 게스트 로그인 버튼 입력 가능 여부를 제어한다.
     public void SetGuestButtonInteractable(bool isInteractable)
     {
         if (_guestLoginButton != null)
             _guestLoginButton.interactable = isInteractable;
     }
 
+    // Google 로그인 버튼 입력 가능 여부를 제어한다.
     public void SetGoogleButtonInteractable(bool isInteractable)
     {
         if (_googleLoginButton != null)
             _googleLoginButton.interactable = isInteractable;
     }
 
+    // 회원가입 버튼 입력 가능 여부를 제어한다.
     public void SetRegisterButtonInteractable(bool isInteractable)
     {
         if (_registerButton != null)
             _registerButton.interactable = isInteractable;
     }
 
+    // 회원가입 패널을 표시한다.
     public void ShowRegisterPanel()
     {
         if (_registerPanel != null)
             _registerPanel.SetActive(true);
     }
 
+    // 회원가입 패널을 숨긴다.
     public void HideRegisterPanel()
     {
         if (_registerPanel != null)
             _registerPanel.SetActive(false);
     }
 
+    // 회원가입 안내 문구를 표시한다.
     public void SetRegisterMessage(string message)
     {
         if (_registerMessageText != null)
             _registerMessageText.SetText(message);
+    }
+
+    // 약관 동의 모달을 표시한다.
+    public void ShowTermsAgreementPanel()
+    {
+        if (_termsAgreementPanel != null)
+            _termsAgreementPanel.SetActive(true);
+    }
+
+    // 약관 동의 모달을 숨긴다.
+    public void HideTermsAgreementPanel()
+    {
+        if (_termsAgreementPanel != null)
+            _termsAgreementPanel.SetActive(false);
+    }
+
+    // 약관 동의 체크 상태에 따라 확인 버튼 입력 가능 여부를 제어한다.
+    public void SetTermsConfirmButtonInteractable(bool isInteractable)
+    {
+        if (_termsConfirmButton != null)
+            _termsConfirmButton.interactable = isInteractable;
     }
 
     // 로그인 중 로딩 인디케이터를 표시하고 버튼 입력을 잠근다.

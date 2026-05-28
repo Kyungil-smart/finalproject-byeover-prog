@@ -10,16 +10,24 @@ public interface ILoginView
     event Action OnGoogleLoginClicked;
     event Action<string, string> OnRegisterClicked;
     event Action<bool> OnTermsAgreementChanged;
+    event Action OnTermsConfirmed; // 추가: 조규민 - 약관 모달 확인 버튼 입력을 Presenter로 전달한다.
     event Action OnTermsPopupClicked;
     event Action OnPopupClosed;
 
-    // 약관 동의 상태에 따라 게스트 로그인 버튼 활성화를 제어한다.
+    // 약관 확인 및 로그인 진행 상태에 따라 로그인 버튼 입력 가능 여부를 제어한다.
     void SetGuestButtonInteractable(bool isInteractable);
     void SetGoogleButtonInteractable(bool isInteractable);
     void SetRegisterButtonInteractable(bool isInteractable);
+
+    // 회원가입 패널 표시와 안내 문구를 제어한다.
     void ShowRegisterPanel();
     void HideRegisterPanel();
     void SetRegisterMessage(string message);
+
+    // 로그인 화면 위에 표시되는 약관 동의 모달 상태를 제어한다.
+    void ShowTermsAgreementPanel();
+    void HideTermsAgreementPanel();
+    void SetTermsConfirmButtonInteractable(bool isInteractable);
 
     // Firebase 인증 진행 중 로딩 표시와 입력 잠금을 제어한다.
     void SetLoading(bool isLoading);
@@ -30,6 +38,6 @@ public interface ILoginView
     // 로그인 실패나 약관 안내 메시지를 팝업으로 표시한다.
     void ShowPopup(string message);
 
-    // 팝업 확인 버튼 입력 시 팝업을 닫는다.
+    // 팝업 확인 버튼 입력 후 팝업을 닫는다.
     void HidePopup();
 }
