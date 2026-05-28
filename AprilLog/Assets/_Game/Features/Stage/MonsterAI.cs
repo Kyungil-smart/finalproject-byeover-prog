@@ -27,6 +27,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     [Tooltip("공격 간격(초)")]
     [SerializeField] private float _attackInterval = 1.5f;
 
+    [Tooltip("애니메이터 지정")] 
+    [SerializeField] private Animator _animator;
+
     // ---------- 상태 ----------
     private enum State { Moving, Attacking, Dead }
     private State _state;
@@ -73,6 +76,12 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
                 UpdateAttacking();
                 break;
         }
+        
+        // 애니메이션 제어
+        if (_animator != null)
+        {
+            _animator.SetBool("Move", _state == State.Moving);
+        }
     }
 
     private void UpdateMoving()
@@ -83,7 +92,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
         // 방어선 도달
         if (transform.position.y <= _defenseLineY)
+        {
             _state = State.Attacking;
+        }
     }
 
     private void UpdateAttacking()
@@ -92,6 +103,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_attackTimer >= _attackInterval)
         {
             _attackTimer = 0f;
+            _animator.SetTrigger("Attack");
             if (_playerModel != null)
                 _playerModel.TakeDamage(_attack);
         }
