@@ -21,7 +21,6 @@ public class SortTablePresenter
         _hint = hint;
 
         _model.Initialize();
-        _model.ShuffleBoard();
         _model.OnSlotChanged += HandleSlotChanged;
         _model.OnTableCleared += HandleTableCleared;
         _model.OnWaitingUpdated += HandleWaitingUpdated;
@@ -31,6 +30,7 @@ public class SortTablePresenter
         _input.OnDragCanceled += HandleDragCanceled;
         _hint.OnHintShow += HandleHint;
         _hint.OnHintWaiting += HandleHintWaiting;
+        _model.ShuffleBoard();
 
     }
 
@@ -59,7 +59,11 @@ public class SortTablePresenter
     private void HandleWaitingUpdated(int idx, WaitingCombo c) => _view.UpdateWaiting(idx, c);
     private void HandleBoardReset() => _view.ResetBoard();
     private void HandleDragStarted(int t, int s) => _view.ShowDragFeedback(t, s, UnityEngine.Vector2.zero);
-    private void HandleDragging(UnityEngine.Vector2 pos) => _view.ShowDragFeedback(0, 0, pos);
+    private void HandleDragging(UnityEngine.Vector2 pos)
+    {
+        _view.UpdateDragFeedbackPosition(pos);
+    }
+
     private void HandleDragCanceled() => _view.HideDragFeedback();
     private void HandleHint(int t, int s) => _view.ShowHint(t, s);
     private void HandleHintWaiting() => _view.ShowWaitingHint();
