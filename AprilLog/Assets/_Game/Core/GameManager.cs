@@ -2,6 +2,8 @@
 // 설명   : 앱 전체 관리 -- 상태, 인증, 세이브, 씬 전환
 // 2차 수정자 : 조규민
 // 수정 내용 : 로그인 성공/실패 이벤트 전달, 게스트 로그인 중복 방어, 실제 씬 이름 기준 전환 추가
+// 3차 수정자 : 조규민
+// 수정 내용 : 앱 시작 직후 Unity 화면이 반대로 보였다가 회전되는 현상을 줄이기 위해 Splash 이전 Portrait 고정 추가
 
 using System;
 using System.Collections;
@@ -55,6 +57,13 @@ public class GameManager : MonoBehaviour
     public int SelectedChapterId { get; set; }
 
     // ---------- 생명주기 ----------
+    // 추가: 조규민 - Unity Splash 이전에 Portrait를 먼저 고정해 첫 화면 회전 보정이 늦게 적용되는 상황을 줄인다.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+    private static void ApplyPortraitOrientationBeforeSplash()
+    {
+        ApplyPortraitOrientation();
+    }
+
     private void Awake()
     {
         if (Instance != null)
@@ -72,12 +81,18 @@ public class GameManager : MonoBehaviour
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         Input.multiTouchEnabled = false;
 
-        // 세로 화면 고정
-        Screen.orientation = ScreenOrientation.Portrait;
+        // 추가: 조규민 - 씬 진입 후에도 Portrait 고정을 한 번 더 적용한다.
+        ApplyPortraitOrientation();
+    }
+
+    // 추가: 조규민 - 모바일 세로형 게임 기준으로 Portrait만 허용한다.
+    private static void ApplyPortraitOrientation()
+    {
         Screen.autorotateToPortrait = true;
         Screen.autorotateToPortraitUpsideDown = false;
         Screen.autorotateToLandscapeLeft = false;
         Screen.autorotateToLandscapeRight = false;
+        Screen.orientation = ScreenOrientation.Portrait;
     }
 
     private void OnEnable()
