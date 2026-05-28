@@ -7,13 +7,20 @@
 public class LoginModel
 {
     public bool HasAcceptedTerms { get; private set; }
+    public bool HasConfirmedTerms { get; private set; } // 약관 체크 후 확인 버튼까지 누른 상태를 별도로 보관한다.
     public bool IsSigningIn { get; private set; }
     public string UserUID { get; private set; }
 
-    // 약관 토글 값 변경을 모델 상태로 저장한다.
+    // 약관 동의 토글 변경 값을 모델 상태로 저장한다.
     public void SetTermsAgreement(bool hasAcceptedTerms)
     {
         HasAcceptedTerms = hasAcceptedTerms;
+    }
+
+    // 약관 모달 확인 완료 여부를 모델 상태로 저장한다.
+    public void SetTermsConfirmed(bool hasConfirmedTerms)
+    {
+        HasConfirmedTerms = hasConfirmedTerms;
     }
 
     // 로그인 진행 상태를 저장해 버튼 중복 입력을 막는다.

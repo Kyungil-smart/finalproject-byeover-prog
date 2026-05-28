@@ -2,8 +2,10 @@
 // 설명   : Firebase 인증 서비스 -- 구글 로그인(Google Sign-In) + 게스트 로그인
 // 2차 수정자 : 조규민
 // 수정 내용 : 게스트 로그인 실패 처리, Firebase 초기화 실패 이벤트, 중복 로그인 요청 방어 추가
-// 3차 수정자 : Codex
+// 3차 수정자 : 조규민
 // 수정 내용 : Google 로그인 실기기 테스트를 위한 설정 검증, 단계별 실패 처리, 타임아웃 방어 추가
+// 4차 수정자 : 조규민
+// 수정 내용 : Google Web Client ID 자동 해석과 Google Sign-In 세션 정리 추가
 
 #if FIREBASE_ENABLED
 using Firebase;
@@ -14,6 +16,7 @@ using Google;
 
 using System;
 using System.Collections;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -48,6 +51,7 @@ public class FirebaseAuthService : MonoBehaviour
 
 #if FIREBASE_ENABLED
     private FirebaseAuth _auth;
+    private string _resolvedWebClientId;
 #endif
 
     public IEnumerator InitializeFirebase()
@@ -233,6 +237,15 @@ public class FirebaseAuthService : MonoBehaviour
     public void SignOut()
     {
 #if FIREBASE_ENABLED
+        try
+        {
+            GoogleSignIn.DefaultInstance.SignOut();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning("[Auth] Google Sign-In 로그아웃 정리 실패: " + exception.Message);
+        }
+
         _auth?.SignOut();
 #endif
         UserUID = null;
@@ -266,9 +279,10 @@ public class FirebaseAuthService : MonoBehaviour
             return "Firebase 인증 서비스가 준비되지 않았습니다.";
         }
 
-        if (string.IsNullOrWhiteSpace(_webClientId) || _webClientId == "FIREBASE_ENABLED")
+        _resolvedWebClientId = ResolveWebClientId();
+        if (string.IsNullOrWhiteSpace(_resolvedWebClientId) || _resolvedWebClientId == "FIREBASE_ENABLED")
         {
-            return "Google Web Client ID가 설정되지 않았습니다.";
+            return "Google Web Client ID가 설정되지 않았습니다. FirebaseAuthService 또는 google-services.xml의 default_web_client_id를 확인해 주세요.";
         }
 
         if (Application.isEditor)
@@ -286,19 +300,90 @@ public class FirebaseAuthService : MonoBehaviour
 
     private void ConfigureGoogleSignIn()
     {
-        if (GoogleSignIn.Configuration == null)
+        _resolvedWebClientId = ResolveWebClientId();
+        GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
-            GoogleSignIn.Configuration = new GoogleSignInConfiguration
-            {
-                ForceTokenRefresh = true,
-                RequestEmail = true,
-                RequestProfile = true,
-                RequestIdToken = true,
-                WebClientId = _webClientId
-            };
-        }
+            ForceTokenRefresh = true,
+            RequestEmail = true,
+            RequestProfile = true,
+            RequestIdToken = true,
+            WebClientId = _resolvedWebClientId
+        };
 
         GoogleSignIn.DefaultInstance.EnableDebugLogging(Debug.isDebugBuild);
+    }
+
+    private string ResolveWebClientId()
+    {
+        if (!string.IsNullOrWhiteSpace(_webClientId) && _webClientId != "FIREBASE_ENABLED")
+        {
+            return _webClientId.Trim();
+        }
+
+        string androidResourceClientId = TryGetAndroidResourceString("default_web_client_id");
+        if (!string.IsNullOrWhiteSpace(androidResourceClientId))
+        {
+            return androidResourceClientId.Trim();
+        }
+
+        string generatedXmlClientId = TryGetGeneratedGoogleServicesValue("default_web_client_id");
+        if (!string.IsNullOrWhiteSpace(generatedXmlClientId))
+        {
+            return generatedXmlClientId.Trim();
+        }
+
+        return null;
+    }
+
+    private string TryGetAndroidResourceString(string resourceName)
+    {
+        if (Application.platform != RuntimePlatform.Android)
+        {
+            return null;
+        }
+
+        try
+        {
+            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            using (var activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+            using (var resources = activity.Call<AndroidJavaObject>("getResources"))
+            {
+                string packageName = activity.Call<string>("getPackageName");
+                int resourceId = resources.Call<int>("getIdentifier", resourceName, "string", packageName);
+                return resourceId == 0 ? null : resources.Call<string>("getString", resourceId);
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning("[Auth] Android 리소스에서 Google Web Client ID를 읽지 못했습니다: " + exception.Message);
+            return null;
+        }
+    }
+
+    private string TryGetGeneratedGoogleServicesValue(string resourceName)
+    {
+        string path = Path.Combine(Application.dataPath, "Plugins/Android/FirebaseApp.androidlib/res/values/google-services.xml");
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
+        string xml = File.ReadAllText(path);
+        string marker = "name=\"" + resourceName + "\"";
+        int markerIndex = xml.IndexOf(marker, StringComparison.Ordinal);
+        if (markerIndex < 0)
+        {
+            return null;
+        }
+
+        int valueStart = xml.IndexOf('>', markerIndex);
+        int valueEnd = valueStart < 0 ? -1 : xml.IndexOf("</string>", valueStart, StringComparison.Ordinal);
+        if (valueStart < 0 || valueEnd < 0 || valueEnd <= valueStart)
+        {
+            return null;
+        }
+
+        return xml.Substring(valueStart + 1, valueEnd - valueStart - 1);
     }
 
     private IEnumerator WaitForTask(Task task, float timeoutSeconds, Action<bool> onCompleted)

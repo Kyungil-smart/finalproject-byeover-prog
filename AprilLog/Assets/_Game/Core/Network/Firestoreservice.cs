@@ -2,6 +2,8 @@
 // 설명   : Firestore 저장/로드 서비스
 // 2차 수정자 : 조규민
 // 수정 내용 : FirebaseFirestore 필드 복구, UID/DB 방어, 로컬 백업 실패 방어 추가
+// 3차 수정자 : 조규민
+// 수정 내용 : UserCloudData 직접 저장 대신 Firestore Dictionary 변환 저장으로 직렬화 오류 수정
 
 #if FIREBASE_ENABLED
 using Firebase.Firestore;
@@ -64,7 +66,7 @@ public class FirestoreService : MonoBehaviour
         }
 
         var docRef = _db.Collection("users").Document(_uid);
-        var task = docRef.SetAsync(data);
+        var task = docRef.SetAsync(CreateUserCloudDataDictionary(data)); // 추가: 조규민 - Firestore SDK가 사용자 클래스를 직접 변환하지 못해 Dictionary로 변환해 저장한다.
         yield return new WaitUntil(() => task.IsCompleted);
         if (task.IsFaulted)
         {
@@ -339,28 +341,67 @@ public class FirestoreService : MonoBehaviour
 #if FIREBASE_ENABLED
     private Dictionary<string, object> CreateGoogleUserDictionary(UserCloudData userData)
     {
+        // 추가: 조규민 - Google 회원가입 저장도 일반 저장과 같은 Dictionary 변환 경로를 사용해 필드 누락과 직렬화 오류를 방지한다.
+        var userDictionary = CreateUserCloudDataDictionary(userData);
+        userDictionary["createdAt"] = FieldValue.ServerTimestamp;
+        userDictionary["lastLoginAt"] = FieldValue.ServerTimestamp;
+        return userDictionary;
+    }
+
+    // 추가: 조규민 - UserCloudData를 Firestore가 안정적으로 저장할 수 있는 기본 타입 Dictionary로 변환한다.
+    private Dictionary<string, object> CreateUserCloudDataDictionary(UserCloudData userData)
+    {
         return new Dictionary<string, object>
         {
-            { "uid", userData.uid },
-            { "playerId", userData.playerId },
+            { "uid", userData.uid ?? _uid },
+            { "playerId", userData.playerId ?? string.Empty },
             { "email", userData.email ?? string.Empty },
             { "displayName", userData.displayName ?? string.Empty },
-            { "provider", userData.provider },
+            { "provider", userData.provider ?? string.Empty },
             { "characterLevel", userData.characterLevel },
             { "currentChapter", userData.currentChapter },
             { "currentStage", userData.currentStage },
-            { "unlockedStages", userData.unlockedStages },
+            { "unlockedStages", userData.unlockedStages ?? new List<int>() },
             { "gold", userData.gold },
             { "parchment", userData.parchment },
             { "hpBonus", userData.hpBonus },
             { "attackBonus", userData.attackBonus },
             { "shieldBonus", userData.shieldBonus },
+            { "achievements", CreateAchievementDictionaries(userData.achievements) },
+            { "enchantBookOwned", userData.enchantBookOwned ?? new List<int>() },
             { "language", userData.language },
             { "sfxVolume", userData.sfxVolume },
             { "bgmVolume", userData.bgmVolume },
-            { "createdAt", FieldValue.ServerTimestamp },
-            { "lastLoginAt", FieldValue.ServerTimestamp }
+            { "createdAt", userData.createdAt ?? DateTime.UtcNow.ToString("o") },
+            { "lastLoginAt", userData.lastLoginAt ?? DateTime.UtcNow.ToString("o") }
         };
+    }
+
+    // 추가: 조규민 - 업적 저장 항목은 사용자 정의 클래스라 Firestore 기본 타입 Dictionary 목록으로 변환한다.
+    private List<Dictionary<string, object>> CreateAchievementDictionaries(List<AchievementSaveEntry> achievements)
+    {
+        var achievementDictionaries = new List<Dictionary<string, object>>();
+        if (achievements == null)
+        {
+            return achievementDictionaries;
+        }
+
+        foreach (var achievement in achievements)
+        {
+            if (achievement == null)
+            {
+                continue;
+            }
+
+            achievementDictionaries.Add(new Dictionary<string, object>
+            {
+                { "achievementId", achievement.achievementId },
+                { "unlocked", achievement.unlocked },
+                { "progress", achievement.progress }
+            });
+        }
+
+        return achievementDictionaries;
     }
 #endif
 
@@ -423,10 +464,97 @@ public class FirestoreService : MonoBehaviour
         if (snapshot.TryGetValue("bgmVolume", out double bgmVolume))
             data.bgmVolume = (float)bgmVolume;
 
-        if (snapshot.TryGetValue("unlockedStages", out List<int> unlockedStages))
-            data.unlockedStages = unlockedStages;
+        // 추가: 조규민 - Firestore 숫자 목록 타입 차이를 흡수해 해금 스테이지를 복원한다.
+        if (snapshot.TryGetValue("unlockedStages", out object unlockedStages))
+            data.unlockedStages = ConvertIntList(unlockedStages);
+
+        // 추가: 조규민 - Firestore에 Dictionary 목록으로 저장된 업적 데이터를 로컬 저장 구조로 복원한다.
+        if (snapshot.TryGetValue("achievements", out object achievements))
+            data.achievements = ConvertAchievements(achievements);
+
+        // 추가: 조규민 - 인챈트 도감 보유 목록을 Firestore에서 복원한다.
+        if (snapshot.TryGetValue("enchantBookOwned", out object enchantBookOwned))
+            data.enchantBookOwned = ConvertIntList(enchantBookOwned);
 
         return data;
+    }
+
+    // 추가: 조규민 - Firestore Dictionary 목록을 AchievementSaveEntry 목록으로 변환한다.
+    private List<AchievementSaveEntry> ConvertAchievements(object achievementObjects)
+    {
+        var achievements = new List<AchievementSaveEntry>();
+        var enumerableAchievements = achievementObjects as IEnumerable;
+        if (enumerableAchievements == null)
+        {
+            return achievements;
+        }
+
+        foreach (var achievementObject in enumerableAchievements)
+        {
+            var achievementDictionary = achievementObject as IDictionary<string, object>;
+            if (achievementDictionary == null)
+            {
+                continue;
+            }
+
+            achievements.Add(new AchievementSaveEntry
+            {
+                achievementId = GetIntValue(achievementDictionary, "achievementId"),
+                unlocked = GetBoolValue(achievementDictionary, "unlocked"),
+                progress = GetIntValue(achievementDictionary, "progress")
+            });
+        }
+
+        return achievements;
+    }
+
+    // 추가: 조규민 - Firestore가 int 값을 long/double로 돌려주는 경우까지 포함해 int 목록으로 변환한다.
+    private List<int> ConvertIntList(object listObject)
+    {
+        var intList = new List<int>();
+        var enumerableList = listObject as IEnumerable;
+        if (enumerableList == null)
+        {
+            return intList;
+        }
+
+        foreach (var value in enumerableList)
+        {
+            intList.Add(ConvertNumberToInt(value));
+        }
+
+        return intList;
+    }
+
+    // 추가: 조규민 - Firestore 숫자 타입 차이를 흡수해 int 값으로 변환한다.
+    private int GetIntValue(IDictionary<string, object> dictionary, string key)
+    {
+        if (!dictionary.TryGetValue(key, out var value))
+        {
+            return 0;
+        }
+
+        return ConvertNumberToInt(value);
+    }
+
+    // 추가: 조규민 - Firestore 숫자 object를 int로 변환한다.
+    private int ConvertNumberToInt(object value)
+    {
+        if (value is int intValue) return intValue;
+        if (value is long longValue) return (int)longValue;
+        if (value is double doubleValue) return (int)doubleValue;
+        return 0;
+    }
+
+    // 추가: 조규민 - Firestore Dictionary에서 bool 값을 안전하게 읽는다.
+    private bool GetBoolValue(IDictionary<string, object> dictionary, string key)
+    {
+        if (!dictionary.TryGetValue(key, out var value))
+        {
+            return false;
+        }
+
+        return value is bool boolValue && boolValue;
     }
 
     private IEnumerator WaitForFirestoreTask(Task task, string timeoutMessage, Action<bool> onCompleted)
