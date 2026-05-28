@@ -6,6 +6,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Text;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -22,6 +23,8 @@ public class GameManager : MonoBehaviour
     public event Action OnLoginStarted; // 추가: 조규민 - LoginPresenter와 Bootstrap이 로그인 진행 상태를 받을 수 있게 한다.
     public event Action<string> OnLoginSucceeded; // 추가: 조규민 - 인증 성공 UID를 UI 흐름에 전달한다.
     public event Action<string> OnLoginFailed; // 추가: 조규민 - 인증 실패 메시지를 UI 흐름에 전달한다.
+    public event Action OnRegistrationRequired;
+    public event Action<string> OnRegistrationFailed;
 
     // ---------- SerializeField ----------
     [Header("네트워크 서비스")]
@@ -37,6 +40,8 @@ public class GameManager : MonoBehaviour
     [Header("디버그")]
     [Tooltip("현재 앱 상태 (읽기 전용)")]
     [SerializeField] private GameState _currentState = GameState.Boot;
+
+    private const float REGISTER_TIMEOUT_SECONDS = 25f;
 
     public GameState CurrentState => _currentState;
     public string UserUID => _authService != null ? _authService.UserUID : null;
@@ -121,8 +126,48 @@ public class GameManager : MonoBehaviour
         if (_firestoreService != null)
             _firestoreService.Initialize(uid);
 
+        if (_authService != null && _authService.LastSignInWasGoogle)
+        {
+            StartCoroutine(CompleteGoogleLoginCoroutine(uid));
+            return;
+        }
+
         // 추가: 조규민 - 인증 성공을 Login UI와 Bootstrap 대기 흐름에 알린다.
         OnLoginSucceeded?.Invoke(uid);
+    }
+
+    private IEnumerator CompleteGoogleLoginCoroutine(string uid)
+    {
+        if (_firestoreService == null)
+        {
+            OnLoginFailed?.Invoke("Firestore 서비스가 연결되지 않았습니다.");
+            yield break;
+        }
+
+        bool profileExists = false;
+        yield return StartCoroutine(_firestoreService.CheckUserProfileExistsCoroutine(exists => profileExists = exists));
+
+        if (profileExists)
+        {
+            OnLoginSucceeded?.Invoke(uid);
+            yield break;
+        }
+
+        string autoPlayerId = CreateAutoPlayerId();
+        bool registered = false;
+        yield return StartCoroutine(TryCreateGoogleProfileCoroutine(autoPlayerId, result => registered = result));
+
+        if (registered)
+        {
+            OnLoginSucceeded?.Invoke(uid);
+            yield break;
+        }
+
+        ChangeState(GameState.Login);
+        OnRegistrationRequired?.Invoke();
+        OnRegistrationFailed?.Invoke(string.IsNullOrEmpty(_firestoreService.LastError)
+            ? "자동 회원가입에 실패했습니다. 아이디와 비밀번호를 직접 입력해 주세요."
+            : "자동 회원가입 실패: " + _firestoreService.LastError);
     }
 
     private void HandleLoginFailed(string error)
@@ -194,7 +239,12 @@ public class GameManager : MonoBehaviour
 
     public IEnumerator AutoSignIn()
     {
-        // 이전 세션이 있으면 InitializeFirebase에서 이미 복원됨
+        if (_authService == null || !_authService.IsLoggedIn)
+        {
+            yield break;
+        }
+
+        HandleLoginSuccess(_authService.UserUID);
         yield return null;
     }
 
@@ -230,6 +280,143 @@ public class GameManager : MonoBehaviour
 
         OnLoginStarted?.Invoke(); // 추가: 조규민 - Login UI가 로딩 상태로 전환할 수 있게 한다.
         StartCoroutine(_authService.GuestSignInCoroutine());
+    }
+
+    public void RegisterGoogleUser(string playerId, string password)
+    {
+        if (_authService == null || !_authService.IsLoggedIn)
+        {
+            OnRegistrationFailed?.Invoke("Google 인증이 먼저 필요합니다.");
+            return;
+        }
+
+        if (_firestoreService == null)
+        {
+            OnRegistrationFailed?.Invoke("Firestore 서비스가 연결되지 않았습니다.");
+            return;
+        }
+
+        StartCoroutine(RegisterGoogleUserCoroutine(playerId, password));
+    }
+
+    private IEnumerator RegisterGoogleUserCoroutine(string playerId, string password)
+    {
+        OnLoginStarted?.Invoke();
+
+        bool succeeded = false;
+        bool completed = false;
+        var registerCoroutine = StartCoroutine(_firestoreService.CreateGoogleUserProfileCoroutine(
+            playerId,
+            _authService.UserEmail,
+            _authService.UserDisplayName,
+            result =>
+            {
+                succeeded = result;
+                completed = true;
+            }));
+
+        float elapsedTime = 0f;
+        while (!completed && elapsedTime < REGISTER_TIMEOUT_SECONDS)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (!completed)
+        {
+            StopCoroutine(registerCoroutine);
+            OnRegistrationFailed?.Invoke("회원가입 요청 시간이 초과되었습니다. Firestore 설정과 네트워크 상태를 확인해 주세요.");
+            yield break;
+        }
+
+        if (!succeeded)
+        {
+            OnRegistrationFailed?.Invoke(string.IsNullOrEmpty(_firestoreService.LastError)
+                ? "회원가입에 실패했습니다."
+                : _firestoreService.LastError);
+            yield break;
+        }
+
+        OnLoginSucceeded?.Invoke(_authService.UserUID);
+    }
+
+    private IEnumerator TryCreateGoogleProfileCoroutine(string playerId, Action<bool> onCompleted)
+    {
+        bool succeeded = false;
+        bool completed = false;
+        var registerCoroutine = StartCoroutine(_firestoreService.CreateAutomaticGoogleUserProfileCoroutine(
+            playerId,
+            _authService.UserEmail,
+            _authService.UserDisplayName,
+            result =>
+            {
+                succeeded = result;
+                completed = true;
+            }));
+
+        float elapsedTime = 0f;
+        while (!completed && elapsedTime < REGISTER_TIMEOUT_SECONDS)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (!completed)
+        {
+            StopCoroutine(registerCoroutine);
+            OnRegistrationFailed?.Invoke("회원가입 요청 시간이 초과되었습니다. Firestore 설정과 네트워크 상태를 확인해 주세요.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        onCompleted?.Invoke(succeeded);
+    }
+
+    private string CreateAutoPlayerId()
+    {
+        string source = GetAutoPlayerIdSource();
+        var builder = new StringBuilder();
+
+        foreach (char character in source)
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(char.ToLowerInvariant(character));
+            }
+        }
+
+        string baseId = builder.Length >= 2 ? builder.ToString() : "player";
+        string uid = _authService != null ? _authService.UserUID : string.Empty;
+        string suffix = string.IsNullOrEmpty(uid) ? "000000" : uid.Substring(Mathf.Max(0, uid.Length - 6)).ToLowerInvariant();
+        int maxBaseLength = Mathf.Max(2, 19 - suffix.Length);
+
+        if (baseId.Length > maxBaseLength)
+        {
+            baseId = baseId.Substring(0, maxBaseLength);
+        }
+
+        return baseId + "_" + suffix;
+    }
+
+    private string GetAutoPlayerIdSource()
+    {
+        if (_authService == null)
+        {
+            return "player";
+        }
+
+        if (!string.IsNullOrWhiteSpace(_authService.UserEmail))
+        {
+            int atIndex = _authService.UserEmail.IndexOf('@');
+            return atIndex > 0 ? _authService.UserEmail.Substring(0, atIndex) : _authService.UserEmail;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_authService.UserDisplayName))
+        {
+            return _authService.UserDisplayName;
+        }
+
+        return "player";
     }
 
     public void ShowLoginUI()

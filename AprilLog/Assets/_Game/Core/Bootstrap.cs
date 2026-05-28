@@ -58,64 +58,53 @@ public class Bootstrap : MonoBehaviour
         Debug.Log("[Bootstrap] Firebase 초기화 완료 (오프라인: " + GameManager.Instance.IsOfflineMode + ")");
 
         // [5] 로그인 처리
-        if (!GameManager.Instance.IsOfflineMode)
+        LoginRuntimeUIFactory.EnsureExists(); // 추가: 조규민 - 씬에 LoginView가 없으면 최소 로그인 UI를 생성한다.
+        GameManager.Instance.ShowLoginUI();
+
+        // 추가: 조규민 - Google 이전 세션도 회원가입 프로필 확인을 거친 뒤에만 로비로 이동한다.
+        bool loginCompleted = false;
+        bool loginSucceeded = false;
+        string loginError = null;
+
+        Action<string> onLoginSucceeded = null;
+        Action<string> onLoginFailed = null;
+
+        onLoginSucceeded = (uid) =>
         {
-            if (GameManager.Instance.HasPreviousSession())
-            {
-                yield return StartCoroutine(GameManager.Instance.AutoSignIn());
-                Debug.Log("[Bootstrap] 자동 로그인 완료");
-            }
-            else
-            {
-                LoginRuntimeUIFactory.EnsureExists(); // 추가: 조규민 - 씬에 LoginView가 없으면 최소 로그인 UI를 생성한다.
-                GameManager.Instance.ShowLoginUI();
+            loginSucceeded = true;
+            loginCompleted = true;
+        };
 
-                // 추가: 조규민 - Login UI에서 게스트 로그인 버튼을 누를 때까지 기다리고, 실패하면 로비로 넘기지 않는다.
-                bool loginCompleted = false;
-                bool loginSucceeded = false;
-                string loginError = null;
-
-                Action<string> onLoginSucceeded = null;
-                Action<string> onLoginFailed = null;
-
-                onLoginSucceeded = (uid) =>
-                {
-                    loginSucceeded = true;
-                    loginCompleted = true;
-                };
-
-                onLoginFailed = (error) =>
-                {
-                    loginError = error;
-                    loginCompleted = true;
-                };
-
-                GameManager.Instance.OnLoginSucceeded += onLoginSucceeded;
-                GameManager.Instance.OnLoginFailed += onLoginFailed;
-
-                if (_autoGuestSignInForDevelopment)
-                {
-                    GameManager.Instance.StartGuestSignIn();
-                }
-
-                yield return new WaitUntil(() => loginCompleted);
-
-                GameManager.Instance.OnLoginSucceeded -= onLoginSucceeded;
-                GameManager.Instance.OnLoginFailed -= onLoginFailed;
-
-                if (!loginSucceeded)
-                {
-                    Debug.LogWarning("[Bootstrap] 로그인 실패. 로그인 화면 유지: " + loginError);
-                    yield break;
-                }
-
-                Debug.Log("[Bootstrap] 로그인 완료");
-            }
-        }
-        else
+        onLoginFailed = (error) =>
         {
-            Debug.Log("[Bootstrap] 오프라인 모드 -- 로그인 건너뜀");
+            loginError = error;
+            loginCompleted = true;
+        };
+
+        GameManager.Instance.OnLoginSucceeded += onLoginSucceeded;
+        GameManager.Instance.OnLoginFailed += onLoginFailed;
+
+        if (!GameManager.Instance.IsOfflineMode && GameManager.Instance.HasPreviousSession())
+        {
+            yield return StartCoroutine(GameManager.Instance.AutoSignIn());
         }
+        else if (_autoGuestSignInForDevelopment)
+        {
+            GameManager.Instance.StartGuestSignIn();
+        }
+
+        yield return new WaitUntil(() => loginCompleted);
+
+        GameManager.Instance.OnLoginSucceeded -= onLoginSucceeded;
+        GameManager.Instance.OnLoginFailed -= onLoginFailed;
+
+        if (!loginSucceeded)
+        {
+            Debug.LogWarning("[Bootstrap] 로그인 실패. 로그인 화면 유지: " + loginError);
+            yield break;
+        }
+
+        Debug.Log("[Bootstrap] 로그인 완료");
 
         // [6] 클라우드 데이터 로드
         if (GameManager.Instance.IsLoggedIn)

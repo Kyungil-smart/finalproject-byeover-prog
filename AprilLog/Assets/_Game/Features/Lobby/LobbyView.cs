@@ -54,13 +54,8 @@ public class LobbyView : MonoBehaviour, ILobbyView
 
     public void SetPlayerInfo(string name, int level)
     {
-        if (_levelText == null)
-        {
-            Debug.LogWarning("[LobbyView] Level text is not assigned.");
-            return;
-        }
-
-        _levelText.SetText("Lv.{0}", level);
+        if (_levelText != null)
+            _levelText.SetText("Lv.{0}", level);
     }
 
     public void SetStageButtons(StageDisplayData[] stages) { }
@@ -68,13 +63,9 @@ public class LobbyView : MonoBehaviour, ILobbyView
     {
         if (_goldText != null)
             _goldText.SetText("{0}", gold);
-        else
-            Debug.LogWarning("[LobbyView] Gold text is not assigned.");
 
         if (_parchmentText != null)
             _parchmentText.SetText("{0}", parchment);
-        else
-            Debug.LogWarning("[LobbyView] Parchment text is not assigned.");
     }
     public void ShowResumePrompt() { OnResumeClicked?.Invoke(); }
 
