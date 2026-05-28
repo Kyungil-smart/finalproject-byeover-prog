@@ -7,6 +7,10 @@ using UnityEngine;
 // 수정자 : Codex
 // 수정내용 : 몬스터 이동 속도를 MonsterStatusData 기준으로 적용.
 
+// 수정자 : 김영찬
+// 수정 내용 : 1. 공격방식에 따라 공격을 다르게 하도록 구현
+//           2. 사거리에 따라 정지거리가 달라지도록 구현
+
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
 /// 이동 방식은 IMovementPattern으로 교체 가능.
@@ -26,13 +30,17 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     [Header("설정")]
     [Tooltip("방어선 Y좌표. 이 아래로 내려가면 공격 상태")]
     [SerializeField] private float _defenseLineY = -3f;
-
+    
     [Tooltip("공격 간격(초)")]
     [SerializeField] private float _attackInterval = 1.5f;
 
     [Tooltip("애니메이터 지정")] 
     [SerializeField] private Animator _animator;
 
+    // ---------- 공격 방식 지정 ----------
+    private enum AttackType { Melee, Range, Kamikaze} // 근거리, 원거리, 자폭
+    private AttackType _attackType;
+    
     // ---------- 상태 ----------
     private enum State { Moving, Attacking, Dead }
     private State _state;
@@ -41,6 +49,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private int _attack;
     private float _attackTimer;
     private Rect _moveBounds;
+    private int _range;
 
     // 플레이어 참조 (공격할 때 TakeDamage 호출용)
     private PlayerModel _playerModel;
@@ -54,6 +63,13 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _attack = stats != null ? stats.Attack : 1;
         _state = State.Moving;
         _attackTimer = 0f;
+        _range = monsterStats != null ? monsterStats.Range : 1;
+
+        // 사거리에 따라 공격 타입 자동 지정
+        if (monsterStats != null)
+        {
+            AttackTypeSelect(monsterStats.Range);
+        }
 
         // 이동 패턴은 일단 직선으로. 몬스터 타입별 분기는 나중에 추가.
         float moveSpeed = monsterStats != null && monsterStats.MoveSpeed > 0f
@@ -99,7 +115,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         transform.position = newPos;
 
         // 방어선 도달
-        if (transform.position.y <= _defenseLineY)
+        if (transform.position.y + (_range - 1) <= _defenseLineY)
         {
             _state = State.Attacking;
         }
@@ -111,9 +127,61 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_attackTimer >= _attackInterval)
         {
             _attackTimer = 0f;
-            _animator.SetTrigger("Attack");
-            if (_playerModel != null)
-                _playerModel.TakeDamage(_attack);
+            AttackSupport();
+        }
+    }
+
+    // ---------- 공격 지원 ----------
+    private void AttackSupport()
+    {
+        _animator.SetTrigger("Attack");
+
+        switch (_attackType)
+        {
+            case AttackType.Melee:
+                MeleeAttack(_attack);
+                break;
+            case AttackType.Range:
+                RangeAttack(_attack);
+                break;
+            case AttackType.Kamikaze:
+                KamikazeAttack(_attack);
+                break;
+        }
+    }
+    
+    private void MeleeAttack(int damage)
+    {
+        if (_playerModel != null)
+            _playerModel.TakeDamage(damage);
+    }
+
+    public void RangeAttack(int damage)
+    {
+        // 투사체를 소환해서 발사
+        // ToDo : ProjectileController 정비 되면 착수
+    }
+
+    private void KamikazeAttack(int damage)
+    {
+        if (_playerModel != null)
+            _playerModel.TakeDamage(damage);
+        Die();
+    }
+
+    private void AttackTypeSelect(int range)
+    {
+        switch (range)
+        {
+            case <= 0:
+                _attackType = AttackType.Kamikaze;
+                break;
+            case >= 2 :
+                _attackType = AttackType.Range;
+                break;
+            default:
+                _attackType = AttackType.Melee;
+                break;
         }
     }
 
