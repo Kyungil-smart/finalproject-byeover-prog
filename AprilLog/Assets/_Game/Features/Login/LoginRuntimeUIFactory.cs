@@ -40,10 +40,10 @@ public static class LoginRuntimeUIFactory
         var background = CreateImage("Background", safeArea, new Color(0.08f, 0.11f, 0.16f, 1f));
         Stretch(background.rectTransform);
 
-        var title = CreateText("TitleText", safeArea, "April Log", 72, TextAlignmentOptions.Center, new Color(0.94f, 0.91f, 0.82f, 1f));
+        var title = CreateText("TitleText", safeArea, "에이프릴 로그", 72, TextAlignmentOptions.Center, new Color(0.94f, 0.91f, 0.82f, 1f));
         SetAnchoredBox(title.rectTransform, new Vector2(0.5f, 0.72f), new Vector2(760f, 160f));
 
-        var subtitle = CreateText("SubtitleText", safeArea, "게스트로 시작해서 진행도를 저장하세요", 34, TextAlignmentOptions.Center, new Color(0.72f, 0.77f, 0.86f, 1f));
+        var subtitle = CreateText("SubtitleText", safeArea, "구글 로그인 후 회원가입을 완료하세요", 34, TextAlignmentOptions.Center, new Color(0.72f, 0.77f, 0.86f, 1f));
         SetAnchoredBox(subtitle.rectTransform, new Vector2(0.5f, 0.64f), new Vector2(820f, 90f));
 
         var termsToggle = CreateToggle(safeArea);
@@ -52,11 +52,14 @@ public static class LoginRuntimeUIFactory
         var termsButton = CreateButton("TermsButton", safeArea, "약관 보기", new Color(0.20f, 0.24f, 0.31f, 1f), 30);
         SetAnchoredBox(termsButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.36f), new Vector2(760f, 92f));
 
-        var guestButton = CreateButton("GuestLoginButton", safeArea, "게스트로 시작", new Color(0.78f, 0.62f, 0.28f, 1f), 38);
-        SetAnchoredBox(guestButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.27f), new Vector2(760f, 116f));
+        var googleButton = CreateButton("GoogleLoginButton", safeArea, "구글 로그인", new Color(0.26f, 0.43f, 0.88f, 1f), 38);
+        SetAnchoredBox(googleButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.29f), new Vector2(760f, 108f));
+
+        var guestButton = CreateButton("GuestLoginButton", safeArea, "게스트로 시작", new Color(0.78f, 0.62f, 0.28f, 1f), 34);
+        SetAnchoredBox(guestButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.22f), new Vector2(760f, 96f));
 
         var loadingText = CreateText("LoadingText", safeArea, "로그인 중...", 30, TextAlignmentOptions.Center, Color.white);
-        SetAnchoredBox(loadingText.rectTransform, new Vector2(0.5f, 0.19f), new Vector2(760f, 72f));
+        SetAnchoredBox(loadingText.rectTransform, new Vector2(0.5f, 0.16f), new Vector2(760f, 72f));
         loadingText.gameObject.SetActive(false);
 
         var versionText = CreateText("VersionText", safeArea, string.Empty, 24, TextAlignmentOptions.Left, new Color(0.60f, 0.65f, 0.72f, 1f));
@@ -66,10 +69,13 @@ public static class LoginRuntimeUIFactory
         SetAnchoredBox(uidText.rectTransform, new Vector2(0.68f, 0.04f), new Vector2(600f, 64f));
 
         var popupPanel = CreatePopup(safeArea, out TMP_Text popupMessageText, out Button popupCloseButton);
+        var registerPanel = CreateRegisterPanel(safeArea, out TMP_InputField playerIdInputField,
+            out TMP_InputField passwordInputField, out TMP_Text registerMessageText, out Button registerButton);
 
         var view = canvasObject.AddComponent<LoginView>();
-        view.Configure(guestButton, termsButton, popupCloseButton, termsToggle, loadingText.gameObject,
-            popupPanel, popupMessageText, versionText, uidText);
+        view.Configure(guestButton, googleButton, registerButton, termsButton, popupCloseButton, termsToggle,
+            loadingText.gameObject, registerPanel, popupPanel, playerIdInputField, passwordInputField,
+            popupMessageText, registerMessageText, versionText, uidText);
 
         return view;
     }
@@ -124,6 +130,26 @@ public static class LoginRuntimeUIFactory
         return button;
     }
 
+    private static TMP_InputField CreateInputField(string name, Transform parent, string placeholder, bool isPassword)
+    {
+        var background = CreateImage(name, parent, new Color(0.94f, 0.95f, 0.97f, 1f));
+        var input = background.gameObject.AddComponent<TMP_InputField>();
+        input.targetGraphic = background;
+        input.contentType = isPassword ? TMP_InputField.ContentType.Password : TMP_InputField.ContentType.Standard;
+
+        var text = CreateText("Text", background.transform, string.Empty, 32, TextAlignmentOptions.Left, new Color(0.08f, 0.10f, 0.13f, 1f));
+        text.margin = new Vector4(32f, 0f, 32f, 0f);
+        Stretch(text.rectTransform);
+
+        var placeholderText = CreateText("Placeholder", background.transform, placeholder, 30, TextAlignmentOptions.Left, new Color(0.48f, 0.52f, 0.58f, 1f));
+        placeholderText.margin = new Vector4(32f, 0f, 32f, 0f);
+        Stretch(placeholderText.rectTransform);
+
+        input.textComponent = text;
+        input.placeholder = placeholderText;
+        return input;
+    }
+
     // 약관 동의 토글을 생성한다.
     private static Toggle CreateToggle(Transform parent)
     {
@@ -142,6 +168,31 @@ public static class LoginRuntimeUIFactory
         var label = CreateText("Label", root, "서비스 이용 약관에 동의합니다", 30, TextAlignmentOptions.Left, Color.white);
         SetAnchoredBox(label.rectTransform, new Vector2(0.58f, 0.5f), new Vector2(640f, 72f));
         return toggle;
+    }
+
+    private static GameObject CreateRegisterPanel(Transform parent, out TMP_InputField playerIdInputField,
+        out TMP_InputField passwordInputField, out TMP_Text messageText, out Button registerButton)
+    {
+        var panel = CreateImage("RegisterPanel", parent, new Color(0.10f, 0.13f, 0.18f, 0.96f));
+        SetAnchoredBox(panel.rectTransform, new Vector2(0.5f, 0.49f), new Vector2(840f, 620f));
+
+        var title = CreateText("RegisterTitleText", panel.transform, "회원가입", 42, TextAlignmentOptions.Center, Color.white);
+        SetAnchoredBox(title.rectTransform, new Vector2(0.5f, 0.86f), new Vector2(720f, 72f));
+
+        playerIdInputField = CreateInputField("PlayerIdInputField", panel.transform, "아이디", false);
+        SetAnchoredBox(playerIdInputField.GetComponent<RectTransform>(), new Vector2(0.5f, 0.66f), new Vector2(700f, 92f));
+
+        passwordInputField = CreateInputField("PasswordInputField", panel.transform, "비밀번호", true);
+        SetAnchoredBox(passwordInputField.GetComponent<RectTransform>(), new Vector2(0.5f, 0.49f), new Vector2(700f, 92f));
+
+        messageText = CreateText("RegisterMessageText", panel.transform, string.Empty, 26, TextAlignmentOptions.Center, new Color(0.95f, 0.80f, 0.42f, 1f));
+        SetAnchoredBox(messageText.rectTransform, new Vector2(0.5f, 0.34f), new Vector2(700f, 72f));
+
+        registerButton = CreateButton("RegisterButton", panel.transform, "회원가입", new Color(0.25f, 0.60f, 0.34f, 1f), 34);
+        SetAnchoredBox(registerButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0.18f), new Vector2(700f, 92f));
+
+        panel.gameObject.SetActive(false);
+        return panel.gameObject;
     }
 
     // 로그인 실패와 약관 안내용 팝업을 생성한다.

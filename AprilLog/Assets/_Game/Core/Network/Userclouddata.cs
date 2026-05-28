@@ -7,6 +7,13 @@ using System.Collections.Generic;
 [Serializable]
 public class UserCloudData
 {
+    // ---------- 프로필 ----------
+    public string uid;
+    public string playerId;
+    public string email;
+    public string displayName;
+    public string provider;
+
     // ---------- 진행 상황 ----------
     public int characterLevel = 1;
     public int currentChapter = 1;

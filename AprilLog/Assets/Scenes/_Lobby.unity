@@ -306,7 +306,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &888497154
 RectTransform:
   m_ObjectHideFlags: 0
@@ -338,7 +338,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53360004fad43164d90bcb8a4f35d465, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BookView
-  _bookModel: {fileID: 0}
+  _bookModel: {fileID: 2049095341}
 --- !u!1 &1159573663
 GameObject:
   m_ObjectHideFlags: 0
@@ -355,7 +355,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1159573664
 RectTransform:
   m_ObjectHideFlags: 0
@@ -760,7 +760,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1774596281
 RectTransform:
   m_ObjectHideFlags: 0
@@ -792,9 +792,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03d40aefbe2f2e64d98afb5f5280d154, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GrowthView
-  _growthSystem: {fileID: 0}
-  _currency: {fileID: 0}
-  _progress: {fileID: 0}
+  _growthSystem: {fileID: 1169593834}
+  _currency: {fileID: 1461284355}
+  _progress: {fileID: 1511340057}
   _levelText: {fileID: 0}
   _costGoldText: {fileID: 0}
   _costParchmentText: {fileID: 0}
@@ -848,8 +848,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd5fc8d37e97c67449a971b032d813e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LobbyView
-  _progress: {fileID: 0}
-  _currency: {fileID: 0}
+  _progress: {fileID: 1511340057}
+  _currency: {fileID: 1461284355}
   _localization: {fileID: 0}
   _levelText: {fileID: 0}
   _goldText: {fileID: 0}

@@ -7,12 +7,19 @@ using System;
 public interface ILoginView
 {
     event Action OnGuestLoginClicked;
+    event Action OnGoogleLoginClicked;
+    event Action<string, string> OnRegisterClicked;
     event Action<bool> OnTermsAgreementChanged;
     event Action OnTermsPopupClicked;
     event Action OnPopupClosed;
 
     // 약관 동의 상태에 따라 게스트 로그인 버튼 활성화를 제어한다.
     void SetGuestButtonInteractable(bool isInteractable);
+    void SetGoogleButtonInteractable(bool isInteractable);
+    void SetRegisterButtonInteractable(bool isInteractable);
+    void ShowRegisterPanel();
+    void HideRegisterPanel();
+    void SetRegisterMessage(string message);
 
     // Firebase 인증 진행 중 로딩 표시와 입력 잠금을 제어한다.
     void SetLoading(bool isLoading);

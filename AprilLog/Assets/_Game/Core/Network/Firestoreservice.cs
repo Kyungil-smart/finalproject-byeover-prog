@@ -8,7 +8,11 @@ using Firebase.Firestore;
 #endif
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+#if FIREBASE_ENABLED
+using System.Threading.Tasks;
+#endif
 using UnityEngine;
 
 public class FirestoreService : MonoBehaviour
@@ -16,9 +20,11 @@ public class FirestoreService : MonoBehaviour
     public event Action<UserCloudData> OnDataLoaded;
     public event Action OnSaveComplete;
     public event Action<string> OnError;
+    public string LastError { get; private set; }
 
     private string _uid;
     private const string LOCAL_BACKUP_FILE = "cloud_backup.json";
+    private const float FIRESTORE_TIMEOUT_SECONDS = 15f;
 
 #if FIREBASE_ENABLED
     private FirebaseFirestore _db; // 추가: 조규민 - FIREBASE_ENABLED 컴파일 시 사용하는 Firestore 인스턴스
@@ -99,7 +105,7 @@ public class FirestoreService : MonoBehaviour
 
         if (task.Result.Exists)
         {
-            var data = task.Result.ConvertTo<UserCloudData>();
+            var data = ConvertSnapshotToUserCloudData(task.Result);
             SaveLocalBackup(data);
             OnDataLoaded?.Invoke(data);
         }
@@ -116,6 +122,332 @@ public class FirestoreService : MonoBehaviour
         yield return null;
 #endif
     }
+
+    public IEnumerator CheckUserProfileExistsCoroutine(Action<bool> onCompleted)
+    {
+        if (string.IsNullOrEmpty(_uid))
+        {
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+#if FIREBASE_ENABLED
+        if (_db == null)
+        {
+            OnError?.Invoke("Firestore가 초기화되지 않았습니다.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        var task = _db.Collection("users").Document(_uid).GetSnapshotAsync();
+        bool profileCheckCompleted = false;
+        yield return StartCoroutine(WaitForFirestoreTask(task, "회원 프로필 확인 시간이 초과되었습니다.", result => profileCheckCompleted = result));
+        if (!profileCheckCompleted)
+        {
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (task.IsCanceled || task.IsFaulted)
+        {
+            OnError?.Invoke(GetExceptionMessage(task.Exception, "유저 프로필 확인 실패"));
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (!task.Result.Exists)
+        {
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        bool hasCompletedProfile = false;
+        if (task.Result.TryGetValue("playerId", out string playerId))
+        {
+            hasCompletedProfile = !string.IsNullOrWhiteSpace(playerId);
+        }
+
+        onCompleted?.Invoke(hasCompletedProfile);
+#else
+        onCompleted?.Invoke(HasLocalGoogleProfileForCurrentUser());
+        yield return null;
+#endif
+    }
+
+    public IEnumerator CreateGoogleUserProfileCoroutine(string playerId, string email, string displayName, Action<bool> onCompleted)
+    {
+        LastError = null;
+
+        if (string.IsNullOrEmpty(_uid))
+        {
+            SetError("회원가입할 UID가 없습니다.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (string.IsNullOrEmpty(playerId))
+        {
+            SetError("아이디를 입력해 주세요.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+#if FIREBASE_ENABLED
+        if (_db == null)
+        {
+            SetError("Firestore가 초기화되지 않았습니다.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        string normalizedPlayerId = playerId.Trim().ToLowerInvariant();
+        var playerIdRef = _db.Collection("playerIds").Document(normalizedPlayerId);
+        var playerIdTask = playerIdRef.GetSnapshotAsync();
+        bool playerIdCheckCompleted = false;
+        yield return StartCoroutine(WaitForFirestoreTask(playerIdTask, "아이디 중복 확인 시간이 초과되었습니다.", result => playerIdCheckCompleted = result));
+        if (!playerIdCheckCompleted)
+        {
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (playerIdTask.IsCanceled || playerIdTask.IsFaulted)
+        {
+            SetError(GetExceptionMessage(playerIdTask.Exception, "아이디 중복 확인 실패"));
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (playerIdTask.Result.Exists)
+        {
+            SetError("이미 사용 중인 아이디입니다.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        var userData = CreateGoogleUserCloudData(normalizedPlayerId, email, displayName);
+        var userTask = _db.Collection("users").Document(_uid).SetAsync(CreateGoogleUserDictionary(userData));
+        bool userSaveCompleted = false;
+        yield return StartCoroutine(WaitForFirestoreTask(userTask, "회원가입 저장 시간이 초과되었습니다.", result => userSaveCompleted = result));
+        if (!userSaveCompleted)
+        {
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (userTask.IsCanceled || userTask.IsFaulted)
+        {
+            SetError(GetExceptionMessage(userTask.Exception, "회원가입 저장 실패"));
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        var playerIdData = new Dictionary<string, object>
+        {
+            { "uid", _uid },
+            { "createdAt", DateTime.UtcNow.ToString("o") }
+        };
+        var reserveTask = playerIdRef.SetAsync(playerIdData);
+        bool reserveCompleted = false;
+        yield return StartCoroutine(WaitForFirestoreTask(reserveTask, "아이디 예약 시간이 초과되었습니다.", result => reserveCompleted = result));
+        if (!reserveCompleted)
+        {
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (reserveTask.IsCanceled || reserveTask.IsFaulted)
+        {
+            SetError(GetExceptionMessage(reserveTask.Exception, "아이디 예약 실패"));
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        SaveLocalBackup(userData);
+#else
+        SetError("Firebase가 비활성화되어 실제 회원가입을 저장할 수 없습니다. Android 빌드에서 FIREBASE_ENABLED 상태로 실행해 주세요.");
+        onCompleted?.Invoke(false);
+        yield return null;
+        yield break;
+#endif
+        onCompleted?.Invoke(true);
+    }
+
+    public IEnumerator CreateAutomaticGoogleUserProfileCoroutine(string playerId, string email, string displayName, Action<bool> onCompleted)
+    {
+        LastError = null;
+
+        if (string.IsNullOrEmpty(_uid))
+        {
+            SetError("회원가입할 UID가 없습니다.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (string.IsNullOrEmpty(playerId))
+        {
+            SetError("자동 생성 아이디가 비어 있습니다.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+#if FIREBASE_ENABLED
+        if (_db == null)
+        {
+            SetError("Firestore가 초기화되지 않았습니다.");
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        var userData = CreateGoogleUserCloudData(playerId.Trim().ToLowerInvariant(), email, displayName);
+        var userTask = _db.Collection("users").Document(_uid).SetAsync(CreateGoogleUserDictionary(userData));
+        bool userSaveCompleted = false;
+        yield return StartCoroutine(WaitForFirestoreTask(userTask, "자동 회원가입 저장 시간이 초과되었습니다.", result => userSaveCompleted = result));
+        if (!userSaveCompleted)
+        {
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        if (userTask.IsCanceled || userTask.IsFaulted)
+        {
+            SetError(GetExceptionMessage(userTask.Exception, "자동 회원가입 저장 실패"));
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        SaveLocalBackup(userData);
+        onCompleted?.Invoke(true);
+#else
+        SetError("Firebase가 비활성화되어 실제 회원가입을 저장할 수 없습니다. Android 빌드에서 FIREBASE_ENABLED 상태로 실행해 주세요.");
+        onCompleted?.Invoke(false);
+        yield return null;
+#endif
+    }
+
+    private UserCloudData CreateGoogleUserCloudData(string playerId, string email, string displayName)
+    {
+        var userData = UserCloudData.CreateDefault();
+        userData.uid = _uid;
+        userData.playerId = playerId;
+        userData.email = email;
+        userData.displayName = displayName;
+        userData.provider = "google";
+        return userData;
+    }
+
+#if FIREBASE_ENABLED
+    private Dictionary<string, object> CreateGoogleUserDictionary(UserCloudData userData)
+    {
+        return new Dictionary<string, object>
+        {
+            { "uid", userData.uid },
+            { "playerId", userData.playerId },
+            { "email", userData.email ?? string.Empty },
+            { "displayName", userData.displayName ?? string.Empty },
+            { "provider", userData.provider },
+            { "characterLevel", userData.characterLevel },
+            { "currentChapter", userData.currentChapter },
+            { "currentStage", userData.currentStage },
+            { "unlockedStages", userData.unlockedStages },
+            { "gold", userData.gold },
+            { "parchment", userData.parchment },
+            { "hpBonus", userData.hpBonus },
+            { "attackBonus", userData.attackBonus },
+            { "shieldBonus", userData.shieldBonus },
+            { "language", userData.language },
+            { "sfxVolume", userData.sfxVolume },
+            { "bgmVolume", userData.bgmVolume },
+            { "createdAt", FieldValue.ServerTimestamp },
+            { "lastLoginAt", FieldValue.ServerTimestamp }
+        };
+    }
+#endif
+
+    private void SetError(string message)
+    {
+        LastError = message;
+        OnError?.Invoke(message);
+    }
+
+#if FIREBASE_ENABLED
+    private UserCloudData ConvertSnapshotToUserCloudData(DocumentSnapshot snapshot)
+    {
+        var data = UserCloudData.CreateDefault();
+
+        if (snapshot.TryGetValue("uid", out string uid))
+            data.uid = uid;
+
+        if (snapshot.TryGetValue("playerId", out string playerId))
+            data.playerId = playerId;
+
+        if (snapshot.TryGetValue("email", out string email))
+            data.email = email;
+
+        if (snapshot.TryGetValue("displayName", out string displayName))
+            data.displayName = displayName;
+
+        if (snapshot.TryGetValue("provider", out string provider))
+            data.provider = provider;
+
+        if (snapshot.TryGetValue("characterLevel", out int characterLevel))
+            data.characterLevel = characterLevel;
+
+        if (snapshot.TryGetValue("currentChapter", out int currentChapter))
+            data.currentChapter = currentChapter;
+
+        if (snapshot.TryGetValue("currentStage", out int currentStage))
+            data.currentStage = currentStage;
+
+        if (snapshot.TryGetValue("gold", out int gold))
+            data.gold = gold;
+
+        if (snapshot.TryGetValue("parchment", out int parchment))
+            data.parchment = parchment;
+
+        if (snapshot.TryGetValue("hpBonus", out int hpBonus))
+            data.hpBonus = hpBonus;
+
+        if (snapshot.TryGetValue("attackBonus", out int attackBonus))
+            data.attackBonus = attackBonus;
+
+        if (snapshot.TryGetValue("shieldBonus", out int shieldBonus))
+            data.shieldBonus = shieldBonus;
+
+        if (snapshot.TryGetValue("language", out string language))
+            data.language = language;
+
+        if (snapshot.TryGetValue("sfxVolume", out double sfxVolume))
+            data.sfxVolume = (float)sfxVolume;
+
+        if (snapshot.TryGetValue("bgmVolume", out double bgmVolume))
+            data.bgmVolume = (float)bgmVolume;
+
+        if (snapshot.TryGetValue("unlockedStages", out List<int> unlockedStages))
+            data.unlockedStages = unlockedStages;
+
+        return data;
+    }
+
+    private IEnumerator WaitForFirestoreTask(Task task, string timeoutMessage, Action<bool> onCompleted)
+    {
+        float elapsedTime = 0f;
+        while (!task.IsCompleted && elapsedTime < FIRESTORE_TIMEOUT_SECONDS)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (!task.IsCompleted)
+        {
+            SetError(timeoutMessage);
+            onCompleted?.Invoke(false);
+            yield break;
+        }
+
+        onCompleted?.Invoke(true);
+    }
+#endif
 
     private void SaveLocalBackup(UserCloudData data)
     {
@@ -148,6 +480,27 @@ public class FirestoreService : MonoBehaviour
 
     public bool HasLocalBackup() => File.Exists(GetBackupPath());
     private string GetBackupPath() => Path.Combine(Application.persistentDataPath, LOCAL_BACKUP_FILE);
+
+    private bool HasLocalGoogleProfileForCurrentUser()
+    {
+        var localData = LoadLocalBackup();
+        if (localData == null)
+        {
+            return false;
+        }
+
+        if (!string.Equals(localData.uid, _uid, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.Equals(localData.provider, "google", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return !string.IsNullOrWhiteSpace(localData.playerId);
+    }
 
     public IEnumerator SyncLocalToCloud()
     {

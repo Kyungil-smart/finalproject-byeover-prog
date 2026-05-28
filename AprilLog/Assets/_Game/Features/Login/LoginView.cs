@@ -10,12 +10,16 @@ using UnityEngine.UI;
 public class LoginView : MonoBehaviour, ILoginView
 {
     public event Action OnGuestLoginClicked;
+    public event Action OnGoogleLoginClicked;
+    public event Action<string, string> OnRegisterClicked;
     public event Action<bool> OnTermsAgreementChanged;
     public event Action OnTermsPopupClicked;
     public event Action OnPopupClosed;
 
     [Header("버튼")]
     [SerializeField] private Button _guestLoginButton;
+    [SerializeField] private Button _googleLoginButton;
+    [SerializeField] private Button _registerButton;
     [SerializeField] private Button _termsPopupButton;
     [SerializeField] private Button _popupCloseButton;
 
@@ -24,32 +28,47 @@ public class LoginView : MonoBehaviour, ILoginView
 
     [Header("표시")]
     [SerializeField] private GameObject _loadingIndicator;
+    [SerializeField] private GameObject _registerPanel;
     [SerializeField] private GameObject _popupPanel;
     [SerializeField] private TMP_Text _popupMessageText;
+    [SerializeField] private TMP_Text _registerMessageText;
     [SerializeField] private TMP_Text _appVersionText;
     [SerializeField] private TMP_Text _uidText;
+
+    [Header("회원가입")]
+    [SerializeField] private TMP_InputField _playerIdInputField;
+    [SerializeField] private TMP_InputField _passwordInputField;
 
     private LoginPresenter _presenter;
     private LoginModel _model;
 
     // 런타임 생성 UI가 인스펙터 없이 필요한 참조를 주입할 수 있게 한다.
-    public void Configure(Button guestLoginButton, Button termsPopupButton, Button popupCloseButton,
-        Toggle termsToggle, GameObject loadingIndicator, GameObject popupPanel,
-        TMP_Text popupMessageText, TMP_Text appVersionText, TMP_Text uidText)
+    public void Configure(Button guestLoginButton, Button googleLoginButton, Button registerButton,
+        Button termsPopupButton, Button popupCloseButton, Toggle termsToggle,
+        GameObject loadingIndicator, GameObject registerPanel, GameObject popupPanel,
+        TMP_InputField playerIdInputField, TMP_InputField passwordInputField,
+        TMP_Text popupMessageText, TMP_Text registerMessageText, TMP_Text appVersionText, TMP_Text uidText)
     {
         _guestLoginButton = guestLoginButton;
+        _googleLoginButton = googleLoginButton;
+        _registerButton = registerButton;
         _termsPopupButton = termsPopupButton;
         _popupCloseButton = popupCloseButton;
         _termsToggle = termsToggle;
         _loadingIndicator = loadingIndicator;
+        _registerPanel = registerPanel;
         _popupPanel = popupPanel;
+        _playerIdInputField = playerIdInputField;
+        _passwordInputField = passwordInputField;
         _popupMessageText = popupMessageText;
+        _registerMessageText = registerMessageText;
         _appVersionText = appVersionText;
         _uidText = uidText;
 
         BindButtons();
         ValidateRequiredReferences();
         HidePopup();
+        HideRegisterPanel();
         SetLoading(false);
     }
 
@@ -58,11 +77,12 @@ public class LoginView : MonoBehaviour, ILoginView
     {
         _model = new LoginModel();
 
-        if (_guestLoginButton != null || _termsToggle != null || _popupPanel != null)
+        if (_guestLoginButton != null || _googleLoginButton != null || _termsToggle != null || _popupPanel != null)
         {
             BindButtons();
             ValidateRequiredReferences();
             HidePopup();
+            HideRegisterPanel();
             SetLoading(false);
         }
     }
@@ -86,6 +106,12 @@ public class LoginView : MonoBehaviour, ILoginView
         if (_guestLoginButton != null)
             _guestLoginButton.onClick.AddListener(NotifyGuestLoginClicked);
 
+        if (_googleLoginButton != null)
+            _googleLoginButton.onClick.AddListener(NotifyGoogleLoginClicked);
+
+        if (_registerButton != null)
+            _registerButton.onClick.AddListener(NotifyRegisterClicked);
+
         if (_termsPopupButton != null)
             _termsPopupButton.onClick.AddListener(NotifyTermsPopupClicked);
 
@@ -101,6 +127,12 @@ public class LoginView : MonoBehaviour, ILoginView
     {
         if (_guestLoginButton != null)
             _guestLoginButton.onClick.RemoveListener(NotifyGuestLoginClicked);
+
+        if (_googleLoginButton != null)
+            _googleLoginButton.onClick.RemoveListener(NotifyGoogleLoginClicked);
+
+        if (_registerButton != null)
+            _registerButton.onClick.RemoveListener(NotifyRegisterClicked);
 
         if (_termsPopupButton != null)
             _termsPopupButton.onClick.RemoveListener(NotifyTermsPopupClicked);
@@ -118,6 +150,12 @@ public class LoginView : MonoBehaviour, ILoginView
         if (_guestLoginButton == null)
             Debug.LogWarning("[LoginView] 게스트 로그인 버튼 참조가 없습니다.", this);
 
+        if (_googleLoginButton == null)
+            Debug.LogWarning("[LoginView] Google 로그인 버튼 참조가 없습니다.", this);
+
+        if (_registerPanel == null)
+            Debug.LogWarning("[LoginView] 회원가입 패널 참조가 없습니다.", this);
+
         if (_termsToggle == null)
             Debug.LogWarning("[LoginView] 약관 동의 토글 참조가 없습니다.", this);
 
@@ -129,6 +167,18 @@ public class LoginView : MonoBehaviour, ILoginView
     private void NotifyGuestLoginClicked()
     {
         OnGuestLoginClicked?.Invoke();
+    }
+
+    private void NotifyGoogleLoginClicked()
+    {
+        OnGoogleLoginClicked?.Invoke();
+    }
+
+    private void NotifyRegisterClicked()
+    {
+        string playerId = _playerIdInputField != null ? _playerIdInputField.text : string.Empty;
+        string password = _passwordInputField != null ? _passwordInputField.text : string.Empty;
+        OnRegisterClicked?.Invoke(playerId, password);
     }
 
     // 약관 보기 버튼 입력을 Presenter로 전달한다.
@@ -154,6 +204,36 @@ public class LoginView : MonoBehaviour, ILoginView
     {
         if (_guestLoginButton != null)
             _guestLoginButton.interactable = isInteractable;
+    }
+
+    public void SetGoogleButtonInteractable(bool isInteractable)
+    {
+        if (_googleLoginButton != null)
+            _googleLoginButton.interactable = isInteractable;
+    }
+
+    public void SetRegisterButtonInteractable(bool isInteractable)
+    {
+        if (_registerButton != null)
+            _registerButton.interactable = isInteractable;
+    }
+
+    public void ShowRegisterPanel()
+    {
+        if (_registerPanel != null)
+            _registerPanel.SetActive(true);
+    }
+
+    public void HideRegisterPanel()
+    {
+        if (_registerPanel != null)
+            _registerPanel.SetActive(false);
+    }
+
+    public void SetRegisterMessage(string message)
+    {
+        if (_registerMessageText != null)
+            _registerMessageText.SetText(message);
     }
 
     // 로그인 중 로딩 인디케이터를 표시하고 버튼 입력을 잠근다.
