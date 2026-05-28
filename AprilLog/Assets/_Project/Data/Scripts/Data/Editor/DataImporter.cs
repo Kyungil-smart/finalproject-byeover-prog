@@ -2,6 +2,8 @@
 // 설명   : 데이터 자동화 도구 - JSON -> SO 변환 + FK/PK 검증
 // 수정자 : 정승우
 // 수정내용 : JSON 누락 경고와 기존 JSON 폴더 fallback을 추가
+// 수정자 : 김영찬
+// 수정내용 : 필수 Json 누락 시 임시 Json을 사용하도록 fallback 수정
 
 #if UNITY_EDITOR
 using System;
@@ -14,7 +16,8 @@ using UnityEngine;
 public static class DataImporter
 {
     private const string JSON_FOLDER = "Assets/Resources/Data/Tables";
-    private const string LEGACY_JSON_FOLDER = "Assets/_Project/Data/JSON";
+    private const string LEGACY_JSON_FOLDER = "Assets/_Project/Data/JSON_Lagacy";
+    private const string TEMP_JSON_FOLDER = "Assets/Resources/Data/Temp_Tables";
     private const string SO_FOLDER = "Assets/_Project/Data/SO";
 
     [MenuItem("Tools/Data/경로 안내")]
@@ -24,6 +27,7 @@ public static class DataImporter
         Debug.Log("[DataImporter] 경로 안내");
         Debug.Log($"  JSON 입력 폴더 : {Path.GetFullPath(JSON_FOLDER)}");
         Debug.Log($"  기존 JSON 폴더 : {Path.GetFullPath(LEGACY_JSON_FOLDER)}");
+        Debug.Log($"  임시 JSON 폴더 : {Path.GetFullPath(TEMP_JSON_FOLDER)}");
         Debug.Log($"  SO 출력 폴더   : {Path.GetFullPath(SO_FOLDER)}");
         Debug.Log("  JSON 파일을 입력 폴더에 넣고 'Import All' 실행하세요.");
         Debug.Log("===========================================");
@@ -87,6 +91,8 @@ public static class DataImporter
             errors += DataValidator.ValidateAll(JSON_FOLDER);
         if (Directory.Exists(LEGACY_JSON_FOLDER))
             errors += DataValidator.ValidateAll(LEGACY_JSON_FOLDER);
+        if (Directory.Exists(TEMP_JSON_FOLDER))
+            errors += DataValidator.ValidateAll(TEMP_JSON_FOLDER);
 
         if (errors > 0)
         {
@@ -121,7 +127,7 @@ public static class DataImporter
     {
         missing = false;
 
-        string jsonPath = ResolveJsonPath(schema.JsonName, out bool isLegacy);
+        string jsonPath = ResolveJsonPath(schema.JsonName, out bool isTemp);
         if (string.IsNullOrEmpty(jsonPath))
         {
             missing = true;
@@ -130,8 +136,8 @@ public static class DataImporter
             return 0;
         }
 
-        if (isLegacy)
-            Debug.LogWarning($"[DataImporter] 기존 JSON 폴더에서 가져옴: {schema.JsonName}.json");
+        if (isTemp)
+            Debug.LogWarning($"[DataImporter] 임시 JSON 폴더에서 가져옴: {schema.JsonName}.json");
 
         Type tableType = FindRuntimeType(schema.TableClassName);
         Type dataType = FindRuntimeType(schema.DataClassName);
@@ -185,6 +191,7 @@ public static class DataImporter
         var files = new List<string>();
         AddJsonFiles(files, JSON_FOLDER, "기본");
         AddJsonFiles(files, LEGACY_JSON_FOLDER, "기존");
+        AddJsonFiles(files, TEMP_JSON_FOLDER, "임시");
         return files;
     }
 
@@ -197,19 +204,19 @@ public static class DataImporter
             files.Add($"{label}: {Path.GetFileName(paths[i])}");
     }
 
-    private static string ResolveJsonPath(string jsonFileName, out bool isLegacy)
+    private static string ResolveJsonPath(string jsonFileName, out bool isTemp)
     {
-        isLegacy = false;
+        isTemp = false;
 
         string primaryPath = CombineUnityPath(JSON_FOLDER, jsonFileName + ".json");
         if (File.Exists(primaryPath))
             return primaryPath;
 
-        string legacyPath = CombineUnityPath(LEGACY_JSON_FOLDER, jsonFileName + ".json");
-        if (File.Exists(legacyPath))
+        string tempPath = CombineUnityPath(TEMP_JSON_FOLDER, jsonFileName + ".json");
+        if (File.Exists(tempPath))
         {
-            isLegacy = true;
-            return legacyPath;
+            isTemp = true;
+            return tempPath;
         }
 
         return null;
