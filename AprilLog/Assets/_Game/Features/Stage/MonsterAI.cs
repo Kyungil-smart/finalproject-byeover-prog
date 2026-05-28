@@ -4,6 +4,9 @@
 using System;
 using UnityEngine;
 
+// 수정자 : Codex
+// 수정내용 : 몬스터 이동 속도를 MonsterStatusData 기준으로 적용.
+
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
 /// 이동 방식은 IMovementPattern으로 교체 가능.
@@ -43,17 +46,22 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private PlayerModel _playerModel;
 
     // ---------- 초기화 ----------
-    public void Initialize(CommonStatusData stats, int monsterId)
+    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId)
     {
         MonsterID = monsterId;
-        MaxHP = stats.MaxHP;
-        CurrentHP = stats.MaxHP;
-        _attack = stats.Attack;
+        MaxHP = stats != null ? stats.MaxHP : 1;
+        CurrentHP = MaxHP;
+        _attack = stats != null ? stats.Attack : 1;
         _state = State.Moving;
         _attackTimer = 0f;
 
         // 이동 패턴은 일단 직선으로. 몬스터 타입별 분기는 나중에 추가.
-        _movement = new StraightDownMovement(3f);
+        float moveSpeed = monsterStats != null && monsterStats.MoveSpeed > 0f
+            ? monsterStats.MoveSpeed
+            : 3f;
+
+        // 모바일 비용을 낮추기 위해 현재 기획 이동은 직선 이동으로 고정한다.
+        _movement = new StraightDownMovement(moveSpeed);
 
         // 이동 범위 (화면 양 끝)
         _moveBounds = new Rect(-3f, -10f, 6f, 20f);
