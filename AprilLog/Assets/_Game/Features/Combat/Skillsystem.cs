@@ -4,16 +4,17 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
+// 수정자 : 정승우
+// 수정내용 : MonsterSpawner의 살아있는 몬스터 목록을 기준으로 실제 공격 타겟을 선택하도록 변경.
+// 수정내용 : 모든 플레이어 공격을 직선 탄 전용 경로로 발사하여 발사 시 객체 생성을 줄임.
+// 수정내용 : ProjectileController.Setup과 SetupStraight의 사용 기준을 호출부 주석으로 명확화.
+
 using System.Collections.Generic;
 using UnityEngine;
 
-// 수정자 : Codex
-// 수정내용 : MonsterSpawner의 살아있는 몬스터 목록을 기준으로 실제 공격 타겟을 선택하도록 변경.
-// 수정내용 : 모든 플레이어 공격을 직선 탄 전용 경로로 발사하여 발사 시 객체 생성을 줄임.
-
 /// <summary>
-/// 스킬 발사, 투사체 생성, 스킬 슬롯 관리를 담당한다.
-/// CombatSystem이 "이 스킬 쏴라"고 하면 여기서 실제로 투사체를 만듦.
+/// 스킬 발사, 투사체 생성, 스킬 트리거 목록 관리를 담당한다.
+/// CombatSystem은 공격 타이밍만 결정하고, 실제 발사 처리는 이 클래스가 맡는다.
 /// </summary>
 public class SkillSystem : MonoBehaviour
 {
@@ -22,7 +23,7 @@ public class SkillSystem : MonoBehaviour
     [SerializeField] private CombatSystem _combatSystem;
 
     [Header("발사 위치")]
-    [Tooltip("투사체가 나가는 기준 위치 (캐릭터)")]
+    [Tooltip("투사체가 생성되는 기준 위치")]
     [SerializeField] private Transform _firePoint;
 
     [Tooltip("살아있는 몬스터 목록과 공격 타겟 선택을 담당")]
@@ -33,13 +34,8 @@ public class SkillSystem : MonoBehaviour
     [SerializeField] private float _basicProjectileSpeed = 10f;
 
     // ---------- Private ----------
-    // 인챈트로 획득한 스킬 슬롯. UnitType -> SkillData 매핑.
     private Dictionary<UnitType, SkillData> _sortSkills = new Dictionary<UnitType, SkillData>();
-
-    // 콤보 스킬: 콤보 배수에 도달하면 자동 발동
     private List<ComboSkillEntry> _comboSkills = new List<ComboSkillEntry>();
-
-    // 콤보 스킬 판정용 재사용 리스트 (GC 방지)
     private List<SkillData> _triggeredComboCache = new List<SkillData>(4);
     private bool _hasLoggedMissingFirePoint;
     private bool _hasLoggedMissingSpawner;
@@ -55,7 +51,7 @@ public class SkillSystem : MonoBehaviour
         ResolveReferences();
     }
 
-    // ---------- 스킬 등록 (인챈트 시스템에서 호출) ----------
+    // ---------- 스킬 등록 ----------
     public void RegisterSortSkill(UnitType type, SkillData data)
     {
         _sortSkills[type] = data;
@@ -84,7 +80,6 @@ public class SkillSystem : MonoBehaviour
         for (int i = 0; i < _comboSkills.Count; i++)
         {
             int multiple = _comboSkills[i].comboMultiple;
-            // 콤보가 배수에 정확히 도달한 순간만 발동
             if (multiple > 0 && currentCombo > 0 && currentCombo % multiple == 0)
                 _triggeredComboCache.Add(_comboSkills[i].data);
         }
@@ -101,23 +96,21 @@ public class SkillSystem : MonoBehaviour
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
             return;
 
-        // 투사체 생성
         var obj = PoolManager.Instance.Spawn("Projectile_Basic", _firePoint.position, Quaternion.identity);
         if (obj == null) return;
 
         var controller = obj.GetComponent<ProjectileController>();
         if (controller == null) return;
 
-        // 타격 방식에 따라 행동 결정
         float projectileSpeed = data.Speed > 0 ? data.Speed : _basicProjectileSpeed;
 
+        // 현재 플레이어 공격은 전부 직선 탄이다. 유도/관통탄이 필요할 때만 ProjectileController.Setup을 사용한다.
         controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed);
     }
 
     public void FireBasicAttack()
     {
-        // 기본공격: 가장 가까운 몬스터한테 직선 투사체
-        int baseDmg = _combatSystem.CalculateDamage(10);  // 기본 데미지
+        int baseDmg = _combatSystem.CalculateDamage(10);
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
             return;
 
@@ -127,19 +120,10 @@ public class SkillSystem : MonoBehaviour
         var controller = obj.GetComponent<ProjectileController>();
         if (controller == null) return;
 
+        // 기본 공격도 직선 탄 전용 경로를 사용해 발사 시 객체 생성을 줄인다.
         controller.SetupStraight(baseDmg, _firePoint.position, targetPos, _basicProjectileSpeed);
     }
 
-    // ---------- 투사체 행동 팩토리 ----------
-    private IProjectileBehavior CreateBehavior(string hitRange, int speed)
-    {
-        // hitRange 문자열에 따라 다른 행동 생성 (OCP)
-        switch (hitRange)
-        {
-            default:            return null;
-        }
-    }
-    
     private bool TryFindAttackTargetPosition(out Vector2 targetPos)
     {
         targetPos = default;
@@ -187,6 +171,6 @@ public class SkillSystem : MonoBehaviour
 [System.Serializable]
 public struct ComboSkillEntry
 {
-    public int comboMultiple;   // 이 배수마다 발동 (예: 5면 5, 10, 15... 콤보에 발동)
+    public int comboMultiple;
     public SkillData data;
 }

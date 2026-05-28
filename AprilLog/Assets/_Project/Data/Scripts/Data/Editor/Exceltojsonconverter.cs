@@ -1,6 +1,6 @@
 // 담당자 : 정승우
 // 설명   : Excel → JSON 변환 에디터 도구 (외부 DLL 불필요)
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : JSON 출력 인코딩을 UTF-8 BOM 없음으로 고정
 
 #if UNITY_EDITOR

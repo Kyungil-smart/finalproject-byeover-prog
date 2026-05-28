@@ -4,7 +4,7 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : ConfigRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
 
 using System;

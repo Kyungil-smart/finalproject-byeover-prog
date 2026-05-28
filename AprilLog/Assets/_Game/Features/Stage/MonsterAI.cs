@@ -4,8 +4,8 @@
 using System;
 using UnityEngine;
 
-// 수정자 : Codex
-// 수정내용 : 몬스터 이동 속도를 MonsterStatusData 기준으로 적용.
+// 수정자 : 정승우
+// 수정내용 : 몬스터 이동 속도를 MonsterStatusData.MoveSpeed 기준으로 적용하고 현재 이동 정책을 직선 이동으로 명확화.
 
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
@@ -52,12 +52,12 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _state = State.Moving;
         _attackTimer = 0f;
 
-        // 이동 패턴은 일단 직선으로. 몬스터 타입별 분기는 나중에 추가.
+        // 몬스터 전용 스탯의 MoveSpeed를 우선 사용하고, 데이터가 없으면 임시 기본값을 사용한다.
         float moveSpeed = monsterStats != null && monsterStats.MoveSpeed > 0f
             ? monsterStats.MoveSpeed
             : 3f;
 
-        // 모바일 비용을 낮추기 위해 현재 기획 이동은 직선 이동으로 고정한다.
+        // 현재 기획은 디펜스 라인을 향한 직선 이동이다. 타입별 이동 분기는 필요해질 때만 추가한다.
         _movement = new StraightDownMovement(moveSpeed);
 
         // 이동 범위 (화면 양 끝)

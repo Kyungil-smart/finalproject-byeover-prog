@@ -4,7 +4,7 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : Model/UI 참조가 비어 있을 때 초기화를 건너뛰어 테스트 씬 NullReference 방지
 
 using System;

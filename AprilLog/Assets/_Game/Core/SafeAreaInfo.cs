@@ -1,6 +1,6 @@
 // 담당자 : 조규민
 // 설명   : Safe Area 계산 결과 값
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : Safe Area API 분리를 위한 정보 구조체 추가
 
 using UnityEngine;

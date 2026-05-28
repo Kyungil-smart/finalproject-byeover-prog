@@ -1,6 +1,6 @@
 // 담당자 : 정승우
 // 설명   : 데이터 자동화 도구 - JSON -> SO 변환 + FK/PK 검증
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : JSON 누락 경고와 기존 JSON 폴더 fallback을 추가
 
 #if UNITY_EDITOR

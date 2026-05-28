@@ -13,8 +13,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 수정자 : Codex
-// 수정내용 : 자동공격 타겟 탐색을 sqrMagnitude 기반으로 최적화하고 같은 라인 좌측 우선 규칙 추가.
+// 수정자 : 정승우
+// 수정내용 : 공격 타겟 탐색을 살아있는 몬스터 목록 기준으로 변경하고, 같은 라인 좌측 우선 규칙 추가.
 
 /// <summary>
 /// StageSpawnRule 기반으로 몬스터를 스폰한다.
@@ -202,6 +202,10 @@ public class MonsterSpawner : MonoBehaviour
     public bool IsWaveComplete() => !_isRunning || _aliveMonsters.Count == 0;
     public int AliveCount => _aliveMonsters.Count;
 
+    /// <summary>
+    /// 공격 시점에만 살아있는 몬스터 목록을 1회 스캔해서 타겟을 찾는다.
+    /// 모바일 비용을 줄이기 위해 정렬, LINQ, FindObjects 계열 검색은 사용하지 않는다.
+    /// </summary>
     public MonsterAI FindNearestMonster(Vector2 from)
     {
         MonsterAI nearest = null;
@@ -214,6 +218,7 @@ public class MonsterSpawner : MonoBehaviour
                 continue;
 
             Vector2 monsterPos = monster.transform.position;
+            // sqrt 계산을 피하기 위해 실제 거리 대신 제곱거리를 비교한다.
             float distSqr = (monsterPos - from).sqrMagnitude;
             if (IsBetterAttackTarget(monsterPos, distSqr, nearest, closestDistSqr))
             {
@@ -225,12 +230,21 @@ public class MonsterSpawner : MonoBehaviour
         return nearest;
     }
 
+    /// <summary>
+    /// 플레이어 공격용 타겟 조회 API.
+    /// SkillSystem은 몬스터 목록을 직접 뒤지지 않고 이 메서드만 사용한다.
+    /// </summary>
     public bool TryFindAttackTarget(Vector2 from, out MonsterAI target)
     {
         target = FindNearestMonster(from);
         return target != null;
     }
 
+    /// <summary>
+    /// 타겟 우선순위:
+    /// 1. 현재 후보와 같은 Y 라인이면 왼쪽 몬스터 우선
+    /// 2. 같은 라인이 아니면 제곱거리 기준으로 가까운 몬스터 우선
+    /// </summary>
     private bool IsBetterAttackTarget(
         Vector2 candidatePos,
         float candidateDistSqr,

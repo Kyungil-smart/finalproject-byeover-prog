@@ -1,6 +1,6 @@
 // 담당자 : 조규민
 // 설명   : Safe Area 계산 API
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : Screen.safeArea를 UI anchor와 inset 정보로 변환하는 유틸리티 추가
 
 using UnityEngine;

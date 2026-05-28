@@ -1,6 +1,6 @@
 // 담당자 : 정승우
 // 설명   : DataClasses.cs 기반 SO 테이블 파일 자동 생성기
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : SO 테이블 생성 경로를 런타임 데이터 폴더로 통일하고 1클래스 1파일 규칙 반영
 
 #if UNITY_EDITOR
@@ -52,7 +52,7 @@ public static class DataTableGenerator
             string code =
                 "// 담당자 : 김영찬\n" +
                 $"// 설명   : {tableClass} ScriptableObject 데이터 테이블\n" +
-                "// 수정자 : Codex\n" +
+                "// 수정자 : 정승우\n" +
                 "// 수정내용 : DataTableGenerator로 생성\n" +
                 "\n" +
                 "using UnityEngine;\n" +
@@ -89,7 +89,7 @@ public static class DataTableGenerator
         string code =
             "// 담당자 : 김영찬\n" +
             "// 설명   : ScriptableObject 데이터 테이블 베이스 클래스\n" +
-            "// 수정자 : Codex\n" +
+            "// 수정자 : 정승우\n" +
             "// 수정내용 : DataTableGenerator로 생성\n" +
             "\n" +
             "using System.Collections.Generic;\n" +

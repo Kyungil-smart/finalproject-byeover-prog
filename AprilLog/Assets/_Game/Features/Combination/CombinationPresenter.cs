@@ -1,7 +1,7 @@
 // 담당자 : 정승우
 // 설명   : 조합식 Presenter
 
-// 수정자 : Codex
+// 수정자 : 정승우
 // 수정내용 : Model 참조가 비어 있을 때 이벤트 구독 NullReference 방지
 
 public class CombinationPresenter
