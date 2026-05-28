@@ -16,6 +16,8 @@ public class LoginPresenter
         _model = model;
 
         _view.OnGuestLoginClicked += HandleGuestLoginClicked;
+        _view.OnGoogleLoginClicked += HandleGoogleLoginClicked;
+        _view.OnRegisterClicked += HandleRegisterClicked;
         _view.OnTermsAgreementChanged += HandleTermsAgreementChanged;
         _view.OnTermsPopupClicked += HandleTermsPopupClicked;
         _view.OnPopupClosed += HandlePopupClosed;
@@ -25,6 +27,8 @@ public class LoginPresenter
             GameManager.Instance.OnLoginStarted += HandleLoginStarted;
             GameManager.Instance.OnLoginSucceeded += HandleLoginSucceeded;
             GameManager.Instance.OnLoginFailed += HandleLoginFailed;
+            GameManager.Instance.OnRegistrationRequired += HandleRegistrationRequired;
+            GameManager.Instance.OnRegistrationFailed += HandleRegistrationFailed;
         }
         else
         {
@@ -38,6 +42,8 @@ public class LoginPresenter
     public void Dispose()
     {
         _view.OnGuestLoginClicked -= HandleGuestLoginClicked;
+        _view.OnGoogleLoginClicked -= HandleGoogleLoginClicked;
+        _view.OnRegisterClicked -= HandleRegisterClicked;
         _view.OnTermsAgreementChanged -= HandleTermsAgreementChanged;
         _view.OnTermsPopupClicked -= HandleTermsPopupClicked;
         _view.OnPopupClosed -= HandlePopupClosed;
@@ -50,6 +56,8 @@ public class LoginPresenter
         GameManager.Instance.OnLoginStarted -= HandleLoginStarted;
         GameManager.Instance.OnLoginSucceeded -= HandleLoginSucceeded;
         GameManager.Instance.OnLoginFailed -= HandleLoginFailed;
+        GameManager.Instance.OnRegistrationRequired -= HandleRegistrationRequired;
+        GameManager.Instance.OnRegistrationFailed -= HandleRegistrationFailed;
     }
 
     // 약관 동의 전에는 게스트 로그인을 요청하지 않는다.
@@ -73,6 +81,52 @@ public class LoginPresenter
         }
 
         GameManager.Instance.StartGuestSignIn();
+    }
+
+    private void HandleGoogleLoginClicked()
+    {
+        if (_model.IsSigningIn)
+        {
+            return;
+        }
+
+        if (!_model.HasAcceptedTerms)
+        {
+            _view.ShowPopup("약관에 동의해야 Google 로그인을 진행할 수 있습니다.");
+            return;
+        }
+
+        if (GameManager.Instance == null)
+        {
+            _view.ShowPopup("게임 매니저가 준비되지 않았습니다.");
+            return;
+        }
+
+        GameManager.Instance.StartGoogleSignIn();
+    }
+
+    private void HandleRegisterClicked(string playerId, string password)
+    {
+        if (_model.IsSigningIn)
+        {
+            return;
+        }
+
+        string validationError = GetRegistrationValidationError(playerId, password);
+        if (!string.IsNullOrEmpty(validationError))
+        {
+            _view.SetRegisterMessage(validationError);
+            return;
+        }
+
+        if (GameManager.Instance == null)
+        {
+            _view.SetRegisterMessage("게임 매니저가 준비되지 않았습니다.");
+            return;
+        }
+
+        _view.SetRegisterMessage("회원가입 처리 중입니다.");
+        GameManager.Instance.RegisterGoogleUser(playerId.Trim(), password);
     }
 
     // 약관 동의 토글 변경 시 버튼 상태를 즉시 갱신한다.
@@ -106,6 +160,7 @@ public class LoginPresenter
     {
         _model.SetUserUID(uid);
         _model.SetSigningIn(false);
+        _view.HideRegisterPanel();
         RefreshView();
     }
 
@@ -117,11 +172,54 @@ public class LoginPresenter
         _view.ShowPopup(string.IsNullOrEmpty(error) ? "로그인에 실패했습니다. 다시 시도해 주세요." : error);
     }
 
+    private void HandleRegistrationRequired()
+    {
+        _model.SetSigningIn(false);
+        RefreshView();
+        _view.ShowRegisterPanel();
+        _view.SetRegisterMessage("아이디와 비밀번호를 입력해 회원가입을 완료해 주세요.");
+    }
+
+    private void HandleRegistrationFailed(string error)
+    {
+        _model.SetSigningIn(false);
+        RefreshView();
+        _view.ShowRegisterPanel();
+        _view.SetRegisterMessage(string.IsNullOrEmpty(error) ? "회원가입에 실패했습니다." : error);
+    }
+
     // 현재 모델 상태를 View에 반영한다.
     private void RefreshView()
     {
         _view.SetLoading(_model.IsSigningIn);
         _view.SetGuestButtonInteractable(_model.HasAcceptedTerms && !_model.IsSigningIn);
+        _view.SetGoogleButtonInteractable(_model.HasAcceptedTerms && !_model.IsSigningIn);
+        _view.SetRegisterButtonInteractable(!_model.IsSigningIn);
         _view.SetAccountInfo(Application.version, _model.UserUID);
+    }
+
+    private string GetRegistrationValidationError(string playerId, string password)
+    {
+        if (string.IsNullOrWhiteSpace(playerId))
+        {
+            return "아이디를 입력해 주세요.";
+        }
+
+        if (playerId.Trim().Length < 2 || playerId.Trim().Length > 20)
+        {
+            return "아이디는 2~20자로 입력해 주세요.";
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return "비밀번호를 입력해 주세요.";
+        }
+
+        if (password.Length < 4)
+        {
+            return "테스트 비밀번호는 4자 이상 입력해 주세요.";
+        }
+
+        return null;
     }
 }
