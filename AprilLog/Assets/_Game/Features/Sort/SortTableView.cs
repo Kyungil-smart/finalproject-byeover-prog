@@ -110,6 +110,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
         if (_dragFeedbackSR != null)
         {
             _dragFeedbackSR.sprite = originalSR.sprite;
+            _dragFeedbackSR.color = originalSR.color;
             _dragFeedbackSR.enabled = true;
         }
 
@@ -120,8 +121,8 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         if (_dragFeedbackSR != null && _dragFeedbackSR.enabled)
         {
-            Vector3 worldPos = Camera.main.ScreenToWorldPoint(dragPos);
-            _dragFeedbackSR.transform.position = worldPos;
+            Vector3 finalWorldPos = new Vector3(dragPos.x, dragPos.y, 0f);
+            _dragFeedbackSR.transform.position = finalWorldPos;
         }
     }
 

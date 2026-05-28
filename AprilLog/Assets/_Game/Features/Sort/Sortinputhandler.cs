@@ -114,10 +114,14 @@ public class SortInputHandler : MonoBehaviour
     // ---------- 공통 입력 처리 ----------
     private void BeginInput(Vector2 screenPos)
     {
+        Debug.Log($"[인풋 검증] 현재 인식된 총 테이블 개수: {_slotPositions.Length}");
+
         _touchStartScreen = screenPos;
         _isDragging = false;
 
-        Vector2 worldPos = _cam.ScreenToWorldPoint(screenPos);
+        Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
+        Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
+
         FindSlot(worldPos, out _selectedTable, out _selectedSlot);
 
         // 빈 슬롯이면 무시
@@ -142,7 +146,9 @@ public class SortInputHandler : MonoBehaviour
         }
         else
         {
-            Vector2 worldPos = _cam.ScreenToWorldPoint(screenPos);
+            Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
+            Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
+
             OnDragging?.Invoke(worldPos);
         }
     }
@@ -156,7 +162,9 @@ public class SortInputHandler : MonoBehaviour
             return;
         }
 
-        Vector2 worldPos = _cam.ScreenToWorldPoint(screenPos);
+        Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
+        Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
+
         FindSlot(worldPos, out int toTable, out int toSlot);
 
         if (toTable >= 0)
@@ -174,16 +182,17 @@ public class SortInputHandler : MonoBehaviour
     {
         tableIdx = -1;
         slotIdx = -1;
-        float closest = _touchRadius;
+        float minDistance = float.MaxValue;
 
         for (int t = 0; t < _slotPositions.Length; t++)
         {
             for (int s = 0; s < _slotPositions[t].Length; s++)
             {
                 float dist = Vector2.Distance(worldPos, _slotPositions[t][s]);
-                if (dist < closest)
+                
+                if (dist < minDistance)
                 {
-                    closest = dist;
+                    minDistance = dist;
                     tableIdx = t;
                     slotIdx = s;
                 }
