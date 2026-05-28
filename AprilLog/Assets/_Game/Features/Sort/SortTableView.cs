@@ -74,6 +74,17 @@ public class SortTableView : MonoBehaviour, ISortTableView
         {
             sr.sprite = _unitSprites[unitType];
             sr.enabled = true;
+
+            // 유닛 색 테스트용 스프라이트로 대체 예정
+            switch (unitType)
+            {
+                case 0: sr.color = Color.red; break;
+                case 1: sr.color = Color.blue; break;
+                case 2: sr.color = Color.yellow; break;
+                case 3: sr.color = Color.green; break;
+                case 4: sr.color = Color.white; break;
+                default: sr.color = Color.clear; break;
+            }
         }
     }
 

@@ -21,7 +21,6 @@ public class SortTablePresenter
         _hint = hint;
 
         _model.Initialize();
-        _model.ShuffleBoard();
         _model.OnSlotChanged += HandleSlotChanged;
         _model.OnTableCleared += HandleTableCleared;
         _model.OnWaitingUpdated += HandleWaitingUpdated;
@@ -31,6 +30,7 @@ public class SortTablePresenter
         _input.OnDragCanceled += HandleDragCanceled;
         _hint.OnHintShow += HandleHint;
         _hint.OnHintWaiting += HandleHintWaiting;
+        _model.ShuffleBoard();
 
     }
 
