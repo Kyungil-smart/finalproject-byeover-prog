@@ -32,10 +32,16 @@ public class BootLoadingVideoView : MonoBehaviour
     [SerializeField] private Button _skipButton;
 
     private bool _isSkipped;
+    private bool _isPlaybackRequested;
 
     // 추가: 조규민 - 씬 시작 시 로딩 애니메이션 UI가 먼저 보이지 않도록 숨긴다.
     private void Awake()
     {
+        if (_isPlaybackRequested)
+        {
+            return;
+        }
+
         Hide();
     }
 
@@ -49,6 +55,7 @@ public class BootLoadingVideoView : MonoBehaviour
         }
 
         _isSkipped = false;
+        _isPlaybackRequested = true;
         Show();
         BindSkipButton();
         yield return StartCoroutine(PlayFrames());
@@ -125,6 +132,7 @@ public class BootLoadingVideoView : MonoBehaviour
             _skipButton.onClick.RemoveListener(HandleSkipClicked);
         }
 
+        _isPlaybackRequested = false;
         Hide();
     }
 

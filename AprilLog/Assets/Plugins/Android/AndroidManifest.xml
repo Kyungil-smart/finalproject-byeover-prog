@@ -10,7 +10,14 @@
             android:name="com.unity3d.player.UnityPlayerActivity"
             android:screenOrientation="portrait"
             android:resizeableActivity="false"
-            tools:replace="android:screenOrientation,android:resizeableActivity" />
+            android:exported="true"
+            tools:replace="android:screenOrientation,android:resizeableActivity">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- 추가: 조규민 - Unity 6000 GameActivity 사용 빌드에서도 동일하게 portrait를 강제한다. -->
         <activity
