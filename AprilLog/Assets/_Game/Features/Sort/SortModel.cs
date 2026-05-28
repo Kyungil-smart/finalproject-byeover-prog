@@ -98,6 +98,11 @@ public class SortModel : MonoBehaviour
     // ---------- 랜덤 배치 및 셔플 ----------
     public void ShuffleBoard()
     {
+        if (_puzzleTables == null)
+        {
+            Initialize();
+        }
+
         for (int t = 0; t < TABLE_COUNT; t++)
         {
             for (int s = 0; s < SLOTS_PER_TABLE; s++)
