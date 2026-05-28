@@ -9,6 +9,7 @@ using UnityEngine;
 
 // 수정자 : Codex
 // 수정내용 : MonsterSpawner의 살아있는 몬스터 목록을 기준으로 실제 공격 타겟을 선택하도록 변경.
+// 수정내용 : 모든 플레이어 공격을 직선 탄 전용 경로로 발사하여 발사 시 객체 생성을 줄임.
 
 /// <summary>
 /// 스킬 발사, 투사체 생성, 스킬 슬롯 관리를 담당한다.
@@ -27,6 +28,10 @@ public class SkillSystem : MonoBehaviour
     [Tooltip("살아있는 몬스터 목록과 공격 타겟 선택을 담당")]
     [SerializeField] private MonsterSpawner _monsterSpawner;
 
+    [Header("직선 탄 설정")]
+    [Tooltip("기본 공격 투사체 속도")]
+    [SerializeField] private float _basicProjectileSpeed = 10f;
+
     // ---------- Private ----------
     // 인챈트로 획득한 스킬 슬롯. UnitType -> SkillData 매핑.
     private Dictionary<UnitType, SkillData> _sortSkills = new Dictionary<UnitType, SkillData>();
@@ -38,8 +43,14 @@ public class SkillSystem : MonoBehaviour
     private List<SkillData> _triggeredComboCache = new List<SkillData>(4);
     private bool _hasLoggedMissingFirePoint;
     private bool _hasLoggedMissingSpawner;
+    private bool _hasTriedResolveSpawner;
 
     private void Awake()
+    {
+        ResolveReferences();
+    }
+
+    private void OnEnable()
     {
         ResolveReferences();
     }
@@ -86,7 +97,6 @@ public class SkillSystem : MonoBehaviour
     {
         if (data == null) return;
 
-        var master = DataManager.Instance.CharacterRepo.GetSkillMaster(data.StandardID);
         int damage = _combatSystem.CalculateDamage(data.Dmg);
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
             return;
@@ -99,10 +109,9 @@ public class SkillSystem : MonoBehaviour
         if (controller == null) return;
 
         // 타격 방식에 따라 행동 결정
-        string hitRange = master != null ? master.HitRange : string.Empty;
-        IProjectileBehavior behavior = CreateBehavior(hitRange, data.Speed);
+        float projectileSpeed = data.Speed > 0 ? data.Speed : _basicProjectileSpeed;
 
-        controller.Setup(behavior, damage, _firePoint.position, targetPos);
+        controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed);
     }
 
     public void FireBasicAttack()
@@ -118,9 +127,7 @@ public class SkillSystem : MonoBehaviour
         var controller = obj.GetComponent<ProjectileController>();
         if (controller == null) return;
 
-        IProjectileBehavior behavior = new StraightProjectile();
-
-        controller.Setup(behavior, baseDmg, _firePoint.position, targetPos);
+        controller.SetupStraight(baseDmg, _firePoint.position, targetPos, _basicProjectileSpeed);
     }
 
     // ---------- 투사체 행동 팩토리 ----------
@@ -129,10 +136,7 @@ public class SkillSystem : MonoBehaviour
         // hitRange 문자열에 따라 다른 행동 생성 (OCP)
         switch (hitRange)
         {
-            case "Piercing":    return new PiercingProjectile();
-            case "Homing":      return new HomingProjectile();
-            case "Bouncing":    return new BouncingProjectile();
-            default:            return new StraightProjectile();
+            default:            return null;
         }
     }
     
@@ -173,6 +177,9 @@ public class SkillSystem : MonoBehaviour
     private void ResolveReferences()
     {
         if (_monsterSpawner != null) return;
+        if (_hasTriedResolveSpawner) return;
+
+        _hasTriedResolveSpawner = true;
         _monsterSpawner = FindFirstObjectByType<MonsterSpawner>();
     }
 }
