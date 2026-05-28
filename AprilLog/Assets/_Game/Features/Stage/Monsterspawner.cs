@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+// 수정자 : Codex
+// 수정내용 : 자동공격 타겟 탐색을 sqrMagnitude 기반으로 최적화하고 같은 라인 좌측 우선 규칙 추가.
+
 /// <summary>
 /// StageSpawnRule 기반으로 몬스터를 스폰한다.
 /// 웨이브가 올라갈수록 GrowthType에 따라 스폰량이 증가하고 간격이 짧아진다.
@@ -26,6 +29,13 @@ public class MonsterSpawner : MonoBehaviour
     [Header("스폰 포인트")]
     [Tooltip("화면 상단 밖 스폰 포인트 7개 (왼->오)")]
     [SerializeField] private Transform[] _spawnPoints;
+
+    [Header("공격 타겟 선택")]
+    [Tooltip("같은 라인으로 판단할 Y 좌표 오차")]
+    [SerializeField] private float _sameLineYThreshold = 0.05f;
+
+    [Tooltip("같은 거리로 판단할 제곱거리 오차")]
+    [SerializeField] private float _distanceTieThreshold = 0.0001f;
 
     // ---------- Private ----------
     private List<SpawnTracker> _activeRules = new List<SpawnTracker>();
@@ -140,8 +150,10 @@ public class MonsterSpawner : MonoBehaviour
         var ai = obj.GetComponent<MonsterAI>();
         if (ai == null) return;
 
-        var stats = DataManager.Instance.CharacterRepo.GetCommonStatus(monsterId);
-        ai.Initialize(stats, monsterId);
+        var characterRepo = DataManager.Instance.CharacterRepo;
+        var stats = characterRepo.GetCommonStatus(monsterId);
+        var monsterStats = characterRepo.GetMonsterStatus(monsterId);
+        ai.Initialize(stats, monsterStats, monsterId);
         ai.OnDeath += HandleMonsterDeath;
 
         tracker.aliveCount++;
@@ -193,19 +205,56 @@ public class MonsterSpawner : MonoBehaviour
     public MonsterAI FindNearestMonster(Vector2 from)
     {
         MonsterAI nearest = null;
-        float closestDist = float.MaxValue;
+        float closestDistSqr = float.MaxValue;
 
         for (int i = 0; i < _aliveMonsters.Count; i++)
         {
-            float dist = Vector2.Distance(from, _aliveMonsters[i].transform.position);
-            if (dist < closestDist)
+            MonsterAI monster = _aliveMonsters[i];
+            if (monster == null || !monster.gameObject.activeInHierarchy)
+                continue;
+
+            Vector2 monsterPos = monster.transform.position;
+            float distSqr = (monsterPos - from).sqrMagnitude;
+            if (IsBetterAttackTarget(monsterPos, distSqr, nearest, closestDistSqr))
             {
-                closestDist = dist;
-                nearest = _aliveMonsters[i];
+                closestDistSqr = distSqr;
+                nearest = monster;
             }
         }
 
         return nearest;
+    }
+
+    public bool TryFindAttackTarget(Vector2 from, out MonsterAI target)
+    {
+        target = FindNearestMonster(from);
+        return target != null;
+    }
+
+    private bool IsBetterAttackTarget(
+        Vector2 candidatePos,
+        float candidateDistSqr,
+        MonsterAI currentBest,
+        float currentBestDistSqr)
+    {
+        if (currentBest == null)
+            return true;
+
+        Vector2 bestPos = currentBest.transform.position;
+        bool sameLine = Mathf.Abs(candidatePos.y - bestPos.y) <= _sameLineYThreshold;
+        if (sameLine)
+        {
+            if (candidatePos.x < bestPos.x)
+                return true;
+
+            if (candidatePos.x > bestPos.x)
+                return false;
+        }
+
+        if (candidateDistSqr < currentBestDistSqr - _distanceTieThreshold)
+            return true;
+
+        return false;
     }
 }
 
