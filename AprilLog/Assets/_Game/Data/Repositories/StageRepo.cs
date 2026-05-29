@@ -20,7 +20,7 @@ public class StageRepo : MonoBehaviour
 
     private Dictionary<int, ChapterData> _chapters;
     private Dictionary<int, StageData> _stages;
-    private Dictionary<int, MonsterPoolMasterData> _poolMasters;
+    private Dictionary<int, MonsterWavePoolData> _poolMasters;
     private Dictionary<int, List<MonsterPoolData>> _pools;
     private List<StageSpawnRuleData> _spawnRules;
     private List<MonsterStageScalingData> _scalingRules;

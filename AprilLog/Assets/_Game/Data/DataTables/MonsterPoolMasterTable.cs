@@ -6,6 +6,6 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "MonsterPoolMasterTable", menuName = "Data/MonsterPoolMasterTable")]
-public class MonsterPoolMasterTable : DataTable<MonsterPoolMasterData>
+public class MonsterPoolMasterTable : DataTable<MonsterWavePoolData>
 {
 }
