@@ -124,6 +124,12 @@ public class SortInputHandler : MonoBehaviour
 
         FindSlot(worldPos, out _selectedTable, out _selectedSlot);
 
+        if (_selectedTable >= 0)
+        {
+            int modelUnitType = _model.GetUnit(_selectedTable, _selectedSlot);
+            Debug.Log($"[클릭 검증] 검출된 테이블: {_selectedTable}, 슬롯: {_selectedSlot} | 모델 내부 데이터 값: {modelUnitType}");
+        }
+
         // 빈 슬롯이면 무시
         if (_selectedTable >= 0 && _model.GetUnit(_selectedTable, _selectedSlot) < 0)
         {
@@ -197,6 +203,12 @@ public class SortInputHandler : MonoBehaviour
                     slotIdx = s;
                 }
             }
+        }
+
+        if (minDistance > _touchRadius)
+        {
+            tableIdx = -1;
+            slotIdx = -1;
         }
     }
 }

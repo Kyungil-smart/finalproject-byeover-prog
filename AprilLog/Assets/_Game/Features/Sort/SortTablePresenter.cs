@@ -30,8 +30,6 @@ public class SortTablePresenter
         _input.OnDragCanceled += HandleDragCanceled;
         _hint.OnHintShow += HandleHint;
         _hint.OnHintWaiting += HandleHintWaiting;
-        _model.ShuffleBoard();
-
     }
 
     public void Dispose()
