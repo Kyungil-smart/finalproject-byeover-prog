@@ -4,6 +4,9 @@
 // 1차 수정자 : 홍정옥
 // 수정내용 : GetOutGrowthBonusUntilLevel 메서드 추가 (아웃게임 성장 누적 보너스 계산)
 
+// 2차 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,16 +14,12 @@ using UnityEngine;
 /// <summary>
 /// 레벨 곡선, 아웃게임 성장, 업적, 보상 등 설정 데이터를 관리한다.
 /// </summary>
-public class ConfigRepo : MonoBehaviour
+public class Legacy_ConfigRepo : MonoBehaviour
 {
-    [Header("성장 데이터")]
+    [Header("SO 참조")]
     [SerializeField] private InLevelTable _inLevelTable;
     [SerializeField] private OutLevelTable _outLevelTable;
-    
-    [Header("업적 데이터")]
     [SerializeField] private Legacy_AchievementDataTable _achievementTable;
-    
-    [Header("보상 데이터")]
     [SerializeField] private ChangeRewardTable _changeRewardTable;
 
     private Dictionary<int, InLevelData> _inLevel;

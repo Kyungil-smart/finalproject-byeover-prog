@@ -34,9 +34,9 @@ public class SkillSystem : MonoBehaviour
     [SerializeField] private float _basicProjectileSpeed = 10f;
 
     // ---------- Private ----------
-    private Dictionary<UnitType, SkillData> _sortSkills = new Dictionary<UnitType, SkillData>();
+    private Dictionary<UnitType, Legacy_SkillData> _sortSkills = new Dictionary<UnitType, Legacy_SkillData>();
     private List<ComboSkillEntry> _comboSkills = new List<ComboSkillEntry>();
-    private List<SkillData> _triggeredComboCache = new List<SkillData>(4);
+    private List<Legacy_SkillData> _triggeredComboCache = new List<Legacy_SkillData>(4);
     private bool _hasLoggedMissingFirePoint;
     private bool _hasLoggedMissingSpawner;
     private bool _hasTriedResolveSpawner;
@@ -52,12 +52,12 @@ public class SkillSystem : MonoBehaviour
     }
 
     // ---------- 스킬 등록 ----------
-    public void RegisterSortSkill(UnitType type, SkillData data)
+    public void RegisterSortSkill(UnitType type, Legacy_SkillData data)
     {
         _sortSkills[type] = data;
     }
 
-    public void RegisterComboSkill(int comboMultiple, SkillData data)
+    public void RegisterComboSkill(int comboMultiple, Legacy_SkillData data)
     {
         _comboSkills.Add(new ComboSkillEntry { comboMultiple = comboMultiple, data = data });
     }
@@ -68,12 +68,12 @@ public class SkillSystem : MonoBehaviour
     }
 
     // ---------- 스킬 조회 ----------
-    public SkillData GetSortSkill(UnitType type)
+    public Legacy_SkillData GetSortSkill(UnitType type)
     {
         return _sortSkills.TryGetValue(type, out var data) ? data : null;
     }
 
-    public List<SkillData> GetTriggeredComboSkills(int currentCombo)
+    public List<Legacy_SkillData> GetTriggeredComboSkills(int currentCombo)
     {
         _triggeredComboCache.Clear();
 
@@ -88,7 +88,7 @@ public class SkillSystem : MonoBehaviour
     }
 
     // ---------- 발사 ----------
-    public void FireSkill(SkillData data, AttackType type)
+    public void FireSkill(Legacy_SkillData data, AttackType type)
     {
         if (data == null) return;
 
@@ -172,5 +172,5 @@ public class SkillSystem : MonoBehaviour
 public struct ComboSkillEntry
 {
     public int comboMultiple;
-    public SkillData data;
+    public Legacy_SkillData data;
 }

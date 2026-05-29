@@ -120,7 +120,7 @@ public class DummyCombatTester : MonoBehaviour
         for (int i = 0; i < SortModel.UNIT_TYPE_COUNT; i++)
         {
             // 유닛 타입별로 데미지를 다르게 줘서 발사 차이를 눈으로 구분한다.
-            var data = new SkillData
+            var data = new Legacy_SkillData
             {
                 SkillID = 9000 + i,
                 Dmg = _sortSkillDamage + i * 5,
@@ -131,7 +131,7 @@ public class DummyCombatTester : MonoBehaviour
 
         foreach (int multiple in _comboMultiples)
         {
-            var combo = new SkillData { SkillID = 9100 + multiple, Dmg = _sortSkillDamage * 3, Speed = 14 };
+            var combo = new Legacy_SkillData { SkillID = 9100 + multiple, Dmg = _sortSkillDamage * 3, Speed = 14 };
             _skillSystem.RegisterComboSkill(multiple, combo);
         }
     }

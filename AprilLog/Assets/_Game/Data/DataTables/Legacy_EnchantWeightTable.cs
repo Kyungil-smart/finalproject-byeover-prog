@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "EnchantWeightTable", menuName = "Data/EnchantWeightTable")]
-public class EnchantWeightTable : DataTable<EnchantWeightData>
+[CreateAssetMenu(fileName = "Legacy_EnchantWeightTable", menuName = "Data/Legacy_EnchantWeightTable")]
+public class Legacy_EnchantWeightTable : DataTable<Legacy_EnchantWeightData>
 {
 }

@@ -5,17 +5,21 @@
 using System;
 using System.Collections.Generic;
 
+#region JSON 파싱용 래퍼
+
 /// <summary>
 /// 모든 데이터 테이블의 행 구조를 정의한다.
 /// 필드명은 기획자 Excel의 행 1(영문 컬럼명)과 정확히 일치해야 함.
 /// </summary>
-
-// JSON 파싱용 래퍼
 [Serializable]
 public class DataArray<T>
 {
     public T[] data;
 }
+
+    #endregion
+
+#region ----- C -----
 
 /// <summary>
 /// 변동 보상 ID와 설정 매칭<br/>
@@ -97,6 +101,10 @@ public class CommonStatusData
     public float BaseAttackSpeed;
 }
 
+#endregion
+
+#region ----- I -----
+
 /// <summary>
 /// 인게임 레벨<br/>
 /// Legacy에서 이관<br/>
@@ -109,6 +117,11 @@ public class InLevelData
     public int RequiredEXP;
     public float HPRecovery;
 }
+
+
+#endregion
+
+#region ----- M -----
 
 /// <summary>
 /// 몬스터 풀 ID와 몬스터 캐릭터 간 연결과 가중치 설정<br/>
@@ -172,6 +185,11 @@ public class MonsterWavePoolData
     public int MonsterPool_ID;      // PK
 }
 
+
+#endregion
+
+#region ----- O -----
+
 /// <summary>
 /// 아웃게임 레벨<br/>
 /// Legacy에서 이관<br/>
@@ -189,6 +207,11 @@ public class OutLevelData
     public int SlowPower;
     public int NewEnchant;
 }
+
+
+#endregion
+
+#region ----- S -----
 
 /// <summary>
 /// 웨이브 진행 중 특수 웨이브 삽입 데이터<br/>
@@ -244,3 +267,31 @@ public class StageWaveRuleData
     public float InfestedChance;
     public int SpecialWave_ID;  // 0인 경우 발동하지않음
 }
+
+#endregion
+
+#region Sort 보조 구조체
+
+/// <summary>
+/// Sort 보조 구조체
+/// </summary>
+[Serializable]
+public struct WaitingCombo
+{
+    public int[] unitTypes;
+    public WaitingDifficulty difficulty;
+
+    public int FilledCount
+    {
+        get
+        {
+            int c = 0;
+            for (int i = 0; i < unitTypes.Length; i++)
+                if (unitTypes[i] >= 0) c++;
+            return c;
+        }
+    }
+}
+
+    #endregion
+

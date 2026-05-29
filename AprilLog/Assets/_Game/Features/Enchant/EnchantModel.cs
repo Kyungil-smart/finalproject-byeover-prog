@@ -27,7 +27,7 @@ public class EnchantModel : MonoBehaviour
         _ownedEnchants.Clear();
     }
 
-    public void RestoreFromSave(List<AcquiredEnchant> saves)
+    public void RestoreFromSave(List<Legacy_AcquiredEnchant> saves)
     {
         _ownedEnchants.Clear();
         if (saves == null) return;
@@ -61,11 +61,11 @@ public class EnchantModel : MonoBehaviour
     public bool HasEnchant(int enchantId) => _ownedEnchants.ContainsKey(enchantId);
     public int GetEnchantLevel(int enchantId) => _ownedEnchants.TryGetValue(enchantId, out int lv) ? lv : 0;
 
-    public List<AcquiredEnchant> ToSaveData()
+    public List<Legacy_AcquiredEnchant> ToSaveData()
     {
-        var list = new List<AcquiredEnchant>();
+        var list = new List<Legacy_AcquiredEnchant>();
         foreach (var pair in _ownedEnchants)
-            list.Add(new AcquiredEnchant { enchantId = pair.Key, level = pair.Value });
+            list.Add(new Legacy_AcquiredEnchant { enchantId = pair.Key, level = pair.Value });
         return list;
     }
 }

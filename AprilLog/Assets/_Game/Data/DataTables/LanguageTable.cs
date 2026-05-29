@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "LanguageTable", menuName = "Data/LanguageTable")]
-public class LanguageTable : DataTable<LanguageEntry>
+[CreateAssetMenu(fileName = "Legacy_LanguageTable", menuName = "Data/Legacy_LanguageTable")]
+public class Legacy_LanguageTable : DataTable<Legacy_LanguageEntry>
 {
 }

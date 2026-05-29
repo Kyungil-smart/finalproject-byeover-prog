@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "SkillMasterTable", menuName = "Data/SkillMasterTable")]
-public class SkillMasterTable : DataTable<SkillMasterData>
+[CreateAssetMenu(fileName = "Legacy_SkillMasterTable", menuName = "Data/Legacy_SkillMasterTable")]
+public class Legacy_SkillMasterTable : DataTable<Legacy_SkillMasterData>
 {
 }

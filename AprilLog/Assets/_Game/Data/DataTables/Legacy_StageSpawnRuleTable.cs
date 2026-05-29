@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "StageSpawnRuleTable", menuName = "Data/StageSpawnRuleTable")]
-public class StageSpawnRuleTable : DataTable<StageSpawnRuleData>
+[CreateAssetMenu(fileName = "Legacy_StageSpawnRuleTable", menuName = "Data/Legacy_StageSpawnRuleTable")]
+public class Legacy_StageSpawnRuleTable : DataTable<Legacy_StageSpawnRuleData>
 {
 }
