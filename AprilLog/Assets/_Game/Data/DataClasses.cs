@@ -1,9 +1,9 @@
-// 담당자 : 정승우
-// 설명   : 데이터 테이블 구조체 모음
+// 담당자 : 김영찬
+// 설명   : 데이터 테이블 구조체 모음 (신규)
+// 주의 사항 : 알파벳 순으로 정렬 할 것
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Serialization;
 
 /// <summary>
 /// 모든 데이터 테이블의 행 구조를 정의한다.
@@ -17,141 +17,28 @@ public class DataArray<T>
     public T[] data;
 }
 
-// 캐릭터 관련
-
+/// <summary>
+/// 변동 보상 ID와 설정 매칭<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 26.05.29
+/// </summary>
 [Serializable]
-public class CharacterMasterData
+public class ChangeRewardData
 {
-    public int Character_ID;
-    public string CharacterType;    // Main, Guide, Monster
-    public int CharacterName;       // FK -> CharacterNameData
+    public int ChangeReward_ID;
+    public int Start_ID;
+    public int End_ID;
+    public string RewardType;       // Gold, Parchment
+    public int BaseAmount;
+    public string GrowthType;       // None, Add, Rate
+    public float GrowthValue;
 }
 
-[Serializable]
-public class CharacterNameData
-{
-    public int CharacterName;       // PK
-    public string Name_KR;
-    public string Name_EN;
-}
-
-// 주인공/몬스터 공용 스탯
-
-[Serializable]
-public class CommonStatusData
-{
-    public int Character_ID;
-    public int MaxHP;
-    public int Attack;
-    public float BaseAttackSpeed;
-}
-
-// 주인공 전용 스탯
-
-[Serializable]
-public class CharacterStatusData
-{
-    public int Character_ID;
-    public float CriticalRate;
-    public float PercentagePierce;
-    public int StunPower;
-    public int SlowPower;
-    public int HitCount;
-    public int AoE;
-    public int MaxTargets;
-}
-
-// 몬스터 전용 스탯
-
-[Serializable]
-public class MonsterStatusData
-{
-    public int Character_ID;
-    public int Defense;
-    public float MoveSpeed;
-    public int Range;
-    public int EXP;
-    public string MovementPattern;  // Straight, Zigzag
-    public int ZigzagAmplitude;
-}
-
-// 스킬 관련
-
-[Serializable]
-public class SkillMasterData
-{
-    public int StandardID;
-    public string Name;
-    public string AttackType;
-    public string HitRange;
-    public int StatusEffect;
-    public int StatusEffect2;
-    public int StatusEffect3;
-    public int StatusEffect4;
-}
-
-[Serializable]
-public class SkillData
-{
-    public int StandardID;
-    public int SkillID;
-    public int Level;
-    public int Speed;
-    public int Dmg;
-    public int DetectRange;
-    public int HitSize;
-    public int PelletCount;
-    public int NumberOfCycle;
-    public int Interval;
-    public float PercentagePierce;
-    public float CriticalRate;
-    public int Image;
-}
-
-[Serializable]
-public class EffectData
-{
-    public int EffectID;
-    public string Name;
-    public string StatusType;
-    public int Value;
-    public int Duration;
-    public int Interval;
-}
-
-// 인챈트 관련
-
-[Serializable]
-public class EnchantMasterData
-{
-    public int EnchantID;
-    public string EnchantType;
-    public string Name;
-    public int MaxLevel;
-    public int LinkedSkillID;
-    public int LinkedStatType;
-    public string DescriptionKey;
-    public string ImageKey;
-}
-
-[Serializable]
-public class EnchantLevelData
-{
-    public int EnchantID;
-    public int Level;
-    public float Value;
-}
-
-[Serializable]
-public class EnchantWeightData
-{
-    public int OwnedCountMin;
-    public int OwnedCountMax;
-    public float OwnedWeight;
-    public float UnownedWeight;
-}
-
-
+/// <summary>
+/// 쳅터 ID와 설정 매칭<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
 public class ChapterData
 {
@@ -165,34 +52,69 @@ public class ChapterData
     public int Explanation;     // FK -> MapLanguageData
 }
 
+/// <summary>
+/// 캐릭터 ID와 타입/이름 매칭<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
-public class MapLanguageData
+public class CharacterMasterData
 {
-    public string Language;     // PK (N_1, D_1 등)
-    public string KR;
-    public string EN;
+    public int Character_ID;
+    public string CharacterType;    // Main, Guide, Monster
+    public int CharacterName;       // FK -> CharacterNameData
 }
 
+/// <summary>
+/// 주인공 전용 스텟<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
-public class StageData
+public class CharacterStatusData
 {
-    public int Chapter_ID;      // FK
-    public int Stage_ID;        // PK
-    public int StageOrder;
-    public int TimeLimit;
-    public int WaveCount;       // 이 스테이지의 웨이브 수
-    public int WaveGroup_ID;    // 현재 미사용, 향후 확장용
+    public int Character_ID;
+    public float CriticalRate;
+    public float PercentagePierce;
+    public int StunPower;
+    public int SlowPower;
+    public int HitCount;
+    public int AoE;
+    public int MaxTargets;
 }
 
-// 몬스터 풀 마스터 (신규)
+/// <summary>
+/// 주인공/몬스터 공용 스텟<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
-public class MonsterPoolMasterData
+public class CommonStatusData
 {
-    public int MonsterPool_ID;      // PK
-    public string MonsterPoolType;  // Normal, Agile, Tank, Ranged, Infested, Gimmick, Elite, Boss
+    public int Character_ID;
+    public int MaxHP;
+    public int Attack;
+    public float BaseAttackSpeed;
 }
 
-// 몬스터 풀 구성원 (신규)
+/// <summary>
+/// 인게임 레벨<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class InLevelData
+{
+    public int InLevel;
+    public int RequiredEXP;
+    public float HPRecovery;
+}
+
+/// <summary>
+/// 몬스터 풀 ID와 몬스터 캐릭터 간 연결과 가중치 설정<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
 public class MonsterPoolData
 {
@@ -201,22 +123,11 @@ public class MonsterPoolData
     public int Weight;          // 가중치
 }
 
-// 스테이지 스폰 규칙 (신규 -- 기존 StageMonsterData 대체)
-[Serializable]
-public class StageSpawnRuleData
-{
-    public int StartStage_ID;       // FK
-    public int EndStage_ID;         // FK
-    public int MonsterPool_ID;      // FK -> MonsterPoolMaster
-    public int MaxAlive;
-    public float SpawnInterval;
-    public int SpawnAmount;
-    public string GrowthType;       // None, Add, Rate
-    public float GrowthValue;
-    public string SpawnPositionType; // RandomAll, SP_1 ~ SP_7
-}
-
-// 몬스터 스테이지 스케일링 (신규 -- 기존 MonsterScalingData 대체)
+/// <summary>
+/// 스테이지 별 몬스터 퓰의 보정치<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
 public class MonsterStageScalingData
 {
@@ -231,17 +142,41 @@ public class MonsterStageScalingData
     public float DefenseGrowthValue;
 }
 
-// 인게임 레벨
+/// <summary>
+/// 몬스터 전용 스텟<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
-public class InLevelData
+public class MonsterStatusData
 {
-    public int InLevel;
-    public int RequiredEXP;
-    public float HPRecovery;
+    public int Character_ID;
+    public int Defense;
+    public float MoveSpeed;
+    public int Range;
+    public int EXP;
+    public string MovementPattern;  // Straight, Zigzag
+    public int ZigzagAmplitude;
 }
 
-// 아웃게임 레벨업 비용 + 스탯 증가량
+/// <summary>
+/// 몬스터 풀 ID와 몬스터 풀의 타입 연결(구 MonsterPoolMasterData)<br/>
+/// 생성일 : 26.05.29<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class MonsterWavePoolData
+{
+    public int MonsterWavePool_ID;
+    public string MonsterPoolType;  // Normal, Agile, Tank, Ranged, Infested, Gimmick, Elite, Boss
+    public int MonsterPool_ID;      // PK
+}
 
+/// <summary>
+/// 아웃게임 레벨<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
 public class OutLevelData
 {
@@ -255,104 +190,57 @@ public class OutLevelData
     public int NewEnchant;
 }
 
-// 보상
-
+/// <summary>
+/// 웨이브 진행 중 특수 웨이브 삽입 데이터<br/>
+/// 생성일 : 26.05.29<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
-public class ChangeRewardData
+public class SpecialWaveRuleData
 {
-    public string ChangeReward_ID;  // PK (SCR_1 등)
-    public string Start_ID;         // C_ 또는 S_ 시작
-    public string End_ID;
-    public string RewardType;       // Gold, Parchment
-    public int BaseAmount;
-    public string GrowthType;       // None, Add, Rate
-    public float GrowthValue;
+    public int SpecialWave_ID;
+    public int MonsterWavePool_ID;
+    public string WaveType; // Rush, Gimmick, Elite, Boss
+    public int TriggerTime;
+    public string EndType;  // Duration, WaveEnd, Instant
+    public int ActiveDuration;
 }
 
-// 업적
+/// <summary>
+/// 스테이지 구성 데이터<br/>
+/// Legacy에서 이관<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
-public class AchievementData
+public class StageData
 {
-    public int AchievementID;
-    public string NameKey;
-    public string ConditionType;
-    public int ConditionValue;
-    public int RewardGold;
-    public int RewardParchment;
-}
-// 로컬라이제이션
-
-[Serializable]
-public class LanguageEntry
-{
-    public string Key;
-    public string Ko;
-    public string En;
-}
-
-// View 표시용 구조체
-
-[Serializable]
-public class EnchantDisplayData
-{
-    public int EnchantId;
-    public string Name;
-    public string Description;
-    public int Level;
-    public string ImageKey;
-}
-
-[Serializable]
-public class StageDisplayData
-{
-    public int StageId;
-    public string ChapterName;
+    public int Chapter_ID;      // FK
+    public int Stage_ID;        // PK
     public int StageOrder;
-    public bool IsUnlocked;
-    public bool IsCleared;
+    public int TimeLimit;
+    public int WaveGroup_ID;    // 현재 미사용, 향후 확장용
 }
 
-// 인게임 세이브
-
+/// <summary>
+/// 스테이지 별 웨이브 구성 데이터(구 StageSpawnRuleData)<br/>
+/// 생성일 : 26.05.29<br/>
+/// 최종 수정일 : 
+/// </summary>
 [Serializable]
-public class InGameSaveData
+public class StageWaveRuleData
 {
-    public int chapterId;
-    public int clearedStage;
-    public int playerHP;
-    public int currentEXP;
-    public int inGameLevel;
-    public int[] puzzleSlots;
-    public int[] waitingSlots;
-    public List<AcquiredEnchant> acquiredEnchants;
-    public int totalDamage;
-    public int maxCombo;
-    public int nextStageSeed;
-}
-
-[Serializable]
-public class AcquiredEnchant
-{
-    public int enchantId;
-    public int level;
-}
-
-// Sort 보조 구조체
-
-[Serializable]
-public struct WaitingCombo
-{
-    public int[] unitTypes;
-    public WaitingDifficulty difficulty;
-
-    public int FilledCount
-    {
-        get
-        {
-            int c = 0;
-            for (int i = 0; i < unitTypes.Length; i++)
-                if (unitTypes[i] >= 0) c++;
-            return c;
-        }
-    }
+    public int Stage_ID;
+    public int WaveOrder;
+    public int WaveDuration;
+    public string WaveEndType;  // TimeOver, TimeOverOrBossKill
+    public string WaveEndAction;    // KeepAlive, DespawnRemaining
+    public float SpawnInterval;
+    public int SpawnAmount;
+    public int MonsterWavePool_ID;
+    public float NormalChance;  // 티입별 소환 확률 : 전체 확률의 백분율
+    public float AgileChance;
+    public float TankChance;
+    public float RangedChance;
+    public float InfestedChance;
+    public int SpecialWave_ID;  // 0인 경우 발동하지않음
 }
