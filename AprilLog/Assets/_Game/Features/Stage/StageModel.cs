@@ -4,6 +4,8 @@
 
 // 1차 수정 : 1차 수정된 StageLoopManager.cs에서 시간과 전투중 상태를 분리하여 이식
 
+// 2차 수정 : WaveCount 삭제 되어 해당 변수 사용 스크립트 삭제
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -30,14 +32,13 @@ public class StageModel
     private float _waveTransitionDelay;
     
     private int _currentWaveIndex;
-    private int _waveCount;
+    private int _waveCount; // ToDo : count 얻는 로직 수정해야 됨
     
     // ---------- 생성자 ----------
     public StageModel(StageData stageData , float transitionTime)
     {
         _currentWaveIndex = 0;
-        _waveCount = stageData.WaveCount > 0 ? stageData.WaveCount : 3;
-        _waveTimeLimit = (float)stageData.TimeLimit / _waveCount;
+        _waveTimeLimit = stageData.TimeLimit;
         
         _state = State.WaveTransition;
         _waveTransitionDelay = transitionTime;
