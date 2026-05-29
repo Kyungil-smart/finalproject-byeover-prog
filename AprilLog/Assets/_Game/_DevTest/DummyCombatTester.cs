@@ -1,16 +1,5 @@
-// 담당자 : (임시 테스트)
-// 설명   : 플레이어 공격 시스템을 _InGame 단독 Play로 확인하기 위한 throwaway 하니스.
-//          기획/데이터 테이블에 없는 더미 데이터만 사용하며, 프로덕션 코드는 건드리지 않는다.
-//          (private 필드/메서드는 리플렉션으로 주입)
-//
-// 사용법 : _InGame 씬의 빈 GameObject에 이 컴포넌트를 붙이고 Play.
-//          확인이 끝나면 이 파일과 GameObject를 통째로 삭제하면 된다.
-//
-// 처리 : ① 런타임 PoolManager + Projectile_Basic 풀(코드 생성 투사체)
-//        ② 더미 정렬 스킬 5종 + 콤보 스킬 등록
-//        ③ SkillSystem._firePoint 주입
-//        ④ 더미 몬스터 스폰 + MonsterSpawner._aliveMonsters 등록 (사망 시 자동 리스폰)
-//        ⑤ CombatSystem 자동공격 ON
+// 담당자 : 개발 테스트용 (삭제 예정)
+// 설명   : 플레이어 공격 파이프라인을 _InGame 단독 Play로 확인하는 throwaway 하니스
 
 #if UNITY_EDITOR
 using System.Collections;
@@ -18,8 +7,14 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
+/// <summary>
+/// 더미 스킬/몬스터/투사체 풀을 런타임에 만들어 정렬-전투-투사체-데미지 경로를 검증한다.
+/// 기획/데이터 테이블에 없는 임시 데이터만 쓰고, 프로덕션 코드는 리플렉션으로만 접근한다.
+/// 빈 GameObject에 붙여 Play하고, 확인이 끝나면 이 파일과 오브젝트째로 삭제한다.
+/// </summary>
 public class DummyCombatTester : MonoBehaviour
 {
+    // ---------- SerializeField ----------
     [Header("더미 몬스터")]
     [Tooltip("동시에 유지할 더미 몬스터 수")]
     [SerializeField] private int _monsterCount = 3;
@@ -27,13 +22,14 @@ public class DummyCombatTester : MonoBehaviour
     [Tooltip("더미 몬스터 체력")]
     [SerializeField] private int _monsterHP = 60;
 
-    [Tooltip("더미 몬스터 스폰 Y (위에서 아래로 내려옴)")]
+    [Tooltip("더미 몬스터 스폰 Y. 위에서 아래로 내려옴")]
     [SerializeField] private float _spawnY = 5f;
 
     [Tooltip("사망 후 리스폰 딜레이(초)")]
     [SerializeField] private float _respawnDelay = 1f;
 
     [Header("플레이어 발사 위치")]
+    [Tooltip("투사체가 발사되는 기준 좌표")]
     [SerializeField] private Vector3 _firePointPos = new Vector3(0f, -2.5f, 0f);
 
     [Header("더미 스킬")]
@@ -52,9 +48,10 @@ public class DummyCombatTester : MonoBehaviour
 
     private Sprite _squareSprite;
 
+    // ---------- 생명주기 ----------
     private IEnumerator Start()
     {
-        // InGameBootstrap이 모델/Sort를 초기화할 시간을 한 프레임 준다.
+        // InGameBootstrap이 모델과 Sort를 먼저 초기화하도록 한 프레임 양보한다.
         yield return null;
 
         _squareSprite = BuildSquareSprite();
@@ -83,14 +80,14 @@ public class DummyCombatTester : MonoBehaviour
         Debug.Log("[DummyCombatTester] 준비 완료. 정렬하거나 자동공격으로 투사체가 발사됩니다.");
     }
 
-    // ---------- ① PoolManager + 투사체 풀 ----------
+    // ---------- 풀 / 투사체 ----------
     private void EnsurePoolManagerWithProjectile()
     {
+        // _InGame 단독 실행이면 PoolManager가 없으므로 런타임에 만든다.
         var pm = PoolManager.Instance;
         if (pm == null)
             pm = new GameObject("[DUMMY] PoolManager").AddComponent<PoolManager>();
 
-        // 코드로 생성한 투사체 템플릿 (노란 사각형 + 트리거 콜라이더 + 키네마틱 RB)
         var template = new GameObject("[DUMMY] Projectile_Basic");
         template.SetActive(false);
         template.transform.localScale = Vector3.one * 0.3f;
@@ -100,6 +97,7 @@ public class DummyCombatTester : MonoBehaviour
         sr.color = Color.yellow;
         sr.sortingOrder = 50;
 
+        // 트리거 충돌 콜백을 받으려면 한쪽에 Rigidbody2D가 필요하다.
         var rb = template.AddComponent<Rigidbody2D>();
         rb.bodyType = RigidbodyType2D.Kinematic;
         rb.gravityScale = 0f;
@@ -110,13 +108,13 @@ public class DummyCombatTester : MonoBehaviour
 
         template.AddComponent<ProjectileController>();
 
-        // PoolManager.RegisterPool(private) 호출. 이미 있으면 내부에서 무시됨.
-        var mi = typeof(PoolManager).GetMethod("RegisterPool",
+        // RegisterPool은 private이고, 이미 등록돼 있으면 내부에서 무시된다.
+        var register = typeof(PoolManager).GetMethod("RegisterPool",
             BindingFlags.NonPublic | BindingFlags.Instance);
-        mi.Invoke(pm, new object[] { "Projectile_Basic", template, 20 });
+        register.Invoke(pm, new object[] { "Projectile_Basic", template, 20 });
     }
 
-    // ---------- ② 더미 스킬 등록 ----------
+    // ---------- 스킬 등록 ----------
     private void RegisterDummySkills()
     {
         for (int i = 0; i < SortModel.UNIT_TYPE_COUNT; i++)
@@ -124,7 +122,7 @@ public class DummyCombatTester : MonoBehaviour
             var data = new Legacy_SkillData
             {
                 SkillID = 9000 + i,
-                Dmg = _sortSkillDamage + i * 5, // 유닛 타입별로 데미지 차등
+                Dmg = _sortSkillDamage + i * 5,
                 Speed = 12,
             };
             _skillSystem.RegisterSortSkill((UnitType)i, data);
@@ -137,20 +135,22 @@ public class DummyCombatTester : MonoBehaviour
         }
     }
 
-    // ---------- ③ FirePoint 주입 ----------
+    // ---------- 발사 위치 ----------
     private void InjectFirePoint()
     {
-        var fp = new GameObject("[DUMMY] FirePoint").transform;
-        fp.position = _firePointPos;
+        var firePoint = new GameObject("[DUMMY] FirePoint").transform;
+        firePoint.position = _firePointPos;
 
+        // 씬의 SkillSystem._firePoint가 비어 있어 공격이 건너뛰어지므로 주입한다.
         var field = typeof(SkillSystem).GetField("_firePoint",
             BindingFlags.NonPublic | BindingFlags.Instance);
-        field.SetValue(_skillSystem, fp);
+        field.SetValue(_skillSystem, firePoint);
     }
 
-    // ---------- ④ 더미 몬스터 ----------
+    // ---------- 더미 몬스터 ----------
     private void CacheSpawnerAliveList()
     {
+        // 스포너는 자기 alive 리스트만 타겟 후보로 보므로 직접 참조를 확보한다.
         var field = typeof(MonsterSpawner).GetField("_aliveMonsters",
             BindingFlags.NonPublic | BindingFlags.Instance);
         _spawnerAliveList = field.GetValue(_spawner) as List<MonsterAI>;
@@ -170,8 +170,7 @@ public class DummyCombatTester : MonoBehaviour
 
         go.AddComponent<BoxCollider2D>();
 
-        // MonsterAI.AttackSupport가 _animator.SetTrigger를 무조건 호출하므로
-        // NPE 방지를 위해 Animator를 붙이고 리플렉션으로 주입한다.
+        // AttackSupport가 _animator.SetTrigger를 무조건 호출해서, 비어 있으면 NPE가 난다.
         var animator = go.AddComponent<Animator>();
         var ai = go.AddComponent<MonsterAI>();
         typeof(MonsterAI).GetField("_animator", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -192,7 +191,7 @@ public class DummyCombatTester : MonoBehaviour
             ai.SetPlayerModel(_playerModel);
 
         ai.OnDeath += HandleDummyMonsterDeath;
-        _spawnerAliveList.Add(ai); // 스포너의 타겟 후보로 등록
+        _spawnerAliveList.Add(ai);
     }
 
     private void HandleDummyMonsterDeath(MonsterAI monster)
@@ -214,7 +213,9 @@ public class DummyCombatTester : MonoBehaviour
     {
         var tex = new Texture2D(4, 4);
         var pixels = new Color[16];
-        for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.white;
+        for (int i = 0; i < pixels.Length; i++)
+            pixels[i] = Color.white;
+
         tex.SetPixels(pixels);
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
