@@ -131,6 +131,7 @@ public class BootLoadingVideoView : MonoBehaviour
     // 추가: 조규민 - 로딩 애니메이션 UI를 표시한다.
     private void Show()
     {
+        GetRoot().transform.localScale = Vector3.one;
         GetRoot().SetActive(true);
     }
 
