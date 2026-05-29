@@ -7,6 +7,9 @@
 // 수정자 : 정승우
 // 수정내용 : Model/UI 참조가 비어 있을 때 초기화를 건너뛰어 테스트 씬 NullReference 방지
 
+// 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -41,7 +44,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 return;
 
             _isInitialized = true;
-            _presenter = new EnchantSelectPresenter(this, _enchantModel, DataManager.Instance.CharacterRepo, _navigator);
+            _presenter = new EnchantSelectPresenter(this, _enchantModel, Legacy_DataManager.Instance.CharacterRepo, _navigator);
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
         }
     }
@@ -62,7 +65,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
     private bool HasRequiredReferences()
     {
-        if (_enchantModel != null && _navigator != null && _skipButton != null && DataManager.Instance.CharacterRepo != null)
+        if (_enchantModel != null && _navigator != null && _skipButton != null && Legacy_DataManager.Instance.CharacterRepo != null)
             return true;
 
         Debug.LogWarning("[EnchantSelectView] 필수 참조가 비어 있어 초기화를 건너뜁니다.", this);

@@ -10,6 +10,9 @@
 // 3차 수정자 : 정승우
 // 수정내용 : 기획서 v1.03 반영. Shield 삭제, Attack/StunPower/SlowPower 보너스 추가.
 
+// 4차 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 using UnityEngine;
 
 /// <summary>
@@ -49,12 +52,12 @@ public class InGameBootstrap : MonoBehaviour
         }
 
         // [3] Model 초기화
-        var playerStats = DataManager.Instance.CharacterRepo.GetCommonStatus(1);
+        var playerStats = Legacy_DataManager.Instance.CharacterRepo.GetCommonStatus(1);
         _playerModel.Initialize(playerStats);
 
         // 아웃게임 성장 보너스 적용 (홍정옥)
         int characterLevel = GetCharacterLevel();
-        DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
+        Legacy_DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
             out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus);
         _playerModel.ApplyStatBonus(hpBonus, attackBonus, stunBonus, slowBonus);
 

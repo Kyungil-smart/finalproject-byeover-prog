@@ -4,6 +4,9 @@
 // 1차 수정자 : 김영찬 ->
 // 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
 
+// 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,8 +37,8 @@ public class GrowthView : MonoBehaviour, IGrowthView
         if (!_isInitialized)
         {
             _isInitialized = true;
-            DataManager dataManager = DataManager.Instance;
-            ConfigRepo configRepo = dataManager != null ? dataManager.ConfigRepo : null;
+            Legacy_DataManager dataManager = Legacy_DataManager.Instance;
+            Legacy_ConfigRepo configRepo = dataManager != null ? dataManager.ConfigRepo : null;
 
             if (_growthSystem == null || _currency == null || _progress == null || configRepo == null)
             {

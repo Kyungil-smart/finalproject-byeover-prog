@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 인챈트 등장 가중치 계산 + 랜덤 선택
 
+// 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,11 +14,11 @@ using UnityEngine;
 /// </summary>
 public class EnchantSelectionLogic
 {
-    private readonly CharacterRepo _repo;
+    private readonly Legacy_CharacterRepo _repo;
     private readonly EnchantModel _model;
     private readonly System.Random _rng;
 
-    public EnchantSelectionLogic(CharacterRepo repo, EnchantModel model, System.Random rng)
+    public EnchantSelectionLogic(Legacy_CharacterRepo repo, EnchantModel model, System.Random rng)
     {
         _repo = repo;
         _model = model;

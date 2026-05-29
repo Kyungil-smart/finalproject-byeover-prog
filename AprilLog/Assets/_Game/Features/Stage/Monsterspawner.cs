@@ -16,6 +16,9 @@ using UnityEngine;
 // 수정자 : 정승우
 // 수정내용 : 공격 타겟 탐색을 살아있는 몬스터 목록 기준으로 변경하고, 같은 라인 좌측 우선 규칙 추가.
 
+// 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 /// <summary>
 /// StageSpawnRule 기반으로 몬스터를 스폰한다.
 /// 웨이브가 올라갈수록 GrowthType에 따라 스폰량이 증가하고 간격이 짧아진다.
@@ -50,7 +53,7 @@ public class MonsterSpawner : MonoBehaviour
         _isRunning = true;
         _activeRules.Clear();
 
-        var rules = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageId);
+        var rules = Legacy_DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageId);
 
         for (int i = 0; i < rules.Count; i++)
         {
@@ -136,7 +139,7 @@ public class MonsterSpawner : MonoBehaviour
     private void SpawnOne(ref SpawnTracker tracker)
     {
         // 풀에서 가중치 기반으로 몬스터 뽑기
-        int monsterId = DataManager.Instance.StageRepo.PickMonsterFromPool(tracker.rule.MonsterPool_ID, _rng);
+        int monsterId = Legacy_DataManager.Instance.StageRepo.PickMonsterFromPool(tracker.rule.MonsterPool_ID, _rng);
         if (monsterId < 0) return;
 
         // 스폰 위치 결정
@@ -150,7 +153,7 @@ public class MonsterSpawner : MonoBehaviour
         var ai = obj.GetComponent<MonsterAI>();
         if (ai == null) return;
 
-        var characterRepo = DataManager.Instance.CharacterRepo;
+        var characterRepo = Legacy_DataManager.Instance.CharacterRepo;
         var stats = characterRepo.GetCommonStatus(monsterId);
         var monsterStats = characterRepo.GetMonsterStatus(monsterId);
         ai.Initialize(stats, monsterStats, monsterId);

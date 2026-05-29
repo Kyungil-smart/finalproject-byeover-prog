@@ -1,11 +1,8 @@
 // 담당자 : 김영찬
 // 설명   : Repository를 관리하는 싱글톤 데이터 매니저
-
 // 수정자 : 최동훈 - 프리팹 경로 수정
-
 // 수정자 : 정승우 - InitRepo 이중 호출 방지 + 아키텍처 연동
-
-// 수정자 : 김영찬 - 새로운 DB 반영하여 Repo 분리 및 신설
+// 2차 수정 : 해당 파일은 레거시 처리
 
 using System;
 using UnityEngine;
@@ -13,18 +10,18 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-public class DataManager : MonoBehaviour
+public class Legacy_DataManager : MonoBehaviour
 {
-    private static DataManager _instance;
+    private static Legacy_DataManager _instance;
     private bool _isInitialized;
 
-    public static DataManager Instance
+    public static Legacy_DataManager Instance
     {
         get
         {
             if (_instance == null)
             {
-                _instance = FindFirstObjectByType<DataManager>();
+                _instance = FindFirstObjectByType<Legacy_DataManager>();
 
                 if (_instance == null)
                 {
@@ -37,7 +34,7 @@ public class DataManager : MonoBehaviour
                         Debug.LogWarning($"[DataManager] 씬에 없어서 '{prefabPath}'에서 에디터 전용 로드.");
                         GameObject go = Instantiate(prefab);
                         go.name = "DataManager_TestHarness";
-                        _instance = go.GetComponent<DataManager>();
+                        _instance = go.GetComponent<Legacy_DataManager>();
                         _instance.InitRepo();
                     }
                     else
@@ -53,17 +50,13 @@ public class DataManager : MonoBehaviour
         }
     }
     
-    // ---------- SerializeField ----------
-    [SerializeField] private CharacterRepo _characterRepo;
-    [SerializeField] private StageRepo _stageRepo;
-    [SerializeField] private ConfigRepo _configRepo;
-    [SerializeField] private SpellRepo _spellRepo;
+    [SerializeField] private Legacy_CharacterRepo _characterRepo;
+    [SerializeField] private Legacy_StageRepo _stageRepo;
+    [SerializeField] private Legacy_ConfigRepo _configRepo;
     
-    // ---------- Public ----------
-    public CharacterRepo CharacterRepo => _characterRepo;
-    public StageRepo StageRepo => _stageRepo;
-    public ConfigRepo ConfigRepo => _configRepo;
-    public SpellRepo SpellRepo => _spellRepo;
+    public Legacy_CharacterRepo CharacterRepo => _characterRepo;
+    public Legacy_StageRepo StageRepo => _stageRepo;
+    public Legacy_ConfigRepo ConfigRepo => _configRepo;
     
     private void Awake()
     {
@@ -99,7 +92,6 @@ public class DataManager : MonoBehaviour
         InitializeRepo(nameof(_characterRepo), _characterRepo, () => _characterRepo.Initialize());
         InitializeRepo(nameof(_stageRepo), _stageRepo, () => _stageRepo.Initialize());
         InitializeRepo(nameof(_configRepo), _configRepo, () => _configRepo.Initialize());
-        InitializeRepo(nameof(_spellRepo), _spellRepo, () => _spellRepo.Initialize());
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");

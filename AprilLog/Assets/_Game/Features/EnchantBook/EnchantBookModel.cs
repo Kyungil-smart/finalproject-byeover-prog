@@ -29,7 +29,7 @@ public class EnchantBookModel : MonoBehaviour
     public void RefreshEntries()
     {
         _allEntries.Clear();
-        DataManager dataManager = DataManager.Instance;
+        Legacy_DataManager dataManager = Legacy_DataManager.Instance;
         if (dataManager == null || dataManager.CharacterRepo == null)
         {
             Debug.LogWarning("[EnchantBookModel] CharacterRepo is missing. Empty enchant book will be used.");
