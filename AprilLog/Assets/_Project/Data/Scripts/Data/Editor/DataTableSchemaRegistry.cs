@@ -59,18 +59,18 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("StageWaveRule", "stage_wave_rule", "StageWaveRuleData", "StageWaveRuleTable", true),
         
         // Legacy List
-        new DataTableSchema("SkillMaster", "skill_master", "SkillMasterData", "SkillMasterTable", true),
-        new DataTableSchema("SkillData", "skill_data", "SkillData", "SkillDataTable", true),
-        new DataTableSchema("EffectTable", "effect_table", "EffectData", "EffectDataTable", true),
+        new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),
+        new DataTableSchema("SkillData", "skill_data", "Legacy_SkillData", "Legacy_SkillDataTable", false),
+        new DataTableSchema("EffectTable", "effect_table", "Legacy_EffectData", "Legacy_EffectDataTable", false),
 
-        new DataTableSchema("EnchantMaster", "enchant_master", "EnchantMasterData", "EnchantMasterTable", true),
-        new DataTableSchema("EnchantLevel", "enchant_level", "EnchantLevelData", "EnchantLevelTable", true),
-        new DataTableSchema("EnchantWeight", "enchant_weight", "EnchantWeightData", "EnchantWeightTable", true),
+        new DataTableSchema("EnchantMaster", "enchant_master", "Legacy_EnchantMasterData", "Legacy_EnchantMasterTable", false),
+        new DataTableSchema("EnchantLevel", "enchant_level", "Legacy_EnchantLevelData", "Legacy_EnchantLevelTable", false),
+        new DataTableSchema("EnchantWeight", "enchant_weight", "Legacy_EnchantWeightData", "Legacy_EnchantWeightTable", false),
         
-        new DataTableSchema("MapLanguage", "map_language", "MapLanguageData", "MapLanguageTable", true),
+        new DataTableSchema("MapLanguage", "map_language", "Legacy_MapLanguageData", "Legacy_MapLanguageTable", false),
         
-        new DataTableSchema("Achievement", "achievement", "AchievementData", "AchievementDataTable", false),
-        new DataTableSchema("Language", "language", "LanguageEntry", "LanguageTable", false),
+        new DataTableSchema("Achievement", "achievement", "Legacy_AchievementData", "Legacy_AchievementDataTable", false),
+        new DataTableSchema("Language", "language", "Legacy_LanguageEntry", "Legacy_LanguageTable", false),
     };
 
     private static readonly Dictionary<string, DataTableSchema> SheetMap = BuildSheetMap();

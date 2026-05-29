@@ -17,22 +17,22 @@ public class SpellRepo : MonoBehaviour
 {
     // ---------- SO 참조 (Inspector에서 드래그) ----------
     [Header("스킬")]
-    [SerializeField] private SkillMasterTable _skillMasterTable;
-    [SerializeField] private SkillDataTable _skillDataTable;
-    [SerializeField] private EffectDataTable _effectTable;
+    [SerializeField] private Legacy_SkillMasterTable _skillMasterTable;
+    [SerializeField] private Legacy_SkillDataTable _skillDataTable;
+    [SerializeField] private Legacy_EffectDataTable _effectTable;
 
     [Header("인챈트")]
-    [SerializeField] private EnchantMasterTable _enchantMasterTable;
-    [SerializeField] private EnchantLevelTable _enchantLevelTable;
-    [SerializeField] private EnchantWeightTable _enchantWeightTable;
+    [SerializeField] private Legacy_EnchantMasterTable _enchantMasterTable;
+    [SerializeField] private Legacy_EnchantLevelTable _enchantLevelTable;
+    [SerializeField] private Legacy_EnchantWeightTable _enchantWeightTable;
 
     // ---------- Dictionary 캐시 ----------
-    private Dictionary<int, SkillMasterData> _skillMaster;
-    private Dictionary<int, SkillData> _skills;
-    private Dictionary<int, EffectData> _effects;
-    private Dictionary<int, EnchantMasterData> _enchantMaster;
-    private Dictionary<string, EnchantLevelData> _enchantLevels;
-    private List<EnchantWeightData> _enchantWeights;
+    private Dictionary<int, Legacy_SkillMasterData> _skillMaster;
+    private Dictionary<int, Legacy_SkillData> _skills;
+    private Dictionary<int, Legacy_EffectData> _effects;
+    private Dictionary<int, Legacy_EnchantMasterData> _enchantMaster;
+    private Dictionary<string, Legacy_EnchantLevelData> _enchantLevels;
+    private List<Legacy_EnchantWeightData> _enchantWeights;
     private bool _isInitialized;
 
     // ---------- 초기화 ----------
@@ -112,9 +112,9 @@ public class SpellRepo : MonoBehaviour
         return result;
     }
 
-    private Dictionary<string, EnchantLevelData> BuildEnchantLevelDictionary()
+    private Dictionary<string, Legacy_EnchantLevelData> BuildEnchantLevelDictionary()
     {
-        var result = new Dictionary<string, EnchantLevelData>();
+        var result = new Dictionary<string, Legacy_EnchantLevelData>();
 
         if (_enchantLevelTable == null)
         {
@@ -130,7 +130,7 @@ public class SpellRepo : MonoBehaviour
 
         for (int i = 0; i < _enchantLevelTable.rows.Count; i++)
         {
-            EnchantLevelData row = _enchantLevelTable.rows[i];
+            Legacy_EnchantLevelData row = _enchantLevelTable.rows[i];
             if (row == null)
             {
                 Debug.LogWarning($"[CharacterRepo] {nameof(_enchantLevelTable)}.rows[{i}] is null. Skip.");
@@ -192,37 +192,37 @@ public class SpellRepo : MonoBehaviour
     }
 
     // ---------- 조회 API ----------
-    public SkillMasterData GetSkillMaster(int standardId) => GetData(_skillMaster, standardId, nameof(GetSkillMaster));
-    public SkillData GetSkill(int skillId) => GetData(_skills, skillId, nameof(GetSkill));
-    public EffectData GetEffect(int effectId) => GetData(_effects, effectId, nameof(GetEffect));
-    public EnchantMasterData GetEnchantMaster(int enchantId) => GetData(_enchantMaster, enchantId, nameof(GetEnchantMaster));
-    public EnchantLevelData GetEnchantLevel(int enchantId, int level) => GetData(_enchantLevels, $"{enchantId}_{level}", nameof(GetEnchantLevel));
+    public Legacy_SkillMasterData GetSkillMaster(int standardId) => GetData(_skillMaster, standardId, nameof(GetSkillMaster));
+    public Legacy_SkillData GetSkill(int skillId) => GetData(_skills, skillId, nameof(GetSkill));
+    public Legacy_EffectData GetEffect(int effectId) => GetData(_effects, effectId, nameof(GetEffect));
+    public Legacy_EnchantMasterData GetEnchantMaster(int enchantId) => GetData(_enchantMaster, enchantId, nameof(GetEnchantMaster));
+    public Legacy_EnchantLevelData GetEnchantLevel(int enchantId, int level) => GetData(_enchantLevels, $"{enchantId}_{level}", nameof(GetEnchantLevel));
 
     // 전체 조회 (인챈트 선택 로직에서 필요)
-    public IReadOnlyDictionary<int, EnchantMasterData> GetAllEnchantMasters()
+    public IReadOnlyDictionary<int, Legacy_EnchantMasterData> GetAllEnchantMasters()
     {
         if (_enchantMaster == null)
         {
             Debug.LogWarning("[CharacterRepo] EnchantMaster cache is not initialized. Empty dictionary will be returned.");
-            _enchantMaster = new Dictionary<int, EnchantMasterData>();
+            _enchantMaster = new Dictionary<int, Legacy_EnchantMasterData>();
         }
 
         return _enchantMaster;
     }
 
-    public IReadOnlyList<EnchantWeightData> GetEnchantWeights()
+    public IReadOnlyList<Legacy_EnchantWeightData> GetEnchantWeights()
     {
         if (_enchantWeights == null)
         {
             Debug.LogWarning("[CharacterRepo] EnchantWeight cache is not initialized. Empty list will be returned.");
-            _enchantWeights = new List<EnchantWeightData>();
+            _enchantWeights = new List<Legacy_EnchantWeightData>();
         }
 
         return _enchantWeights;
     }
 
     // 안전 조회 (키가 없을 수 있는 경우)
-    public bool TryGetEffect(int id, out EffectData data)
+    public bool TryGetEffect(int id, out Legacy_EffectData data)
     {
         data = null;
         return _effects != null && _effects.TryGetValue(id, out data);

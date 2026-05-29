@@ -53,8 +53,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
     public void Show() => gameObject.SetActive(true);
     public void Hide() => gameObject.SetActive(false);
-    public void SetChoices(EnchantDisplayData[] choices) { /* 선택 카드 세팅 */ }
-    public void ShowDeleteConfirm(EnchantDisplayData toDelete, EnchantDisplayData toAcquire)
+    public void SetChoices(Legacy_EnchantDisplayData[] choices) { /* 선택 카드 세팅 */ }
+    public void ShowDeleteConfirm(Legacy_EnchantDisplayData toDelete, Legacy_EnchantDisplayData toAcquire)
     {
         if (_deleteConfirmPanel != null) _deleteConfirmPanel.SetActive(true);
     }

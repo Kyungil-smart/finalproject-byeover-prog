@@ -58,7 +58,7 @@ public class LobbyView : MonoBehaviour, ILobbyView
             _levelText.SetText("Lv.{0}", level);
     }
 
-    public void SetStageButtons(StageDisplayData[] stages) { }
+    public void SetStageButtons(Legacy_StageDisplayData[] stages) { }
     public void SetCurrency(int gold, int parchment)
     {
         if (_goldText != null)

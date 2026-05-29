@@ -18,14 +18,14 @@ public class Legacy_StageRepo : MonoBehaviour
     [SerializeField] private StageDataTable _stageTable;
     [SerializeField] private MonsterPoolMasterTable _poolMasterTable;
     [SerializeField] private MonsterPoolTable _poolTable;
-    [SerializeField] private StageSpawnRuleTable _spawnRuleTable;
+    [SerializeField] private Legacy_StageSpawnRuleTable _spawnRuleTable;
     [SerializeField] private MonsterStageScalingTable _scalingTable;
 
     private Dictionary<int, ChapterData> _chapters;
     private Dictionary<int, StageData> _stages;
     private Dictionary<int, MonsterWavePoolData> _poolMasters;
     private Dictionary<int, List<MonsterPoolData>> _pools;
-    private List<StageSpawnRuleData> _spawnRules;
+    private List<Legacy_StageSpawnRuleData> _spawnRules;
     private List<MonsterStageScalingData> _scalingRules;
     private bool _isInitialized;
 
@@ -80,15 +80,15 @@ public class Legacy_StageRepo : MonoBehaviour
     }
 
     // 특정 스테이지에 적용되는 스폰 규칙 목록
-    public List<StageSpawnRuleData> GetSpawnRulesForStage(int stageId)
+    public List<Legacy_StageSpawnRuleData> GetSpawnRulesForStage(int stageId)
     {
         if (_spawnRules == null)
         {
             Debug.LogWarning("[StageRepo] SpawnRules cache is not initialized. Empty list will be used.");
-            _spawnRules = new List<StageSpawnRuleData>();
+            _spawnRules = new List<Legacy_StageSpawnRuleData>();
         }
 
-        var result = new List<StageSpawnRuleData>();
+        var result = new List<Legacy_StageSpawnRuleData>();
         for (int i = 0; i < _spawnRules.Count; i++)
         {
             var rule = _spawnRules[i];

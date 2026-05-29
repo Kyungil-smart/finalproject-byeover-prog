@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "AchievementDataTable", menuName = "Data/AchievementDataTable")]
-public class AchievementDataTable : DataTable<AchievementData>
+[CreateAssetMenu(fileName = "Legacy_AchievementDataTable", menuName = "Data/Legacy_AchievementDataTable")]
+public class Legacy_AchievementDataTable : DataTable<Legacy_AchievementData>
 {
 }

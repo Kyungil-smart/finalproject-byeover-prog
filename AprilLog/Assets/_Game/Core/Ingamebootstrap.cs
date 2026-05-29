@@ -43,7 +43,7 @@ public class InGameBootstrap : MonoBehaviour
 
         // [2] 이어하기 체크
         bool isResume = GameManager.Instance != null && GameManager.Instance.HasLocalSave();
-        InGameSaveData saveData = null;
+        Legacy_InGameSaveData saveData = null;
 
         if (isResume)
         {

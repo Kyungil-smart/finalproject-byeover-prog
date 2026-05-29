@@ -26,14 +26,14 @@ public class EnchantSelectionLogic
     }
 
     // 인챈트 3종 선택지 생성
-    public List<EnchantMasterData> GenerateChoices()
+    public List<Legacy_EnchantMasterData> GenerateChoices()
     {
-        var result = new List<EnchantMasterData>();
+        var result = new List<Legacy_EnchantMasterData>();
         var allEnchants = _repo.GetAllEnchantMasters();
 
         // 후보 분리
-        var owned = new List<EnchantMasterData>();
-        var unowned = new List<EnchantMasterData>();
+        var owned = new List<Legacy_EnchantMasterData>();
+        var unowned = new List<Legacy_EnchantMasterData>();
 
         foreach (var pair in allEnchants)
         {
@@ -61,7 +61,7 @@ public class EnchantSelectionLogic
     }
 
     // 보유 인챈트가 많을수록 보유군에서 뽑힐 확률이 올라감
-    private EnchantMasterData PickOne(List<EnchantMasterData> owned, List<EnchantMasterData> unowned)
+    private Legacy_EnchantMasterData PickOne(List<Legacy_EnchantMasterData> owned, List<Legacy_EnchantMasterData> unowned)
     {
         if (owned.Count == 0 && unowned.Count == 0) return null;
         if (owned.Count == 0) return PickRandom(unowned);
@@ -85,7 +85,7 @@ public class EnchantSelectionLogic
             return PickRandom(unowned);
     }
 
-    private EnchantMasterData PickRandom(List<EnchantMasterData> list)
+    private Legacy_EnchantMasterData PickRandom(List<Legacy_EnchantMasterData> list)
     {
         if (list.Count == 0) return null;
         return list[_rng.Next(0, list.Count)];

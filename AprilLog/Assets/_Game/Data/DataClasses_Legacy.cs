@@ -12,7 +12,7 @@ using System.Collections.Generic;
 // 스킬 관련
 
 [Serializable]
-public class SkillMasterData
+public class Legacy_SkillMasterData
 {
     public int StandardID;
     public string Name;
@@ -25,7 +25,7 @@ public class SkillMasterData
 }
 
 [Serializable]
-public class SkillData
+public class Legacy_SkillData
 {
     public int StandardID;
     public int SkillID;
@@ -43,7 +43,7 @@ public class SkillData
 }
 
 [Serializable]
-public class EffectData
+public class Legacy_EffectData
 {
     public int EffectID;
     public string Name;
@@ -56,7 +56,7 @@ public class EffectData
 // 인챈트 관련
 
 [Serializable]
-public class EnchantMasterData
+public class Legacy_EnchantMasterData
 {
     public int EnchantID;
     public string EnchantType;
@@ -69,7 +69,7 @@ public class EnchantMasterData
 }
 
 [Serializable]
-public class EnchantLevelData
+public class Legacy_EnchantLevelData
 {
     public int EnchantID;
     public int Level;
@@ -77,7 +77,7 @@ public class EnchantLevelData
 }
 
 [Serializable]
-public class EnchantWeightData
+public class Legacy_EnchantWeightData
 {
     public int OwnedCountMin;
     public int OwnedCountMax;
@@ -87,14 +87,14 @@ public class EnchantWeightData
 
 // 몬스터 풀 정보
 [Serializable]
-public class MonsterPoolMasterData
+public class Legacy_MonsterPoolMasterData
 {
     public int MonsterPool_ID;      // PK
     public string MonsterPoolType;  // Normal, Agile, Tank, Ranged, Infested, Gimmick, Elite, Boss
 }
 
 [Serializable]
-public class MapLanguageData
+public class Legacy_MapLanguageData
 {
     public string Language;     // PK (N_1, D_1 등)
     public string KR;
@@ -105,7 +105,7 @@ public class MapLanguageData
 
 // 스테이지 스폰 규칙 (신규 -- 기존 StageMonsterData 대체)
 [Serializable]
-public class StageSpawnRuleData
+public class Legacy_StageSpawnRuleData
 {
     public int StartStage_ID;       // FK
     public int EndStage_ID;         // FK
@@ -120,7 +120,7 @@ public class StageSpawnRuleData
 
 // 업적
 [Serializable]
-public class AchievementData
+public class Legacy_AchievementData
 {
     public int AchievementID;
     public string NameKey;
@@ -132,7 +132,7 @@ public class AchievementData
 // 로컬라이제이션
 
 [Serializable]
-public class LanguageEntry
+public class Legacy_LanguageEntry
 {
     public string Key;
     public string Ko;
@@ -142,7 +142,7 @@ public class LanguageEntry
 // View 표시용 구조체
 
 [Serializable]
-public class EnchantDisplayData
+public class Legacy_EnchantDisplayData
 {
     public int EnchantId;
     public string Name;
@@ -152,7 +152,7 @@ public class EnchantDisplayData
 }
 
 [Serializable]
-public class StageDisplayData
+public class Legacy_StageDisplayData
 {
     public int StageId;
     public string ChapterName;
@@ -164,7 +164,7 @@ public class StageDisplayData
 // 인게임 세이브
 
 [Serializable]
-public class InGameSaveData
+public class Legacy_InGameSaveData
 {
     public int chapterId;
     public int clearedStage;
@@ -173,35 +173,15 @@ public class InGameSaveData
     public int inGameLevel;
     public int[] puzzleSlots;
     public int[] waitingSlots;
-    public List<AcquiredEnchant> acquiredEnchants;
+    public List<Legacy_AcquiredEnchant> acquiredEnchants;
     public int totalDamage;
     public int maxCombo;
     public int nextStageSeed;
 }
 
 [Serializable]
-public class AcquiredEnchant
+public class Legacy_AcquiredEnchant
 {
     public int enchantId;
     public int level;
-}
-
-// Sort 보조 구조체
-
-[Serializable]
-public struct WaitingCombo
-{
-    public int[] unitTypes;
-    public WaitingDifficulty difficulty;
-
-    public int FilledCount
-    {
-        get
-        {
-            int c = 0;
-            for (int i = 0; i < unitTypes.Length; i++)
-                if (unitTypes[i] >= 0) c++;
-            return c;
-        }
-    }
 }

@@ -41,7 +41,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 
-    public void RestoreFromSave(InGameSaveData save)
+    public void RestoreFromSave(Legacy_InGameSaveData save)
     {
         CurrentHP = save.playerHP;
         OnHPChanged?.Invoke(CurrentHP, MaxHP);

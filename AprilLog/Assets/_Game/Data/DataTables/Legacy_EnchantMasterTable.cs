@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "EnchantMasterTable", menuName = "Data/EnchantMasterTable")]
-public class EnchantMasterTable : DataTable<EnchantMasterData>
+[CreateAssetMenu(fileName = "Legacy_EnchantMasterTable", menuName = "Data/Legacy_EnchantMasterTable")]
+public class Legacy_EnchantMasterTable : DataTable<Legacy_EnchantMasterData>
 {
 }

@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "MapLanguageTable", menuName = "Data/MapLanguageTable")]
-public class MapLanguageTable : DataTable<MapLanguageData>
+[CreateAssetMenu(fileName = "Legacy_MapLanguageTable", menuName = "Data/Legacy_MapLanguageTable")]
+public class Legacy_MapLanguageTable : DataTable<Legacy_MapLanguageData>
 {
 }

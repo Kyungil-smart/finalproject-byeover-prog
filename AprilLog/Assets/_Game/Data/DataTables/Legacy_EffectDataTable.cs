@@ -5,7 +5,7 @@
 
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "EffectDataTable", menuName = "Data/EffectDataTable")]
-public class EffectDataTable : DataTable<EffectData>
+[CreateAssetMenu(fileName = "Legacy_EffectDataTable", menuName = "Data/Legacy_EffectDataTable")]
+public class Legacy_EffectDataTable : DataTable<Legacy_EffectData>
 {
 }

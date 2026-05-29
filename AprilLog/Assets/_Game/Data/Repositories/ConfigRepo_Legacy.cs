@@ -19,12 +19,12 @@ public class Legacy_ConfigRepo : MonoBehaviour
     [Header("SO 참조")]
     [SerializeField] private InLevelTable _inLevelTable;
     [SerializeField] private OutLevelTable _outLevelTable;
-    [SerializeField] private AchievementDataTable _achievementTable;
+    [SerializeField] private Legacy_AchievementDataTable _achievementTable;
     [SerializeField] private ChangeRewardTable _changeRewardTable;
 
     private Dictionary<int, InLevelData> _inLevel;
     private Dictionary<int, OutLevelData> _outLevel;
-    private Dictionary<int, AchievementData> _achievements;
+    private Dictionary<int, Legacy_AchievementData> _achievements;
     private List<ChangeRewardData> _changeRewards;
     private bool _isInitialized;
 
@@ -46,14 +46,14 @@ public class Legacy_ConfigRepo : MonoBehaviour
 
     public InLevelData GetInLevel(int level) => GetData(_inLevel, level, nameof(GetInLevel));
     public OutLevelData GetOutLevel(int level) => GetData(_outLevel, level, nameof(GetOutLevel));
-    public AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
+    public Legacy_AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
 
-    public IReadOnlyDictionary<int, AchievementData> GetAllAchievements()
+    public IReadOnlyDictionary<int, Legacy_AchievementData> GetAllAchievements()
     {
         if (_achievements == null)
         {
             Debug.LogWarning("[ConfigRepo] Achievement cache is not initialized. Empty dictionary will be used.");
-            _achievements = new Dictionary<int, AchievementData>();
+            _achievements = new Dictionary<int, Legacy_AchievementData>();
         }
 
         return _achievements;

@@ -16,7 +16,7 @@ public class EnchantSelectPresenter
     private readonly Legacy_CharacterRepo _repo;
     private readonly ScreenNavigator _navigator;
     private EnchantSelectionLogic _selectionLogic;
-    private List<EnchantMasterData> _currentChoices;
+    private List<Legacy_EnchantMasterData> _currentChoices;
 
     public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model,
         Legacy_CharacterRepo repo, ScreenNavigator navigator)
@@ -40,10 +40,10 @@ public class EnchantSelectPresenter
     public void ShowSelection()
     {
         _currentChoices = _selectionLogic.GenerateChoices();
-        var displayData = new EnchantDisplayData[_currentChoices.Count];
+        var displayData = new Legacy_EnchantDisplayData[_currentChoices.Count];
         for (int i = 0; i < _currentChoices.Count; i++)
         {
-            displayData[i] = new EnchantDisplayData
+            displayData[i] = new Legacy_EnchantDisplayData
             {
                 EnchantId = _currentChoices[i].EnchantID,
                 Name = _currentChoices[i].Name,

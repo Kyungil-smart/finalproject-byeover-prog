@@ -279,7 +279,7 @@ public class MonsterSpawner : MonoBehaviour
 [System.Serializable]
 public struct SpawnTracker
 {
-    public StageSpawnRuleData rule;
+    public Legacy_StageSpawnRuleData rule;
     public int spawnAmount;         // 이번 웨이브 스폰 총 수 (증가량 적용)
     public float spawnInterval;     // 이번 웨이브 스폰 간격 (웨이브 후반 짧아짐)
     public float timer;

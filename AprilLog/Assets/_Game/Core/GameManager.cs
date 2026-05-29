@@ -494,7 +494,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] 로컬 세이브 실행");
     }
 
-    public void SaveLocalData(InGameSaveData data)
+    public void SaveLocalData(Legacy_InGameSaveData data)
     {
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetInGameSavePath(), json);
@@ -505,13 +505,13 @@ public class GameManager : MonoBehaviour
         return File.Exists(GetInGameSavePath());
     }
 
-    public InGameSaveData LoadLocalSaveData()
+    public Legacy_InGameSaveData LoadLocalSaveData()
     {
         string path = GetInGameSavePath();
         if (!File.Exists(path)) return null;
 
         string json = File.ReadAllText(path);
-        return JsonUtility.FromJson<InGameSaveData>(json);
+        return JsonUtility.FromJson<Legacy_InGameSaveData>(json);
     }
 
     public void DeleteLocalSave()
