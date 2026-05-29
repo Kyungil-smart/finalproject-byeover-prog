@@ -50,14 +50,18 @@ public class SortTableView : MonoBehaviour, ISortTableView
     private void SetupSlotPositions()
     {
         var positions = new Vector2[SortModel.TABLE_COUNT][];
+        int currentIdx = 0;
+
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
         {
             positions[t] = new Vector2[SortModel.SLOTS_PER_TABLE];
             for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
             {
-                int idx = t * SortModel.SLOTS_PER_TABLE + s;
-                if (idx < _puzzleSlots.Length)
-                    positions[t][s] = _puzzleSlots[idx].position;
+                if (currentIdx < _puzzleSlots.Length)
+                {
+                    positions[t][s] = _puzzleSlots[currentIdx].position;
+                    currentIdx++;
+                }
             }
         }
         _inputHandler.SetSlotPositions(positions);
@@ -67,6 +71,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     public void PlaceUnit(int tableIdx, int slotIdx, int unitType)
     {
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
+
         if (idx >= _puzzleSlots.Length) return;
 
         var sr = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
