@@ -18,6 +18,7 @@ public class SortInputHandler : MonoBehaviour
     public event Action<int, int> OnDragStarted;             // tableIdx, slotIdx
     public event Action<Vector2> OnDragging;                 // 현재 드래그 위치 (world)
     public event Action OnDragCanceled;
+    public event Action OnDragEnded;
 
     // ---------- SerializeField ----------
     [Header("참조")]
@@ -173,10 +174,8 @@ public class SortInputHandler : MonoBehaviour
 
         FindSlot(worldPos, out int toTable, out int toSlot);
 
-        if (toTable >= 0)
-            OnUnitDropped?.Invoke(_selectedTable, _selectedSlot, toTable, toSlot);
-        else
-            OnDragCanceled?.Invoke();
+        OnUnitDropped?.Invoke(_selectedTable, _selectedSlot, toTable, toSlot);
+        OnDragEnded?.Invoke();
 
         _selectedTable = -1;
         _selectedSlot = -1;
@@ -195,7 +194,7 @@ public class SortInputHandler : MonoBehaviour
             for (int s = 0; s < _slotPositions[t].Length; s++)
             {
                 float dist = Vector2.Distance(worldPos, _slotPositions[t][s]);
-                
+
                 if (dist < minDistance)
                 {
                     minDistance = dist;
