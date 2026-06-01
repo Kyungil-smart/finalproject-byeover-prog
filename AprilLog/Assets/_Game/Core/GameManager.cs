@@ -439,6 +439,61 @@ public class GameManager : MonoBehaviour
         ChangeState(GameState.Login);
     }
 
+    // ---------- 로그아웃 ----------
+    public void Logout()
+    {
+        if (_authService == null)
+        {
+            Debug.LogWarning("[GameManager] AuthService 없음. 로그아웃 불가.");
+            return;
+        }
+
+        _authService.SignOut();
+        CloudData = null;
+        ChangeState(GameState.Login);
+        StartCoroutine(LoadSceneCoroutine("_Boot")); // 로그인 화면으로
+    }
+
+    // ---------- 계정 탈퇴 ----------
+    public void DeleteAccount()
+    {
+        StartCoroutine(DeleteAccountCoroutine());
+    }
+
+    private IEnumerator DeleteAccountCoroutine()
+    {
+        // 1. Firestore 데이터 삭제
+        if (_firestoreService != null && IsLoggedIn)
+        {
+            bool deleted = false;
+            yield return StartCoroutine(_firestoreService.DeleteUserDataCoroutine(result => deleted = result));
+
+            if (!deleted)
+                Debug.LogWarning("[GameManager] Firestore 데이터 삭제 실패. 계속 진행합니다.");
+        }
+
+        // 2. Firebase Auth 계정 삭제
+        if (_authService != null)
+        {
+            bool deleted = false;
+            yield return StartCoroutine(_authService.DeleteAccountCoroutine(result => deleted = result));
+
+            if (!deleted)
+            {
+                Debug.LogWarning("[GameManager] Firebase 계정 삭제 실패.");
+                // 실패해도 로컬은 초기화 후 로그인 화면으로
+            }
+        }
+
+        // 3. 로컬 데이터 초기화
+        DeleteLocalSave();
+        PlayerPrefs.DeleteAll();
+        CloudData = null;
+
+        ChangeState(GameState.Login);
+        StartCoroutine(LoadSceneCoroutine("_Boot"));
+    }
+
     // ---------- 클라우드 데이터 ----------
     public IEnumerator LoadCloudData()
     {

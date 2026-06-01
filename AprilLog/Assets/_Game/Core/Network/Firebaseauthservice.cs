@@ -269,6 +269,54 @@ public class FirebaseAuthService : MonoBehaviour
 #endif
     }
 
+    /// <summary>Firebase Auth 계정을 삭제한다.</summary>
+    public IEnumerator DeleteAccountCoroutine(System.Action<bool> onResult)
+    {
+#if FIREBASE_ENABLED
+        if (_auth?.CurrentUser == null)
+        {
+            Debug.LogWarning("[Auth] 삭제할 계정 없음.");
+            onResult?.Invoke(false);
+            yield break;
+        }
+
+        bool completed = false;
+        bool succeeded = false;
+
+        _auth.CurrentUser.DeleteAsync().ContinueWith(task =>
+        {
+            succeeded = !task.IsFaulted && !task.IsCanceled;
+            if (task.IsFaulted)
+                Debug.LogWarning("[Auth] 계정 삭제 실패: " + task.Exception?.Message);
+            completed = true;
+        });
+
+        yield return new WaitUntil(() => completed);
+
+        if (succeeded)
+        {
+            UserUID = null;
+            UserEmail = null;
+            UserDisplayName = null;
+            LastSignInWasGoogle = false;
+            IsSigningIn = false;
+            OnLogout?.Invoke();
+        }
+
+        onResult?.Invoke(succeeded);
+#else
+        // Firebase 미설정 환경에서는 바로 성공 처리
+        UserUID = null;
+        UserEmail = null;
+        UserDisplayName = null;
+        LastSignInWasGoogle = false;
+        IsSigningIn = false;
+        OnLogout?.Invoke();
+        onResult?.Invoke(true);
+        yield break;
+#endif
+    }
+
     // 추가: 조규민 - 로그인 실패 이벤트 발행 지점을 공통화해 Editor/Firebase define 차이로 생기는 경고를 줄인다.
     private void RaiseLoginFailed(string message)
     {

@@ -638,6 +638,42 @@ public class FirestoreService : MonoBehaviour
         yield return StartCoroutine(SaveCoroutine(localData));
     }
 
+    /// <summary>Firestore의 users/{uid} 문서를 삭제한다.</summary>
+    public IEnumerator DeleteUserDataCoroutine(System.Action<bool> onResult)
+    {
+        if (string.IsNullOrEmpty(_uid))
+        {
+            Debug.LogWarning("[Firestore] UID 없음. 데이터 삭제 불가.");
+            onResult?.Invoke(false);
+            yield break;
+        }
+
+#if FIREBASE_ENABLED
+        if (_db == null)
+        {
+            onResult?.Invoke(false);
+            yield break;
+        }
+
+        bool completed = false;
+        bool succeeded = false;
+
+        _db.Collection("users").Document(_uid).DeleteAsync().ContinueWith(task =>
+        {
+            succeeded = !task.IsFaulted && !task.IsCanceled;
+            if (task.IsFaulted)
+                Debug.LogWarning("[Firestore] 유저 데이터 삭제 실패: " + task.Exception?.Message);
+            completed = true;
+        });
+
+        yield return new WaitUntil(() => completed);
+        onResult?.Invoke(succeeded);
+#else
+        onResult?.Invoke(true);
+        yield break;
+#endif
+    }
+
     // 추가: 조규민 - Firebase/파일 예외 메시지를 UI와 로그에서 읽기 쉽게 정리한다.
     private string GetExceptionMessage(Exception exception, string fallbackMessage)
     {
