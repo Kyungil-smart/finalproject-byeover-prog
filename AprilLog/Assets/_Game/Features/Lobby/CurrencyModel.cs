@@ -1,35 +1,30 @@
 // 담당자 : 정승우
 // 설명   : 재화 Model -- 골드, 양피지
+// 수정자 : 홍정옥
+// 수정내용 : 행동력(스태미나)을 StaminaModel로 분리, CurrencyModel은 재화만 관리
 
 using System;
 using UnityEngine;
 
 /// <summary>
 /// 골드와 양피지 보유량을 관리한다. 값 바뀌면 이벤트 발행.
+/// (행동력은 StaminaModel에서 별도 관리)
 /// </summary>
 public class CurrencyModel : MonoBehaviour
 {
-    public const int TestStartGold = 99900;
+    public const int TestStartGold      = 99900;
     public const int TestStartParchment = 99900;
-    public const int TestMaxActionPoint = 99900;
-    public const int TestStartActionPoint = TestMaxActionPoint;
-    public const int TestOtherCurrency = 99900;
+
     // ---------- 이벤트 ----------
     public event Action<int, int> OnCurrencyChanged;    // gold, parchment
-    public event Action<int, int, int, int> OnTestCurrencyChanged; // gold, actionPoint, maxActionPoint, parchment
 
     // ---------- 데이터 ----------
-    public int Gold { get; private set; }
+    public int Gold      { get; private set; }
     public int Parchment { get; private set; }
-    public int ActionPoint { get; private set; } = TestStartActionPoint;
-    public int MaxActionPoint { get; private set; } = TestMaxActionPoint;
-    public int OtherCurrency { get; private set; } = TestOtherCurrency;
 
     [Header("테스트 기본값")]
     [SerializeField] private bool initializeWithTestValues = true;
-    [SerializeField] private int testStartGold = TestStartGold;
-    [SerializeField] private int testStartActionPoint = TestStartActionPoint;
-    [SerializeField] private int testMaxActionPoint = TestMaxActionPoint;
+    [SerializeField] private int testStartGold      = TestStartGold;
     [SerializeField] private int testStartParchment = TestStartParchment;
 
     private bool _initialized;
@@ -37,21 +32,14 @@ public class CurrencyModel : MonoBehaviour
     private void Awake()
     {
         if (initializeWithTestValues && !_initialized)
-            Initialize(testStartGold, testStartParchment, testStartActionPoint, testMaxActionPoint);
+            Initialize(testStartGold, testStartParchment);
     }
 
     // ---------- 초기화 ----------
     public void Initialize(int gold, int parchment)
     {
-        Initialize(gold, parchment, ActionPoint, MaxActionPoint);
-    }
-
-    public void Initialize(int gold, int parchment, int actionPoint, int maxActionPoint)
-    {
-        Gold = Mathf.Max(0, gold);
+        Gold      = Mathf.Max(0, gold);
         Parchment = Mathf.Max(0, parchment);
-        MaxActionPoint = Mathf.Max(1, maxActionPoint);
-        ActionPoint = Mathf.Clamp(actionPoint, 0, MaxActionPoint);
         _initialized = true;
         RaiseChanged();
     }
@@ -118,6 +106,5 @@ public class CurrencyModel : MonoBehaviour
     private void RaiseChanged()
     {
         OnCurrencyChanged?.Invoke(Gold, Parchment);
-        OnTestCurrencyChanged?.Invoke(Gold, ActionPoint, MaxActionPoint, Parchment);
     }
 }
