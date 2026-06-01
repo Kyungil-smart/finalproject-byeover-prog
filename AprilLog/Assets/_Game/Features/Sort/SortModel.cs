@@ -73,6 +73,7 @@ public class SortModel : MonoBehaviour
     public void SetWaiting(int index, WaitingCombo combo)
     {
         _waitingQueue[index] = combo;
+        Debug.Log($"[모델] 대기열 {index}번 갱신됨! 유닛 타입: {combo.unitTypes[0]}");
         OnWaitingUpdated?.Invoke(index, combo);
     }
 

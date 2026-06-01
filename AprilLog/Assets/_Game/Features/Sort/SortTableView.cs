@@ -141,7 +141,31 @@ public class SortTableView : MonoBehaviour, ISortTableView
     public void LockSlot(int tableIdx, int slotIdx) { /* 거미줄 표시 */ }
     public void UnlockSlot(int tableIdx, int slotIdx) { /* 거미줄 해제 */ }
     public void ShowDeadlockWarning() { /* 데드락 경고 UI */ }
-    public void UpdateWaiting(int waitingIdx, WaitingCombo combo) { /* 대기열 갱신 */ }
+    public void UpdateWaiting(int waitingIdx, WaitingCombo combo)
+    {
+        int baseSlotIdx = waitingIdx * 3;
+
+        for (int i = 0; i < 3; i++)
+        {
+            int slotIdx = baseSlotIdx + i;
+            if (slotIdx < 0 || slotIdx >= _waitingSlots.Length) continue;
+            Debug.Log($"[매칭확인] 모델 대기열 {waitingIdx}번의 {i}번 유닛(타입:{combo.unitTypes[i]}) -> 뷰 슬롯 {slotIdx}번으로 배치");
+            var sr = _waitingSlots[slotIdx].GetComponent<SpriteRenderer>();
+            if (sr == null) continue;
+
+            int unitType = combo.unitTypes[i];
+
+            if (unitType >= 0 && unitType < _unitSprites.Length)
+            {
+                sr.sprite = _unitSprites[unitType];
+                sr.enabled = true;
+            }
+            else
+            {
+                sr.enabled = false;
+            }
+        }
+    }
     public void ResetBoard() { /* 전체 초기화 연출 */ }
     public void ShowHint(int tableIdx, int slotIdx) { /* 유닛 흔들기 */ }
     public void ShowWaitingHint() { /* 대기열 흔들기 */ }
