@@ -2,7 +2,7 @@
 // 설명   : Firebase 인증 서비스 -- 구글 로그인(Google Sign-In) + 게스트 로그인
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달 추가
+// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름 추가
 
 #if FIREBASE_ENABLED
 using Firebase;
@@ -39,6 +39,22 @@ public class FirebaseAuthService : MonoBehaviour
     [Tooltip("Google ID Token을 Firebase Credential로 교환할 때 기다릴 최대 시간입니다.")]
     [SerializeField] private float _firebaseAuthTimeoutSeconds = DEFAULT_FIREBASE_AUTH_TIMEOUT_SECONDS;
 
+#if UNITY_EDITOR
+    [Header("에디터 테스트")]
+    [Tooltip("Unity Editor에서 구글 로그인 이후 흐름을 테스트할 때만 켭니다. 실제 구글 계정 인증은 안드로이드 빌드에서 진행해야 합니다.")]
+    [SerializeField] private bool _enableEditorGoogleLoginTest;
+    [Tooltip("에디터 구글 로그인 테스트 전에 기존 Firebase 세션을 끊고 새 인증 상태로 시작합니다.")]
+    [SerializeField] private bool _signOutBeforeEditorGoogleLoginTest;
+    [Tooltip("Firebase Email/Password 테스트 계정으로 로그인해 실제 Auth UID로 Firestore 흐름을 검증합니다.")]
+    [SerializeField] private bool _useEmailPasswordEditorGoogleTestUser;
+    [Tooltip("Firebase 익명 UID 대신 고정 테스트 UID를 사용해 여러 에디터 테스트 유저를 오갈 때 켭니다.")]
+    [SerializeField] private bool _useFixedEditorGoogleTestUser;
+    [Tooltip("고정 테스트 UID를 만들 때 사용할 키입니다. 예: google_test_01")]
+    [SerializeField] private string _editorGoogleTestUserKey = "google_test_01";
+    [Tooltip("에디터 구글 로그인 테스트에서 프로필 생성 흐름에 전달할 표시 이름입니다.")]
+    [SerializeField] private string _editorGoogleTestDisplayName = "Editor Google Tester";
+#endif
+
     public string UserUID { get; private set; }
     public string UserEmail { get; private set; }
     public string UserDisplayName { get; private set; }
@@ -46,6 +62,17 @@ public class FirebaseAuthService : MonoBehaviour
     public bool IsLoggedIn => !string.IsNullOrEmpty(UserUID);
     public bool IsFirebaseReady { get; private set; }
     public bool IsSigningIn { get; private set; } // 추가: 조규민 - 로그인 중복 요청을 막기 위한 상태값
+    public bool RequiresEditorGoogleEmailPasswordInput
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return _enableEditorGoogleLoginTest && _useEmailPasswordEditorGoogleTestUser;
+#else
+            return false;
+#endif
+        }
+    }
 
 #if FIREBASE_ENABLED
     private FirebaseAuth _auth;
@@ -91,13 +118,21 @@ public class FirebaseAuthService : MonoBehaviour
 #endif
     }
 
-    public IEnumerator GoogleSignInCoroutine()
+    public IEnumerator GoogleSignInCoroutine(string editorEmail = null, string editorPassword = null)
     {
 #if FIREBASE_ENABLED
         if (IsSigningIn)
         {
             yield break;
         }
+
+#if UNITY_EDITOR
+        if (Application.isEditor)
+        {
+            yield return StartCoroutine(EditorGoogleSignInTestCoroutine(editorEmail, editorPassword));
+            yield break;
+        }
+#endif
 
         string validationError = GetGoogleSignInValidationError();
         if (!string.IsNullOrEmpty(validationError))
@@ -125,7 +160,7 @@ public class FirebaseAuthService : MonoBehaviour
         yield return StartCoroutine(WaitForTask(signInTask, _googleSignInTimeoutSeconds, result => googleCompleted = result));
         if (!googleCompleted)
         {
-            CompleteFailedSignIn(AuthLoginFailureType.General, "Google 로그인 응답 시간이 초과되었습니다. 네트워크 상태와 Google Play Services 상태를 확인해 주세요.");
+            CompleteFailedSignIn(AuthLoginFailureType.Timeout, "Google 로그인 응답 시간이 초과되었습니다. 네트워크 상태와 Google Play Services 상태를 확인해 주세요.");
             yield break;
         }
 
@@ -145,7 +180,7 @@ public class FirebaseAuthService : MonoBehaviour
 
         if (signInTask.Result == null || string.IsNullOrEmpty(signInTask.Result.IdToken))
         {
-            CompleteFailedSignIn(AuthLoginFailureType.General, "Google ID Token을 받지 못했습니다. Web Client ID와 SHA-1/SHA-256 설정을 확인해 주세요.");
+            CompleteFailedSignIn(AuthLoginFailureType.Configuration, "Google ID Token을 받지 못했습니다. Web Client ID와 SHA-1/SHA-256 설정을 확인해 주세요.");
             yield break;
         }
 
@@ -157,6 +192,247 @@ public class FirebaseAuthService : MonoBehaviour
     }
 
 #if FIREBASE_ENABLED
+#if UNITY_EDITOR
+    private IEnumerator EditorGoogleSignInTestCoroutine(string editorEmail, string editorPassword)
+    {
+        if (!_enableEditorGoogleLoginTest)
+        {
+            RaiseLoginFailed(AuthLoginFailureType.Configuration, "Editor Google 로그인 테스트가 꺼져 있습니다. FirebaseAuthService의 Editor 테스트 옵션을 켜 주세요.");
+            yield break;
+        }
+
+        if (!CanUseFirebaseAuth())
+        {
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "Firebase 인증 서비스가 준비되지 않았습니다.");
+            yield break;
+        }
+
+        if (_signOutBeforeEditorGoogleLoginTest)
+        {
+            ClearCurrentFirebaseSessionForEditorTest();
+        }
+
+        if (_useEmailPasswordEditorGoogleTestUser)
+        {
+            yield return StartCoroutine(EditorGoogleEmailPasswordSignInCoroutine(editorEmail, editorPassword));
+            yield break;
+        }
+
+        if (_useFixedEditorGoogleTestUser)
+        {
+            ApplyFixedEditorGoogleTestUser();
+            yield break;
+        }
+
+        IsSigningIn = true;
+
+        var authTask = _auth.SignInAnonymouslyAsync();
+        bool firebaseCompleted = false;
+        yield return StartCoroutine(WaitForTask(authTask, _firebaseAuthTimeoutSeconds, result => firebaseCompleted = result));
+        if (!firebaseCompleted)
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.Timeout, "Editor Google 로그인 테스트 인증 시간이 초과되었습니다. Firebase 익명 인증 설정과 네트워크 상태를 확인해 주세요.");
+            yield break;
+        }
+
+        if (authTask.IsCanceled)
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.Canceled, "Editor Google 로그인 테스트가 취소되었습니다.");
+            yield break;
+        }
+
+        if (authTask.IsFaulted)
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, GetExceptionMessage(authTask.Exception, "Editor Google 로그인 테스트 인증 실패"));
+            yield break;
+        }
+
+        ApplyFirebaseUser(authTask.Result.User, true);
+        UserEmail = null;
+        UserDisplayName = string.IsNullOrWhiteSpace(_editorGoogleTestDisplayName) ? null : _editorGoogleTestDisplayName.Trim();
+        LastSignInWasGoogle = true;
+        IsSigningIn = false;
+        Debug.Log("[Auth] Editor Google 로그인 테스트 성공: " + UserUID);
+        OnLoginSuccess?.Invoke(UserUID);
+    }
+
+    private IEnumerator EditorGoogleEmailPasswordSignInCoroutine(string editorEmail, string editorPassword)
+    {
+        string validationError = GetEditorGoogleEmailPasswordValidationError(editorEmail, editorPassword);
+        if (!string.IsNullOrEmpty(validationError))
+        {
+            RaiseLoginFailed(AuthLoginFailureType.Configuration, validationError);
+            yield break;
+        }
+
+        IsSigningIn = true;
+        string normalizedEditorEmail = editorEmail.Trim();
+
+        var authTask = _auth.SignInWithEmailAndPasswordAsync(normalizedEditorEmail, editorPassword);
+        bool firebaseCompleted = false;
+        yield return StartCoroutine(WaitForTask(authTask, _firebaseAuthTimeoutSeconds, result => firebaseCompleted = result));
+        if (!firebaseCompleted)
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.Timeout, "Editor Email/Password 테스트 로그인 시간이 초과되었습니다. Firebase 인증 설정과 네트워크 상태를 확인해 주세요.");
+            yield break;
+        }
+
+        if (authTask.IsCanceled)
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.Canceled, "Editor Email/Password 테스트 로그인이 취소되었습니다.");
+            yield break;
+        }
+
+        if (authTask.IsFaulted)
+        {
+            if (!ShouldCreateEditorEmailPasswordUser(authTask.Exception))
+            {
+                LogExceptionDetails("[Auth][EditorEmailPassword] SignInWithEmailAndPasswordAsync faulted", authTask.Exception);
+                CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, GetFirebaseAuthExceptionMessage(authTask.Exception, "Editor Email/Password 테스트 로그인 실패"));
+                yield break;
+            }
+
+            LogEditorEmailPasswordCreateAttempt(authTask.Exception);
+            yield return StartCoroutine(CreateEditorEmailPasswordUserCoroutine(normalizedEditorEmail, editorPassword));
+            yield break;
+        }
+
+        CompleteEditorGoogleEmailPasswordSignIn(authTask.Result.User, normalizedEditorEmail, "Editor Email/Password Google 테스트 로그인 성공");
+    }
+
+    private IEnumerator CreateEditorEmailPasswordUserCoroutine(string editorEmail, string editorPassword)
+    {
+        var createTask = _auth.CreateUserWithEmailAndPasswordAsync(editorEmail, editorPassword);
+        bool firebaseCompleted = false;
+        yield return StartCoroutine(WaitForTask(createTask, _firebaseAuthTimeoutSeconds, result => firebaseCompleted = result));
+        if (!firebaseCompleted)
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.Timeout, "Editor Email/Password 테스트 계정 생성 시간이 초과되었습니다. Firebase 인증 설정과 네트워크 상태를 확인해 주세요.");
+            yield break;
+        }
+
+        if (createTask.IsCanceled)
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.Canceled, "Editor Email/Password 테스트 계정 생성이 취소되었습니다.");
+            yield break;
+        }
+
+        if (createTask.IsFaulted)
+        {
+            LogExceptionDetails("[Auth][EditorEmailPassword] CreateUserWithEmailAndPasswordAsync faulted", createTask.Exception);
+            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, GetFirebaseAuthExceptionMessage(createTask.Exception, "Editor Email/Password 테스트 계정 생성 실패"));
+            yield break;
+        }
+
+        CompleteEditorGoogleEmailPasswordSignIn(createTask.Result.User, editorEmail, "Editor Email/Password Google 테스트 계정 생성 후 로그인 성공");
+    }
+
+    private void CompleteEditorGoogleEmailPasswordSignIn(FirebaseUser user, string editorEmail, string logMessage)
+    {
+        if (user == null || string.IsNullOrWhiteSpace(user.UserId))
+        {
+            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, "Editor Email/Password 테스트 로그인 UID를 받지 못했습니다.");
+            return;
+        }
+
+        ApplyFirebaseUser(user, true);
+        UserEmail = string.IsNullOrWhiteSpace(editorEmail) ? UserEmail : editorEmail.Trim();
+        UserDisplayName = string.IsNullOrWhiteSpace(_editorGoogleTestDisplayName) ? UserDisplayName : _editorGoogleTestDisplayName.Trim();
+        LastSignInWasGoogle = true;
+        IsSigningIn = false;
+        Debug.Log("[Auth] " + logMessage + ": " + UserUID);
+        OnLoginSuccess?.Invoke(UserUID);
+    }
+
+    private string GetEditorGoogleEmailPasswordValidationError(string editorEmail, string editorPassword)
+    {
+        if (string.IsNullOrWhiteSpace(editorEmail))
+        {
+            return "Editor Email/Password 테스트 이메일이 비어 있습니다.";
+        }
+
+        if (string.IsNullOrEmpty(editorPassword))
+        {
+            return "Editor Email/Password 테스트 비밀번호가 비어 있습니다.";
+        }
+
+        return null;
+    }
+
+    private bool ShouldCreateEditorEmailPasswordUser(Exception exception)
+    {
+        var firebaseException = GetInnerException<FirebaseException>(exception);
+        if (firebaseException == null)
+        {
+            return false;
+        }
+
+        string authErrorName = GetAuthErrorName(firebaseException);
+        if (authErrorName == "UserNotFound" || authErrorName == "InvalidCredential" || authErrorName == "InternalError" || authErrorName == "Failure")
+        {
+            return true;
+        }
+
+        string errorMessage = firebaseException.Message ?? exception.Message;
+        return !string.IsNullOrEmpty(errorMessage) && errorMessage.IndexOf("internal error", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private void LogEditorEmailPasswordCreateAttempt(Exception exception)
+    {
+        var firebaseException = GetInnerException<FirebaseException>(exception);
+        string authErrorName = firebaseException == null ? "Unknown" : GetAuthErrorName(firebaseException);
+        Debug.Log("[Auth][EditorEmailPassword] 기존 계정 로그인 실패로 신규 테스트 계정 생성을 시도합니다. AuthError=" + authErrorName);
+    }
+
+    private void ApplyFixedEditorGoogleTestUser()
+    {
+        // 추가: 조규민 - 에디터에서 같은 테스트 유저 키로 기존/신규 유저 흐름을 반복 확인한다.
+        string testUserKey = NormalizeEditorGoogleTestUserKey(_editorGoogleTestUserKey);
+        UserUID = "editor_google_" + testUserKey;
+        UserEmail = null;
+        UserDisplayName = string.IsNullOrWhiteSpace(_editorGoogleTestDisplayName) ? null : _editorGoogleTestDisplayName.Trim();
+        LastSignInWasGoogle = true;
+        IsSigningIn = false;
+        Debug.Log("[Auth] 고정 Editor Google 테스트 유저 로그인: " + UserUID);
+        OnLoginSuccess?.Invoke(UserUID);
+    }
+
+    private string NormalizeEditorGoogleTestUserKey(string testUserKey)
+    {
+        if (string.IsNullOrWhiteSpace(testUserKey))
+        {
+            return "default";
+        }
+
+        var builder = new System.Text.StringBuilder();
+        foreach (char character in testUserKey.Trim())
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(char.ToLowerInvariant(character));
+                continue;
+            }
+
+            if (character == '_' || character == '-')
+            {
+                builder.Append('_');
+            }
+        }
+
+        return builder.Length == 0 ? "default" : builder.ToString();
+    }
+
+    private void ClearCurrentFirebaseSessionForEditorTest()
+    {
+        // 추가: 조규민 - 에디터 테스트에서 다른 테스트 계정을 만들 수 있도록 기존 익명 세션을 끊는다.
+        _auth.SignOut();
+        UserUID = null;
+        UserEmail = null;
+        UserDisplayName = null;
+        LastSignInWasGoogle = false;
+    }
+#endif
+
     private IEnumerator SignInFirebaseWithGoogleToken(string idToken)
     {
         var credential = GoogleAuthProvider.GetCredential(idToken, null);
@@ -165,7 +441,7 @@ public class FirebaseAuthService : MonoBehaviour
         yield return StartCoroutine(WaitForTask(authTask, _firebaseAuthTimeoutSeconds, result => firebaseCompleted = result));
         if (!firebaseCompleted)
         {
-            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, "Firebase Google 인증 시간이 초과되었습니다. Firebase Authentication 제공업체와 네트워크 상태를 확인해 주세요.");
+            CompleteFailedSignIn(AuthLoginFailureType.Timeout, "Firebase Google 인증 시간이 초과되었습니다. Firebase Authentication 제공업체와 네트워크 상태를 확인해 주세요.");
             yield break;
         }
 
@@ -475,6 +751,11 @@ public class FirebaseAuthService : MonoBehaviour
         RaiseLoginFailed(failureType, message);
     }
 
+    private void CompleteFailedSignIn(string message)
+    {
+        CompleteFailedSignIn(AuthLoginFailureType.General, message);
+    }
+
     // 추가: 조규민 - FirebaseAuth 사용 가능 여부를 한 곳에서 확인한다.
     private bool CanUseFirebaseAuth()
     {
@@ -528,6 +809,52 @@ public class FirebaseAuthService : MonoBehaviour
         return exception.Message;
     }
 
+    private string GetFirebaseAuthExceptionMessage(Exception exception, string fallbackMessage)
+    {
+        var firebaseException = GetInnerException<FirebaseException>(exception);
+        if (firebaseException == null)
+        {
+            return GetExceptionMessage(exception, fallbackMessage);
+        }
+
+        string authErrorName = GetAuthErrorName(firebaseException);
+        switch (authErrorName)
+        {
+            case "InvalidEmail":
+                return "Editor Email/Password 테스트 이메일 형식이 올바르지 않습니다.";
+            case "WrongPassword":
+                return "Editor Email/Password 테스트 비밀번호가 기존 계정과 일치하지 않습니다.";
+            case "InvalidCredential":
+                return "Editor Email/Password 테스트 계정 정보가 올바르지 않습니다. 기존 계정이면 비밀번호를 확인해 주세요.";
+            case "InternalError":
+                return "Firebase Auth 내부 오류가 발생했습니다. Email/Password 제공업체, Firebase 프로젝트 연결, 네트워크 상태를 확인해 주세요.";
+            case "Failure":
+                return "Firebase Auth 요청이 실패했습니다. Email/Password 제공업체, Firebase 프로젝트 연결, 네트워크 상태를 확인해 주세요.";
+            case "EmailAlreadyInUse":
+                return "Editor Email/Password 테스트 계정이 이미 있습니다. 기존 계정 비밀번호로 다시 로그인해 주세요.";
+            case "WeakPassword":
+                return "Editor Email/Password 테스트 비밀번호가 너무 약합니다. 6자 이상으로 다시 입력해 주세요.";
+            case "OperationNotAllowed":
+                return "Firebase Console에서 Email/Password 로그인 제공업체가 꺼져 있습니다.";
+            case "NetworkRequestFailed":
+                return "Firebase Auth 네트워크 요청에 실패했습니다. 인터넷 연결을 확인해 주세요.";
+            case "TooManyRequests":
+                return "Firebase Auth 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+            default:
+                return fallbackMessage + " (" + authErrorName + ": " + firebaseException.Message + ")";
+        }
+    }
+
+    private string GetAuthErrorName(FirebaseException firebaseException)
+    {
+        if (firebaseException == null)
+        {
+            return string.Empty;
+        }
+
+        return ((AuthError)firebaseException.ErrorCode).ToString();
+    }
+
     private string GetGoogleSignInExceptionMessage(Exception exception)
     {
         var signInException = GetInnerException<GoogleSignIn.SignInException>(exception);
@@ -551,6 +878,44 @@ public class FirebaseAuthService : MonoBehaviour
         }
     }
 
+    private AuthLoginFailureType GetGoogleSignInFailureType(Exception exception)
+    {
+        var signInException = GetInnerException<GoogleSignIn.SignInException>(exception);
+        if (signInException == null)
+        {
+            return AuthLoginFailureType.General;
+        }
+
+        switch (signInException.Status)
+        {
+            case GoogleSignInStatusCode.Canceled:
+                return AuthLoginFailureType.Canceled;
+            case GoogleSignInStatusCode.NetworkError:
+                return AuthLoginFailureType.Network;
+            case GoogleSignInStatusCode.DeveloperError:
+                return AuthLoginFailureType.Configuration;
+            case GoogleSignInStatusCode.Timeout:
+                return AuthLoginFailureType.Timeout;
+            default:
+                return AuthLoginFailureType.General;
+        }
+    }
+
+    private AuthLoginFailureType GetValidationFailureType(string validationError)
+    {
+        if (validationError.Contains("Firebase"))
+        {
+            return AuthLoginFailureType.FirebaseAuth;
+        }
+
+        if (validationError.Contains("Web Client ID") || validationError.Contains("설정"))
+        {
+            return AuthLoginFailureType.Configuration;
+        }
+
+        return AuthLoginFailureType.General;
+    }
+
     private void LogExceptionDetails(string title, Exception exception)
     {
         if (exception == null)
@@ -569,6 +934,12 @@ public class FirebaseAuthService : MonoBehaviour
             {
                 Debug.LogError("[Auth][GoogleSignIn] DeveloperError detected. Check package name, SHA-1/SHA-256, OAuth client, and WebClientId=" + MaskWebClientId(_resolvedWebClientId));
             }
+        }
+
+        var firebaseException = GetInnerException<FirebaseException>(exception);
+        if (firebaseException != null)
+        {
+            Debug.LogError("[Auth][Firebase] ErrorCode=" + firebaseException.ErrorCode + ", AuthError=" + GetAuthErrorName(firebaseException));
         }
 
         var aggregateException = exception as AggregateException;

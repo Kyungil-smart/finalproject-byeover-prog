@@ -7,7 +7,7 @@ using System;
 public interface ILoginView
 {
     event Action OnGuestLoginClicked;
-    event Action OnGoogleLoginClicked;
+    event Action<string, string> OnGoogleLoginClicked;
     event Action<string, string> OnRegisterClicked;
     event Action<bool> OnTermsAgreementChanged;
     event Action OnTermsConfirmed; // 추가: 조규민 - 약관 모달 확인 버튼 입력을 Presenter로 전달한다.
