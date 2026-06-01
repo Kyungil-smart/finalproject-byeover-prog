@@ -7,6 +7,9 @@
 // 수정자 : 정승우
 // 수정내용 : CharacterRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
 
+// 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 using System.Collections.Generic;
 using UnityEngine;
  
@@ -22,7 +25,7 @@ public class CombatSystem : MonoBehaviour
     [SerializeField] private ComboModel _comboModel;
     [SerializeField] private CombinationModel _combinationModel;
     [SerializeField] private PlayerModel _playerModel;
-    [SerializeField] private CharacterRepo _characterRepo;
+    [SerializeField] private Legacy_CharacterRepo _characterRepo;
  
     [Header("자동공격")]
     [SerializeField] private bool _autoAttackEnabled;
@@ -129,8 +132,8 @@ public class CombatSystem : MonoBehaviour
     private void ResolveRepository()
     {
         if (_characterRepo != null) return;
-        if (DataManager.Instance == null) return;
+        if (Legacy_DataManager.Instance == null) return;
 
-        _characterRepo = DataManager.Instance.CharacterRepo;
+        _characterRepo = Legacy_DataManager.Instance.CharacterRepo;
     }
 }

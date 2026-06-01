@@ -50,14 +50,18 @@ public class SortTableView : MonoBehaviour, ISortTableView
     private void SetupSlotPositions()
     {
         var positions = new Vector2[SortModel.TABLE_COUNT][];
+        int currentIdx = 0;
+
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
         {
             positions[t] = new Vector2[SortModel.SLOTS_PER_TABLE];
             for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
             {
-                int idx = t * SortModel.SLOTS_PER_TABLE + s;
-                if (idx < _puzzleSlots.Length)
-                    positions[t][s] = _puzzleSlots[idx].position;
+                if (currentIdx < _puzzleSlots.Length)
+                {
+                    positions[t][s] = _puzzleSlots[currentIdx].position;
+                    currentIdx++;
+                }
             }
         }
         _inputHandler.SetSlotPositions(positions);
@@ -72,19 +76,10 @@ public class SortTableView : MonoBehaviour, ISortTableView
         var sr = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
         if (sr != null && unitType >= 0 && unitType < _unitSprites.Length)
         {
+            Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
             sr.sprite = _unitSprites[unitType];
             sr.enabled = true;
-
-            // 유닛 색 테스트용 스프라이트로 대체 예정
-            switch (unitType)
-            {
-                case 0: sr.color = Color.red; break;
-                case 1: sr.color = Color.blue; break;
-                case 2: sr.color = Color.yellow; break;
-                case 3: sr.color = Color.green; break;
-                case 4: sr.color = Color.white; break;
-                default: sr.color = Color.clear; break;
-            }
+            sr.color = Color.white;
         }
     }
 
@@ -94,7 +89,13 @@ public class SortTableView : MonoBehaviour, ISortTableView
         if (idx >= _puzzleSlots.Length) return;
 
         var sr = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
-        if (sr != null) sr.enabled = false;
+        if (sr != null)
+        {
+            Debug.Log($"[뷰] {tableIdx}, {slotIdx} 삭제! (sr.enabled = false)");
+            sr.sprite = null;
+            sr.color = Color.clear;
+            sr.enabled = false;
+        }
     }
 
     public void ShowDragFeedback(int fromTable, int fromSlot, Vector2 dragPos)
@@ -132,6 +133,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
         {
             _dragFeedbackSR.enabled = false;
             _dragFeedbackSR.sprite = null;
+            _dragFeedbackSR.color = Color.clear;
         }
     }
 

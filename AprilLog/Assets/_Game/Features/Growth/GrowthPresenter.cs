@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 캐릭터 성장 Presenter
 
+// 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경
+
 using UnityEngine;
 
 public class GrowthPresenter
@@ -9,10 +12,10 @@ public class GrowthPresenter
     private readonly OutGameGrowthSystem _growth;
     private readonly CurrencyModel _currency;
     private readonly PlayerProgressModel _progress;
-    private readonly ConfigRepo _configRepo;
+    private readonly Legacy_ConfigRepo _configRepo;
 
     public GrowthPresenter(IGrowthView view, OutGameGrowthSystem growth,
-        CurrencyModel currency, PlayerProgressModel progress, ConfigRepo configRepo)
+        CurrencyModel currency, PlayerProgressModel progress, Legacy_ConfigRepo configRepo)
     {
         if (view == null || growth == null || currency == null || progress == null || configRepo == null)
         {

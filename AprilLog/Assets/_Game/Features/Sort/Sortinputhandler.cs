@@ -18,6 +18,7 @@ public class SortInputHandler : MonoBehaviour
     public event Action<int, int> OnDragStarted;             // tableIdx, slotIdx
     public event Action<Vector2> OnDragging;                 // 현재 드래그 위치 (world)
     public event Action OnDragCanceled;
+    public event Action OnDragEnded;
 
     // ---------- SerializeField ----------
     [Header("참조")]
@@ -124,6 +125,12 @@ public class SortInputHandler : MonoBehaviour
 
         FindSlot(worldPos, out _selectedTable, out _selectedSlot);
 
+        if (_selectedTable >= 0)
+        {
+            int modelUnitType = _model.GetUnit(_selectedTable, _selectedSlot);
+            Debug.Log($"[클릭 검증] 검출된 테이블: {_selectedTable}, 슬롯: {_selectedSlot} | 모델 내부 데이터 값: {modelUnitType}");
+        }
+
         // 빈 슬롯이면 무시
         if (_selectedTable >= 0 && _model.GetUnit(_selectedTable, _selectedSlot) < 0)
         {
@@ -167,10 +174,8 @@ public class SortInputHandler : MonoBehaviour
 
         FindSlot(worldPos, out int toTable, out int toSlot);
 
-        if (toTable >= 0)
-            OnUnitDropped?.Invoke(_selectedTable, _selectedSlot, toTable, toSlot);
-        else
-            OnDragCanceled?.Invoke();
+        OnUnitDropped?.Invoke(_selectedTable, _selectedSlot, toTable, toSlot);
+        OnDragEnded?.Invoke();
 
         _selectedTable = -1;
         _selectedSlot = -1;
@@ -189,7 +194,7 @@ public class SortInputHandler : MonoBehaviour
             for (int s = 0; s < _slotPositions[t].Length; s++)
             {
                 float dist = Vector2.Distance(worldPos, _slotPositions[t][s]);
-                
+
                 if (dist < minDistance)
                 {
                     minDistance = dist;
@@ -197,6 +202,12 @@ public class SortInputHandler : MonoBehaviour
                     slotIdx = s;
                 }
             }
+        }
+
+        if (minDistance > _touchRadius)
+        {
+            tableIdx = -1;
+            slotIdx = -1;
         }
     }
 }

@@ -1,7 +1,11 @@
 // 담당자 : 김영찬
 // 설명   : Repository를 관리하는 싱글톤 데이터 매니저
+
 // 수정자 : 최동훈 - 프리팹 경로 수정
+
 // 수정자 : 정승우 - InitRepo 이중 호출 방지 + 아키텍처 연동
+
+// 수정자 : 김영찬 - 새로운 DB 반영하여 Repo 분리 및 신설
 
 using System;
 using UnityEngine;
@@ -49,13 +53,17 @@ public class DataManager : MonoBehaviour
         }
     }
     
+    // ---------- SerializeField ----------
     [SerializeField] private CharacterRepo _characterRepo;
     [SerializeField] private StageRepo _stageRepo;
     [SerializeField] private ConfigRepo _configRepo;
+    //[SerializeField] private SpellRepo _spellRepo; 해당 부분은 아직 기획이 넘어오지 않은 Legacy DB임
     
+    // ---------- Public ----------
     public CharacterRepo CharacterRepo => _characterRepo;
     public StageRepo StageRepo => _stageRepo;
     public ConfigRepo ConfigRepo => _configRepo;
+    //public SpellRepo SpellRepo => _spellRepo;
     
     private void Awake()
     {
@@ -91,6 +99,7 @@ public class DataManager : MonoBehaviour
         InitializeRepo(nameof(_characterRepo), _characterRepo, () => _characterRepo.Initialize());
         InitializeRepo(nameof(_stageRepo), _stageRepo, () => _stageRepo.Initialize());
         InitializeRepo(nameof(_configRepo), _configRepo, () => _configRepo.Initialize());
+        //InitializeRepo(nameof(_spellRepo), _spellRepo, () => _spellRepo.Initialize());
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");

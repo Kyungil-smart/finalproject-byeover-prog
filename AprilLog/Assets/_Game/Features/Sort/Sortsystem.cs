@@ -30,6 +30,8 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     // ---------- Private ----------
     private bool _isProcessing;
     private System.Random _rng;
+    // FillEmptyTablesFromQueue() 안에 if (!_isAutoFillEnabled) return;이랑 후에 삭제
+    private bool _isAutoFillEnabled = true;
 
     // 대기열 난이도 확률. 기본값은 기획서 기준.
     private float _lowProb = 0.40f;
@@ -40,14 +42,13 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     public void Initialize(int seed)
     {
         _rng = new System.Random(seed);
-        _model.Initialize();
 
         // 대기열 4개 채우기
         for (int i = 0; i < SortModel.WAITING_COUNT; i++)
             _model.SetWaiting(i, GenerateWaitingCombo());
 
         // 처음 3개 테이블에 대기열에서 넣기
-        for (int t = 0; t < 3; t++)
+        for (int t = 0; t < SortModel.TABLE_COUNT; t++)
             FillTableFromQueue(t);
     }
 
@@ -64,13 +65,28 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
     // ---------- 유닛 이동 처리 ----------
     private void HandleUnitDropped(int fromTable, int fromSlot, int toTable, int toSlot)
-    {
+    {        
         if (_isProcessing) return;
+   
+        if (toTable == -1) // 이동 불가
+        {
+            RestoreUnit(fromTable, fromSlot);
+            return;
+        }
 
         int actualSlot = ResolveDropSlot(toTable, toSlot);
-        if (actualSlot == -1) return;  // 이동 불가 -> 원래 자리
+        if (actualSlot == -1) // 꽉찬 슬롯
+        {
+            Debug.Log("이동 불가! 꽉 찬 테이블입니다.");
+            RestoreUnit(fromTable, fromSlot);
+            return;  
+        }
 
-        if (fromTable == toTable && fromSlot == actualSlot) return;  // 같은 자리
+        if (fromTable == toTable && fromSlot == actualSlot) // 같은 자리
+        {
+            RestoreUnit(fromTable, fromSlot);
+            return; 
+        }
 
         // 유닛 이동
         int unit = _model.GetUnit(fromTable, fromSlot);
@@ -85,6 +101,13 @@ public class SortSystem : MonoBehaviour, ISortNotifier
             CheckDeadlock();
     }
 
+    private void RestoreUnit(int table, int slot)
+    {
+        int unit = _model.GetUnit(table, slot);
+
+        _model.PlaceUnit(table, slot, unit);
+    }
+
     // 드롭한 슬롯이 차있으면 같은 테이블 빈 슬롯 찾기
     // 우측부터 순환 탐색
     private int ResolveDropSlot(int tableIdx, int targetSlot)
@@ -92,7 +115,7 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         if (_model.GetUnit(tableIdx, targetSlot) < 0)
             return targetSlot;
 
-        for (int offset = 1; offset < SortModel.SLOTS_PER_TABLE; offset++)
+       for (int offset = 1; offset < SortModel.SLOTS_PER_TABLE; offset++)
         {
             int idx = (targetSlot + offset) % SortModel.SLOTS_PER_TABLE;
             if (_model.GetUnit(tableIdx, idx) < 0)
@@ -112,12 +135,18 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
         yield return new WaitForSeconds(_clearDuration);
 
+        for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
+        {
+            _model.ClearSlot(tableIdx, s);
+        }
+
         _model.ClearTable(tableIdx);
 
         // 전투 시스템한테 알리기
         OnSortCompleted?.Invoke(matchedType);
 
         // 빈 테이블 채우기
+        yield return new WaitForSeconds(0.1f);
         FillEmptyTablesFromQueue();
 
         // 연쇄 체크: 대기열에서 채운 게 바로 매칭될 수 있음 (예: AAA 조합)
@@ -137,6 +166,9 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     // ---------- 대기열 -> 퍼즐 ----------
     private void FillEmptyTablesFromQueue()
     {
+        // private bool _isAutoFillEnabled = true;랑 같이 후에 삭제
+        if (!_isAutoFillEnabled) return;
+
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
         {
             if (_model.IsTableEmpty(t))

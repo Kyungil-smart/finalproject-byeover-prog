@@ -6,7 +6,7 @@ using System;
 public interface ILobbyView
 {
     void SetPlayerInfo(string name, int level);
-    void SetStageButtons(StageDisplayData[] stages);
+    void SetStageButtons(Legacy_StageDisplayData[] stages);
     void SetCurrency(int gold, int parchment);
     void ShowResumePrompt();
     event Action<int> OnStageSelected;

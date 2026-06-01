@@ -27,7 +27,7 @@ public class LoginPresenter
         {
             GameManager.Instance.OnLoginStarted += HandleLoginStarted;
             GameManager.Instance.OnLoginSucceeded += HandleLoginSucceeded;
-            GameManager.Instance.OnLoginFailed += HandleLoginFailed;
+            GameManager.Instance.OnLoginFailedWithType += HandleLoginFailedWithType;
             GameManager.Instance.OnRegistrationRequired += HandleRegistrationRequired;
             GameManager.Instance.OnRegistrationFailed += HandleRegistrationFailed;
         }
@@ -60,7 +60,7 @@ public class LoginPresenter
 
         GameManager.Instance.OnLoginStarted -= HandleLoginStarted;
         GameManager.Instance.OnLoginSucceeded -= HandleLoginSucceeded;
-        GameManager.Instance.OnLoginFailed -= HandleLoginFailed;
+        GameManager.Instance.OnLoginFailedWithType -= HandleLoginFailedWithType;
         GameManager.Instance.OnRegistrationRequired -= HandleRegistrationRequired;
         GameManager.Instance.OnRegistrationFailed -= HandleRegistrationFailed;
     }
@@ -85,6 +85,7 @@ public class LoginPresenter
             return;
         }
 
+        _model.SetGoogleLoginRequested(false);
         GameManager.Instance.StartGuestSignIn();
     }
 
@@ -108,6 +109,7 @@ public class LoginPresenter
             return;
         }
 
+        _model.SetGoogleLoginRequested(true);
         GameManager.Instance.StartGoogleSignIn();
     }
 
@@ -179,10 +181,19 @@ public class LoginPresenter
     // 인증 성공 UID를 표시하고 로딩 상태를 해제한다.
     private void HandleLoginSucceeded(string uid)
     {
+        bool wasGoogleLogin = GameManager.Instance != null && GameManager.Instance.LastSignInWasGoogle;
+
         _model.SetUserUID(uid);
         _model.SetSigningIn(false);
         _view.HideRegisterPanel();
         RefreshView();
+
+        if (wasGoogleLogin)
+        {
+            _view.ShowPopup(LoginMessageProvider.GetGoogleSuccessMessage());
+        }
+
+        _model.SetGoogleLoginRequested(false);
     }
 
     // 인증 실패 메시지를 팝업으로 표시하고 다시 입력 가능한 상태로 돌린다.
@@ -190,6 +201,22 @@ public class LoginPresenter
     {
         _model.SetSigningIn(false);
         RefreshView();
+        _view.ShowPopup(string.IsNullOrEmpty(error) ? "로그인에 실패했습니다. 다시 시도해 주세요." : error);
+    }
+
+    private void HandleLoginFailedWithType(AuthLoginFailureType failureType, string error)
+    {
+        _model.SetSigningIn(false);
+        RefreshView();
+
+        // 추가: Google 로그인 시도에서만 지정된 Google 안내 문구를 사용한다.
+        if (_model.IsGoogleLoginRequested)
+        {
+            _view.ShowPopup(LoginMessageProvider.GetGoogleFailureMessage(failureType));
+            _model.SetGoogleLoginRequested(false);
+            return;
+        }
+
         _view.ShowPopup(string.IsNullOrEmpty(error) ? "로그인에 실패했습니다. 다시 시도해 주세요." : error);
     }
 

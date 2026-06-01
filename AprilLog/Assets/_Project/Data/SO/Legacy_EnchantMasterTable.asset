@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7036da30e8c241ef9ad2562aee53cc55, type: 3}
+  m_Name: Legacy_EnchantMasterTable
+  m_EditorClassIdentifier: Assembly-CSharp::EnchantMasterTable
+  rows:
+  - EnchantID: 1
+    EnchantType: Attack
+    Name: DummyAttackUp
+    MaxLevel: 3
+    LinkedSkillID: 100101
+    LinkedStatType: 1
+    DescriptionKey: dummy_enchant_attack_desc
+    ImageKey: dummy_attack
+  - EnchantID: 2
+    EnchantType: Projectile
+    Name: DummyPierceUp
+    MaxLevel: 3
+    LinkedSkillID: 100101
+    LinkedStatType: 2
+    DescriptionKey: dummy_enchant_pierce_desc
+    ImageKey: dummy_pierce

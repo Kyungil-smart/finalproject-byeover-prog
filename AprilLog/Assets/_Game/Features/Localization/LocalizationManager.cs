@@ -18,10 +18,10 @@ public class LocalizationManager : MonoBehaviour
     // ---------- SerializeField ----------
     [Header("데이터")]
     [Tooltip("언어 테이블 SO")]
-    [SerializeField] private LanguageTable _languageTable;
+    [SerializeField] private Legacy_LanguageTable _languageTable;
 
     // ---------- 상태 ----------
-    private Dictionary<string, LanguageEntry> _entries;
+    private Dictionary<string, Legacy_LanguageEntry> _entries;
     private string _currentLang;  // "ko" or "en"
 
     public string CurrentLanguage => _currentLang;
@@ -29,7 +29,7 @@ public class LocalizationManager : MonoBehaviour
     // ---------- 초기화 ----------
     public void Initialize()
     {
-        _entries = new Dictionary<string, LanguageEntry>();
+        _entries = new Dictionary<string, Legacy_LanguageEntry>();
 
         if (_languageTable == null)
         {

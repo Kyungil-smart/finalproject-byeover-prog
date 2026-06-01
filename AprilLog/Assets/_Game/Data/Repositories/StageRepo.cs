@@ -1,28 +1,42 @@
 // 담당자 : 정승우
 // 설명   : 챕터/스테이지/스폰 규칙 데이터 저장소
 
+// 수정자 : 김영찬
+// 최신 DB에 맞춰 테이블 갱신
+// 최종 수정일 : 26.05.29
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 스테이지 진행, 몬스터 풀, 스폰 규칙을 관리한다.
 /// </summary>
 public class StageRepo : MonoBehaviour
 {
-    [Header("SO 참조")]
+    [Header("스테이지 진행 데이터")]
     [SerializeField] private ChapterTable _chapterTable;
     [SerializeField] private StageDataTable _stageTable;
+    
+    [Header("몬스터 풀 데이터")]
     [SerializeField] private MonsterPoolMasterTable _poolMasterTable;
     [SerializeField] private MonsterPoolTable _poolTable;
-    [SerializeField] private StageSpawnRuleTable _spawnRuleTable;
+    
+    [FormerlySerializedAs("_spawnRuleTable")]
+    [Header("스폰 규칙 데이터")]
+    [SerializeField] private StageWaveRuleTable _waveRuleTable;
+    [SerializeField] private SpecialWaveRuleTable _specialRuleTable;
+    
+    [Header("스폰 보정 데이터")]
     [SerializeField] private MonsterStageScalingTable _scalingTable;
 
     private Dictionary<int, ChapterData> _chapters;
     private Dictionary<int, StageData> _stages;
-    private Dictionary<int, MonsterPoolMasterData> _poolMasters;
+    private Dictionary<int, MonsterWavePoolData> _poolMasters;
     private Dictionary<int, List<MonsterPoolData>> _pools;
-    private List<StageSpawnRuleData> _spawnRules;
+    private Dictionary<int ,List<StageWaveRuleData>> _waveRules;
+    private Dictionary<int, SpecialWaveRuleData> _specialRules;
     private List<MonsterStageScalingData> _scalingRules;
     private bool _isInitialized;
 
@@ -38,12 +52,14 @@ public class StageRepo : MonoBehaviour
         _stages = BuildDictionary(_stageTable, nameof(_stageTable), r => r.Stage_ID);
         _poolMasters = BuildDictionary(_poolMasterTable, nameof(_poolMasterTable), r => r.MonsterPool_ID);
 
-        // MonsterPool은 풀ID 기준 그룹핑
+        // MonsterPool과 WaveRules는 ID 기준 그룹핑
         _pools = BuildPoolDictionary();
-        _spawnRules = BuildList(_spawnRuleTable, nameof(_spawnRuleTable));
+        _waveRules = BuildWaveDictionary();
+        
+        _specialRules = BuildDictionary(_specialRuleTable, nameof(_specialRuleTable), r => r.SpecialWave_ID);
         _scalingRules = BuildList(_scalingTable, nameof(_scalingTable));
         _isInitialized = true;
-        Debug.Log($"[StageRepo] 초기화 완료. Chapters: {_chapters.Count}, Stages: {_stages.Count}, PoolMasters: {_poolMasters.Count}, Pools: {_pools.Count}, SpawnRules: {_spawnRules.Count}, ScalingRules: {_scalingRules.Count}");
+        Debug.Log($"[StageRepo] 초기화 완료. Chapters: {_chapters.Count}, Stages: {_stages.Count}, PoolMasters: {_poolMasters.Count}, Pools: {_pools.Count}, SpawnRules: {_waveRules.Count}, ScalingRules: {_scalingRules.Count}");
     }
 
     public ChapterData GetChapter(int id)
@@ -77,21 +93,27 @@ public class StageRepo : MonoBehaviour
     }
 
     // 특정 스테이지에 적용되는 스폰 규칙 목록
-    public List<StageSpawnRuleData> GetSpawnRulesForStage(int stageId)
+    public Dictionary<int, StageWaveRuleData> GetSpawnRulesForStage(int stageId)
     {
-        if (_spawnRules == null)
+        if (_waveRules == null)
         {
             Debug.LogWarning("[StageRepo] SpawnRules cache is not initialized. Empty list will be used.");
-            _spawnRules = new List<StageSpawnRuleData>();
+            _waveRules = new();
         }
 
-        var result = new List<StageSpawnRuleData>();
-        for (int i = 0; i < _spawnRules.Count; i++)
+        var result = new Dictionary<int, StageWaveRuleData>();
+
+        if (!_waveRules.TryGetValue(stageId, out var data))
         {
-            var rule = _spawnRules[i];
-            if (stageId >= rule.StartStage_ID && stageId <= rule.EndStage_ID)
-                result.Add(rule);
+            Debug.LogWarning($"[StageRepo] Stage Rule not found or empty. StageId: {stageId}");
+            return null;
         }
+
+        foreach (var d in data)
+        {
+            result.Add(d.WaveOrder, d);
+        }
+        
         return result;
     }
 
@@ -150,6 +172,28 @@ public class StageRepo : MonoBehaviour
                 && rule.MonsterPool_ID == poolId)
                 return rule;
         }
+        return null;
+    }
+
+    // 특정 스테이지에 적용되는 특별 소환 규칙
+    public SpecialWaveRuleData GetSpecialWaveRuleForStage(int id)
+    {
+        if (id == 0)
+        {
+            Debug.Log("[StageRepo] This Wave Not Contain Special Wave.");
+            return null;
+        }
+        
+        if (_specialRules == null)
+        {
+            Debug.LogWarning("[StageRepo] Special Wave Rule cache is not initialized. Empty dictionary will be used.");
+            _specialRules = new ();
+        }
+
+        if (_specialRules.TryGetValue(id, out var data))
+            return data;
+
+        Debug.LogWarning($"[StageRepo] Special Wave Rule not found. Id: {id}");
         return null;
     }
 
@@ -224,6 +268,43 @@ public class StageRepo : MonoBehaviour
             {
                 pool = new List<MonsterPoolData>();
                 result.Add(row.MonsterPool_ID, pool);
+            }
+
+            pool.Add(row);
+        }
+
+        return result;
+    }
+    
+    private Dictionary<int, List<StageWaveRuleData>> BuildWaveDictionary()
+    {
+        var result = new Dictionary<int, List<StageWaveRuleData>>();
+
+        if (_poolTable == null)
+        {
+            Debug.LogWarning($"[StageRepo] {nameof(_waveRuleTable)} is not assigned. Empty pool dictionary will be used.");
+            return result;
+        }
+
+        if (_poolTable.rows == null)
+        {
+            Debug.LogWarning($"[StageRepo] {nameof(_waveRuleTable)}.rows is null. Empty pool dictionary will be used.");
+            return result;
+        }
+
+        for (int i = 0; i < _waveRuleTable.rows.Count; i++)
+        {
+            StageWaveRuleData row = _waveRuleTable.rows[i];
+            if (row == null)
+            {
+                Debug.LogWarning($"[StageRepo] {nameof(_waveRuleTable)}.rows[{i}] is null. Skip.");
+                continue;
+            }
+
+            if (!result.TryGetValue(row.Stage_ID, out var pool))
+            {
+                pool = new List<StageWaveRuleData>();
+                result.Add(row.Stage_ID, pool);
             }
 
             pool.Add(row);

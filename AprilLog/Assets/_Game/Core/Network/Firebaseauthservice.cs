@@ -1,11 +1,8 @@
 // 담당자 : 정승우
 // 설명   : Firebase 인증 서비스 -- 구글 로그인(Google Sign-In) + 게스트 로그인
+
 // 2차 수정자 : 조규민
-// 수정 내용 : 게스트 로그인 실패 처리, Firebase 초기화 실패 이벤트, 중복 로그인 요청 방어 추가
-// 3차 수정자 : 조규민
-// 수정 내용 : Google 로그인 실기기 테스트를 위한 설정 검증, 단계별 실패 처리, 타임아웃 방어 추가
-// 4차 수정자 : 조규민
-// 수정 내용 : Google Web Client ID 자동 해석과 Google Sign-In 세션 정리 추가
+// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달 추가
 
 #if FIREBASE_ENABLED
 using Firebase;
@@ -28,6 +25,7 @@ public class FirebaseAuthService : MonoBehaviour
     public event Action<string> OnLoginSuccess;
 #pragma warning disable CS0067 // 추가: 조규민 - Editor에서 FIREBASE_ENABLED가 꺼진 경우에도 Android 빌드용 실패 이벤트를 유지한다.
     public event Action<string> OnLoginFailed;
+    public event Action<AuthLoginFailureType, string> OnLoginFailedWithType;
 #pragma warning restore CS0067
     public event Action OnLogout;
 
@@ -104,7 +102,7 @@ public class FirebaseAuthService : MonoBehaviour
         string validationError = GetGoogleSignInValidationError();
         if (!string.IsNullOrEmpty(validationError))
         {
-            RaiseLoginFailed(validationError);
+            RaiseLoginFailed(GetValidationFailureType(validationError), validationError);
             yield break;
         }
 
@@ -127,7 +125,7 @@ public class FirebaseAuthService : MonoBehaviour
         yield return StartCoroutine(WaitForTask(signInTask, _googleSignInTimeoutSeconds, result => googleCompleted = result));
         if (!googleCompleted)
         {
-            CompleteFailedSignIn("Google 로그인 응답 시간이 초과되었습니다. 네트워크 상태와 Google Play Services 상태를 확인해 주세요.");
+            CompleteFailedSignIn(AuthLoginFailureType.General, "Google 로그인 응답 시간이 초과되었습니다. 네트워크 상태와 Google Play Services 상태를 확인해 주세요.");
             yield break;
         }
 
@@ -147,13 +145,13 @@ public class FirebaseAuthService : MonoBehaviour
 
         if (signInTask.Result == null || string.IsNullOrEmpty(signInTask.Result.IdToken))
         {
-            CompleteFailedSignIn("Google ID Token을 받지 못했습니다. Web Client ID와 SHA-1/SHA-256 설정을 확인해 주세요.");
+            CompleteFailedSignIn(AuthLoginFailureType.General, "Google ID Token을 받지 못했습니다. Web Client ID와 SHA-1/SHA-256 설정을 확인해 주세요.");
             yield break;
         }
 
         yield return StartCoroutine(SignInFirebaseWithGoogleToken(signInTask.Result.IdToken));
 #else
-        RaiseLoginFailed("실제 Google 로그인은 Android 빌드에서만 사용할 수 있습니다. Android로 Switch Platform 후 기기에서 테스트해 주세요.");
+        RaiseLoginFailed(AuthLoginFailureType.General, "실제 Google 로그인은 Android 빌드에서만 사용할 수 있습니다. Android로 Switch Platform 후 기기에서 테스트해 주세요.");
         yield return null;
 #endif
     }
@@ -167,13 +165,13 @@ public class FirebaseAuthService : MonoBehaviour
         yield return StartCoroutine(WaitForTask(authTask, _firebaseAuthTimeoutSeconds, result => firebaseCompleted = result));
         if (!firebaseCompleted)
         {
-            CompleteFailedSignIn("Firebase Google 인증 시간이 초과되었습니다. Firebase Authentication 제공업체와 네트워크 상태를 확인해 주세요.");
+            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, "Firebase Google 인증 시간이 초과되었습니다. Firebase Authentication 제공업체와 네트워크 상태를 확인해 주세요.");
             yield break;
         }
 
         if (authTask.IsCanceled)
         {
-            CompleteFailedSignIn("Firebase Google 인증이 취소되었습니다.");
+            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, "Firebase Google 인증이 취소되었습니다.");
             yield break;
         }
 
@@ -201,7 +199,7 @@ public class FirebaseAuthService : MonoBehaviour
 
         if (!CanUseFirebaseAuth())
         {
-            RaiseLoginFailed("Firebase 인증 서비스가 준비되지 않았습니다.");
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "Firebase 인증 서비스가 준비되지 않았습니다.");
             yield break;
         }
 
@@ -320,6 +318,13 @@ public class FirebaseAuthService : MonoBehaviour
     // 추가: 조규민 - 로그인 실패 이벤트 발행 지점을 공통화해 Editor/Firebase define 차이로 생기는 경고를 줄인다.
     private void RaiseLoginFailed(string message)
     {
+        RaiseLoginFailed(AuthLoginFailureType.General, message);
+    }
+
+    // 추가: 조규민 - UI에서 Google 실패 안내 문구를 구분할 수 있도록 실패 유형을 함께 전달한다.
+    private void RaiseLoginFailed(AuthLoginFailureType failureType, string message)
+    {
+        OnLoginFailedWithType?.Invoke(failureType, message);
         OnLoginFailed?.Invoke(message);
     }
 
@@ -464,10 +469,10 @@ public class FirebaseAuthService : MonoBehaviour
         onCompleted?.Invoke(task.IsCompleted);
     }
 
-    private void CompleteFailedSignIn(string message)
+    private void CompleteFailedSignIn(AuthLoginFailureType failureType, string message)
     {
         IsSigningIn = false;
-        RaiseLoginFailed(message);
+        RaiseLoginFailed(failureType, message);
     }
 
     // 추가: 조규민 - FirebaseAuth 사용 가능 여부를 한 곳에서 확인한다.

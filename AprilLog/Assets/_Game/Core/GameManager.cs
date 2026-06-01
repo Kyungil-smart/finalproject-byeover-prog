@@ -1,9 +1,8 @@
 // 담당자 : 정승우
 // 설명   : 앱 전체 관리 -- 상태, 인증, 세이브, 씬 전환
+
 // 2차 수정자 : 조규민
-// 수정 내용 : 로그인 성공/실패 이벤트 전달, 게스트 로그인 중복 방어, 실제 씬 이름 기준 전환 추가
-// 3차 수정자 : 조규민
-// 수정 내용 : 앱 시작 직후 Unity 화면이 반대로 보였다가 회전되는 현상을 줄이기 위해 Splash 이전 Portrait 고정 추가
+// 수정 내용 : 로그인 이벤트 전달, 게스트 중복 방어, 실제 씬 이름 전환, Portrait 고정, Google 로그인 실패 유형 전달 추가
 
 using System;
 using System.Collections;
@@ -25,6 +24,7 @@ public class GameManager : MonoBehaviour
     public event Action OnLoginStarted; // 추가: 조규민 - LoginPresenter와 Bootstrap이 로그인 진행 상태를 받을 수 있게 한다.
     public event Action<string> OnLoginSucceeded; // 추가: 조규민 - 인증 성공 UID를 UI 흐름에 전달한다.
     public event Action<string> OnLoginFailed; // 추가: 조규민 - 인증 실패 메시지를 UI 흐름에 전달한다.
+    public event Action<AuthLoginFailureType, string> OnLoginFailedWithType; // 추가: 조규민 - Google 로그인 실패 안내 문구를 구분할 수 있도록 실패 유형을 전달한다.
     public event Action OnRegistrationRequired;
     public event Action<string> OnRegistrationFailed;
 
@@ -48,6 +48,7 @@ public class GameManager : MonoBehaviour
     public GameState CurrentState => _currentState;
     public string UserUID => _authService != null ? _authService.UserUID : null;
     public bool IsLoggedIn => _authService != null && _authService.IsLoggedIn;
+    public bool LastSignInWasGoogle => _authService != null && _authService.LastSignInWasGoogle;
     public bool IsOfflineMode { get; private set; }
 
     // 클라우드에서 내려온 유저 데이터
@@ -105,7 +106,7 @@ public class GameManager : MonoBehaviour
         if (_authService != null)
         {
             _authService.OnLoginSuccess += HandleLoginSuccess;
-            _authService.OnLoginFailed += HandleLoginFailed;
+            _authService.OnLoginFailedWithType += HandleLoginFailedWithType;
         }
     }
 
@@ -117,7 +118,7 @@ public class GameManager : MonoBehaviour
         if (_authService != null)
         {
             _authService.OnLoginSuccess -= HandleLoginSuccess;
-            _authService.OnLoginFailed -= HandleLoginFailed;
+            _authService.OnLoginFailedWithType -= HandleLoginFailedWithType;
         }
     }
 
@@ -155,7 +156,7 @@ public class GameManager : MonoBehaviour
     {
         if (_firestoreService == null)
         {
-            OnLoginFailed?.Invoke("Firestore 서비스가 연결되지 않았습니다.");
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "Firestore 서비스가 연결되지 않았습니다.");
             yield break;
         }
 
@@ -187,8 +188,20 @@ public class GameManager : MonoBehaviour
 
     private void HandleLoginFailed(string error)
     {
+        RaiseLoginFailed(AuthLoginFailureType.General, error);
+    }
+
+    private void HandleLoginFailedWithType(AuthLoginFailureType failureType, string error)
+    {
+        RaiseLoginFailed(failureType, error);
+    }
+
+    // 추가: 조규민 - 실패 유형 이벤트와 기존 문자열 이벤트를 함께 발행해 기존 UI 흐름을 유지한다.
+    private void RaiseLoginFailed(AuthLoginFailureType failureType, string error)
+    {
         // 추가: 조규민 - 로그인 실패 시 앱 상태를 Login으로 유지하고 UI에 오류를 전달한다.
         ChangeState(GameState.Login);
+        OnLoginFailedWithType?.Invoke(failureType, error);
         OnLoginFailed?.Invoke(error);
     }
 
@@ -267,7 +280,7 @@ public class GameManager : MonoBehaviour
     {
         if (_authService == null)
         {
-            OnLoginFailed?.Invoke("인증 서비스가 연결되지 않았습니다.");
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "인증 서비스가 연결되지 않았습니다.");
             return;
         }
 
@@ -284,7 +297,7 @@ public class GameManager : MonoBehaviour
     {
         if (_authService == null)
         {
-            OnLoginFailed?.Invoke("인증 서비스가 연결되지 않았습니다.");
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "인증 서비스가 연결되지 않았습니다.");
             return;
         }
 
@@ -549,7 +562,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] 로컬 세이브 실행");
     }
 
-    public void SaveLocalData(InGameSaveData data)
+    public void SaveLocalData(Legacy_InGameSaveData data)
     {
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetInGameSavePath(), json);
@@ -560,13 +573,13 @@ public class GameManager : MonoBehaviour
         return File.Exists(GetInGameSavePath());
     }
 
-    public InGameSaveData LoadLocalSaveData()
+    public Legacy_InGameSaveData LoadLocalSaveData()
     {
         string path = GetInGameSavePath();
         if (!File.Exists(path)) return null;
 
         string json = File.ReadAllText(path);
-        return JsonUtility.FromJson<InGameSaveData>(json);
+        return JsonUtility.FromJson<Legacy_InGameSaveData>(json);
     }
 
     public void DeleteLocalSave()

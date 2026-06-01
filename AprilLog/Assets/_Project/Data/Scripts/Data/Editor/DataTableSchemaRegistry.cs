@@ -3,6 +3,9 @@
 // 수정자 : 정승우
 // 수정내용 : 엑셀 시트명, JSON 파일명, Data 클래스, SO 클래스 정의를 한 곳으로 통합
 
+// 2차 수정자 : 김영찬
+// 수정 내용 : 관리중인 리스트와 Legacy 리스트 분리
+
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
@@ -35,35 +38,39 @@ public static class DataTableSchemaRegistry
 {
     public static readonly IReadOnlyList<DataTableSchema> Schemas = new List<DataTableSchema>
     {
-        new DataTableSchema("CharacterMaster", "character_master", "CharacterMasterData", "CharacterMasterTable", true),
-        new DataTableSchema("CharacterName", "character_name", "CharacterNameData", "CharacterNameTable", true),
-        new DataTableSchema("CommonStatus", "common_status", "CommonStatusData", "CommonStatusTable", true),
-        new DataTableSchema("CharacterStatus", "character_status", "CharacterStatusData", "CharacterStatusTable", true),
-        new DataTableSchema("MonsterStatus", "monster_status", "MonsterStatusData", "MonsterStatusTable", true),
-
-        new DataTableSchema("SkillMaster", "skill_master", "SkillMasterData", "SkillMasterTable", true),
-        new DataTableSchema("SkillData", "skill_data", "SkillData", "SkillDataTable", true),
-        new DataTableSchema("EffectTable", "effect_table", "EffectData", "EffectDataTable", true),
-
-        new DataTableSchema("EnchantMaster", "enchant_master", "EnchantMasterData", "EnchantMasterTable", true),
-        new DataTableSchema("EnchantLevel", "enchant_level", "EnchantLevelData", "EnchantLevelTable", true),
-        new DataTableSchema("EnchantWeight", "enchant_weight", "EnchantWeightData", "EnchantWeightTable", true),
-
-        new DataTableSchema("ChapterMaster", "chapter_master", "ChapterData", "ChapterTable", true),
-        new DataTableSchema("MapLanguage", "map_language", "MapLanguageData", "MapLanguageTable", true),
-        new DataTableSchema("StageMaster", "stage_master", "StageData", "StageDataTable", true),
-
-        new DataTableSchema("MonsterPoolMaster", "monster_pool_master", "MonsterPoolMasterData", "MonsterPoolMasterTable", true),
-        new DataTableSchema("MonsterPool", "monster_pool", "MonsterPoolData", "MonsterPoolTable", true),
-        new DataTableSchema("StageSpawnRule", "stage_spawn_rule", "StageSpawnRuleData", "StageSpawnRuleTable", true),
-        new DataTableSchema("MonsterStageScaling", "monster_stage_scaling", "MonsterStageScalingData", "MonsterStageScalingTable", true),
-
-        new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
-        new DataTableSchema("OutLevel", "out_level", "OutLevelData", "OutLevelTable", true),
-
+        // Managing List <알파벳 순서로 정렬>
         new DataTableSchema("ChangeReward", "change_reward", "ChangeRewardData", "ChangeRewardTable", true),
-        new DataTableSchema("Achievement", "achievement", "AchievementData", "AchievementDataTable", false),
-        new DataTableSchema("Language", "language", "LanguageEntry", "LanguageTable", false),
+        new DataTableSchema("ChapterMaster", "chapter_master", "ChapterData", "ChapterTable", true),
+        new DataTableSchema("CharacterMaster", "character_master", "CharacterMasterData", "CharacterMasterTable", true),
+        new DataTableSchema("CharacterStatus", "character_status", "CharacterStatusData", "CharacterStatusTable", true),
+        new DataTableSchema("CommonStatus", "common_status", "CommonStatusData", "CommonStatusTable", true),
+        
+        new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
+        
+        new DataTableSchema("MonsterPool", "monster_pool", "MonsterPoolData", "MonsterPoolTable", true),
+        new DataTableSchema("MonsterStageScaling", "monster_stage_scaling", "MonsterStageScalingData", "MonsterStageScalingTable", true),
+        new DataTableSchema("MonsterStatus", "monster_status", "MonsterStatusData", "MonsterStatusTable", true),
+        new DataTableSchema("MonsterWavePool", "monster_wave_pool", "MonsterWavePoolData", "MonsterPoolMasterTable", true),
+        
+        new DataTableSchema("OutLevel", "out_level", "OutLevelData", "OutLevelTable", true),
+        
+        new DataTableSchema("SpecialWaveRule", "special_wave_rule", "SpecialWaveRuleData", "SpecialWaveRuleTable", true),
+        new DataTableSchema("StageMaster", "stage_master", "StageData", "StageDataTable", true),
+        new DataTableSchema("StageWaveRule", "stage_wave_rule", "StageWaveRuleData", "StageWaveRuleTable", true),
+        
+        // Legacy List
+        new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),
+        new DataTableSchema("SkillData", "skill_data", "Legacy_SkillData", "Legacy_SkillDataTable", false),
+        new DataTableSchema("EffectTable", "effect_table", "Legacy_EffectData", "Legacy_EffectDataTable", false),
+
+        new DataTableSchema("EnchantMaster", "enchant_master", "Legacy_EnchantMasterData", "Legacy_EnchantMasterTable", false),
+        new DataTableSchema("EnchantLevel", "enchant_level", "Legacy_EnchantLevelData", "Legacy_EnchantLevelTable", false),
+        new DataTableSchema("EnchantWeight", "enchant_weight", "Legacy_EnchantWeightData", "Legacy_EnchantWeightTable", false),
+        
+        new DataTableSchema("MapLanguage", "map_language", "Legacy_MapLanguageData", "Legacy_MapLanguageTable", false),
+        
+        new DataTableSchema("Achievement", "achievement", "Legacy_AchievementData", "Legacy_AchievementDataTable", false),
+        new DataTableSchema("Language", "language", "Legacy_LanguageEntry", "Legacy_LanguageTable", false),
     };
 
     private static readonly Dictionary<string, DataTableSchema> SheetMap = BuildSheetMap();
