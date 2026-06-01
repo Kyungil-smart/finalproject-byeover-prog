@@ -3,6 +3,8 @@
 // 수정자 : 최동훈 - 프리팹 경로 수정
 // 수정자 : 정승우 - InitRepo 이중 호출 방지 + 아키텍처 연동
 // 2차 수정 : 해당 파일은 레거시 처리
+// 수정자 : 최동훈
+// 3차 수정 : 프리팹 경로 수정
 
 using System;
 using UnityEngine;
@@ -26,7 +28,7 @@ public class Legacy_DataManager : MonoBehaviour
                 if (_instance == null)
                 {
 #if UNITY_EDITOR
-                    string prefabPath = "Assets/_Game/Prefabs/DataManager.prefab";
+                    string prefabPath = "Assets/_Game/Prefabs/Legacy_DataManager.prefab";
                     GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
 
                     if (prefab != null)
@@ -39,7 +41,7 @@ public class Legacy_DataManager : MonoBehaviour
                     }
                     else
                     {
-                        Debug.LogError($"[DataManager] '{prefabPath}'에 프리팹 없음. 경로 확인.");
+                        Debug.LogError($"[Legacy_DataManager] '{prefabPath}'에 프리팹 없음. 경로 확인.");
                     }
 #else
                     Debug.LogError("[DataManager] 인스턴스 없음. Boot 씬을 통해 진입해야 합니다.");
