@@ -42,14 +42,18 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     public void Initialize(int seed)
     {
         _rng = new System.Random(seed);
+        _model.Initialize();
 
         // 대기열 4개 채우기
         for (int i = 0; i < SortModel.WAITING_COUNT; i++)
+        {
             _model.SetWaiting(i, GenerateWaitingCombo());
-
+        }
         // 처음 3개 테이블에 대기열에서 넣기
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
+        {
             FillTableFromQueue(t);
+        }
     }
 
     // ---------- 생명주기 ----------
