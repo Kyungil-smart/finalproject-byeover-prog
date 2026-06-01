@@ -12,7 +12,7 @@ using UnityEngine;
 public class PlayerProgressModel : MonoBehaviour
 {
     public const int StartLevel = 1;
-    public const int MaxLevel = 99;
+    public const int MaxLevel   = 10;   // 테스트 최대 레벨
 
     // ---------- 이벤트 ----------
     public event Action<int> OnCharacterLevelChanged;
