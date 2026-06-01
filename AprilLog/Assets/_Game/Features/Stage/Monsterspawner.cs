@@ -26,7 +26,7 @@ using UnityEngine;
 public class MonsterSpawner : MonoBehaviour
 {
     // ---------- 이벤트 ----------
-    public event Action<MonsterAI> OnMonsterDied;
+    public event Action<MonsterAI, bool> OnMonsterDied;
 
     // ---------- SerializeField ----------
     [Header("스폰 포인트")]
@@ -180,7 +180,7 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // ---------- 몬스터 사망 ----------
-    private void HandleMonsterDeath(MonsterAI monster)
+    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze = false)
     {
         monster.OnDeath -= HandleMonsterDeath;
         _aliveMonsters.Remove(monster);
@@ -196,7 +196,7 @@ public class MonsterSpawner : MonoBehaviour
             }
         }
 
-        OnMonsterDied?.Invoke(monster);
+        OnMonsterDied?.Invoke(monster, isKamikaze);
         string poolKey = $"Monster_{monster.MonsterID}";
         PoolManager.Instance.Despawn(poolKey, monster.gameObject);
     }

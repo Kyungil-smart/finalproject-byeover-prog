@@ -92,7 +92,10 @@ public class SkillSystem : MonoBehaviour
     {
         if (data == null) return;
 
-        int damage = _combatSystem.CalculateDamage(data.Dmg);
+        // 데미지 계산
+        float temp = _combatSystem.CalculateDamage(data.DmgRate);
+        int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
+        
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
             return;
 
@@ -110,7 +113,9 @@ public class SkillSystem : MonoBehaviour
 
     public void FireBasicAttack()
     {
-        int baseDmg = _combatSystem.CalculateDamage(10);
+        float temp = _combatSystem.CalculateDamage(1.0f);
+        int baseDmg = CalGroupDamageBonus(temp, DamageGroupType.None);
+        
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
             return;
 
@@ -165,6 +170,26 @@ public class SkillSystem : MonoBehaviour
 
         _hasTriedResolveSpawner = true;
         _monsterSpawner = FindFirstObjectByType<MonsterSpawner>();
+    }
+
+    private int CalGroupDamageBonus(float damage, DamageGroupType damageGroupType)
+    {
+        float baseDmg = damage;
+
+        switch (damageGroupType)
+        {
+            // ToDo : 데미지 그룹 정해지면 그룹별 보정할것
+            default:
+                break;
+        }
+        
+        return Mathf.FloorToInt(baseDmg);
+    }
+
+    private DamageGroupType GetDamageGroupType(Legacy_SkillData data)
+    {
+        // ToDo : 차후 데미지 그룹 데이터 정리 되면 로직 추가
+        return DamageGroupType.None;
     }
 }
 

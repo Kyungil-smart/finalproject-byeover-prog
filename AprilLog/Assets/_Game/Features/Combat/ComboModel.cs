@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 콤보 Model -- 카운트, 타이머, 코요테 타임
 
+// 수정자 : 김영찬
+// 수정 내용 : 콤보 데미지를 합연산이 아닌 곱연산 처리 한다고 해서 수정함
+
 using System;
 using UnityEngine;
 
@@ -26,8 +29,8 @@ public class ComboModel : MonoBehaviour
     [Tooltip("콤보 보너스 적용 최대 콤보 수")]
     [SerializeField] private int _maxBonusCombo = 10;
 
-    [Tooltip("콤보 1개당 추가 데미지")]
-    [SerializeField] private int _bonusPerCombo = 10;
+    [Tooltip("콤보 1개당 추가 데미지 비율")]
+    [SerializeField][Range(1,2)] private double _bonusPerComboRate = 1.02;
 
     // ---------- 데이터 ----------
     public int CurrentCombo { get; private set; }
@@ -76,10 +79,10 @@ public class ComboModel : MonoBehaviour
         OnComboChanged?.Invoke(0);
     }
 
-    public int GetComboBonus()
+    public double GetComboBonusRate()
     {
         int effective = Mathf.Min(CurrentCombo, _maxBonusCombo);
-        return effective * _bonusPerCombo;
+        return effective * _bonusPerComboRate;
     }
 
     public void ResetForNewChapter()

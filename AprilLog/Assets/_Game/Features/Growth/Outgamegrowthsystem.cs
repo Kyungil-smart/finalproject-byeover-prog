@@ -8,7 +8,7 @@
 // 수정내용 : ConfigRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
 
 // 수정자 : 김영찬
-// DataManager 최신화 중 기존 연결을 Legacy로 변경
+// DataManager 최신화 중 기존 연결을 Legacy로 변경 및 이 스크립트의 연결을 new DataManager로 변경
 
 using System;
 using UnityEngine;
@@ -20,7 +20,7 @@ public class OutGameGrowthSystem : MonoBehaviour
 {
     public event Action<int> OnCharacterLevelUp;
  
-    [SerializeField] private Legacy_ConfigRepo _configRepo;
+    [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private CurrencyModel _currency;
     [SerializeField] private PlayerProgressModel _progress;
  
@@ -69,8 +69,8 @@ public class OutGameGrowthSystem : MonoBehaviour
     private void ResolveRepository()
     {
         if (_configRepo != null) return;
-        if (Legacy_DataManager.Instance == null) return;
+        if (DataManager.Instance == null) return;
 
-        _configRepo = Legacy_DataManager.Instance.ConfigRepo;
+        _configRepo = DataManager.Instance.ConfigRepo;
     }
 }

@@ -8,6 +8,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 // 스킬 관련
 
@@ -31,7 +32,7 @@ public class Legacy_SkillData
     public int SkillID;
     public int Level;
     public int Speed;
-    public int Dmg;
+    public float DmgRate;
     public int DetectRange;
     public int HitSize;
     public int PelletCount;
