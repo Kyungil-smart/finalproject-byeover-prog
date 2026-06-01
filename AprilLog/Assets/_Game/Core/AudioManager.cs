@@ -11,6 +11,17 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource _bgmSource;
     [SerializeField] private AudioSource _sfxSource;
 
+    /// <summary>전체 볼륨 (AudioListener)</summary>
+    public float MasterVolume
+    {
+        get => AudioListener.volume;
+        set
+        {
+            AudioListener.volume = Mathf.Clamp01(value);
+            PlayerPrefs.SetFloat("MasterVolume", AudioListener.volume);
+        }
+    }
+
     public float BGMVolume
     {
         get => _bgmSource != null ? _bgmSource.volume : PlayerPrefs.GetFloat("BGMVolume", 1f);
@@ -40,6 +51,8 @@ public class AudioManager : MonoBehaviour
 
         _bgmSource = EnsureAudioSource(_bgmSource, nameof(_bgmSource));
         _sfxSource = EnsureAudioSource(_sfxSource, nameof(_sfxSource));
+
+        AudioListener.volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
 
         if (_bgmSource != null)
             _bgmSource.volume = PlayerPrefs.GetFloat("BGMVolume", 1f);

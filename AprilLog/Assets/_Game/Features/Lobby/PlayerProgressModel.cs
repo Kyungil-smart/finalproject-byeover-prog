@@ -11,12 +11,15 @@ using UnityEngine;
 /// </summary>
 public class PlayerProgressModel : MonoBehaviour
 {
+    public const int StartLevel = 1;
+    public const int MaxLevel   = 10;   // 테스트 최대 레벨
+
     // ---------- 이벤트 ----------
     public event Action<int> OnCharacterLevelChanged;
     public event Action OnProgressUpdated;
 
     // ---------- 데이터 ----------
-    public int CharacterLevel { get; private set; } = 1;
+    public int CharacterLevel { get; private set; } = StartLevel;
     public int CurrentChapter { get; private set; } = 1;
     public int CurrentStage { get; private set; } = 1;
     public List<int> UnlockedStages { get; private set; } = new List<int>();
@@ -24,7 +27,7 @@ public class PlayerProgressModel : MonoBehaviour
     // ---------- 초기화 ----------
     public void Initialize(int charLevel, int chapter, int stage, List<int> unlocked)
     {
-        CharacterLevel = charLevel;
+        CharacterLevel = Mathf.Clamp(charLevel, StartLevel, MaxLevel);
         CurrentChapter = chapter;
         CurrentStage = stage;
         UnlockedStages = unlocked ?? new List<int>();
@@ -34,9 +37,11 @@ public class PlayerProgressModel : MonoBehaviour
     // ---------- 조작 ----------
     public void SetCharacterLevel(int level)
     {
-        CharacterLevel = level;
-        OnCharacterLevelChanged?.Invoke(level);
+        CharacterLevel = Mathf.Clamp(level, StartLevel, MaxLevel);
+        OnCharacterLevelChanged?.Invoke(CharacterLevel);
     }
+
+    public bool IsMaxCharacterLevel => CharacterLevel >= MaxLevel;
 
     public void SetCurrentStage(int chapter, int stage)
     {

@@ -116,7 +116,8 @@ public class FirebaseAuthService : MonoBehaviour
         }
         catch (Exception exception)
         {
-            CompleteFailedSignIn(GetGoogleSignInFailureType(exception), GetGoogleSignInExceptionMessage(exception));
+            LogExceptionDetails("[Auth][GoogleSignIn] SignIn() call exception", exception);
+            CompleteFailedSignIn(GetGoogleSignInExceptionMessage(exception));
             yield break;
         }
 
@@ -130,13 +131,15 @@ public class FirebaseAuthService : MonoBehaviour
 
         if (signInTask.IsCanceled)
         {
-            CompleteFailedSignIn(AuthLoginFailureType.Canceled, "구글 로그인이 취소되었습니다.");
+            Debug.LogWarning("[Auth][GoogleSignIn] SignIn() task canceled.");
+            CompleteFailedSignIn("구글 로그인이 취소되었습니다.");
             yield break;
         }
 
         if (signInTask.IsFaulted)
         {
-            CompleteFailedSignIn(GetGoogleSignInFailureType(signInTask.Exception), GetGoogleSignInExceptionMessage(signInTask.Exception));
+            LogExceptionDetails("[Auth][GoogleSignIn] SignIn() task faulted", signInTask.Exception);
+            CompleteFailedSignIn(GetGoogleSignInExceptionMessage(signInTask.Exception));
             yield break;
         }
 
@@ -174,7 +177,8 @@ public class FirebaseAuthService : MonoBehaviour
 
         if (authTask.IsFaulted)
         {
-            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, GetExceptionMessage(authTask.Exception, "Firebase 인증 실패"));
+            LogExceptionDetails("[Auth][FirebaseAuth] SignInWithCredentialAsync faulted", authTask.Exception);
+            CompleteFailedSignIn(GetExceptionMessage(authTask.Exception, "Firebase 인증 실패"));
             yield break;
         }
 
@@ -263,6 +267,54 @@ public class FirebaseAuthService : MonoBehaviour
 #endif
     }
 
+    /// <summary>Firebase Auth 계정을 삭제한다.</summary>
+    public IEnumerator DeleteAccountCoroutine(System.Action<bool> onResult)
+    {
+#if FIREBASE_ENABLED
+        if (_auth?.CurrentUser == null)
+        {
+            Debug.LogWarning("[Auth] 삭제할 계정 없음.");
+            onResult?.Invoke(false);
+            yield break;
+        }
+
+        bool completed = false;
+        bool succeeded = false;
+
+        _auth.CurrentUser.DeleteAsync().ContinueWith(task =>
+        {
+            succeeded = !task.IsFaulted && !task.IsCanceled;
+            if (task.IsFaulted)
+                Debug.LogWarning("[Auth] 계정 삭제 실패: " + task.Exception?.Message);
+            completed = true;
+        });
+
+        yield return new WaitUntil(() => completed);
+
+        if (succeeded)
+        {
+            UserUID = null;
+            UserEmail = null;
+            UserDisplayName = null;
+            LastSignInWasGoogle = false;
+            IsSigningIn = false;
+            OnLogout?.Invoke();
+        }
+
+        onResult?.Invoke(succeeded);
+#else
+        // Firebase 미설정 환경에서는 바로 성공 처리
+        UserUID = null;
+        UserEmail = null;
+        UserDisplayName = null;
+        LastSignInWasGoogle = false;
+        IsSigningIn = false;
+        OnLogout?.Invoke();
+        onResult?.Invoke(true);
+        yield break;
+#endif
+    }
+
     // 추가: 조규민 - 로그인 실패 이벤트 발행 지점을 공통화해 Editor/Firebase define 차이로 생기는 경고를 줄인다.
     private void RaiseLoginFailed(string message)
     {
@@ -306,6 +358,7 @@ public class FirebaseAuthService : MonoBehaviour
     private void ConfigureGoogleSignIn()
     {
         _resolvedWebClientId = ResolveWebClientId();
+        Debug.Log("[Auth][GoogleSignIn] ConfigureGoogleSignIn WebClientId=" + MaskWebClientId(_resolvedWebClientId));
         GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
             ForceTokenRefresh = true,
@@ -322,20 +375,26 @@ public class FirebaseAuthService : MonoBehaviour
     {
         if (!string.IsNullOrWhiteSpace(_webClientId) && _webClientId != "FIREBASE_ENABLED")
         {
+            Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=Inspector/manual field value=" + MaskWebClientId(_webClientId));
             return _webClientId.Trim();
         }
+        Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=Inspector/manual field empty");
 
         string androidResourceClientId = TryGetAndroidResourceString("default_web_client_id");
         if (!string.IsNullOrWhiteSpace(androidResourceClientId))
         {
+            Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=Android resource default_web_client_id value=" + MaskWebClientId(androidResourceClientId));
             return androidResourceClientId.Trim();
         }
+        Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=Android resource default_web_client_id empty");
 
         string generatedXmlClientId = TryGetGeneratedGoogleServicesValue("default_web_client_id");
         if (!string.IsNullOrWhiteSpace(generatedXmlClientId))
         {
+            Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=generated google-services.xml value=" + MaskWebClientId(generatedXmlClientId));
             return generatedXmlClientId.Trim();
         }
+        Debug.LogWarning("[Auth][GoogleSignIn] ResolveWebClientId failed: default_web_client_id is null/empty in all sources.");
 
         return null;
     }
@@ -344,6 +403,7 @@ public class FirebaseAuthService : MonoBehaviour
     {
         if (Application.platform != RuntimePlatform.Android)
         {
+            Debug.Log("[Auth][GoogleSignIn] Android resource lookup skipped. platform=" + Application.platform);
             return null;
         }
 
@@ -355,11 +415,13 @@ public class FirebaseAuthService : MonoBehaviour
             {
                 string packageName = activity.Call<string>("getPackageName");
                 int resourceId = resources.Call<int>("getIdentifier", resourceName, "string", packageName);
+                Debug.Log("[Auth][GoogleSignIn] Android resource lookup name=" + resourceName + ", package=" + packageName + ", resourceId=" + resourceId);
                 return resourceId == 0 ? null : resources.Call<string>("getString", resourceId);
             }
         }
         catch (Exception exception)
         {
+            Debug.LogWarning("[Auth][GoogleSignIn] Android resource lookup failed: " + exception);
             Debug.LogWarning("[Auth] Android 리소스에서 Google Web Client ID를 읽지 못했습니다: " + exception.Message);
             return null;
         }
@@ -370,14 +432,17 @@ public class FirebaseAuthService : MonoBehaviour
         string path = Path.Combine(Application.dataPath, "Plugins/Android/FirebaseApp.androidlib/res/values/google-services.xml");
         if (!File.Exists(path))
         {
+            Debug.Log("[Auth][GoogleSignIn] generated google-services.xml not found. path=" + path);
             return null;
         }
 
+        Debug.Log("[Auth][GoogleSignIn] generated google-services.xml lookup path=" + path + ", name=" + resourceName);
         string xml = File.ReadAllText(path);
         string marker = "name=\"" + resourceName + "\"";
         int markerIndex = xml.IndexOf(marker, StringComparison.Ordinal);
         if (markerIndex < 0)
         {
+            Debug.Log("[Auth][GoogleSignIn] generated google-services.xml missing string name=" + resourceName);
             return null;
         }
 
@@ -385,6 +450,7 @@ public class FirebaseAuthService : MonoBehaviour
         int valueEnd = valueStart < 0 ? -1 : xml.IndexOf("</string>", valueStart, StringComparison.Ordinal);
         if (valueStart < 0 || valueEnd < 0 || valueEnd <= valueStart)
         {
+            Debug.LogWarning("[Auth][GoogleSignIn] generated google-services.xml invalid string format. name=" + resourceName);
             return null;
         }
 
@@ -485,24 +551,60 @@ public class FirebaseAuthService : MonoBehaviour
         }
     }
 
-    private AuthLoginFailureType GetGoogleSignInFailureType(Exception exception)
+    private void LogExceptionDetails(string title, Exception exception)
     {
-        var signInException = GetInnerException<GoogleSignIn.SignInException>(exception);
-        if (signInException == null)
+        if (exception == null)
         {
-            return AuthLoginFailureType.General;
+            Debug.LogError(title + ": exception=null");
+            return;
         }
 
-        return signInException.Status == GoogleSignInStatusCode.Canceled
-            ? AuthLoginFailureType.Canceled
-            : AuthLoginFailureType.General;
+        Debug.LogError(title + ": " + exception);
+
+        var signInException = GetInnerException<GoogleSignIn.SignInException>(exception);
+        if (signInException != null)
+        {
+            Debug.LogError("[Auth][GoogleSignIn] Status=" + signInException.Status + " (" + (int)signInException.Status + ")");
+            if (signInException.Status == GoogleSignInStatusCode.DeveloperError)
+            {
+                Debug.LogError("[Auth][GoogleSignIn] DeveloperError detected. Check package name, SHA-1/SHA-256, OAuth client, and WebClientId=" + MaskWebClientId(_resolvedWebClientId));
+            }
+        }
+
+        var aggregateException = exception as AggregateException;
+        if (aggregateException == null)
+        {
+            return;
+        }
+
+        int index = 0;
+        foreach (var innerException in aggregateException.Flatten().InnerExceptions)
+        {
+            Debug.LogError("[Auth] AggregateException.InnerExceptions[" + index + "]: " + innerException);
+
+            var innerSignInException = innerException as GoogleSignIn.SignInException;
+            if (innerSignInException != null)
+            {
+                Debug.LogError("[Auth][GoogleSignIn] Inner status=" + innerSignInException.Status + " (" + (int)innerSignInException.Status + ")");
+            }
+
+            index++;
+        }
     }
 
-    private AuthLoginFailureType GetValidationFailureType(string validationError)
+    private string MaskWebClientId(string webClientId)
     {
-        return validationError.Contains("Firebase")
-            ? AuthLoginFailureType.FirebaseAuth
-            : AuthLoginFailureType.General;
+        if (string.IsNullOrWhiteSpace(webClientId))
+        {
+            return "<null-or-empty>";
+        }
+
+        string trimmedClientId = webClientId.Trim();
+        string googleDomain = ".apps.googleusercontent.com";
+        int domainIndex = trimmedClientId.IndexOf(googleDomain, StringComparison.Ordinal);
+        string suffix = domainIndex >= 0 ? trimmedClientId.Substring(domainIndex) : trimmedClientId.Substring(Math.Max(0, trimmedClientId.Length - 20));
+        string prefix = trimmedClientId.Substring(0, Math.Min(10, trimmedClientId.Length));
+        return prefix + "..." + suffix;
     }
 
     private T GetInnerException<T>(Exception exception) where T : Exception

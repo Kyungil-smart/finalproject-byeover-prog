@@ -13,13 +13,60 @@ public class LobbyTopBarUI : MonoBehaviour
     [Header("재화 UI")]
     [SerializeField] private TMP_Text staminaText;
     [SerializeField] private TMP_Text goldText;
+    [SerializeField] private TMP_Text parchmentText;
+
+    [Header("데이터")]
+    [SerializeField] private PlayerProgressModel progressModel;
+    [SerializeField] private CurrencyModel currencyModel;
+
+    private const string DefaultNickname = "NICKNAME";
+
+    private void Awake()
+    {
+        if (progressModel == null)
+            progressModel = FindFirstObjectByType<PlayerProgressModel>();
+
+        if (currencyModel == null)
+            currencyModel = FindFirstObjectByType<CurrencyModel>();
+    }
+
+    private void OnEnable()
+    {
+        if (progressModel != null)
+            progressModel.OnCharacterLevelChanged += SetLevel;
+
+        if (currencyModel != null)
+            currencyModel.OnTestCurrencyChanged += HandleCurrencyChanged;
+
+        Refresh();
+    }
+
+    private void OnDisable()
+    {
+        if (progressModel != null)
+            progressModel.OnCharacterLevelChanged -= SetLevel;
+
+        if (currencyModel != null)
+            currencyModel.OnTestCurrencyChanged -= HandleCurrencyChanged;
+    }
+
+    public void Refresh()
+    {
+        SetNickname(GetNickname());
+        SetLevel(progressModel != null ? progressModel.CharacterLevel : PlayerProgressModel.StartLevel);
+
+        if (currencyModel != null)
+            HandleCurrencyChanged(currencyModel.Gold, currencyModel.ActionPoint, currencyModel.MaxActionPoint, currencyModel.Parchment);
+        else
+            HandleCurrencyChanged(CurrencyModel.TestStartGold, CurrencyModel.TestStartActionPoint, CurrencyModel.TestMaxActionPoint, CurrencyModel.TestStartParchment);
+    }
 
     public void SetNickname(string nickname)
     {
         if (nicknameText == null)
             return;
 
-        nicknameText.text = string.IsNullOrWhiteSpace(nickname) ? "Guest" : nickname;
+        nicknameText.text = string.IsNullOrWhiteSpace(nickname) ? DefaultNickname : nickname;
     }
 
     public void SetLevel(int level)
@@ -27,15 +74,42 @@ public class LobbyTopBarUI : MonoBehaviour
         if (levelText == null)
             return;
 
-        levelText.text = $"Lv.{Mathf.Max(1, level)}";
+        levelText.text = $"LV. {Mathf.Max(PlayerProgressModel.StartLevel, level)}";
     }
 
     public void SetCurrency(int stamina, int gold)
     {
         if (staminaText != null)
-            staminaText.text = Mathf.Max(0, stamina).ToString();
+            staminaText.text = CurrencyModel.FormatAmount(stamina);
 
         if (goldText != null)
-            goldText.text = Mathf.Max(0, gold).ToString("N0");
+            goldText.text = CurrencyModel.FormatAmount(gold);
+    }
+
+    private void HandleCurrencyChanged(int gold, int actionPoint, int maxActionPoint, int parchment)
+    {
+        if (goldText != null)
+            goldText.text = CurrencyModel.FormatAmount(gold);
+
+        if (staminaText != null)
+            staminaText.text = CurrencyModel.FormatAmount(actionPoint);
+
+        if (parchmentText != null)
+            parchmentText.text = CurrencyModel.FormatAmount(parchment);
+    }
+
+    private string GetNickname()
+    {
+        UserCloudData cloudData = GameManager.Instance != null ? GameManager.Instance.CloudData : null;
+        if (cloudData == null)
+            return DefaultNickname;
+
+        if (!string.IsNullOrWhiteSpace(cloudData.playerId))
+            return cloudData.playerId;
+
+        if (!string.IsNullOrWhiteSpace(cloudData.displayName))
+            return cloudData.displayName;
+
+        return DefaultNickname;
     }
 }
