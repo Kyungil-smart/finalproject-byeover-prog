@@ -11,6 +11,11 @@ using UnityEngine;
 // 수정 내용 : 1. 공격방식에 따라 공격을 다르게 하도록 구현
 //           2. 사거리에 따라 정지거리가 달라지도록 구현
 
+// 수정자 : 김영찬
+// 수정 내용 : 1. 몬스터가 스테이터스의 모든 항목을 불러오도록 수정 (기존 : 필요한 값만 우선적으로 불러왔음)
+//           2. 몬스터가 정해진 데미지 공식에 의거 방어력에 따라 데미지를 점감 받도록 구현
+//           3. 몬스터가 자폭시에는 Exp를 얻을 수 없도록 수정
+
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
 /// 이동 방식은 IMovementPattern으로 교체 가능.
@@ -18,24 +23,35 @@ using UnityEngine;
 public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 {
     // ---------- 이벤트 ----------
-    public event Action<MonsterAI> OnDeath;
+    /// <summary>
+    /// 죽은 몬스터와 자폭 여부를 전파<br/>
+    /// true면 자폭한 몬스터
+    /// </summary>
+    public event Action<MonsterAI, bool> OnDeath;
     public event Action<int, int> OnHPChanged;
-
-    // ---------- IDamageable ----------
-    public int CurrentHP { get; private set; }
-    public int MaxHP { get; private set; }
-    public int MonsterID { get; private set; }
 
     // ---------- SerializeField ----------
     [Header("설정")]
     [Tooltip("방어선 Y좌표. 이 아래로 내려가면 공격 상태")]
     [SerializeField] private float _defenseLineY = -3f;
-    
-    [Tooltip("공격 간격(초)")]
-    [SerializeField] private float _attackInterval = 1.5f;
 
     [Tooltip("애니메이터 지정")] 
     [SerializeField] private Animator _animator;
+    
+    // ---------- IDamageable ----------
+    public int CurrentHP { get; private set; }
+    public int MaxHP { get; private set; }
+    public int MonsterID { get; private set; }
+    
+    // ---------- Other Status ----------
+    private int _attack;
+    private float _attackInterval;
+    
+    private int _defense;
+    private int _range;
+    public int Exp { get; private set; }
+    private IMovementPattern _movement;
+    private int _zigzagAmplitude;
 
     // ---------- 공격 방식 지정 ----------
     private enum AttackType { Melee, Range, Kamikaze} // 근거리, 원거리, 자폭
@@ -43,13 +59,11 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     
     // ---------- 상태 ----------
     private enum State { Moving, Attacking, Dead }
+    private enum MoveType{ Straight, Zigzag }
     private State _state;
-
-    private IMovementPattern _movement;
-    private int _attack;
+    
     private float _attackTimer;
     private Rect _moveBounds;
-    private int _range;
 
     // 플레이어 참조 (공격할 때 TakeDamage 호출용)
     private PlayerModel _playerModel;
@@ -61,9 +75,14 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         MaxHP = stats != null ? stats.MaxHP : 1;
         CurrentHP = MaxHP;
         _attack = stats != null ? stats.Attack : 1;
+        _attackInterval = stats != null ? stats.BaseAttackSpeed : 1.5f;
+        
+        _defense = monsterStats != null ? monsterStats.Defense : 0;
+        _range = monsterStats != null ? monsterStats.Range : 1;
+        Exp = monsterStats != null ? monsterStats.EXP : 0;
+        
         _state = State.Moving;
         _attackTimer = 0f;
-        _range = monsterStats != null ? monsterStats.Range : 1;
 
         // 사거리에 따라 공격 타입 자동 지정
         if (monsterStats != null)
@@ -76,8 +95,19 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
             ? monsterStats.MoveSpeed
             : 3f;
 
-        // 현재 기획은 디펜스 라인을 향한 직선 이동이다. 타입별 이동 분기는 필요해질 때만 추가한다.
-        _movement = new StraightDownMovement(moveSpeed);
+        if (monsterStats != null)
+        {
+            MoveType moveType = (MoveType)Enum.Parse(typeof(MoveType), monsterStats.MovementPattern);
+            switch (moveType)
+            {
+                case MoveType.Straight:
+                    _movement = new StraightDownMovement(moveSpeed);
+                    break;
+                case MoveType.Zigzag:
+                    _movement = new ZigzagMovement(moveSpeed);
+                    break;
+            }
+        }
 
         // 이동 범위 (화면 양 끝)
         _moveBounds = new Rect(-3f, -10f, 6f, 20f);
@@ -166,7 +196,8 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     {
         if (_playerModel != null)
             _playerModel.TakeDamage(damage);
-        Die();
+        _state = State.Dead;
+        OnDeath?.Invoke(this, true);
     }
 
     private void AttackTypeSelect(int range)
@@ -186,11 +217,16 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     }
 
     // ---------- IDamageable ----------
-    public void TakeDamage(int amount)
+    public void TakeDamage(int baseDamage)
     {
         if (_state == State.Dead) return;
-
-        CurrentHP = Mathf.Max(0, CurrentHP - amount);
+        
+        // Final_Damage = Base_Damage x { 1 - Effective_Armor / (100 + Effective_Armor) }
+        int penetration = 0; // Todo : 데모때는 관통 없음. CBT때 시트 수정 예정
+        int effectiveArmor = _defense - penetration;
+        int finalDamage = Mathf.FloorToInt(baseDamage * (1 - effectiveArmor / (float)(100 + effectiveArmor)));
+        
+        CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
 
         if (CurrentHP <= 0)
@@ -200,7 +236,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private void Die()
     {
         _state = State.Dead;
-        OnDeath?.Invoke(this);
+        OnDeath?.Invoke(this, false);
     }
 
     // ---------- IPoolable ----------

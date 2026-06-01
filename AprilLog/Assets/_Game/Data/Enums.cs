@@ -128,3 +128,10 @@ public enum SlotState
     Occupied,   // 유닛이 있음
     Locked      // 거미줄로 잠김
 }
+
+public enum DamageGroupType
+{
+    None,
+    Fire,
+    Ice,
+}

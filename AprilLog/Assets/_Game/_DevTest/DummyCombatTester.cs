@@ -123,7 +123,7 @@ public class DummyCombatTester : MonoBehaviour
             var data = new Legacy_SkillData
             {
                 SkillID = 9000 + i,
-                Dmg = _sortSkillDamage + i * 5,
+                DmgRate = _sortSkillDamage + i * 5,
                 Speed = 12,
             };
             _skillSystem.RegisterSortSkill((UnitType)i, data);
@@ -131,7 +131,7 @@ public class DummyCombatTester : MonoBehaviour
 
         foreach (int multiple in _comboMultiples)
         {
-            var combo = new Legacy_SkillData { SkillID = 9100 + multiple, Dmg = _sortSkillDamage * 3, Speed = 14 };
+            var combo = new Legacy_SkillData { SkillID = 9100 + multiple, DmgRate = _sortSkillDamage * 3, Speed = 14 };
             _skillSystem.RegisterComboSkill(multiple, combo);
         }
     }
@@ -195,7 +195,7 @@ public class DummyCombatTester : MonoBehaviour
         _spawnerAliveList.Add(ai);
     }
 
-    private void HandleDummyMonsterDeath(MonsterAI monster)
+    private void HandleDummyMonsterDeath(MonsterAI monster, bool isKamikaze = false)
     {
         monster.OnDeath -= HandleDummyMonsterDeath;
         _spawnerAliveList.Remove(monster);
