@@ -8,6 +8,9 @@
 // 2차 수정자 : 김영찬
 // 수정내용 : 타이머를 StageBootstrapper에서 받아와 뿌리는 형태로 변경하여 모든 Model과 View의 시간 어긋남 방지
 
+// 수정자 : 김영찬
+// 수정내용 : 데모버전 DB에 맞춰 최신화
+
 using System;
 using UnityEngine;
 
@@ -35,7 +38,7 @@ public class StagePresenter
         _model.OnWaveStarted += HandleWaveStarted;
         _model.OnWaveStopped += HandleWaveStopped;
         _model.OnStageClearTriggered += HandleStageClear;
-        
+        _model.OnSpawnRequested += HandleSpawnRequested;
     }
     
     // ---------- 이벤트 핸들러 ----------
@@ -55,6 +58,16 @@ public class StagePresenter
         _onStageCompleteCallback?.Invoke();
     }
     
+    private void HandleSpawnRequested(int characterId)
+    {
+        // (팀장님이 스포너 안에 SpawnMonster 같은 함수를 만들어 주셨을 겁니다)
+        if (_spawner != null)
+        {
+            // ToDo : 스포너에게 몬스터 스폰 명령 내려야됩니다.
+            //_spawner.SpawnMonster(characterId);
+        }
+    }
+    
     // ---------- Update ----------
     public void UpdateSystem(float deltaTime)
     {
@@ -71,6 +84,7 @@ public class StagePresenter
             _model.OnWaveStarted -= HandleWaveStarted;
             _model.OnWaveStopped -= HandleWaveStopped;
             _model.OnStageClearTriggered -= HandleStageClear;
+            _model.OnSpawnRequested -= HandleSpawnRequested;
         }
 
         _onStageCompleteCallback = null;
