@@ -6,8 +6,8 @@
 
 // 2차 수정 : WaveCount 삭제 되어 해당 변수 사용 스크립트 삭제
 
-// 3차 수정 : _waveCount가 0으로 방치되어 스테이지가 즉시 클리어되던 버그 수정.
-//           웨이브 수를 생성자 인자로 주입받도록 복원 (StageLoopManager가 전달).
+// 수정자 : 김영찬
+// 수정내용 : 데모버전 DB에 맞춰 최신화
 
 using System;
 using System.Collections.Generic;
@@ -23,58 +23,77 @@ public class StageModel
     public event Action<int, int> OnWaveStarted;
     public event Action OnWaveStopped;
     public event Action OnStageClearTriggered;
+    public event Action<int> OnSpawnRequested;
     
     // ---------- 상태 ----------
     private enum State { WaveRunning, WaveTransition }
     private State _state;
     
+    // ---------- 기획 시트 데이터 ----------
+    private StageData _stageData;
+    private List<StageWaveRuleData> _waveRules;
+    private StageWaveRuleData _currentRule;
+    private System.Random _rng;
+    
     // ---------- 타이머 및 상태 데이터 ----------
     private float _waveTimer;
-    private float _waveTimeLimit;
+    private float _spawnTimer;
     private float _transitionTimer;
     private float _waveTransitionDelay;
     
     private int _currentWaveIndex;
-    private int _waveCount; // 스테이지의 총 웨이브 수. 생성자에서 주입.
-
+    private int _waveCount; // ToDo : count 얻는 로직 수정해야 됨
+    
     // ---------- 생성자 ----------
-    public StageModel(StageData stageData , float transitionTime, int waveCount)
+    public StageModel(StageData stageData , List<StageWaveRuleData> waveRules, System.Random rng, float transitionTime)
     {
+        _stageData = stageData;
+        _waveRules = waveRules;
+        _rng = rng;
         _currentWaveIndex = 0;
-        _waveTimeLimit = stageData.TimeLimit;
-        _waveCount = waveCount;
-
+        
         _state = State.WaveTransition;
         _waveTransitionDelay = transitionTime;
-        _transitionTimer = 0;
+        _transitionTimer = _waveTransitionDelay;
     }
 
     // ---------- Update ----------
     public void Tick(float deltaTime, int aliveMonsterCount)
     {
-        switch (_state)
-        {
-            case State.WaveRunning:
-                UpdateWaveRunning(deltaTime);
-                break;
-            case State.WaveTransition:
-                UpdateWaveTransition(deltaTime, aliveMonsterCount);
-                break;
-        }
+        if (_state == State.WaveRunning)
+            UpdateWaveRunning(deltaTime);
+        else if (_state == State.WaveTransition)
+            UpdateWaveTransition(deltaTime, aliveMonsterCount);
     }
     
     private void UpdateWaveRunning(float deltaTime)
     {
         _waveTimer += deltaTime;
-        if (_waveTimer >= _waveTimeLimit)
+        _spawnTimer += deltaTime;
+        
+        // 스폰 간격(SpawnInterval)이 지났을 때
+        if (_spawnTimer >= _currentRule.SpawnInterval)
+        {
+            _spawnTimer = 0f;
+            
+            for (int i = 0; i < _currentRule.SpawnAmount; i++)
+            {
+                int characterId = RollDiceForMonster(_currentRule);
+                if (characterId > 0)
+                {
+                    OnSpawnRequested?.Invoke(characterId);
+                }
+            }
+        }
+        
+        // 웨이브 종료 시간이 되었을 때
+        if (_waveTimer >= _currentRule.WaveDuration)
         {
             OnWaveStopped?.Invoke();
             _currentWaveIndex++;
 
-            if (_currentWaveIndex >= _waveCount)
-            {
-                OnStageClearTriggered?.Invoke(); 
-            }
+            if (_currentWaveIndex >= _waveRules.Count)
+                OnStageClearTriggered?.Invoke();
             else
             {
                 _state = State.WaveTransition;
@@ -86,10 +105,8 @@ public class StageModel
     private void UpdateWaveTransition(float deltaTime, int aliveMonsterCount)
     {
         _transitionTimer += deltaTime;
-
-        // 기획(1.05): 웨이브 전환은 시간 기반. 몬스터는 방어선에 계속 쌓이는 구조이므로
-        // 잔존 몬스터 수와 무관하게 전환한다. (과거 aliveMonsterCount==0 조건은 영구 멈춤 유발)
-        if (_transitionTimer >= _waveTransitionDelay)
+        
+        if (_transitionTimer >= _waveTransitionDelay && aliveMonsterCount == 0)
         {
             _transitionTimer = 0f;
             _state = State.WaveRunning;
@@ -97,5 +114,20 @@ public class StageModel
             
             OnWaveStarted?.Invoke(_currentWaveIndex, _waveCount);
         }
+    }
+    
+    private int RollDiceForMonster(StageWaveRuleData rule)
+    {
+        int poolId = rule.MonsterWavePool_ID; 
+        
+        int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
+        
+        return characterId; 
+    }
+    
+    public float GetWaveProgress()
+    {
+        if (_currentRule == null || _currentRule.WaveDuration <= 0f) return 0f;
+        return _waveTimer / _currentRule.WaveDuration;
     }
 }

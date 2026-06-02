@@ -10,6 +10,9 @@
 // 수정자 : 김영찬
 // DataManager 최신화 중 기존 연결을 Legacy로 변경
 
+// 수정자 : 김영찬
+// 수정내용 : 데모버전 DB에 맞춰 최신화
+
 using System;
 using UnityEngine;
 
@@ -69,7 +72,7 @@ public class StageLoopManager : MonoBehaviour
         _state = State.RunningStage;
 
         int stageId = GetStageId();
-        var stageData = Legacy_DataManager.Instance.StageRepo.GetStage(stageId);
+        var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
         if (stageData == null)
         {
             EndChapter(true);
@@ -96,7 +99,7 @@ public class StageLoopManager : MonoBehaviour
 
         _currentStageIndex++;
 
-        var chapter = Legacy_DataManager.Instance.StageRepo.GetChapter(_chapterId);
+        var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
         if (chapter == null || _currentStageIndex >= chapter.StageCount)
             EndChapter(true);
         else
@@ -122,7 +125,7 @@ public class StageLoopManager : MonoBehaviour
 
     public float GetStageProgress()
     {
-        var chapter = Legacy_DataManager.Instance.StageRepo.GetChapter(_chapterId);
+        var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
         if (chapter == null || chapter.StageCount == 0) return 0f;
         return (float)_currentStageIndex / chapter.StageCount;
     }
