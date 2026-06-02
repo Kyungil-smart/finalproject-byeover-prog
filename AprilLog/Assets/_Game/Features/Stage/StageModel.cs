@@ -23,7 +23,11 @@ public class StageModel
     public event Action<int, int> OnWaveStarted;
     public event Action OnWaveStopped;
     public event Action OnStageClearTriggered;
-    public event Action<int> OnSpawnRequested;
+    
+    /// <summary>
+    /// 스폰 요청은 Character_Id를 인자로 가지는 큐를 전달
+    /// </summary>
+    public event Action<Queue<int>> OnSpawnRequested;
     
     // ---------- 상태 ----------
     private enum State { WaveRunning, WaveTransition }
@@ -33,6 +37,7 @@ public class StageModel
     private StageData _stageData;
     private List<StageWaveRuleData> _waveRules;
     private StageWaveRuleData _currentRule;
+    private SpecialWaveRuleData _specialRule; 
     private System.Random _rng;
     
     // ---------- 타이머 및 상태 데이터 ----------
@@ -42,10 +47,12 @@ public class StageModel
     private float _waveTransitionDelay;
     
     private int _currentWaveIndex;
-    private int _waveCount; // 스테이지의 총 웨이브 수. 웨이브 룰 개수로 산출.
-
+    private int _waveCount; // ToDo : count 얻는 로직 수정해야 됨
+    
+    private bool _isSpecialWaveTriggered = false;
+    
     // ---------- 생성자 ----------
-    public StageModel(StageData stageData , List<StageWaveRuleData> waveRules, System.Random rng, float transitionTime)
+    public StageModel(StageData stageData , List<StageWaveRuleData> waveRules, SpecialWaveRuleData specialRule,System.Random rng, float transitionTime)
     {
         _stageData = stageData;
         _waveRules = waveRules;
@@ -77,13 +84,20 @@ public class StageModel
         {
             _spawnTimer = 0f;
             
+            Queue<int> spawnQueue = new Queue<int>();
+            
             for (int i = 0; i < _currentRule.SpawnAmount; i++)
             {
                 int characterId = RollDiceForMonster(_currentRule);
                 if (characterId > 0)
                 {
-                    OnSpawnRequested?.Invoke(characterId);
+                    spawnQueue.Enqueue(characterId);
                 }
+            }
+            
+            if (spawnQueue.Count > 0)
+            {
+                OnSpawnRequested?.Invoke(spawnQueue);
             }
         }
         
@@ -125,11 +139,41 @@ public class StageModel
     
     private int RollDiceForMonster(StageWaveRuleData rule)
     {
-        int poolId = rule.MonsterWavePool_ID; 
+        float roll = (float)(_rng.NextDouble() * 100.0);
+        string selectedType = "Normal"; 
+        
+        float cumulative = rule.NormalChance;
+        if (roll <= cumulative)
+        {
+            selectedType = "Normal";
+        }
+        else if (roll <= (cumulative += rule.AgileChance))
+        {
+            selectedType = "Agile";
+        }
+        else if (roll <= (cumulative += rule.TankChance))
+        {
+            selectedType = "Tank";
+        }
+        else if (roll <= (cumulative += rule.RangedChance))
+        {
+            selectedType = "Ranged";
+        }
+        else if (roll <= (cumulative += rule.InfestedChance))
+        {
+            selectedType = "Infested";
+        }
+        
+        int poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(rule.MonsterWavePool_ID, selectedType);
+        
+        if (poolId < 0) 
+        {
+            return -1; // 실패시 -1 반환
+        }
         
         int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
         
-        return characterId; 
+        return characterId;
     }
     
     public float GetWaveProgress()

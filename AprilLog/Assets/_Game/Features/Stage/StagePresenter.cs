@@ -12,6 +12,7 @@
 // 수정내용 : 데모버전 DB에 맞춰 최신화
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -59,10 +60,13 @@ public class StagePresenter
         _onStageCompleteCallback?.Invoke();
     }
     
-    private void HandleSpawnRequested(int characterId)
+    private void HandleSpawnRequested(Queue<int> spawnQueue)
     {
         if (_spawner != null)
-            _spawner.SpawnMonster(characterId);
+        {
+            // ToDo : 스포너에게 몬스터 스폰 명령 내려야됩니다. 넘겨주는 인자는 Character_Id를 값으로 가지는 Queue 시트 입니다.
+            //_spawner.SpawnMonster(spawnQueue);
+        }
     }
     
     // ---------- Update ----------
