@@ -81,10 +81,8 @@ public class StageLoopManager : MonoBehaviour
 
         OnStageChanged?.Invoke(_currentStageIndex);
 
-        // StageData에는 아직 웨이브 수 필드가 없어 기본값을 사용한다.
-        // (per-stage 웨이브 수 데이터 연동은 추후 데이터 파이프라인 작업에서 처리)
-        int waveCount = _fallbackWaveCount > 0 ? _fallbackWaveCount : 3;
-        _bootstrapper.InitAndStart(stageData, waveCount, _rng, ClearStage);
+        // 웨이브 수는 StageModel이 데이터(StageWaveRuleData 목록)에서 직접 산출한다.
+        _bootstrapper.InitAndStart(stageData, _rng, ClearStage);
     }
 
     // ---------- 스테이지 클리어 ----------

@@ -44,7 +44,8 @@ public class StagePresenter
     // ---------- 이벤트 핸들러 ----------
     private void HandleWaveStarted(int waveIndex, int totalWaves)
     {
-        _spawner.StartWave(_stageData.Stage_ID, waveIndex, totalWaves, _rng);
+        // 스폰은 StageModel이 OnSpawnRequested로 직접 구동한다.
+        // 여기서는 HUD 등 웨이브 시작 훅으로만 사용(현재 비움).
     }
 
     private void HandleWaveStopped()
@@ -60,12 +61,8 @@ public class StagePresenter
     
     private void HandleSpawnRequested(int characterId)
     {
-        // (팀장님이 스포너 안에 SpawnMonster 같은 함수를 만들어 주셨을 겁니다)
         if (_spawner != null)
-        {
-            // ToDo : 스포너에게 몬스터 스폰 명령 내려야됩니다.
-            //_spawner.SpawnMonster(characterId);
-        }
+            _spawner.SpawnMonster(characterId);
     }
     
     // ---------- Update ----------

@@ -42,8 +42,8 @@ public class StageModel
     private float _waveTransitionDelay;
     
     private int _currentWaveIndex;
-    private int _waveCount; // ToDo : count 얻는 로직 수정해야 됨
-    
+    private int _waveCount; // 스테이지의 총 웨이브 수. 웨이브 룰 개수로 산출.
+
     // ---------- 생성자 ----------
     public StageModel(StageData stageData , List<StageWaveRuleData> waveRules, System.Random rng, float transitionTime)
     {
@@ -51,7 +51,8 @@ public class StageModel
         _waveRules = waveRules;
         _rng = rng;
         _currentWaveIndex = 0;
-        
+        _waveCount = waveRules != null ? waveRules.Count : 0;
+
         _state = State.WaveTransition;
         _waveTransitionDelay = transitionTime;
         _transitionTimer = _waveTransitionDelay;
@@ -105,13 +106,19 @@ public class StageModel
     private void UpdateWaveTransition(float deltaTime, int aliveMonsterCount)
     {
         _transitionTimer += deltaTime;
-        
-        if (_transitionTimer >= _waveTransitionDelay && aliveMonsterCount == 0)
+
+        // 기획(1.05): 웨이브 전환은 시간 기반. 몬스터는 방어선에 계속 쌓이는 구조이므로
+        // 잔존 몬스터 수와 무관하게 전환한다. (aliveMonsterCount==0 조건은 영구 멈춤 유발)
+        if (_transitionTimer >= _waveTransitionDelay)
         {
             _transitionTimer = 0f;
             _state = State.WaveRunning;
             _waveTimer = 0f;
-            
+            _spawnTimer = 0f;
+
+            // 이번 웨이브의 규칙을 확정한다. (미설정 시 UpdateWaveRunning에서 NRE 발생)
+            _currentRule = _waveRules[_currentWaveIndex];
+
             OnWaveStarted?.Invoke(_currentWaveIndex, _waveCount);
         }
     }

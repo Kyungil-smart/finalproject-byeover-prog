@@ -160,9 +160,18 @@ public class MonsterSpawner : MonoBehaviour
     /// 프리팹(풀키)·스탯·플레이어 참조를 모두 데이터/싱글톤에서 조회해 초기화하고
     /// alive 목록·사망 이벤트까지 연결한다. (일반 스폰/보스/특수웨이브/테스트 공용)
     /// </summary>
+    /// <summary>
+    /// 스폰 위치를 내부에서 선택하는 오버로드.
+    /// StageModel의 OnSpawnRequested(데이터 구동) 경로가 사용한다.
+    /// </summary>
+    public MonsterAI SpawnMonster(int characterId)
+    {
+        return SpawnMonster(characterId, PickSpawnPosition());
+    }
+
     public MonsterAI SpawnMonster(int characterId, Vector3 position)
     {
-        var characterRepo = Legacy_DataManager.Instance.CharacterRepo;
+        var characterRepo = DataManager.Instance.CharacterRepo;
         var stats = characterRepo.GetCommonStatus(characterId);
         var monsterStats = characterRepo.GetMonsterStatus(characterId);
 
@@ -211,6 +220,17 @@ public class MonsterSpawner : MonoBehaviour
         return _playerModel;
     }
 
+    // 스폰 포인트 7개 중 무작위 위치 선택 (위치 미지정 스폰용)
+    private Vector3 PickSpawnPosition()
+    {
+        if (_spawnPoints == null || _spawnPoints.Length == 0)
+            return Vector3.zero;
+
+        _rng ??= new System.Random();
+        int idx = _rng.Next(0, _spawnPoints.Length);
+        return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
+    }
+
     private int GetSpawnPointIndex(string posType)
     {
         if (posType == "RandomAll")
@@ -246,7 +266,7 @@ public class MonsterSpawner : MonoBehaviour
         OnMonsterDied?.Invoke(monster, isKamikaze);
 
         // 스폰 때와 동일한 키 해석을 써야 풀이 어긋나지 않는다.
-        var monsterStats = Legacy_DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
+        var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
         string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
         PoolManager.Instance.Despawn(poolKey, monster.gameObject);
     }
