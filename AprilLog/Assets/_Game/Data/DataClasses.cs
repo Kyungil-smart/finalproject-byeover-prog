@@ -170,6 +170,7 @@ public class MonsterStatusData
     public int EXP;
     public string MovementPattern;  // Straight, Zigzag
     public int ZigzagAmplitude;
+    public string PrefabKey;        // 오브젝트 풀 키. 비어 있으면 "Monster_{Character_ID}" 관례로 폴백
 }
 
 /// <summary>

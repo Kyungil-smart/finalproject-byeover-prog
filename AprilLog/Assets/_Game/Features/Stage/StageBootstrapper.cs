@@ -31,14 +31,14 @@ public class StageBootstrapper : MonoBehaviour
     }
 
     // ---------- 시스템 조립 ----------
-    public void InitAndStart(StageData stageData, System.Random rng, Action onStageComplete)
+    public void InitAndStart(StageData stageData, int waveCount, System.Random rng, Action onStageComplete)
     {
         if (_currentPresenter != null)
         {
             _currentPresenter.Release();
         }
-        
-        StageModel newModel = new StageModel(stageData, _loopManager.WaveTransitionDelay);
+
+        StageModel newModel = new StageModel(stageData, _loopManager.WaveTransitionDelay, waveCount);
         _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
     }
 }

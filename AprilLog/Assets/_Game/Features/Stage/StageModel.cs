@@ -6,6 +6,9 @@
 
 // 2차 수정 : WaveCount 삭제 되어 해당 변수 사용 스크립트 삭제
 
+// 3차 수정 : _waveCount가 0으로 방치되어 스테이지가 즉시 클리어되던 버그 수정.
+//           웨이브 수를 생성자 인자로 주입받도록 복원 (StageLoopManager가 전달).
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,14 +35,15 @@ public class StageModel
     private float _waveTransitionDelay;
     
     private int _currentWaveIndex;
-    private int _waveCount; // ToDo : count 얻는 로직 수정해야 됨
-    
+    private int _waveCount; // 스테이지의 총 웨이브 수. 생성자에서 주입.
+
     // ---------- 생성자 ----------
-    public StageModel(StageData stageData , float transitionTime)
+    public StageModel(StageData stageData , float transitionTime, int waveCount)
     {
         _currentWaveIndex = 0;
         _waveTimeLimit = stageData.TimeLimit;
-        
+        _waveCount = waveCount;
+
         _state = State.WaveTransition;
         _waveTransitionDelay = transitionTime;
         _transitionTimer = 0;
@@ -82,8 +86,10 @@ public class StageModel
     private void UpdateWaveTransition(float deltaTime, int aliveMonsterCount)
     {
         _transitionTimer += deltaTime;
-        
-        if (_transitionTimer >= _waveTransitionDelay && aliveMonsterCount == 0)
+
+        // 기획(1.05): 웨이브 전환은 시간 기반. 몬스터는 방어선에 계속 쌓이는 구조이므로
+        // 잔존 몬스터 수와 무관하게 전환한다. (과거 aliveMonsterCount==0 조건은 영구 멈춤 유발)
+        if (_transitionTimer >= _waveTransitionDelay)
         {
             _transitionTimer = 0f;
             _state = State.WaveRunning;
