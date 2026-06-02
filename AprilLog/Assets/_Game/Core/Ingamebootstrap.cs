@@ -33,6 +33,13 @@ public class InGameBootstrap : MonoBehaviour
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;
 
+    [Header("스테이지 루프")]
+    [Tooltip("챕터/웨이브 진행 컨트롤러. 비면 런타임 자동 탐색")]
+    [SerializeField] private StageLoopManager _stageLoopManager;
+
+    [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
+    [SerializeField] private int _defaultChapterId = 1;
+
     private void Start()
     {
         InitializeAll();
@@ -68,10 +75,19 @@ public class InGameBootstrap : MonoBehaviour
         _combinationModel.Initialize();
         _enchantModel.Initialize();
 
+        // 인챈트 효과 적용 시스템 보장 (씬에 없으면 런타임 생성, 참조는 자동 탐색).
+        var enchantApply = FindFirstObjectByType<EnchantApplicationSystem>();
+        if (enchantApply == null)
+            enchantApply = gameObject.AddComponent<EnchantApplicationSystem>();
+
         if (isResume && saveData != null)
         {
             _playerModel.RestoreFromSave(saveData);
             _enchantModel.RestoreFromSave(saveData.acquiredEnchants);
+
+            // RestoreFromSave는 이벤트를 발행하지 않으므로 보유 인챈트 효과를 일괄 재적용.
+            // (적용 매핑이 아직 미정이라 현재는 무영향, 매핑 구현 시 자동 동작)
+            enchantApply.ReapplyAll();
         }
 
         // [4] Sort 초기화
@@ -82,6 +98,23 @@ public class InGameBootstrap : MonoBehaviour
             seed = Random.Range(0, int.MaxValue);
 
         _sortSystem.Initialize(seed);
+
+        // [5] 스테이지 루프 시작 (아키텍처상 게임플레이 진입 트리거)
+        int chapterId = (isResume && saveData != null) ? saveData.chapterId : _defaultChapterId;
+        int startStageIndex = (isResume && saveData != null) ? saveData.clearedStage : 0;
+
+        if (_stageLoopManager == null)
+            _stageLoopManager = FindFirstObjectByType<StageLoopManager>();
+
+        if (_stageLoopManager != null)
+        {
+            _stageLoopManager.StartChapter(chapterId, startStageIndex, seed);
+        }
+        else
+        {
+            Debug.LogError("[InGameBootstrap] StageLoopManager가 씬에 없어 스테이지를 시작할 수 없습니다. " +
+                           "_InGame 씬에 StageLoopManager + StageBootstrapper를 배치하고 참조를 연결하세요.");
+        }
 
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }

@@ -73,9 +73,12 @@ public class DummyCombatTester : MonoBehaviour
         for (int i = 0; i < _monsterCount; i++)
             SpawnDummyMonster();
 
-        _combatSystem.EnableAutoAttack();
+        // 자동공격은 기획상 '자동공격 인챈트' 선택 시에만 켜진다. 테스트 하니스가 상시로 켜지 않는다.
+        // 공격은 3-sort 정렬 완성 시 CombatSystem.HandleSortCompleted 경로로만 발사된다.
+        // (자동공격을 따로 확인하려면 아래 한 줄의 주석을 해제)
+        // _combatSystem.EnableAutoAttack();
 
-        Debug.Log("[DummyCombatTester] 준비 완료. 정렬하거나 자동공격으로 투사체가 발사됩니다.");
+        Debug.Log("[DummyCombatTester] 준비 완료. 3-sort 정렬을 완성하면 투사체가 발사됩니다.");
     }
 
     // ---------- 풀 / 투사체 ----------

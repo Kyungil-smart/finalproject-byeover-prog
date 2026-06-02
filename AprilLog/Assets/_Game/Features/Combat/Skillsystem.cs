@@ -41,6 +41,9 @@ public class SkillSystem : MonoBehaviour
     private bool _hasLoggedMissingSpawner;
     private bool _hasTriedResolveSpawner;
 
+    // 발사 기준 위치. firePoint가 비어 있으면 캐릭터(자기) 위치에서 발사한다.
+    private Vector3 FireOrigin => _firePoint != null ? _firePoint.position : transform.position;
+
     private void Awake()
     {
         ResolveReferences();
@@ -99,7 +102,7 @@ public class SkillSystem : MonoBehaviour
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
             return;
 
-        var obj = PoolManager.Instance.Spawn("Projectile_Basic", _firePoint.position, Quaternion.identity);
+        var obj = PoolManager.Instance.Spawn("Projectile_Basic", FireOrigin, Quaternion.identity);
         if (obj == null) return;
 
         var controller = obj.GetComponent<ProjectileController>();
@@ -108,7 +111,7 @@ public class SkillSystem : MonoBehaviour
         float projectileSpeed = data.Speed > 0 ? data.Speed : _basicProjectileSpeed;
 
         // 현재 플레이어 공격은 전부 직선 탄이다. 유도/관통탄이 필요할 때만 ProjectileController.Setup을 사용한다.
-        controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed);
+        controller.SetupStraight(damage, FireOrigin, targetPos, projectileSpeed);
     }
 
     public void FireBasicAttack()
@@ -119,14 +122,14 @@ public class SkillSystem : MonoBehaviour
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
             return;
 
-        var obj = PoolManager.Instance.Spawn("Projectile_Basic", _firePoint.position, Quaternion.identity);
+        var obj = PoolManager.Instance.Spawn("Projectile_Basic", FireOrigin, Quaternion.identity);
         if (obj == null) return;
 
         var controller = obj.GetComponent<ProjectileController>();
         if (controller == null) return;
 
         // 기본 공격도 직선 탄 전용 경로를 사용해 발사 시 객체 생성을 줄인다.
-        controller.SetupStraight(baseDmg, _firePoint.position, targetPos, _basicProjectileSpeed);
+        controller.SetupStraight(baseDmg, FireOrigin, targetPos, _basicProjectileSpeed);
     }
 
     private bool TryFindAttackTargetPosition(out Vector2 targetPos)
@@ -134,15 +137,11 @@ public class SkillSystem : MonoBehaviour
         targetPos = default;
         ResolveReferences();
 
-        if (_firePoint == null)
+        if (_firePoint == null && !_hasLoggedMissingFirePoint)
         {
-            if (!_hasLoggedMissingFirePoint)
-            {
-                Debug.LogWarning("[SkillSystem] FirePoint 참조가 비어 있어 공격을 건너뜁니다.", this);
-                _hasLoggedMissingFirePoint = true;
-            }
-
-            return false;
+            // firePoint 미할당 시 캐릭터(자기) 위치에서 발사하도록 폴백한다(공격을 건너뛰지 않음).
+            Debug.LogWarning("[SkillSystem] FirePoint가 비어 있어 캐릭터 위치(자기 Transform)에서 발사합니다.", this);
+            _hasLoggedMissingFirePoint = true;
         }
 
         if (_monsterSpawner == null)
@@ -156,7 +155,7 @@ public class SkillSystem : MonoBehaviour
             return false;
         }
 
-        if (!_monsterSpawner.TryFindAttackTarget(_firePoint.position, out MonsterAI target))
+        if (!_monsterSpawner.TryFindAttackTarget(FireOrigin, out MonsterAI target))
             return false;
 
         targetPos = target.transform.position;

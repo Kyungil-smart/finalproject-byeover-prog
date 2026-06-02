@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         // 모바일 필수 설정
-        Application.targetFrameRate = 30;
+        Application.targetFrameRate = 60;
         QualitySettings.vSyncCount = 0;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         Input.multiTouchEnabled = false;
