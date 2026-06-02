@@ -2,7 +2,7 @@
 // 설명   : 앱 전체 관리 -- 상태, 인증, 세이브, 씬 전환
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 로그인 이벤트 전달, 게스트 중복 방어, 실제 씬 이름 전환, Portrait 고정, Google 로그인 실패 유형 전달, Editor Google 테스트 계정 입력 전달, Firestore 회원가입 UID 보정 추가
+// 수정 내용 : 로그인 이벤트 전달, 게스트 중복 방어, 실제 씬 이름 전환, Portrait 고정, Google 로그인 실패 유형 전달, Editor Google 테스트 계정 입력 전달, Firestore 회원가입 UID 보정, 기존 Editor Email/Password 계정 로그인 요청 중계 추가
 
 using System;
 using System.Collections;
@@ -319,6 +319,24 @@ public class GameManager : MonoBehaviour
 
         OnLoginStarted?.Invoke(); // 추가: 조규민 - Google 로그인은 추후 대상이지만 진행 상태 이벤트는 동일하게 사용한다.
         StartCoroutine(_authService.GoogleSignInCoroutine(editorEmail, editorPassword));
+    }
+
+    // 추가: 조규민 - UI에서 입력한 기존 Editor Email/Password 계정 로그인을 FirebaseAuthService에 위임한다.
+    public void StartExistingEditorGoogleAccountSignIn(string editorEmail, string editorPassword)
+    {
+        if (_authService == null)
+        {
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "인증 서비스가 연결되지 않았습니다.");
+            return;
+        }
+
+        if (_authService.IsSigningIn)
+        {
+            return;
+        }
+
+        OnLoginStarted?.Invoke();
+        StartCoroutine(_authService.ExistingEditorGoogleAccountSignInCoroutine(editorEmail, editorPassword));
     }
 
     public void StartGuestSignIn()

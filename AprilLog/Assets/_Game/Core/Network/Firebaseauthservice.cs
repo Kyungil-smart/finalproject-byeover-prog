@@ -2,7 +2,7 @@
 // 설명   : Firebase 인증 서비스 -- 구글 로그인(Google Sign-In) + 게스트 로그인
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름 추가
+// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름, 기존 Editor Email/Password 계정 로그인 전용 흐름 추가
 
 #if FIREBASE_ENABLED
 using Firebase;
@@ -191,6 +191,45 @@ public class FirebaseAuthService : MonoBehaviour
 #endif
     }
 
+    // 추가: 조규민 - 기존 Editor Email/Password 테스트 계정 로그인만 수행하고 신규 계정 생성을 시도하지 않는다.
+    public IEnumerator ExistingEditorGoogleAccountSignInCoroutine(string editorEmail, string editorPassword)
+    {
+#if FIREBASE_ENABLED && UNITY_EDITOR
+        if (IsSigningIn)
+        {
+            yield break;
+        }
+
+        if (!Application.isEditor)
+        {
+            RaiseLoginFailed(AuthLoginFailureType.Configuration, "기존 계정 로그인은 Unity Editor Email/Password 테스트 모드에서만 사용할 수 있습니다.");
+            yield break;
+        }
+
+        if (!_enableEditorGoogleLoginTest || !_useEmailPasswordEditorGoogleTestUser)
+        {
+            RaiseLoginFailed(AuthLoginFailureType.Configuration, "FirebaseAuthService의 Editor Email/Password 테스트 옵션을 켜 주세요.");
+            yield break;
+        }
+
+        if (!CanUseFirebaseAuth())
+        {
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "Firebase 인증 서비스가 준비되지 않았습니다.");
+            yield break;
+        }
+
+        if (_signOutBeforeEditorGoogleLoginTest)
+        {
+            ClearCurrentFirebaseSessionForEditorTest();
+        }
+
+        yield return StartCoroutine(EditorGoogleEmailPasswordSignInCoroutine(editorEmail, editorPassword, false));
+#else
+        RaiseLoginFailed(AuthLoginFailureType.General, "기존 계정 로그인은 Firebase가 활성화된 Unity Editor Email/Password 테스트 모드에서만 사용할 수 있습니다.");
+        yield return null;
+#endif
+    }
+
 #if FIREBASE_ENABLED
 #if UNITY_EDITOR
     private IEnumerator EditorGoogleSignInTestCoroutine(string editorEmail, string editorPassword)
@@ -256,7 +295,7 @@ public class FirebaseAuthService : MonoBehaviour
         OnLoginSuccess?.Invoke(UserUID);
     }
 
-    private IEnumerator EditorGoogleEmailPasswordSignInCoroutine(string editorEmail, string editorPassword)
+    private IEnumerator EditorGoogleEmailPasswordSignInCoroutine(string editorEmail, string editorPassword, bool canCreateMissingUser = true)
     {
         string validationError = GetEditorGoogleEmailPasswordValidationError(editorEmail, editorPassword);
         if (!string.IsNullOrEmpty(validationError))
@@ -285,7 +324,7 @@ public class FirebaseAuthService : MonoBehaviour
 
         if (authTask.IsFaulted)
         {
-            if (!ShouldCreateEditorEmailPasswordUser(authTask.Exception))
+            if (!canCreateMissingUser || !ShouldCreateEditorEmailPasswordUser(authTask.Exception))
             {
                 LogExceptionDetails("[Auth][EditorEmailPassword] SignInWithEmailAndPasswordAsync faulted", authTask.Exception);
                 CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, GetFirebaseAuthExceptionMessage(authTask.Exception, "Editor Email/Password 테스트 로그인 실패"));

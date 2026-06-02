@@ -1,5 +1,5 @@
 // 담당자 : 조규민
-// 구현원리 : Boot 기본 화면의 하단 로딩바 진행 완료를 Bootstrap에 이벤트로 전달한다.
+// 구현원리 : Boot 기본 화면의 하단 로딩바 진행 완료를 Bootstrap에 이벤트로 전달하고 앱 버전을 표시한다.
 
 using System;
 using System.Collections;
@@ -20,6 +20,10 @@ public class StartView : MonoBehaviour
     [Tooltip("초기 화면 하단 로딩바가 100%까지 차는 시간입니다.")]
     [SerializeField] private float _loadingDuration = 2f;
 
+    [Header("버전")]
+    [Tooltip("초기 Boot 화면에 앱 버전을 표시할 TMP Text입니다.")]
+    [SerializeField] private TMP_Text _appVersionText;
+
     private Coroutine _loadingCoroutine;
 
     public bool IsLoadingCompleted { get; private set; }
@@ -27,6 +31,7 @@ public class StartView : MonoBehaviour
     // 화면이 활성화될 때 하단 로딩바 진행을 시작한다.
     private void OnEnable()
     {
+        SetAppVersionText();
         StartLoading();
     }
 
@@ -107,5 +112,15 @@ public class StartView : MonoBehaviour
 
         int percent = Mathf.RoundToInt(progress * 100f);
         _loadingPercentText.text = percent + "%";
+    }
+
+    private void SetAppVersionText()
+    {
+        if (_appVersionText == null)
+        {
+            return;
+        }
+
+        _appVersionText.SetText("v" + Application.version);
     }
 }

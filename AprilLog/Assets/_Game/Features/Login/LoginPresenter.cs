@@ -1,5 +1,5 @@
 // 담당자 : 조규민
-// 구현원리 : View 이벤트를 받아 GameManager에 인증 요청을 위임하고, GameManager 인증 이벤트를 다시 View 상태로 반영한다.
+// 구현원리 : View 이벤트를 받아 GameManager에 인증 요청을 위임하고, 기존 계정 로그인 요청과 GameManager 인증 이벤트를 View 상태로 반영한다.
 
 using UnityEngine;
 
@@ -17,6 +17,7 @@ public class LoginPresenter
 
         _view.OnGuestLoginClicked += HandleGuestLoginClicked;
         _view.OnGoogleLoginClicked += HandleGoogleLoginClicked;
+        _view.OnExistingAccountLoginClicked += HandleExistingAccountLoginClicked;
         _view.OnRegisterClicked += HandleRegisterClicked;
         _view.OnTermsAgreementChanged += HandleTermsAgreementChanged;
         _view.OnTermsConfirmed += HandleTermsConfirmed; // 약관 확인 버튼 입력을 로그인 활성화 조건에 반영한다.
@@ -47,6 +48,7 @@ public class LoginPresenter
     {
         _view.OnGuestLoginClicked -= HandleGuestLoginClicked;
         _view.OnGoogleLoginClicked -= HandleGoogleLoginClicked;
+        _view.OnExistingAccountLoginClicked -= HandleExistingAccountLoginClicked;
         _view.OnRegisterClicked -= HandleRegisterClicked;
         _view.OnTermsAgreementChanged -= HandleTermsAgreementChanged;
         _view.OnTermsConfirmed -= HandleTermsConfirmed;
@@ -121,6 +123,38 @@ public class LoginPresenter
 
         _model.SetGoogleLoginRequested(true);
         GameManager.Instance.StartGoogleSignIn(editorEmail, editorPassword);
+    }
+
+    // 기존 Editor Email/Password 테스트 계정으로 로그인만 시도한다.
+    private void HandleExistingAccountLoginClicked(string editorEmail, string editorPassword)
+    {
+        if (_model.IsSigningIn)
+        {
+            return;
+        }
+
+        if (!_model.HasConfirmedTerms)
+        {
+            _view.ShowTermsAgreementPanel();
+            return;
+        }
+
+        if (GameManager.Instance == null)
+        {
+            _view.SetRegisterMessage("게임 매니저가 준비되지 않았습니다.");
+            return;
+        }
+
+        string validationError = GetEditorGoogleLoginValidationError(editorEmail, editorPassword);
+        if (!string.IsNullOrEmpty(validationError))
+        {
+            _view.SetRegisterMessage(validationError);
+            return;
+        }
+
+        _model.SetGoogleLoginRequested(true);
+        _view.SetRegisterMessage("기존 계정으로 로그인 중입니다.");
+        GameManager.Instance.StartExistingEditorGoogleAccountSignIn(editorEmail, editorPassword);
     }
 
     // 회원가입 입력값을 검증하고 GameManager에 등록 요청을 전달한다.
@@ -263,6 +297,7 @@ public class LoginPresenter
         _view.SetLoading(_model.IsSigningIn);
         _view.SetGuestButtonInteractable(canLogin);
         _view.SetGoogleButtonInteractable(canLogin);
+        _view.SetExistingAccountLoginButtonInteractable(!_model.IsSigningIn);
         _view.SetRegisterButtonInteractable(!_model.IsSigningIn);
         _view.SetAccountInfo(Application.version, _model.UserUID);
     }
