@@ -7,6 +7,12 @@ public enum AuthLoginFailureType
     General,
     // 사용자가 Google 로그인 창을 닫거나 취소한 상태다.
     Canceled,
+    // 네트워크 연결 또는 Google Play Services 응답 문제로 실패한 상태다.
+    Network,
+    // Web Client ID, SHA 인증서, 패키지명 같은 Google 로그인 설정 문제로 실패한 상태다.
+    Configuration,
+    // Google 또는 Firebase 인증 응답 시간이 초과된 상태다.
+    Timeout,
     // Google 로그인 이후 Firebase 인증 처리에서 실패한 상태다.
     FirebaseAuth
 }

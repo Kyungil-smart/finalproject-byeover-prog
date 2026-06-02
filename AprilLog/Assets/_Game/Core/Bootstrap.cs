@@ -5,7 +5,7 @@
 // 수정 내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, _boot 씬에서만 초기화 하면 되도록 수정
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 로그인 이벤트 분기, 시작 하단 로딩바, 이전 세션 옵션, 로비 로딩 애니메이션, Google 안내 팝업, 초기 Portrait 안정화
+// 수정 내용 : 로그인 이벤트 분기, 시작 하단 로딩바, 이전 세션 옵션, 로비 로딩 애니메이션, Google 안내 팝업, 초기 Portrait 안정화, 시작 로딩 완료 이벤트 누락 방어, Editor Email/Password 테스트 시 이전 세션 자동 로그인 방지 추가
 
 using System;
 using System.Collections;
@@ -18,6 +18,7 @@ using UnityEngine;
 public class Bootstrap : MonoBehaviour
 {
     private const float GOOGLE_LOGIN_SUCCESS_MESSAGE_SECONDS = 1.2f;
+    private const float START_LOADING_FALLBACK_SECONDS = 8f;
 
     // ---------- SerializeField ----------
     [Header("시스템")]
@@ -103,7 +104,7 @@ public class Bootstrap : MonoBehaviour
         GameManager.Instance.OnLoginSucceeded += onLoginSucceeded;
         GameManager.Instance.OnLoginFailed += onLoginFailed;
 
-        if (_usePreviousSessionAutoSignIn && !GameManager.Instance.IsOfflineMode && GameManager.Instance.HasPreviousSession())
+        if (CanUsePreviousSessionAutoSignIn())
         {
             yield return StartCoroutine(GameManager.Instance.AutoSignIn());
         }
@@ -165,6 +166,7 @@ public class Bootstrap : MonoBehaviour
     private IEnumerator WaitForStartLoading()
     {
         bool isLoadingCompleted = _startView.IsLoadingCompleted;
+        float elapsedTime = 0f;
 
         // 추가: 조규민 - StartView 로딩 완료 이벤트를 코루틴 대기 조건으로 변환한다.
         void HandleLoadingCompleted()
@@ -175,9 +177,37 @@ public class Bootstrap : MonoBehaviour
         // 추가: 조규민 - 기본 화면 하단 로딩바가 100%까지 찰 때까지 대기한다.
         _startView.OnLoadingCompleted += HandleLoadingCompleted;
         _startView.gameObject.SetActive(true);
-        yield return new WaitUntil(() => isLoadingCompleted);
+
+        while (!isLoadingCompleted)
+        {
+            if (_startView.IsLoadingCompleted)
+            {
+                isLoadingCompleted = true;
+                break;
+            }
+
+            elapsedTime += Time.unscaledDeltaTime;
+            if (elapsedTime >= START_LOADING_FALLBACK_SECONDS)
+            {
+                Debug.LogWarning("[Bootstrap] 시작 로딩 완료 이벤트를 받지 못해 로그인 화면으로 전환합니다.", this);
+                break;
+            }
+
+            yield return null;
+        }
+
         _startView.OnLoadingCompleted -= HandleLoadingCompleted;
         _startView.gameObject.SetActive(false);
+    }
+
+    private bool CanUsePreviousSessionAutoSignIn()
+    {
+        if (!_usePreviousSessionAutoSignIn || GameManager.Instance == null || GameManager.Instance.IsOfflineMode || !GameManager.Instance.HasPreviousSession())
+        {
+            return false;
+        }
+
+        return !GameManager.Instance.RequiresEditorGoogleEmailPasswordInput;
     }
 
     // 추가: 조규민 - Inspector에 연결된 LoginCanvas를 활성화해 약관 동의 모달이 포함된 로그인 화면을 표시한다.
