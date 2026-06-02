@@ -1,17 +1,13 @@
-// 담당자 : 개발 테스트용 (삭제 예정)
-// 설명   : 플레이어 공격 파이프라인을 _InGame 단독 Play로 확인하는 throwaway 하니스
+// 담당자 : 정승우
+// 설명   : 플레이어 공격 파이프라인을 _InGame 단독 Play로 확인하는 throwaway 하니스 (삭제 예정)
 
 #if UNITY_EDITOR
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor.Animations;
 using UnityEngine;
 
-/// <summary>
-/// 더미 스킬/몬스터/투사체 풀을 런타임에 만들어 정렬-전투-투사체-데미지 경로를 검증한다.
-/// 기획/데이터 테이블에 없는 임시 데이터만 쓰고, 프로덕션 코드는 리플렉션으로만 접근한다.
-/// 빈 GameObject에 붙여 Play하고, 확인이 끝나면 이 파일과 오브젝트째로 삭제한다.
-/// </summary>
 public class DummyCombatTester : MonoBehaviour
 {
     // ---------- SerializeField ----------
@@ -47,6 +43,7 @@ public class DummyCombatTester : MonoBehaviour
     private List<MonsterAI> _spawnerAliveList;
 
     private Sprite _squareSprite;
+    private RuntimeAnimatorController _dummyController;
 
     // ---------- 생명주기 ----------
     private IEnumerator Start()
@@ -55,6 +52,7 @@ public class DummyCombatTester : MonoBehaviour
         yield return null;
 
         _squareSprite = BuildSquareSprite();
+        _dummyController = BuildDummyAnimatorController();
 
         _skillSystem = FindFirstObjectByType<SkillSystem>();
         _combatSystem = FindFirstObjectByType<CombatSystem>();
@@ -172,7 +170,10 @@ public class DummyCombatTester : MonoBehaviour
         go.AddComponent<BoxCollider2D>();
 
         // AttackSupport가 _animator.SetTrigger를 무조건 호출해서, 비어 있으면 NPE가 난다.
+        // 컨트롤러가 없으면 SetBool/SetTrigger마다 "Animator is not playing an AnimatorController"
+        // 경고가 나므로, 파라미터만 가진 더미 컨트롤러를 붙여 경고를 막는다.
         var animator = go.AddComponent<Animator>();
+        animator.runtimeAnimatorController = _dummyController;
         var ai = go.AddComponent<MonsterAI>();
         typeof(MonsterAI).GetField("_animator", BindingFlags.NonPublic | BindingFlags.Instance)
             .SetValue(ai, animator);
@@ -220,6 +221,18 @@ public class DummyCombatTester : MonoBehaviour
         tex.SetPixels(pixels);
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4f);
+    }
+
+    // MonsterAI가 참조하는 "Move"(Bool) / "Attack"(Trigger) 파라미터만 정의한 빈 컨트롤러.
+    // 에셋으로 저장하지 않고 메모리에만 만들어 모든 더미 몬스터가 공유한다.
+    private static RuntimeAnimatorController BuildDummyAnimatorController()
+    {
+        var controller = new AnimatorController();
+        controller.name = "[DUMMY] MonsterAnimator";
+        controller.AddLayer("Base");
+        controller.AddParameter("Move", AnimatorControllerParameterType.Bool);
+        controller.AddParameter("Attack", AnimatorControllerParameterType.Trigger);
+        return controller;
     }
 }
 #endif
