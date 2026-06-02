@@ -10,6 +10,7 @@
 // WaveSystem의 V를 담당
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,6 +20,9 @@ using UnityEngine;
 // 수정자 : 김영찬
 // DataManager 최신화 중 기존 연결을 Legacy로 변경
 
+// 수정자 : 김영찬
+// 몬스터 및 웨이브 관련 DB에 맞춰 소환 로직 최신화 및 책임 분산
+
 /// <summary>
 /// StageSpawnRule 기반으로 몬스터를 스폰한다.
 /// 웨이브가 올라갈수록 GrowthType에 따라 스폰량이 증가하고 간격이 짧아진다.
@@ -27,11 +31,20 @@ public class MonsterSpawner : MonoBehaviour
 {
     // ---------- 이벤트 ----------
     public event Action<MonsterAI, bool> OnMonsterDied;
+    public event Action IsBossDeath;
 
     // ---------- SerializeField ----------
-    [Header("스폰 포인트")]
+    [Header("고정 스폰 포인트")]
     [Tooltip("화면 상단 밖 스폰 포인트 7개 (왼->오)")]
     [SerializeField] private Transform[] _spawnPoints;
+    
+    [Header("일반 소환 라인 지정")]
+    [Tooltip("일반 소환은 지정된 라인 위에서 작동함 (Y값 지정)")]
+    [SerializeField] private float _normalSpawnLineY;
+    [Tooltip("일반 소환은 지정된 라인 위에서 작동함 (X 범위 최소값 지정)")]
+    [SerializeField] private float _normalSpawnLineXMin;
+    [Tooltip("일반 소환은 지정된 라인 위에서 작동함 (X 범위 최대값 지정)")]
+    [SerializeField] private float _normalSpawnLineXMax;
 
     [Header("참조")]
     [Tooltip("스폰된 몬스터가 공격할 플레이어. 비어 있으면 런타임에 자동 탐색")]
@@ -42,134 +55,82 @@ public class MonsterSpawner : MonoBehaviour
     [SerializeField] private float _distanceTieThreshold = 0.0001f;
 
     // ---------- Private ----------
-    private List<SpawnTracker> _activeRules = new List<SpawnTracker>();
     private List<MonsterAI> _aliveMonsters = new List<MonsterAI>(32);
     private System.Random _rng;
-    private bool _isRunning;
-
-    // ---------- 웨이브 시작 ----------
-    public void StartWave(int stageId, int waveIndex, int totalWaves, System.Random rng)
-    {
-        _rng = rng;
-        _isRunning = true;
-        _activeRules.Clear();
-
-        var rules = Legacy_DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageId);
-
-        for (int i = 0; i < rules.Count; i++)
-        {
-            // 웨이브별 스폰량 계산
-            int baseAmount = rules[i].SpawnAmount;
-            int adjustedAmount = CalculateWaveAmount(
-                baseAmount, rules[i].GrowthType, rules[i].GrowthValue, waveIndex);
-
-            // 웨이브 후반으로 갈수록 스폰 간격 짧아짐
-            float baseInterval = rules[i].SpawnInterval;
-            float adjustedInterval = Mathf.Max(0.2f, baseInterval - (waveIndex * 0.1f));
-
-            _activeRules.Add(new SpawnTracker
-            {
-                rule = rules[i],
-                spawnAmount = adjustedAmount,
-                spawnInterval = adjustedInterval,
-                timer = 0f,
-                aliveCount = 0,
-                spawnedThisWave = 0
-            });
-        }
-
-        Debug.Log($"[Spawner] 웨이브 {waveIndex + 1}/{totalWaves} 시작. 규칙 {_activeRules.Count}개.");
-    }
-
-    public void StopSpawning()
-    {
-        _isRunning = false;
-    }
+    
+    // ---------- For Gizmo ----------
+    public Transform[] SpawnPoints => _spawnPoints;
+    public float NormalSpawnLineY => _normalSpawnLineY;
+    public float NormalSpawnLineXMin => _normalSpawnLineXMin;
+    public float NormalSpawnLineXMax => _normalSpawnLineXMax;
 
     // ---------- Update ----------
     public void Tick(float deltaTime)
     {
-        if (!_isRunning) return;
-
-        for (int i = 0; i < _activeRules.Count; i++)
-        {
-            var tracker = _activeRules[i];
-            tracker.timer += deltaTime;
-
-            if (tracker.timer >= tracker.spawnInterval
-                && tracker.aliveCount < tracker.rule.MaxAlive
-                && tracker.spawnedThisWave < tracker.spawnAmount)
-            {
-                tracker.timer = 0f;
-
-                // 한 번에 최대 3마리까지
-                int batchSize = Mathf.Min(
-                    tracker.spawnAmount - tracker.spawnedThisWave,
-                    tracker.rule.MaxAlive - tracker.aliveCount);
-                batchSize = Mathf.Min(batchSize, 3);
-
-                for (int s = 0; s < batchSize; s++)
-                    SpawnOne(ref tracker);
-            }
-
-            _activeRules[i] = tracker;
-        }
-    }
-
-    // ---------- 웨이브별 스폰량 계산 ----------
-    private int CalculateWaveAmount(int baseAmount, string growthType, float growthValue, int waveIndex)
-    {
-        switch (growthType)
-        {
-            case "Add":
-                // 웨이브마다 고정값 추가. 예: 기본 20, Add 3 -> 웨이브0=20, 웨이브1=23, 웨이브2=26
-                return baseAmount + Mathf.RoundToInt(growthValue * waveIndex);
-
-            case "Rate":
-                // 웨이브마다 비율 증가. 예: 기본 20, Rate 0.1 -> 웨이브0=20, 웨이브1=22, 웨이브2=24
-                float multiplier = 1f + (growthValue * waveIndex);
-                return Mathf.RoundToInt(baseAmount * multiplier);
-
-            case "None":
-            default:
-                return baseAmount;
-        }
+        
     }
 
     // ---------- 스폰 ----------
-    private void SpawnOne(ref SpawnTracker tracker)
+    
+    /// <summary>
+    /// 모델에서 받아오는 소환 정보(중재자 릴레이)
+    /// </summary>
+    /// <param name="queue">모델에서 지정해준 스폰 정보</param>
+    /// <param name="spawnDelay">이번 queue의 스폰 딜레이(코루틴 참조용)</param>
+    public void SpawnMonsterBatch(Queue<StageModel.SpawnCommand> queue, float spawnDelay)
     {
-        // 풀에서 가중치 기반으로 몬스터(Character_ID) 뽑기
-        int characterId = Legacy_DataManager.Instance.StageRepo.PickMonsterFromPool(tracker.rule.MonsterPool_ID, _rng);
-        if (characterId < 0) return;
+        StartCoroutine(ProcessSpawnQueue(queue, spawnDelay));
+    }
+    
+    // 순차 소환 코루틴
+    private IEnumerator ProcessSpawnQueue(Queue<StageModel.SpawnCommand> queue, float delay)
+    {
+        while (queue.Count > 0)
+        {
+            var cmd = queue.Dequeue();
+            Vector3 spawnPos = PickSpawnPosition(cmd.Type);
+            
+            bool isBoss = cmd.Type == StageModel.SpawnType.Elite || cmd.Type == StageModel.SpawnType.Boss;
+            
+            var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss);
 
-        // 스폰 위치 결정
-        int pointIdx = GetSpawnPointIndex(tracker.rule.SpawnPositionType);
-        Vector3 pos = _spawnPoints[pointIdx].position;
+            if (ai != null && cmd.ScalingData != null)
+            {
+                // 💡 [수정] 스케일링 데이터와 함께 '누적 횟수'도 전달!
+                ai.ApplyScaling(cmd.ScalingData, cmd.AccumulateCount);
+            }
 
-        // 실제 스폰/초기화는 공통 API에 위임
-        var ai = SpawnMonster(characterId, pos);
-        if (ai == null) return;
-
-        tracker.aliveCount++;
-        tracker.spawnedThisWave++;
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+        }
     }
 
-    /// <summary>
-    /// Character_ID 하나로 몬스터 1마리를 스폰하는 단일 진입점.
-    /// 프리팹(풀키)·스탯·플레이어 참조를 모두 데이터/싱글톤에서 조회해 초기화하고
-    /// alive 목록·사망 이벤트까지 연결한다. (일반 스폰/보스/특수웨이브/테스트 공용)
-    /// </summary>
-    /// <summary>
-    /// 스폰 위치를 내부에서 선택하는 오버로드.
-    /// StageModel의 OnSpawnRequested(데이터 구동) 경로가 사용한다.
-    /// </summary>
-    public MonsterAI SpawnMonster(int characterId)
+    private Vector3 PickSpawnPosition(StageModel.SpawnType type)
     {
-        return SpawnMonster(characterId, PickSpawnPosition());
+        _rng ??= new System.Random();
+
+        // 일반(Normal)이나 물량(Rush) 몬스터는 바운더리 안에서 무작위 스폰!
+        if (type == StageModel.SpawnType.Normal || type == StageModel.SpawnType.Rush)
+        {
+            float randomProgress = (float)_rng.NextDouble();
+            float randomX = Mathf.Lerp(_normalSpawnLineXMin, _normalSpawnLineXMax, randomProgress);
+            return new Vector3(randomX, _normalSpawnLineY, 0f);
+        }
+        
+        // 차후에 보스 연출이나 엘리트/기믹 소환 시에는 고정 포인트 사용!
+        // 배열 안전성 방어 체크
+        if (_spawnPoints == null || _spawnPoints.Length == 0) 
+        {
+            float randomX = Mathf.Lerp(_normalSpawnLineXMin, _normalSpawnLineXMax, (float)_rng.NextDouble());
+            return new Vector3(randomX, _normalSpawnLineY, 0f);
+        }
+
+        // 고정 포인트 중 하나를 무작위로 고름
+        int idx = _rng.Next(0, _spawnPoints.Length);
+        return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
     }
 
-    public MonsterAI SpawnMonster(int characterId, Vector3 position)
+    private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss)
     {
         var characterRepo = DataManager.Instance.CharacterRepo;
         var stats = characterRepo.GetCommonStatus(characterId);
@@ -178,25 +139,42 @@ public class MonsterSpawner : MonoBehaviour
         string poolKey = ResolveMonsterPoolKey(characterId, monsterStats);
 
         var obj = PoolManager.Instance.Spawn(poolKey, position, Quaternion.identity);
-        if (obj == null)
-        {
-            Debug.LogWarning($"[Spawner] 풀 '{poolKey}'에서 몬스터 스폰 실패. Character_ID: {characterId}");
-            return null;
-        }
+        if (obj == null) return null;
 
         var ai = obj.GetComponent<MonsterAI>();
-        if (ai == null)
+        if (ai != null)
         {
-            Debug.LogError($"[Spawner] '{poolKey}' 프리팹에 MonsterAI가 없습니다. Character_ID: {characterId}");
-            return null;
+            ai.Initialize(stats, monsterStats, characterId, isBoss);
+            ai.SetPlayerModel(ResolvePlayerModel());
+            ai.OnDeath += HandleMonsterDeath;
+            _aliveMonsters.Add(ai);
         }
-
-        ai.Initialize(stats, monsterStats, characterId);
-        ai.SetPlayerModel(ResolvePlayerModel());
-        ai.OnDeath += HandleMonsterDeath;
-        _aliveMonsters.Add(ai);
-
         return ai;
+    }
+    
+    public void StopSpawning()
+    {
+        StopAllCoroutines(); // 진행 중인 시차 소환 정지
+    }
+    
+    // ---------- 필드 청소 로직 ----------
+    public void DespawnAllAliveMonsters()
+    {
+        // 💡 중요: 리스트를 순회하면서 지울 때는 역순(for문 감소)으로 순회해야 에러가 안 납니다.
+        for (int i = _aliveMonsters.Count - 1; i >= 0; i--)
+        {
+            MonsterAI monster = _aliveMonsters[i];
+            
+            // 이벤트 해제
+            monster.OnDeath -= HandleMonsterDeath;
+            
+            var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
+            string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
+            
+            // 강제 소멸 (경험치를 주거나 OnDeath 이벤트를 터뜨리지 않음)
+            PoolManager.Instance.Despawn(poolKey, monster.gameObject);
+        }
+        _aliveMonsters.Clear();
     }
 
     /// <summary>
@@ -223,10 +201,9 @@ public class MonsterSpawner : MonoBehaviour
     // 스폰 포인트 7개 중 무작위 위치 선택 (위치 미지정 스폰용)
     private Vector3 PickSpawnPosition()
     {
-        if (_spawnPoints == null || _spawnPoints.Length == 0)
-            return Vector3.zero;
-
+        if (_spawnPoints == null || _spawnPoints.Length == 0) return Vector3.zero;
         _rng ??= new System.Random();
+        
         int idx = _rng.Next(0, _spawnPoints.Length);
         return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
     }
@@ -247,33 +224,23 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // ---------- 몬스터 사망 ----------
-    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze = false)
+    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss)
     {
         monster.OnDeath -= HandleMonsterDeath;
         _aliveMonsters.Remove(monster);
 
-        // tracker의 aliveCount 감소
-        for (int i = 0; i < _activeRules.Count; i++)
-        {
-            var t = _activeRules[i];
-            if (t.aliveCount > 0)
-            {
-                t.aliveCount--;
-                _activeRules[i] = t;
-            }
-        }
-
         OnMonsterDied?.Invoke(monster, isKamikaze);
+        
+        if(isBoss)
+        {
+            IsBossDeath?.Invoke();
+        }
 
         // 스폰 때와 동일한 키 해석을 써야 풀이 어긋나지 않는다.
         var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
         string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
         PoolManager.Instance.Despawn(poolKey, monster.gameObject);
     }
-
-    // ---------- 조회 ----------
-    public bool IsWaveComplete() => !_isRunning || _aliveMonsters.Count == 0;
-    public int AliveCount => _aliveMonsters.Count;
 
     /// <summary>
     /// 공격 시점에만 살아있는 몬스터 목록을 1회 스캔해서 타겟을 찾는다.
@@ -345,16 +312,4 @@ public class MonsterSpawner : MonoBehaviour
         // 위치 완전 동일 → 3순위: 먼저 스폰된 것 유지
         return false;
     }
-}
-
-// 스폰 규칙별 진행 상태 추적
-[System.Serializable]
-public struct SpawnTracker
-{
-    public Legacy_StageSpawnRuleData rule;
-    public int spawnAmount;         // 이번 웨이브 스폰 총 수 (증가량 적용)
-    public float spawnInterval;     // 이번 웨이브 스폰 간격 (웨이브 후반 짧아짐)
-    public float timer;
-    public int aliveCount;
-    public int spawnedThisWave;     // 이번 웨이브에서 이미 스폰한 수
 }

@@ -40,6 +40,8 @@ public class StagePresenter
         _model.OnWaveStopped += HandleWaveStopped;
         _model.OnStageClearTriggered += HandleStageClear;
         _model.OnSpawnRequested += HandleSpawnRequested;
+        _model.OnDespawnRemainingRequested += HandleDespawnRemaining;
+        _spawner.IsBossDeath += HandleBossMonsterDied;
     }
     
     // ---------- 이벤트 핸들러 ----------
@@ -60,20 +62,34 @@ public class StagePresenter
         _onStageCompleteCallback?.Invoke();
     }
     
-    private void HandleSpawnRequested(Queue<int> spawnQueue)
+    // 모델이 던져준 큐를 스포너에게 전달
+    private void HandleSpawnRequested(Queue<StageModel.SpawnCommand> spawnQueue, float spawnDelay)
     {
         if (_spawner != null)
         {
-            // ToDo : 스포너에게 몬스터 스폰 명령 내려야됩니다. 넘겨주는 인자는 Character_Id를 값으로 가지는 Queue 시트 입니다.
-            //_spawner.SpawnMonster(spawnQueue);
+            _spawner.SpawnMonsterBatch(spawnQueue, spawnDelay);
         }
+    }
+
+    // 모델의 청소 명령 -> 스포너 실행
+    private void HandleDespawnRemaining()
+    {
+        if (_spawner != null)
+        {
+            _spawner.DespawnAllAliveMonsters();
+        }
+    }
+
+    // 스포너 몹 사망 -> 모델에 보스 확인 전달
+    private void HandleBossMonsterDied()
+    {
+        _model.NotifyBossKilled();
     }
     
     // ---------- Update ----------
     public void UpdateSystem(float deltaTime)
     {
-        int aliveCount = _spawner != null ? _spawner.AliveCount : 0;
-        _model.Tick(deltaTime, aliveCount);
+        _model.Tick(deltaTime);
         _spawner.Tick(deltaTime);
     }
     
