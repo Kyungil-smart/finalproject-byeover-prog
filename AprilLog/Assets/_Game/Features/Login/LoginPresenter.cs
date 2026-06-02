@@ -27,7 +27,7 @@ public class LoginPresenter
         {
             GameManager.Instance.OnLoginStarted += HandleLoginStarted;
             GameManager.Instance.OnLoginSucceeded += HandleLoginSucceeded;
-            GameManager.Instance.OnLoginFailed += HandleLoginFailed;
+            GameManager.Instance.OnLoginFailedWithType += HandleLoginFailedWithType;
             GameManager.Instance.OnRegistrationRequired += HandleRegistrationRequired;
             GameManager.Instance.OnRegistrationFailed += HandleRegistrationFailed;
         }
@@ -60,7 +60,7 @@ public class LoginPresenter
 
         GameManager.Instance.OnLoginStarted -= HandleLoginStarted;
         GameManager.Instance.OnLoginSucceeded -= HandleLoginSucceeded;
-        GameManager.Instance.OnLoginFailed -= HandleLoginFailed;
+        GameManager.Instance.OnLoginFailedWithType -= HandleLoginFailedWithType;
         GameManager.Instance.OnRegistrationRequired -= HandleRegistrationRequired;
         GameManager.Instance.OnRegistrationFailed -= HandleRegistrationFailed;
     }
@@ -85,11 +85,12 @@ public class LoginPresenter
             return;
         }
 
+        _model.SetGoogleLoginRequested(false);
         GameManager.Instance.StartGuestSignIn();
     }
 
     // 약관 확인 전에는 Google 로그인을 요청하지 않는다.
-    private void HandleGoogleLoginClicked()
+    private void HandleGoogleLoginClicked(string editorEmail, string editorPassword)
     {
         if (_model.IsSigningIn)
         {
@@ -108,7 +109,18 @@ public class LoginPresenter
             return;
         }
 
-        GameManager.Instance.StartGoogleSignIn();
+        if (GameManager.Instance.RequiresEditorGoogleEmailPasswordInput)
+        {
+            string validationError = GetEditorGoogleLoginValidationError(editorEmail, editorPassword);
+            if (!string.IsNullOrEmpty(validationError))
+            {
+                _view.ShowPopup(validationError);
+                return;
+            }
+        }
+
+        _model.SetGoogleLoginRequested(true);
+        GameManager.Instance.StartGoogleSignIn(editorEmail, editorPassword);
     }
 
     // 회원가입 입력값을 검증하고 GameManager에 등록 요청을 전달한다.
@@ -116,6 +128,12 @@ public class LoginPresenter
     {
         if (_model.IsSigningIn)
         {
+            return;
+        }
+
+        if (GameManager.Instance != null && GameManager.Instance.RequiresEditorGoogleEmailPasswordInput)
+        {
+            StartEditorGoogleLoginFromInput(playerId, password);
             return;
         }
 
@@ -154,6 +172,7 @@ public class LoginPresenter
 
         _model.SetTermsConfirmed(true);
         _view.HideTermsAgreementPanel();
+        ShowEditorGoogleLoginInputIfNeeded();
         RefreshView();
     }
 
@@ -179,10 +198,19 @@ public class LoginPresenter
     // 인증 성공 UID를 표시하고 로딩 상태를 해제한다.
     private void HandleLoginSucceeded(string uid)
     {
+        bool wasGoogleLogin = GameManager.Instance != null && GameManager.Instance.LastSignInWasGoogle;
+
         _model.SetUserUID(uid);
         _model.SetSigningIn(false);
         _view.HideRegisterPanel();
         RefreshView();
+
+        if (wasGoogleLogin)
+        {
+            _view.ShowPopup(LoginMessageProvider.GetGoogleSuccessMessage());
+        }
+
+        _model.SetGoogleLoginRequested(false);
     }
 
     // 인증 실패 메시지를 팝업으로 표시하고 다시 입력 가능한 상태로 돌린다.
@@ -190,6 +218,22 @@ public class LoginPresenter
     {
         _model.SetSigningIn(false);
         RefreshView();
+        _view.ShowPopup(string.IsNullOrEmpty(error) ? "로그인에 실패했습니다. 다시 시도해 주세요." : error);
+    }
+
+    private void HandleLoginFailedWithType(AuthLoginFailureType failureType, string error)
+    {
+        _model.SetSigningIn(false);
+        RefreshView();
+
+        // 추가: Google 로그인 시도에서만 지정된 Google 안내 문구를 사용한다.
+        if (_model.IsGoogleLoginRequested)
+        {
+            _view.ShowPopup(LoginMessageProvider.GetGoogleFailureMessage(failureType));
+            _model.SetGoogleLoginRequested(false);
+            return;
+        }
+
         _view.ShowPopup(string.IsNullOrEmpty(error) ? "로그인에 실패했습니다. 다시 시도해 주세요." : error);
     }
 
@@ -223,6 +267,31 @@ public class LoginPresenter
         _view.SetAccountInfo(Application.version, _model.UserUID);
     }
 
+    private void ShowEditorGoogleLoginInputIfNeeded()
+    {
+        if (GameManager.Instance == null || !GameManager.Instance.RequiresEditorGoogleEmailPasswordInput)
+        {
+            return;
+        }
+
+        _view.ShowRegisterPanel();
+        _view.SetRegisterMessage("Editor 테스트 계정 이메일과 비밀번호를 입력한 뒤 Google 로그인을 눌러 주세요.");
+    }
+
+    private void StartEditorGoogleLoginFromInput(string email, string password)
+    {
+        string validationError = GetEditorGoogleLoginValidationError(email, password);
+        if (!string.IsNullOrEmpty(validationError))
+        {
+            _view.SetRegisterMessage(validationError);
+            return;
+        }
+
+        _model.SetGoogleLoginRequested(true);
+        _view.SetRegisterMessage("Editor 테스트 계정으로 로그인 중입니다.");
+        GameManager.Instance.StartGoogleSignIn(email, password);
+    }
+
     // 회원가입 입력값 오류 메시지를 반환한다.
     private string GetRegistrationValidationError(string playerId, string password)
     {
@@ -244,6 +313,26 @@ public class LoginPresenter
         if (password.Length < 4)
         {
             return "테스트 비밀번호는 4자 이상 입력해 주세요.";
+        }
+
+        return null;
+    }
+
+    private string GetEditorGoogleLoginValidationError(string email, string password)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return "Editor 테스트 이메일을 입력해 주세요.";
+        }
+
+        if (!email.Contains("@"))
+        {
+            return "Editor 테스트 이메일 형식이 올바르지 않습니다.";
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return "Editor 테스트 비밀번호를 입력해 주세요.";
         }
 
         return null;

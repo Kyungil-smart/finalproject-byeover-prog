@@ -1,9 +1,8 @@
 // 담당자 : 정승우
 // 설명   : 앱 전체 관리 -- 상태, 인증, 세이브, 씬 전환
+
 // 2차 수정자 : 조규민
-// 수정 내용 : 로그인 성공/실패 이벤트 전달, 게스트 로그인 중복 방어, 실제 씬 이름 기준 전환 추가
-// 3차 수정자 : 조규민
-// 수정 내용 : 앱 시작 직후 Unity 화면이 반대로 보였다가 회전되는 현상을 줄이기 위해 Splash 이전 Portrait 고정 추가
+// 수정 내용 : 로그인 이벤트 전달, 게스트 중복 방어, 실제 씬 이름 전환, Portrait 고정, Google 로그인 실패 유형 전달, Editor Google 테스트 계정 입력 전달, Firestore 회원가입 UID 보정 추가
 
 using System;
 using System.Collections;
@@ -25,6 +24,7 @@ public class GameManager : MonoBehaviour
     public event Action OnLoginStarted; // 추가: 조규민 - LoginPresenter와 Bootstrap이 로그인 진행 상태를 받을 수 있게 한다.
     public event Action<string> OnLoginSucceeded; // 추가: 조규민 - 인증 성공 UID를 UI 흐름에 전달한다.
     public event Action<string> OnLoginFailed; // 추가: 조규민 - 인증 실패 메시지를 UI 흐름에 전달한다.
+    public event Action<AuthLoginFailureType, string> OnLoginFailedWithType; // 추가: 조규민 - Google 로그인 실패 안내 문구를 구분할 수 있도록 실패 유형을 전달한다.
     public event Action OnRegistrationRequired;
     public event Action<string> OnRegistrationFailed;
 
@@ -48,6 +48,8 @@ public class GameManager : MonoBehaviour
     public GameState CurrentState => _currentState;
     public string UserUID => _authService != null ? _authService.UserUID : null;
     public bool IsLoggedIn => _authService != null && _authService.IsLoggedIn;
+    public bool LastSignInWasGoogle => _authService != null && _authService.LastSignInWasGoogle;
+    public bool RequiresEditorGoogleEmailPasswordInput => _authService != null && _authService.RequiresEditorGoogleEmailPasswordInput;
     public bool IsOfflineMode { get; private set; }
 
     // 클라우드에서 내려온 유저 데이터
@@ -105,7 +107,7 @@ public class GameManager : MonoBehaviour
         if (_authService != null)
         {
             _authService.OnLoginSuccess += HandleLoginSuccess;
-            _authService.OnLoginFailed += HandleLoginFailed;
+            _authService.OnLoginFailedWithType += HandleLoginFailedWithType;
         }
     }
 
@@ -117,7 +119,7 @@ public class GameManager : MonoBehaviour
         if (_authService != null)
         {
             _authService.OnLoginSuccess -= HandleLoginSuccess;
-            _authService.OnLoginFailed -= HandleLoginFailed;
+            _authService.OnLoginFailedWithType -= HandleLoginFailedWithType;
         }
     }
 
@@ -137,25 +139,32 @@ public class GameManager : MonoBehaviour
     // ---------- 이벤트 핸들러 ----------
     private void HandleLoginSuccess(string uid)
     {
+        string resolvedUid = ResolveAuthenticatedUid(uid);
+        if (string.IsNullOrWhiteSpace(resolvedUid))
+        {
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "로그인 UID를 받지 못했습니다. 다시 로그인해 주세요.");
+            return;
+        }
+
         // Firestore 서비스에 uid 전달
         if (_firestoreService != null)
-            _firestoreService.Initialize(uid);
+            _firestoreService.Initialize(resolvedUid);
 
         if (_authService != null && _authService.LastSignInWasGoogle)
         {
-            StartCoroutine(CompleteGoogleLoginCoroutine(uid));
+            StartCoroutine(CompleteGoogleLoginCoroutine(resolvedUid));
             return;
         }
 
         // 추가: 조규민 - 인증 성공을 Login UI와 Bootstrap 대기 흐름에 알린다.
-        OnLoginSucceeded?.Invoke(uid);
+        OnLoginSucceeded?.Invoke(resolvedUid);
     }
 
     private IEnumerator CompleteGoogleLoginCoroutine(string uid)
     {
         if (_firestoreService == null)
         {
-            OnLoginFailed?.Invoke("Firestore 서비스가 연결되지 않았습니다.");
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "Firestore 서비스가 연결되지 않았습니다.");
             yield break;
         }
 
@@ -187,9 +196,36 @@ public class GameManager : MonoBehaviour
 
     private void HandleLoginFailed(string error)
     {
+        RaiseLoginFailed(AuthLoginFailureType.General, error);
+    }
+
+    private void HandleLoginFailedWithType(AuthLoginFailureType failureType, string error)
+    {
+        RaiseLoginFailed(failureType, error);
+    }
+
+    // 추가: 조규민 - 실패 유형 이벤트와 기존 문자열 이벤트를 함께 발행해 기존 UI 흐름을 유지한다.
+    private void RaiseLoginFailed(AuthLoginFailureType failureType, string error)
+    {
         // 추가: 조규민 - 로그인 실패 시 앱 상태를 Login으로 유지하고 UI에 오류를 전달한다.
         ChangeState(GameState.Login);
+        OnLoginFailedWithType?.Invoke(failureType, error);
         OnLoginFailed?.Invoke(error);
+    }
+
+    private string ResolveAuthenticatedUid(string uid)
+    {
+        if (!string.IsNullOrWhiteSpace(uid))
+        {
+            return uid.Trim();
+        }
+
+        if (_authService == null || string.IsNullOrWhiteSpace(_authService.UserUID))
+        {
+            return null;
+        }
+
+        return _authService.UserUID.Trim();
     }
 
     private void HandleOnlineRestored()
@@ -265,9 +301,14 @@ public class GameManager : MonoBehaviour
 
     public void StartGoogleSignIn()
     {
+        StartGoogleSignIn(null, null);
+    }
+
+    public void StartGoogleSignIn(string editorEmail, string editorPassword)
+    {
         if (_authService == null)
         {
-            OnLoginFailed?.Invoke("인증 서비스가 연결되지 않았습니다.");
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "인증 서비스가 연결되지 않았습니다.");
             return;
         }
 
@@ -277,14 +318,14 @@ public class GameManager : MonoBehaviour
         }
 
         OnLoginStarted?.Invoke(); // 추가: 조규민 - Google 로그인은 추후 대상이지만 진행 상태 이벤트는 동일하게 사용한다.
-        StartCoroutine(_authService.GoogleSignInCoroutine());
+        StartCoroutine(_authService.GoogleSignInCoroutine(editorEmail, editorPassword));
     }
 
     public void StartGuestSignIn()
     {
         if (_authService == null)
         {
-            OnLoginFailed?.Invoke("인증 서비스가 연결되지 않았습니다.");
+            RaiseLoginFailed(AuthLoginFailureType.FirebaseAuth, "인증 서비스가 연결되지 않았습니다.");
             return;
         }
 
@@ -311,6 +352,14 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        string resolvedUid = ResolveAuthenticatedUid(_authService.UserUID);
+        if (string.IsNullOrWhiteSpace(resolvedUid))
+        {
+            OnRegistrationFailed?.Invoke("회원가입할 로그인 UID가 없습니다. 다시 로그인해 주세요.");
+            return;
+        }
+
+        _firestoreService.Initialize(resolvedUid);
         StartCoroutine(RegisterGoogleUserCoroutine(playerId, password));
     }
 
@@ -437,6 +486,61 @@ public class GameManager : MonoBehaviour
     public void ShowLoginUI()
     {
         ChangeState(GameState.Login);
+    }
+
+    // ---------- 로그아웃 ----------
+    public void Logout()
+    {
+        if (_authService == null)
+        {
+            Debug.LogWarning("[GameManager] AuthService 없음. 로그아웃 불가.");
+            return;
+        }
+
+        _authService.SignOut();
+        CloudData = null;
+        ChangeState(GameState.Login);
+        StartCoroutine(LoadSceneCoroutine("_Boot")); // 로그인 화면으로
+    }
+
+    // ---------- 계정 탈퇴 ----------
+    public void DeleteAccount()
+    {
+        StartCoroutine(DeleteAccountCoroutine());
+    }
+
+    private IEnumerator DeleteAccountCoroutine()
+    {
+        // 1. Firestore 데이터 삭제
+        if (_firestoreService != null && IsLoggedIn)
+        {
+            bool deleted = false;
+            yield return StartCoroutine(_firestoreService.DeleteUserDataCoroutine(result => deleted = result));
+
+            if (!deleted)
+                Debug.LogWarning("[GameManager] Firestore 데이터 삭제 실패. 계속 진행합니다.");
+        }
+
+        // 2. Firebase Auth 계정 삭제
+        if (_authService != null)
+        {
+            bool deleted = false;
+            yield return StartCoroutine(_authService.DeleteAccountCoroutine(result => deleted = result));
+
+            if (!deleted)
+            {
+                Debug.LogWarning("[GameManager] Firebase 계정 삭제 실패.");
+                // 실패해도 로컬은 초기화 후 로그인 화면으로
+            }
+        }
+
+        // 3. 로컬 데이터 초기화
+        DeleteLocalSave();
+        PlayerPrefs.DeleteAll();
+        CloudData = null;
+
+        ChangeState(GameState.Login);
+        StartCoroutine(LoadSceneCoroutine("_Boot"));
     }
 
     // ---------- 클라우드 데이터 ----------

@@ -4,13 +4,14 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 // 로그인 화면의 필수 UI 표시와 입력 이벤트 전달을 담당한다.
-public class LoginView : MonoBehaviour, ILoginView
+public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 {
     public event Action OnGuestLoginClicked;
-    public event Action OnGoogleLoginClicked;
+    public event Action<string, string> OnGoogleLoginClicked;
     public event Action<string, string> OnRegisterClicked;
     public event Action<bool> OnTermsAgreementChanged;
     public event Action OnTermsConfirmed; // 약관 확인 버튼 입력을 Presenter로 전달한다.
@@ -44,6 +45,7 @@ public class LoginView : MonoBehaviour, ILoginView
 
     private LoginPresenter _presenter;
     private LoginModel _model;
+    private RectTransform _passwordInputRectTransform;
 
     // View 생성 시 Model과 버튼 이벤트를 준비한다.
     private void Awake()
@@ -54,6 +56,8 @@ public class LoginView : MonoBehaviour, ILoginView
         {
             BindButtons();
             ValidateRequiredReferences();
+            PrepareInputFields();
+            CacheInputFieldRects();
             HidePopup();
             HideRegisterPanel();
             SetLoading(false);
@@ -97,6 +101,9 @@ public class LoginView : MonoBehaviour, ILoginView
         // 약관 모달 확인 버튼 클릭을 Presenter로 전달한다.
         if (_termsConfirmButton != null)
             _termsConfirmButton.onClick.AddListener(NotifyTermsConfirmed);
+
+        if (_passwordInputField != null)
+            _passwordInputField.onSelect.AddListener(ActivatePasswordInputField);
     }
 
     // View 파괴 시 Unity UI 리스너를 제거한다.
@@ -123,6 +130,92 @@ public class LoginView : MonoBehaviour, ILoginView
         // 약관 확인 버튼 리스너를 정리한다.
         if (_termsConfirmButton != null)
             _termsConfirmButton.onClick.RemoveListener(NotifyTermsConfirmed);
+
+        if (_passwordInputField != null)
+            _passwordInputField.onSelect.RemoveListener(ActivatePasswordInputField);
+    }
+
+    private void PrepareInputFields()
+    {
+        PrepareInputField(_playerIdInputField);
+        PrepareInputField(_passwordInputField);
+    }
+
+    private void PrepareInputField(TMP_InputField inputField)
+    {
+        if (inputField == null)
+        {
+            return;
+        }
+
+        inputField.interactable = true;
+        inputField.readOnly = false;
+        inputField.shouldHideMobileInput = false;
+        inputField.shouldHideSoftKeyboard = false;
+
+        if (inputField.textComponent != null)
+        {
+            inputField.textComponent.gameObject.SetActive(true);
+        }
+    }
+
+    private void ActivatePasswordInputField(string _)
+    {
+        ActivatePasswordInputField();
+    }
+
+    private void ActivatePasswordInputField()
+    {
+        if (_passwordInputField == null || !_passwordInputField.interactable)
+        {
+            return;
+        }
+
+        _passwordInputField.Select();
+        _passwordInputField.ActivateInputField();
+    }
+
+    private void CacheInputFieldRects()
+    {
+        if (_passwordInputField != null)
+        {
+            _passwordInputRectTransform = _passwordInputField.GetComponent<RectTransform>();
+        }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (!CanFocusPasswordInputFromPointer())
+        {
+            return;
+        }
+
+        if (!RectTransformUtility.RectangleContainsScreenPoint(_passwordInputRectTransform, eventData.position, eventData.pressEventCamera))
+        {
+            return;
+        }
+
+        ActivatePasswordInputField();
+    }
+
+    private bool CanFocusPasswordInputFromPointer()
+    {
+        if (_passwordInputRectTransform == null || _passwordInputField == null)
+        {
+            return false;
+        }
+
+        if (_registerPanel == null || !_registerPanel.activeInHierarchy)
+        {
+            return false;
+        }
+
+        if (_termsAgreementPanel != null && _termsAgreementPanel.activeInHierarchy)
+        {
+            return false;
+        }
+
+        return _popupPanel == null || !_popupPanel.activeInHierarchy;
     }
 
     // 핵심 UI 참조 누락을 한 번만 경고한다.
@@ -160,7 +253,9 @@ public class LoginView : MonoBehaviour, ILoginView
     // Google 로그인 버튼 입력을 Presenter로 전달한다.
     private void NotifyGoogleLoginClicked()
     {
-        OnGoogleLoginClicked?.Invoke();
+        string playerId = _playerIdInputField != null ? _playerIdInputField.text : string.Empty;
+        string password = _passwordInputField != null ? _passwordInputField.text : string.Empty;
+        OnGoogleLoginClicked?.Invoke(playerId, password);
     }
 
     // 회원가입 입력 필드 값을 Presenter로 전달한다.
@@ -219,6 +314,8 @@ public class LoginView : MonoBehaviour, ILoginView
     // 회원가입 패널을 표시한다.
     public void ShowRegisterPanel()
     {
+        PrepareInputFields();
+
         if (_registerPanel != null)
             _registerPanel.SetActive(true);
     }

@@ -8,11 +8,16 @@
 // 수정내용 : CharacterRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
 
 // 수정자 : 김영찬
-// DataManager 최신화 중 기존 연결을 Legacy로 변경
+// DataManager 최신화 중 기존 연결을 Legacy로 변경 및 new DataManager와 연결
 
+// 수정자 : 김영찬
+// 능력치 시트 1.04와 데미지 공식 1.01 바탕으로 플레이어 공격력 계산 최신화
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
- 
+using Random = UnityEngine.Random;
+
 /// <summary>
 /// Sort 정렬 성공 시 전투를 발동하고 데미지를 계산한다.
 /// </summary>
@@ -25,7 +30,8 @@ public class CombatSystem : MonoBehaviour
     [SerializeField] private ComboModel _comboModel;
     [SerializeField] private CombinationModel _combinationModel;
     [SerializeField] private PlayerModel _playerModel;
-    [SerializeField] private Legacy_CharacterRepo _characterRepo;
+    [SerializeField] private CharacterRepo _characterRepo;
+    [SerializeField] private SpellRepo _spellRepo;
  
     [Header("자동공격")]
     [SerializeField] private bool _autoAttackEnabled;
@@ -36,16 +42,17 @@ public class CombatSystem : MonoBehaviour
     // ---------- Private ----------
     private ISortNotifier _sortNotifier;
     private float _autoAttackTimer;
+    private const double BASE_CRITIAL_DAMAGE = 1.2d;
  
     private void Awake()
     {
         _sortNotifier = _sortSystemObj as ISortNotifier;
-        ResolveRepository();
+        ResolveCharacterRepository();
     }
  
     private void OnEnable()
     {
-        ResolveRepository();
+        ResolveCharacterRepository();
         if (_sortNotifier == null)
             _sortNotifier = _sortSystemObj as ISortNotifier;
 
@@ -73,6 +80,13 @@ public class CombatSystem : MonoBehaviour
  
     private void HandleSortCompleted(UnitType type)
     {
+        ResolveSpellRepository();
+        
+        if (_spellRepo == null)
+        {
+            Debug.LogError("[CombatSystem] SpellRepo를 찾을 수 없어 인첸트가 발동되지 않습니다.");
+        }
+        
         _comboModel.IncrementCombo();
  
         var sortSkill = _skillSystem.GetSortSkill(type);
@@ -86,8 +100,13 @@ public class CombatSystem : MonoBehaviour
         {
             int idx = _combinationModel.GetCompletedRecipeIndex();
             int skillId = _combinationModel.GetRecipeSkillId(idx);
-            var combiSkill = _characterRepo.GetSkill(skillId);
-            _skillSystem.FireSkill(combiSkill, AttackType.Combi);
+
+            if (_spellRepo != null)
+            {
+                var combiSkill = _spellRepo.GetSkill(skillId);
+                _skillSystem.FireSkill(combiSkill, AttackType.Combi);
+            }
+            
             _combinationModel.ConsumeRecipe(idx);
         }
  
@@ -96,32 +115,29 @@ public class CombatSystem : MonoBehaviour
             _skillSystem.FireSkill(comboSkills[i], AttackType.Combo);
     }
  
-    // 데미지 공식 -- 기획서 v1.03 기준 (FlatPierce, CriticalDamageBonus 삭제됨)
-    public int CalculateDamage(int baseDmg)
+    // 데미지 공식 -- 능력치 시트 1.04와 데미지 공식 1.01 기준
+    public float CalculateDamage(float skillDmgRate)
     {
-        ResolveRepository();
-        if (_characterRepo == null)
+        // 데미지 공식에 필요한 필드 정리
+        float attack = _playerModel != null ? _playerModel.Attack : 1; // ATK x ( 1 + Stat_ATK_Enchant / 100)
+        float criRate = _playerModel != null ? _playerModel.CriticalRate : 0; // CriticalModifier
+        float criDamage = _playerModel != null ? _playerModel.CriticalDamage + (float)BASE_CRITIAL_DAMAGE : (float)BASE_CRITIAL_DAMAGE; // CriticalModifier
+        float comboBonus = (float)_comboModel.GetComboBonusRate(); // ComboModifier
+        float baseDmg;
+        
+        // Base_Damage = [ ATK x ( 1 + Stat_ATK_Enchant / 100) x (1 + Skill_Enchant/100) x (1+ Group_Bonus / 100) x CriticalModifier x ComboModifier]
+        //                                                         L 매게변수                  L 이부분은 SkillSystem에서 후보정
+        if (GetIsHitCritical(criRate))
         {
-            Debug.LogError("[CombatSystem] CharacterRepo를 찾을 수 없어 기본 대미지만 계산합니다.");
-            return Mathf.Max(1, baseDmg);
+            baseDmg = attack * skillDmgRate * comboBonus * criDamage;
+        }
+        else
+        {
+            baseDmg = attack * skillDmgRate * comboBonus;
         }
 
-        int comboBonus = _comboModel.GetComboBonus();
 
-        // 추가 : 홍정옥
-        // 내용 : CommonStatus와 OutLevel에서 PlayerModel에 반영된 Attack을 전투 데미지에 연결
-        float playerAttack = _playerModel != null ? _playerModel.Attack : 0f;
-        float dmg = playerAttack + baseDmg + comboBonus;
- 
-        var stats = _characterRepo.GetCharacterStatus(1);
- 
-        // 치명타 (기본 25% 추가 데미지)
-        if (Random.value < stats.CriticalRate)
-            dmg *= 1.25f;
- 
-        // 비율 관통은 몬스터 Defense 적용 시 사용 (MonsterAI.TakeDamage에서 처리)
- 
-        return Mathf.Max(1, Mathf.RoundToInt(dmg));
+        return baseDmg;
     }
  
     public void EnableAutoAttack()
@@ -129,11 +145,29 @@ public class CombatSystem : MonoBehaviour
         _autoAttackEnabled = true;
     }
 
-    private void ResolveRepository()
+    private void ResolveCharacterRepository()
     {
         if (_characterRepo != null) return;
-        if (Legacy_DataManager.Instance == null) return;
+        if (DataManager.Instance == null) return;
 
-        _characterRepo = Legacy_DataManager.Instance.CharacterRepo;
+        _characterRepo = DataManager.Instance.CharacterRepo;
+    }
+    
+    private void ResolveSpellRepository()
+    {
+        if (_spellRepo != null) return;
+        if (DataManager.Instance == null) return;
+
+        _spellRepo = DataManager.Instance.SpellRepo;
+    }
+
+    private bool GetIsHitCritical(float criRate)
+    {
+        float criChance = Random.Range(0, 1f);
+        if (criChance <= criRate)
+        {
+            return true;
+        }
+        return false;
     }
 }

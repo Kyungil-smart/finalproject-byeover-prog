@@ -7,11 +7,13 @@ using UnityEngine;
 
 public static class SafeAreaUtility
 {
+    // 현재 기기의 Screen.safeArea를 지정된 가장자리 옵션에 맞춰 SafeAreaInfo로 변환한다.
     public static SafeAreaInfo GetCurrentInfo(SafeAreaEdges edges = SafeAreaEdges.All)
     {
         return CreateInfo(Screen.safeArea, Screen.width, Screen.height, edges);
     }
 
+    // 입력받은 Safe Area 픽셀 Rect를 UI Anchor와 Insets 값으로 변환한다.
     public static SafeAreaInfo CreateInfo(Rect safeArea, int screenWidth, int screenHeight, SafeAreaEdges edges)
     {
         Rect fullArea = new Rect(0f, 0f, screenWidth, screenHeight);
@@ -51,6 +53,7 @@ public static class SafeAreaUtility
             new Vector2Int(screenWidth, screenHeight));
     }
 
+    // 계산된 Safe Area Anchor를 RectTransform에 적용한다.
     public static void ApplyTo(RectTransform rect, SafeAreaInfo info)
     {
         if (rect == null) return;
@@ -61,6 +64,7 @@ public static class SafeAreaUtility
         rect.offsetMax = Vector2.zero;
     }
 
+    // 선택된 가장자리만 Safe Area로 제한하고 나머지는 전체 화면 영역을 유지한다.
     private static Rect ApplyEdges(Rect safeArea, Rect fullArea, SafeAreaEdges edges)
     {
         float xMin = HasEdge(edges, SafeAreaEdges.Left) ? safeArea.xMin : fullArea.xMin;
@@ -71,6 +75,7 @@ public static class SafeAreaUtility
         return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
     }
 
+    // 플래그에 특정 가장자리 적용 값이 포함되어 있는지 확인한다.
     private static bool HasEdge(SafeAreaEdges edges, SafeAreaEdges edge)
     {
         return (edges & edge) == edge;

@@ -57,13 +57,13 @@ public class DataManager : MonoBehaviour
     [SerializeField] private CharacterRepo _characterRepo;
     [SerializeField] private StageRepo _stageRepo;
     [SerializeField] private ConfigRepo _configRepo;
-    //[SerializeField] private SpellRepo _spellRepo; 해당 부분은 아직 기획이 넘어오지 않은 Legacy DB임
+    [SerializeField] private SpellRepo _spellRepo; //해당 부분은 아직 기획이 넘어오지 않은 Legacy DB임
     
     // ---------- Public ----------
     public CharacterRepo CharacterRepo => _characterRepo;
     public StageRepo StageRepo => _stageRepo;
     public ConfigRepo ConfigRepo => _configRepo;
-    //public SpellRepo SpellRepo => _spellRepo;
+    public SpellRepo SpellRepo => _spellRepo;
     
     private void Awake()
     {
@@ -99,7 +99,7 @@ public class DataManager : MonoBehaviour
         InitializeRepo(nameof(_characterRepo), _characterRepo, () => _characterRepo.Initialize());
         InitializeRepo(nameof(_stageRepo), _stageRepo, () => _stageRepo.Initialize());
         InitializeRepo(nameof(_configRepo), _configRepo, () => _configRepo.Initialize());
-        //InitializeRepo(nameof(_spellRepo), _spellRepo, () => _spellRepo.Initialize());
+        InitializeRepo(nameof(_spellRepo), _spellRepo, () => _spellRepo.Initialize());
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");

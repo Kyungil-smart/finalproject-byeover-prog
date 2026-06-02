@@ -13,6 +13,9 @@
 // 4차 수정자 : 김영찬
 // DataManager 최신화 중 기존 연결을 Legacy로 변경
 
+// 5차 수정자 : 김영찬
+// 플레이어 스텟 초기화 시 CharacterStatus 반영하도록 수정
+
 using UnityEngine;
 
 /// <summary>
@@ -52,14 +55,15 @@ public class InGameBootstrap : MonoBehaviour
         }
 
         // [3] Model 초기화
-        var playerStats = Legacy_DataManager.Instance.CharacterRepo.GetCommonStatus(1);
-        _playerModel.Initialize(playerStats);
+        var commonStatus = DataManager.Instance.CharacterRepo.GetCommonStatus(1);
+        var characterStatus = DataManager.Instance.CharacterRepo.GetCharacterStatus(1);
+        _playerModel.Initialize(commonStatus, characterStatus);
 
         // 아웃게임 성장 보너스 적용 (홍정옥)
         int characterLevel = GetCharacterLevel();
-        Legacy_DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
+        DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
             out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus);
-        _playerModel.ApplyStatBonus(hpBonus, attackBonus, stunBonus, slowBonus);
+        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, stunBonus, slowBonus);
 
         _combinationModel.Initialize();
         _enchantModel.Initialize();

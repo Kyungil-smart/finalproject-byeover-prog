@@ -8,7 +8,10 @@
 // 수정내용 : ConfigRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
 
 // 수정자 : 김영찬
-// DataManager 최신화 중 기존 연결을 Legacy로 변경
+// DataManager 최신화 중 기존 연결을 Legacy로 변경 및 최신화 완료
+
+// 수정자 : 김영찬
+// 몬스터 사망 시 획득 Exp와 연결 완료
 
 using System;
 using UnityEngine;
@@ -26,12 +29,11 @@ public class InGameGrowthSystem : MonoBehaviour
     [Header("참조")]
     [SerializeField] private MonsterSpawner _spawner;
     [SerializeField] private ScreenNavigator _navigator;
-    [SerializeField] private Legacy_ConfigRepo _configRepo;
+    [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private PlayerModel _playerModel;
  
     [Header("설정")]
     [SerializeField] private int _maxLevel = 30;
-    [SerializeField] private int _baseExpPerKill = 50;
  
     // ---------- 데이터 ----------
     public int CurrentLevel { get; private set; }
@@ -67,9 +69,12 @@ public class InGameGrowthSystem : MonoBehaviour
             _spawner.OnMonsterDied -= HandleMonsterDied;
     }
  
-    private void HandleMonsterDied(MonsterAI monster)
+    private void HandleMonsterDied(MonsterAI monster, bool isKamikaze = false)
     {
-        AddEXP(_baseExpPerKill);
+        if (!isKamikaze)
+        {
+            AddEXP(monster.Exp);
+        }
     }
  
     public void AddEXP(int amount)
@@ -129,8 +134,8 @@ public class InGameGrowthSystem : MonoBehaviour
     private void ResolveRepository()
     {
         if (_configRepo != null) return;
-        if (Legacy_DataManager.Instance == null) return;
+        if (DataManager.Instance == null) return;
 
-        _configRepo = Legacy_DataManager.Instance.ConfigRepo;
+        _configRepo = DataManager.Instance.ConfigRepo;
     }
 }
