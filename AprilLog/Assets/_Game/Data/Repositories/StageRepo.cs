@@ -3,7 +3,7 @@
 
 // 수정자 : 김영찬
 // 최신 DB에 맞춰 테이블 갱신
-// 최종 수정일 : 26.05.29
+// 최종 수정일 : 26.06.02
 
 using System;
 using System.Collections.Generic;
@@ -195,6 +195,22 @@ public class StageRepo : MonoBehaviour
 
         Debug.LogWarning($"[StageRepo] Special Wave Rule not found. Id: {id}");
         return null;
+    }
+    
+    public int GetMonsterPoolId(int wavePoolId, string type)
+    {
+        if (_poolMasters == null) return -1;
+        
+        foreach (var data in _poolMasters.Values)
+        {
+            if (data.MonsterWavePool_ID == wavePoolId && data.MonsterPoolType == type)
+            {
+                return data.MonsterPool_ID;
+            }
+        }
+
+        Debug.LogWarning($"[StageRepo] 매칭되는 MonsterPool_ID를 찾을 수 없습니다! WavePool_ID: {wavePoolId}, Type: {type}");
+        return -1; // 실패 시 -1 반환
     }
 
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(
