@@ -1,6 +1,7 @@
 // 담당자 : 최동훈
 // 설명   : Sort 퍼즐 View -- 슬롯 표시 + 드래그 피드백
 
+using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
@@ -42,6 +43,24 @@ public class SortTableView : MonoBehaviour, ISortTableView
         SetupSlotPositions();
     }
 
+    private void OnEnable()
+    {
+        if (_hintSystem != null)
+        {
+            _hintSystem.OnHintShow += ShowHint;
+            _hintSystem.OnHintWaiting += ShowWaitingHint;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (_hintSystem != null)
+        {
+            _hintSystem.OnHintShow -= ShowHint;
+            _hintSystem.OnHintWaiting -= ShowWaitingHint;
+        }
+    }
+
     private void OnDestroy()
     {
         _presenter?.Dispose();
@@ -76,7 +95,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
         var sr = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
         if (sr != null && unitType >= 0 && unitType < _unitSprites.Length)
         {
-            Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
+            // Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
             sr.sprite = _unitSprites[unitType];
             sr.enabled = true;
             sr.color = Color.white;
@@ -91,7 +110,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
         var sr = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
         if (sr != null)
         {
-            Debug.Log($"[뷰] {tableIdx}, {slotIdx} 삭제! (sr.enabled = false)");
+            // Debug.Log($"[뷰] {tableIdx}, {slotIdx} 삭제! (sr.enabled = false)");
             sr.sprite = null;
             sr.color = Color.clear;
             sr.enabled = false;
@@ -127,7 +146,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
         }
     }
 
-    public void HideDragFeedback() 
+    public void HideDragFeedback()
     {
         if (_dragFeedbackSR != null)
         {
@@ -149,7 +168,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
         {
             int slotIdx = baseSlotIdx + i;
             if (slotIdx < 0 || slotIdx >= _waitingSlots.Length) continue;
-            Debug.Log($"[매칭확인] 모델 대기열 {waitingIdx}번의 {i}번 유닛(타입:{combo.unitTypes[i]}) -> 뷰 슬롯 {slotIdx}번으로 배치");
+            //Debug.Log($"[매칭확인] 모델 대기열 {waitingIdx}번의 {i}번 유닛(타입:{combo.unitTypes[i]}) -> 뷰 슬롯 {slotIdx}번으로 배치");
             var sr = _waitingSlots[slotIdx].GetComponent<SpriteRenderer>();
             if (sr == null) continue;
 
@@ -167,6 +186,27 @@ public class SortTableView : MonoBehaviour, ISortTableView
         }
     }
     public void ResetBoard() { /* 전체 초기화 연출 */ }
-    public void ShowHint(int tableIdx, int slotIdx) { /* 유닛 흔들기 */ }
-    public void ShowWaitingHint() { /* 대기열 흔들기 */ }
+
+    public void ShowHint(int tableIdx, int slotIdx)
+    {
+        int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
+
+        if (idx < 0 || idx >= _puzzleSlots.Length) return;
+
+        Vector3 originalPos = _puzzleSlots[idx].transform.position;
+
+        _puzzleSlots[idx].transform.DOShakePosition(0.5f, 0.2f, 10, 90f)
+            .OnComplete(() => {
+                _puzzleSlots[idx].transform.position = originalPos;
+            });
+    }
+
+    public void ShowWaitingHint()
+    {
+        foreach (var slot in _waitingSlots)
+        {
+            if (slot != null)
+                slot.transform.DOShakePosition(0.5f, 0.1f);
+        }
+    }
 }

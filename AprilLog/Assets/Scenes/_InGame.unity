@@ -896,11 +896,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e62eb62db1dda54dbfcbe4ae4b57173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OptionView
-  _navigator: {fileID: 1955512119}
   _localization: {fileID: 0}
+  _masterSlider: {fileID: 0}
   _bgmSlider: {fileID: 0}
   _sfxSlider: {fileID: 0}
-  _langButton: {fileID: 0}
+  _korButton: {fileID: 0}
+  _engButton: {fileID: 0}
+  _selectedLangColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  _deselectedLangColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+  _logoutButton: {fileID: 0}
+  _deleteAccountButton: {fileID: 0}
+  _confirmDeletePanel: {fileID: 0}
+  _confirmDeleteYesButton: {fileID: 0}
+  _confirmDeleteNoButton: {fileID: 0}
   _closeButton: {fileID: 0}
 --- !u!1 &242579486
 GameObject:
@@ -1602,6 +1610,7 @@ MonoBehaviour:
   _combinationModel: {fileID: 830662636}
   _playerModel: {fileID: 1508674580}
   _characterRepo: {fileID: 0}
+  _spellRepo: {fileID: 0}
   _autoAttackEnabled: 0
   _autoAttackInterval: 1
 --- !u!1 &471475215
@@ -1776,7 +1785,7 @@ MonoBehaviour:
   _visibleTimeLimit: 5
   _coyoteTime: 0.5
   _maxBonusCombo: 10
-  _bonusPerCombo: 10
+  _bonusPerComboRate: 1.02
 --- !u!1 &574105924
 GameObject:
   m_ObjectHideFlags: 0
@@ -3108,7 +3117,6 @@ MonoBehaviour:
   _configRepo: {fileID: 0}
   _playerModel: {fileID: 1508674580}
   _maxLevel: 30
-  _baseExpPerKill: 50
 --- !u!1 &902383662
 GameObject:
   m_ObjectHideFlags: 0
@@ -5377,10 +5385,18 @@ MonoBehaviour:
   - {fileID: 44186731}
   - {fileID: 164679932}
   _waitingSlots:
-  - {fileID: 940050324}
-  - {fileID: 1200904844}
-  - {fileID: 1896008135}
-  - {fileID: 902383663}
+  - {fileID: 1571638960}
+  - {fileID: 34656062}
+  - {fileID: 2037390678}
+  - {fileID: 541064116}
+  - {fileID: 87017089}
+  - {fileID: 70737338}
+  - {fileID: 242579487}
+  - {fileID: 1649179310}
+  - {fileID: 1448370838}
+  - {fileID: 248267570}
+  - {fileID: 1650118365}
+  - {fileID: 636011201}
   _unitSprites:
   - {fileID: 21300000, guid: 9279500b732921b418d2f48c9db7e46f, type: 3}
   - {fileID: 21300000, guid: 56c4fd6b74e6ab94e811f96a72b68fe8, type: 3}
