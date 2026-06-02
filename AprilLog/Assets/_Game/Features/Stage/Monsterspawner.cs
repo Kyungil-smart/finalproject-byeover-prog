@@ -33,10 +33,11 @@ public class MonsterSpawner : MonoBehaviour
     [Tooltip("화면 상단 밖 스폰 포인트 7개 (왼->오)")]
     [SerializeField] private Transform[] _spawnPoints;
 
-    [Header("공격 타겟 선택")]
-    [Tooltip("같은 라인으로 판단할 Y 좌표 오차")]
-    [SerializeField] private float _sameLineYThreshold = 0.05f;
+    [Header("참조")]
+    [Tooltip("스폰된 몬스터가 공격할 플레이어. 비어 있으면 런타임에 자동 탐색")]
+    [SerializeField] private PlayerModel _playerModel;
 
+    [Header("공격 타겟 선택")]
     [Tooltip("같은 거리로 판단할 제곱거리 오차")]
     [SerializeField] private float _distanceTieThreshold = 0.0001f;
 
@@ -138,30 +139,96 @@ public class MonsterSpawner : MonoBehaviour
     // ---------- 스폰 ----------
     private void SpawnOne(ref SpawnTracker tracker)
     {
-        // 풀에서 가중치 기반으로 몬스터 뽑기
-        int monsterId = Legacy_DataManager.Instance.StageRepo.PickMonsterFromPool(tracker.rule.MonsterPool_ID, _rng);
-        if (monsterId < 0) return;
+        // 풀에서 가중치 기반으로 몬스터(Character_ID) 뽑기
+        int characterId = Legacy_DataManager.Instance.StageRepo.PickMonsterFromPool(tracker.rule.MonsterPool_ID, _rng);
+        if (characterId < 0) return;
 
         // 스폰 위치 결정
         int pointIdx = GetSpawnPointIndex(tracker.rule.SpawnPositionType);
         Vector3 pos = _spawnPoints[pointIdx].position;
 
-        string poolKey = $"Monster_{monsterId}";
-        var obj = PoolManager.Instance.Spawn(poolKey, pos, Quaternion.identity);
-        if (obj == null) return;
-
-        var ai = obj.GetComponent<MonsterAI>();
+        // 실제 스폰/초기화는 공통 API에 위임
+        var ai = SpawnMonster(characterId, pos);
         if (ai == null) return;
-
-        var characterRepo = Legacy_DataManager.Instance.CharacterRepo;
-        var stats = characterRepo.GetCommonStatus(monsterId);
-        var monsterStats = characterRepo.GetMonsterStatus(monsterId);
-        ai.Initialize(stats, monsterStats, monsterId);
-        ai.OnDeath += HandleMonsterDeath;
 
         tracker.aliveCount++;
         tracker.spawnedThisWave++;
+    }
+
+    /// <summary>
+    /// Character_ID 하나로 몬스터 1마리를 스폰하는 단일 진입점.
+    /// 프리팹(풀키)·스탯·플레이어 참조를 모두 데이터/싱글톤에서 조회해 초기화하고
+    /// alive 목록·사망 이벤트까지 연결한다. (일반 스폰/보스/특수웨이브/테스트 공용)
+    /// </summary>
+    /// <summary>
+    /// 스폰 위치를 내부에서 선택하는 오버로드.
+    /// StageModel의 OnSpawnRequested(데이터 구동) 경로가 사용한다.
+    /// </summary>
+    public MonsterAI SpawnMonster(int characterId)
+    {
+        return SpawnMonster(characterId, PickSpawnPosition());
+    }
+
+    public MonsterAI SpawnMonster(int characterId, Vector3 position)
+    {
+        var characterRepo = DataManager.Instance.CharacterRepo;
+        var stats = characterRepo.GetCommonStatus(characterId);
+        var monsterStats = characterRepo.GetMonsterStatus(characterId);
+
+        string poolKey = ResolveMonsterPoolKey(characterId, monsterStats);
+
+        var obj = PoolManager.Instance.Spawn(poolKey, position, Quaternion.identity);
+        if (obj == null)
+        {
+            Debug.LogWarning($"[Spawner] 풀 '{poolKey}'에서 몬스터 스폰 실패. Character_ID: {characterId}");
+            return null;
+        }
+
+        var ai = obj.GetComponent<MonsterAI>();
+        if (ai == null)
+        {
+            Debug.LogError($"[Spawner] '{poolKey}' 프리팹에 MonsterAI가 없습니다. Character_ID: {characterId}");
+            return null;
+        }
+
+        ai.Initialize(stats, monsterStats, characterId);
+        ai.SetPlayerModel(ResolvePlayerModel());
+        ai.OnDeath += HandleMonsterDeath;
         _aliveMonsters.Add(ai);
+
+        return ai;
+    }
+
+    /// <summary>
+    /// Character_ID → 오브젝트 풀 키.
+    /// 1순위: 몬스터 데이터(MonsterStatusData.PrefabKey)에 지정된 값
+    /// 2순위: 비어 있으면 "Monster_{Character_ID}" 관례로 폴백
+    /// </summary>
+    private static string ResolveMonsterPoolKey(int characterId, MonsterStatusData monsterStats)
+    {
+        if (monsterStats != null && !string.IsNullOrEmpty(monsterStats.PrefabKey))
+            return monsterStats.PrefabKey;
+
+        return $"Monster_{characterId}";
+    }
+
+    private PlayerModel ResolvePlayerModel()
+    {
+        if (_playerModel == null)
+            _playerModel = FindFirstObjectByType<PlayerModel>();
+
+        return _playerModel;
+    }
+
+    // 스폰 포인트 7개 중 무작위 위치 선택 (위치 미지정 스폰용)
+    private Vector3 PickSpawnPosition()
+    {
+        if (_spawnPoints == null || _spawnPoints.Length == 0)
+            return Vector3.zero;
+
+        _rng ??= new System.Random();
+        int idx = _rng.Next(0, _spawnPoints.Length);
+        return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
     }
 
     private int GetSpawnPointIndex(string posType)
@@ -197,7 +264,10 @@ public class MonsterSpawner : MonoBehaviour
         }
 
         OnMonsterDied?.Invoke(monster, isKamikaze);
-        string poolKey = $"Monster_{monster.MonsterID}";
+
+        // 스폰 때와 동일한 키 해석을 써야 풀이 어긋나지 않는다.
+        var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
+        string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
         PoolManager.Instance.Despawn(poolKey, monster.gameObject);
     }
 
@@ -244,9 +314,11 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 타겟 우선순위:
-    /// 1. 현재 후보와 같은 Y 라인이면 왼쪽 몬스터 우선
-    /// 2. 같은 라인이 아니면 제곱거리 기준으로 가까운 몬스터 우선
+    /// 타겟 우선순위 (전투 기획 5-3):
+    /// 1. 거리가 가장 가까운 몬스터
+    /// 2. 거리가 같을 때 → 좌측(작은 x) 우선
+    /// 3. 위치가 완전 동일할 때 → 먼저 스폰된 몬스터 우선
+    ///    (_aliveMonsters는 스폰 순서대로 추가되고, 더 나을 때만 교체하므로 먼저 들어온 것이 유지됨)
     /// </summary>
     private bool IsBetterAttackTarget(
         Vector2 candidatePos,
@@ -257,20 +329,20 @@ public class MonsterSpawner : MonoBehaviour
         if (currentBest == null)
             return true;
 
-        Vector2 bestPos = currentBest.transform.position;
-        bool sameLine = Mathf.Abs(candidatePos.y - bestPos.y) <= _sameLineYThreshold;
-        if (sameLine)
-        {
-            if (candidatePos.x < bestPos.x)
-                return true;
-
-            if (candidatePos.x > bestPos.x)
-                return false;
-        }
-
+        // 1순위: 더 가까운 몬스터
         if (candidateDistSqr < currentBestDistSqr - _distanceTieThreshold)
             return true;
+        if (candidateDistSqr > currentBestDistSqr + _distanceTieThreshold)
+            return false;
 
+        // 거리가 같을 때 → 2순위: 좌측 우선
+        Vector2 bestPos = currentBest.transform.position;
+        if (candidatePos.x < bestPos.x)
+            return true;
+        if (candidatePos.x > bestPos.x)
+            return false;
+
+        // 위치 완전 동일 → 3순위: 먼저 스폰된 것 유지
         return false;
     }
 }

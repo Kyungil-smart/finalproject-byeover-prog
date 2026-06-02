@@ -80,7 +80,8 @@ public class StageLoopManager : MonoBehaviour
         }
 
         OnStageChanged?.Invoke(_currentStageIndex);
-        
+
+        // 웨이브 수는 StageModel이 데이터(StageWaveRuleData 목록)에서 직접 산출한다.
         _bootstrapper.InitAndStart(stageData, _rng, ClearStage);
     }
 

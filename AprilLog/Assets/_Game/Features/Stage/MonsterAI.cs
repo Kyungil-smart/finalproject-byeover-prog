@@ -188,8 +188,11 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     public void RangeAttack(int damage)
     {
-        // 투사체를 소환해서 발사
-        // ToDo : ProjectileController 정비 되면 착수
+        // 기획상 투사체를 발사해야 하나, 몬스터 투사체 연출은 후속 작업.
+        // 현재는 사거리에서 멈춘 뒤 방어선에 데미지를 적용해 원거리 몬스터가
+        // 실제로 플레이어를 위협하도록 한다. (투사체 ToDo: ProjectileController 연동)
+        if (_playerModel != null)
+            _playerModel.TakeDamage(damage);
     }
 
     private void KamikazeAttack(int damage)
@@ -223,7 +226,8 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         
         // Final_Damage = Base_Damage x { 1 - Effective_Armor / (100 + Effective_Armor) }
         int penetration = 0; // Todo : 데모때는 관통 없음. CBT때 시트 수정 예정
-        int effectiveArmor = _defense - penetration;
+        // 유효 방어력 하한 0 (관통이 방어력보다 커도 데미지가 증폭되지 않도록, 기획 2-4-4)
+        int effectiveArmor = Mathf.Max(0, _defense - penetration);
         int finalDamage = Mathf.FloorToInt(baseDamage * (1 - effectiveArmor / (float)(100 + effectiveArmor)));
         
         CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);

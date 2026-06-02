@@ -42,8 +42,7 @@ public class CombatSystem : MonoBehaviour
     // ---------- Private ----------
     private ISortNotifier _sortNotifier;
     private float _autoAttackTimer;
-    private const double BASE_CRITIAL_DAMAGE = 1.2d;
- 
+
     private void Awake()
     {
         _sortNotifier = _sortSystemObj as ISortNotifier;
@@ -119,24 +118,20 @@ public class CombatSystem : MonoBehaviour
     public float CalculateDamage(float skillDmgRate)
     {
         // 데미지 공식에 필요한 필드 정리
-        float attack = _playerModel != null ? _playerModel.Attack : 1; // ATK x ( 1 + Stat_ATK_Enchant / 100)
-        float criRate = _playerModel != null ? _playerModel.CriticalRate : 0; // CriticalModifier
-        float criDamage = _playerModel != null ? _playerModel.CriticalDamage + (float)BASE_CRITIAL_DAMAGE : (float)BASE_CRITIAL_DAMAGE; // CriticalModifier
+        float attack = _playerModel != null ? _playerModel.Attack : 1; // ATK (Stat_ATK_Enchant는 PlayerModel.Attack에 반영됨)
+        float criRate = _playerModel != null ? _playerModel.CriticalRate : 0; // 치명타 확률 0~1
+        float critDamageStat = _playerModel != null ? _playerModel.CriticalDamage : 0f; // Stat_Crit_Damage_Enchant(%)
         float comboBonus = (float)_comboModel.GetComboBonusRate(); // ComboModifier
-        float baseDmg;
-        
-        // Base_Damage = [ ATK x ( 1 + Stat_ATK_Enchant / 100) x (1 + Skill_Enchant/100) x (1+ Group_Bonus / 100) x CriticalModifier x ComboModifier]
-        //                                                         L 매게변수                  L 이부분은 SkillSystem에서 후보정
-        if (GetIsHitCritical(criRate))
-        {
-            baseDmg = attack * skillDmgRate * comboBonus * criDamage;
-        }
-        else
-        {
-            baseDmg = attack * skillDmgRate * comboBonus;
-        }
 
+        // CriticalModifier (데미지 공식 1.01 기준)
+        //   미발생 = 1.0 / 발생 = 1 + 0.2 × ((100 + Stat_Crit_Damage_Enchant) / 100)
+        float critModifier = GetIsHitCritical(criRate)
+            ? 1f + 0.2f * ((100f + critDamageStat) / 100f)
+            : 1f;
 
+        // Base_Damage = ATK × skillDmgRate(=1 + Skill_Enchant/100) × ComboModifier × CriticalModifier
+        //   (1 + Group_Bonus/100) 항은 데미지 그룹 데이터 미정의로 SkillSystem에서 후보정 ToDo로 남김
+        float baseDmg = attack * skillDmgRate * comboBonus * critModifier;
         return baseDmg;
     }
  

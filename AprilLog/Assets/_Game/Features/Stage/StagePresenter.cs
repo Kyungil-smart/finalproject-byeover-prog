@@ -45,7 +45,8 @@ public class StagePresenter
     // ---------- 이벤트 핸들러 ----------
     private void HandleWaveStarted(int waveIndex, int totalWaves)
     {
-        _spawner.StartWave(_stageData.Stage_ID, waveIndex, totalWaves, _rng);
+        // 스폰은 StageModel이 OnSpawnRequested로 직접 구동한다.
+        // 여기서는 HUD 등 웨이브 시작 훅으로만 사용(현재 비움).
     }
 
     private void HandleWaveStopped()

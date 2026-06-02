@@ -81,8 +81,11 @@ public class ComboModel : MonoBehaviour
 
     public double GetComboBonusRate()
     {
+        // 콤보 데미지 배율. 콤보 0이면 1.0(보너스 없음)에서 시작해
+        // 콤보 1개당 (_bonusPerComboRate - 1)만큼 가산, 최대 _maxBonusCombo까지.
+        // 예) rate=1.02 → 콤보 10에서 1 + 10*0.02 = 1.2배.
         int effective = Mathf.Min(CurrentCombo, _maxBonusCombo);
-        return effective * _bonusPerComboRate;
+        return 1d + effective * (_bonusPerComboRate - 1d);
     }
 
     public void ResetForNewChapter()
