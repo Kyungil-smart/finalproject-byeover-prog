@@ -1,5 +1,5 @@
 // 담당자 : 조규민
-// 구현원리 : UGUI와 TextMeshPro 컴포넌트 입력을 이벤트로 변환하고, Presenter가 요청한 표시 상태만 화면에 반영한다.
+// 구현원리 : UGUI와 TextMeshPro 컴포넌트 입력을 이벤트로 변환하고, Presenter가 요청한 표시 상태와 기존 계정 로그인 버튼 자동 생성 및 앱 버전 표시를 화면에 반영한다.
 
 using System;
 using TMPro;
@@ -12,6 +12,7 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 {
     public event Action OnGuestLoginClicked;
     public event Action<string, string> OnGoogleLoginClicked;
+    public event Action<string, string> OnExistingAccountLoginClicked;
     public event Action<string, string> OnRegisterClicked;
     public event Action<bool> OnTermsAgreementChanged;
     public event Action OnTermsConfirmed; // 약관 확인 버튼 입력을 Presenter로 전달한다.
@@ -21,6 +22,7 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     [Header("버튼")]
     [SerializeField] private Button _guestLoginButton;
     [SerializeField] private Button _googleLoginButton;
+    [SerializeField] private Button _existingAccountLoginButton;
     [SerializeField] private Button _registerButton;
     [SerializeField] private Button _termsPopupButton;
     [SerializeField] private Button _popupCloseButton;
@@ -54,6 +56,7 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 
         if (_guestLoginButton != null || _googleLoginButton != null || _termsToggle != null || _popupPanel != null)
         {
+            EnsureExistingAccountLoginButton();
             BindButtons();
             ValidateRequiredReferences();
             PrepareInputFields();
@@ -61,7 +64,13 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
             HidePopup();
             HideRegisterPanel();
             SetLoading(false);
+            SetAppVersionText(Application.version);
         }
+    }
+
+    private void OnEnable()
+    {
+        SetAppVersionText(Application.version);
     }
 
     // 모든 Awake 이후 GameManager가 준비된 상태에서 Presenter를 연결한다.
@@ -86,6 +95,9 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         if (_googleLoginButton != null)
             _googleLoginButton.onClick.AddListener(NotifyGoogleLoginClicked);
 
+        if (_existingAccountLoginButton != null)
+            _existingAccountLoginButton.onClick.AddListener(NotifyExistingAccountLoginClicked);
+
         if (_registerButton != null)
             _registerButton.onClick.AddListener(NotifyRegisterClicked);
 
@@ -106,6 +118,43 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
             _passwordInputField.onSelect.AddListener(ActivatePasswordInputField);
     }
 
+    // 기존 계정 로그인 버튼이 씬에 없으면 회원가입 버튼을 복제해 런타임에 생성한다.
+    private void EnsureExistingAccountLoginButton()
+    {
+        if (_existingAccountLoginButton != null || _registerButton == null)
+        {
+            return;
+        }
+
+        Button clonedButton = Instantiate(_registerButton, _registerButton.transform.parent);
+        clonedButton.name = "ExistingAccountLoginButton";
+        clonedButton.onClick.RemoveAllListeners();
+        _existingAccountLoginButton = clonedButton;
+
+        RectTransform clonedRectTransform = clonedButton.GetComponent<RectTransform>();
+        if (clonedRectTransform != null)
+        {
+            clonedRectTransform.anchorMin = new Vector2(0.5f, 0.29f);
+            clonedRectTransform.anchorMax = new Vector2(0.5f, 0.29f);
+            clonedRectTransform.anchoredPosition = Vector2.zero;
+            clonedRectTransform.sizeDelta = new Vector2(933.3333f, 106f);
+        }
+
+        Image buttonImage = clonedButton.GetComponent<Image>();
+        if (buttonImage != null)
+        {
+            buttonImage.color = new Color(0.18f, 0.38f, 0.72f, 1f);
+        }
+
+        TMP_Text labelText = clonedButton.GetComponentInChildren<TMP_Text>(true);
+        if (labelText != null)
+        {
+            labelText.SetText("로그인");
+        }
+
+        clonedButton.gameObject.SetActive(true);
+    }
+
     // View 파괴 시 Unity UI 리스너를 제거한다.
     private void UnbindButtons()
     {
@@ -114,6 +163,9 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 
         if (_googleLoginButton != null)
             _googleLoginButton.onClick.RemoveListener(NotifyGoogleLoginClicked);
+
+        if (_existingAccountLoginButton != null)
+            _existingAccountLoginButton.onClick.RemoveListener(NotifyExistingAccountLoginClicked);
 
         if (_registerButton != null)
             _registerButton.onClick.RemoveListener(NotifyRegisterClicked);
@@ -258,6 +310,14 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         OnGoogleLoginClicked?.Invoke(playerId, password);
     }
 
+    // 기존 계정 로그인 입력 필드 값을 Presenter로 전달한다.
+    private void NotifyExistingAccountLoginClicked()
+    {
+        string playerId = _playerIdInputField != null ? _playerIdInputField.text : string.Empty;
+        string password = _passwordInputField != null ? _passwordInputField.text : string.Empty;
+        OnExistingAccountLoginClicked?.Invoke(playerId, password);
+    }
+
     // 회원가입 입력 필드 값을 Presenter로 전달한다.
     private void NotifyRegisterClicked()
     {
@@ -302,6 +362,12 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     {
         if (_googleLoginButton != null)
             _googleLoginButton.interactable = isInteractable;
+    }
+
+    public void SetExistingAccountLoginButtonInteractable(bool isInteractable)
+    {
+        if (_existingAccountLoginButton != null)
+            _existingAccountLoginButton.interactable = isInteractable;
     }
 
     // 회원가입 버튼 입력 가능 여부를 제어한다.
@@ -365,11 +431,20 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     // 앱 버전과 인증 성공 UID를 화면에 표시한다.
     public void SetAccountInfo(string appVersion, string uid)
     {
-        if (_appVersionText != null)
-            _appVersionText.text = "v" + appVersion;
+        SetAppVersionText(appVersion);
 
         if (_uidText != null)
             _uidText.SetText(string.IsNullOrEmpty(uid) ? string.Empty : "UID: " + uid);
+    }
+
+    private void SetAppVersionText(string appVersion)
+    {
+        if (_appVersionText == null)
+        {
+            return;
+        }
+
+        _appVersionText.SetText("v" + appVersion);
     }
 
     // 실패/안내 팝업 메시지를 표시한다.

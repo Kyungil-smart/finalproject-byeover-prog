@@ -1,5 +1,5 @@
 // 담당자 : 조규민
-// 구현원리 : Boot 씬에 배치된 로딩 이미지 UI와 GIF에서 추출한 Sprite 프레임을 순서대로 표시해 로비 씬 진입 전 애니메이션을 재생한다.
+// 구현원리 : Boot 씬에 배치된 로딩 이미지 UI와 GIF에서 추출한 Sprite 프레임을 순서대로 표시하고, 설정된 재생 시간 안에서 로비 진입 전 애니메이션을 재생한다.
 
 using System.Collections;
 using UnityEngine;
@@ -34,7 +34,7 @@ public class BootLoadingVideoView : MonoBehaviour
     private bool _isSkipped;
     private bool _isPlaybackRequested;
 
-    // 추가: 조규민 - 씬 시작 시 로딩 애니메이션 UI가 먼저 보이지 않도록 숨긴다.
+    // 추가: 씬 시작 시 로딩 애니메이션 UI가 먼저 보이지 않도록 숨긴다.
     private void Awake()
     {
         if (_isPlaybackRequested)
@@ -45,7 +45,7 @@ public class BootLoadingVideoView : MonoBehaviour
         Hide();
     }
 
-    // 추가: 조규민 - 로비 진입 전 GIF 프레임 애니메이션을 재생하고 종료될 때까지 대기한다.
+    // 추가: 로비 진입 전 GIF 프레임 애니메이션을 재생하고 종료될 때까지 대기한다.
     public IEnumerator Play()
     {
         if (!CanPlayAnimation())
@@ -62,16 +62,17 @@ public class BootLoadingVideoView : MonoBehaviour
         CleanupPlayback();
     }
 
-    // 추가: 조규민 - Image와 프레임 목록이 연결되어 있는지 확인한다.
+    // 추가: Image와 프레임 목록이 연결되어 있는지 확인한다.
     private bool CanPlayAnimation()
     {
         return _animationImage != null && _animationFrames != null && _animationFrames.Length > 0;
     }
 
-    // 추가: 조규민 - 프레임 목록을 설정된 FPS와 재생 방식에 맞춰 표시한다.
+    // 추가: 프레임 목록을 설정된 FPS와 재생 시간에 맞춰 표시한다.
     private IEnumerator PlayFrames()
     {
         float frameDuration = 1f / Mathf.Max(1f, _framesPerSecond);
+        float maxPlayDuration = Mathf.Max(frameDuration, _playDurationSeconds);
         float elapsedTime = 0f;
         int frameIndex = 0;
 
@@ -83,12 +84,12 @@ public class BootLoadingVideoView : MonoBehaviour
             elapsedTime += frameDuration;
             frameIndex++;
 
-            if (_playOnce && frameIndex >= _animationFrames.Length)
+            if (elapsedTime >= maxPlayDuration)
             {
                 yield break;
             }
 
-            if (!_playOnce && elapsedTime >= _playDurationSeconds)
+            if (_playOnce && frameIndex >= _animationFrames.Length)
             {
                 yield break;
             }
@@ -100,7 +101,7 @@ public class BootLoadingVideoView : MonoBehaviour
         }
     }
 
-    // 추가: 조규민 - 스킵 버튼 이벤트를 연결한다.
+    // 추가: 스킵 버튼 이벤트를 연결한다.
     private void BindSkipButton()
     {
         if (_skipButton == null)
@@ -113,7 +114,7 @@ public class BootLoadingVideoView : MonoBehaviour
         _skipButton.onClick.AddListener(HandleSkipClicked);
     }
 
-    // 추가: 조규민 - 스킵 버튼 입력을 재생 종료 상태로 반영한다.
+    // 추가: 스킵 버튼 입력을 재생 종료 상태로 반영한다.
     private void HandleSkipClicked()
     {
         if (!_allowSkip)
@@ -124,7 +125,7 @@ public class BootLoadingVideoView : MonoBehaviour
         _isSkipped = true;
     }
 
-    // 추가: 조규민 - 스킵 이벤트를 해제하고 UI 상태를 정리한다.
+    // 추가: 스킵 이벤트를 해제하고 UI 상태를 정리한다.
     private void CleanupPlayback()
     {
         if (_skipButton != null)
@@ -136,20 +137,20 @@ public class BootLoadingVideoView : MonoBehaviour
         Hide();
     }
 
-    // 추가: 조규민 - 로딩 애니메이션 UI를 표시한다.
+    // 추가: 로딩 애니메이션 UI를 표시한다.
     private void Show()
     {
         GetRoot().transform.localScale = Vector3.one;
         GetRoot().SetActive(true);
     }
 
-    // 추가: 조규민 - 로딩 애니메이션 UI를 숨긴다.
+    // 추가: 로딩 애니메이션 UI를 숨긴다.
     private void Hide()
     {
         GetRoot().SetActive(false);
     }
 
-    // 추가: 조규민 - 루트가 비어 있으면 현재 GameObject를 로딩 애니메이션 UI 루트로 사용한다.
+    // 추가: 루트가 비어 있으면 현재 GameObject를 로딩 애니메이션 UI 루트로 사용한다.
     private GameObject GetRoot()
     {
         return _root != null ? _root : gameObject;
