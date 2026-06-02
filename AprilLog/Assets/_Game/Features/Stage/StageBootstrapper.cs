@@ -1,7 +1,12 @@
 // 담당자 : 김영찬
 // 웨이브 시스템 초기화 + 조립기
 
+// 수정자 : 김영찬
+// 수정내용 : 데모버전 DB에 맞춰 최신화
+
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -38,7 +43,17 @@ public class StageBootstrapper : MonoBehaviour
             _currentPresenter.Release();
         }
         
-        StageModel newModel = new StageModel(stageData, _loopManager.WaveTransitionDelay);
+        var waveRuleDict = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageData.Stage_ID);
+        
+        if (waveRuleDict == null || waveRuleDict.Count == 0)
+        {
+            Debug.LogError($"[StageBootstrapper] 웨이브 룰을 찾을 수 없습니다. ID: {stageData.Stage_ID}");
+            return;
+        }
+        
+        List<StageWaveRuleData> waveRules = waveRuleDict.Values.ToList();
+        
+        StageModel newModel = new StageModel(stageData, waveRules, rng, _loopManager.WaveTransitionDelay);
         _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
     }
 }
