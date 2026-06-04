@@ -53,9 +53,7 @@ public class StageBootstrapper : MonoBehaviour
         
         List<StageWaveRuleData> waveRules = waveRuleDict.Values.ToList();
         
-        SpecialWaveRuleData specialRule = DataManager.Instance.StageRepo.GetSpecialWaveRuleForStage(stageData.Stage_ID);
-        
-        StageModel newModel = new StageModel(stageData, waveRules, specialRule, rng, _loopManager.WaveTransitionDelay);
+        StageModel newModel = new StageModel(stageData, waveRules, rng, _loopManager.WaveTransitionDelay);
         _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
     }
 }

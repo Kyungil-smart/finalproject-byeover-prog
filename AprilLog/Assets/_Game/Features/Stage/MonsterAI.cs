@@ -16,6 +16,9 @@ using UnityEngine;
 //           2. 몬스터가 정해진 데미지 공식에 의거 방어력에 따라 데미지를 점감 받도록 구현
 //           3. 몬스터가 자폭시에는 Exp를 얻을 수 없도록 수정
 
+// 수정자 : 김영찬
+// 수정 내용 : 몬스터 및 웨이브 관련 DB에 맞춰 소환 로직 최신화 및 책임 분산
+
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
 /// 이동 방식은 IMovementPattern으로 교체 가능.
@@ -25,9 +28,10 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // ---------- 이벤트 ----------
     /// <summary>
     /// 죽은 몬스터와 자폭 여부를 전파<br/>
-    /// true면 자폭한 몬스터
+    /// 앞의 bool = true면 자폭한 몬스터<br/>
+    /// 뒤의 bool = true면 보스 몬스터
     /// </summary>
-    public event Action<MonsterAI, bool> OnDeath;
+    public event Action<MonsterAI, bool, bool> OnDeath;
     public event Action<int, int> OnHPChanged;
 
     // ---------- SerializeField ----------
@@ -64,12 +68,13 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     
     private float _attackTimer;
     private Rect _moveBounds;
+    private bool _isBoss;
 
     // 플레이어 참조 (공격할 때 TakeDamage 호출용)
     private PlayerModel _playerModel;
 
     // ---------- 초기화 ----------
-    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId)
+    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false)
     {
         MonsterID = monsterId;
         MaxHP = stats != null ? stats.MaxHP : 1;
@@ -80,6 +85,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _defense = monsterStats != null ? monsterStats.Defense : 0;
         _range = monsterStats != null ? monsterStats.Range : 1;
         Exp = monsterStats != null ? monsterStats.EXP : 0;
+        _zigzagAmplitude = monsterStats != null ? monsterStats.ZigzagAmplitude : -1;
+        
+        _isBoss = isBoss;
         
         _state = State.Moving;
         _attackTimer = 0f;
@@ -111,6 +119,30 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
         // 이동 범위 (화면 양 끝)
         _moveBounds = new Rect(-3f, -10f, 6f, 20f);
+    }
+    
+    public void ApplyScaling(MonsterStageScalingData scalingData, int accumulateCount)
+    {
+        if (scalingData != null && accumulateCount > 0) // 💡 누적할 게 있을 때만 실행!
+        {
+            // 스케일링 데이터의 수식과 '누적 횟수'를 곱해서 최종 스탯 산출
+            MaxHP = CalculateScaledStat(MaxHP, scalingData.MaxHPGrowthType, scalingData.MaxHPGrowthValue, accumulateCount);
+            _attack = CalculateScaledStat(_attack, scalingData.AttackGrowthType, scalingData.AttackGrowthValue, accumulateCount);
+            _defense = CalculateScaledStat(_defense, scalingData.DefenseGrowthType, scalingData.DefenseGrowthValue, accumulateCount);
+        }
+
+        // 4단계: 버프 배율 (미구현 상태이므로 1.0f)
+        float hpBuffMultiplier = 1.0f;
+        float atkBuffMultiplier = 1.0f;
+        float defBuffMultiplier = 1.0f;
+
+        // 최종 스탯 확정 (스케일링 스탯 * 버프)
+        MaxHP = Mathf.RoundToInt(MaxHP * hpBuffMultiplier);
+        _attack = Mathf.RoundToInt(_attack * atkBuffMultiplier);
+        _defense = Mathf.RoundToInt(_defense * defBuffMultiplier);
+
+        // 현재 체력 리셋
+        CurrentHP = MaxHP; 
     }
 
     public void SetPlayerModel(PlayerModel player)
@@ -200,7 +232,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_playerModel != null)
             _playerModel.TakeDamage(damage);
         _state = State.Dead;
-        OnDeath?.Invoke(this, true);
+        OnDeath?.Invoke(this, true, _isBoss);
     }
 
     private void AttackTypeSelect(int range)
@@ -240,7 +272,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private void Die()
     {
         _state = State.Dead;
-        OnDeath?.Invoke(this, false);
+        OnDeath?.Invoke(this, false, _isBoss);
     }
 
     // ---------- IPoolable ----------
@@ -254,6 +286,30 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         OnDeath = null;
         OnHPChanged = null;
         _playerModel = null;
+    }
+    
+    // ---------- Stat Scaling ----------
+    private int CalculateScaledStat(int baseStat, string growthType, float growthValue, int accumulateCount)
+    {
+        switch (growthType)
+        {
+            case "Add":
+                // 고정 수치 누적 
+                // 수식: 기본스탯 + (증가량 * 누적횟수)
+                // 예: HP 100, 증가량 50, 누적 4회 -> 100 + (50 * 4) = 300
+                return baseStat + Mathf.RoundToInt(growthValue * accumulateCount);
+                
+            case "Rate":
+                // 비율 누적 
+                // 수식: 기본스탯 * (1 + (비율 * 누적횟수)) 복리 대신 단리로 적용 (기획 정석)
+                // 예: HP 100, 증가량 0.1(10%), 누적 4회 -> 100 * (1 + (0.1 * 4)) = 140
+                return Mathf.RoundToInt(baseStat * (1f + (growthValue * accumulateCount)));
+                
+            case "None":
+            default:
+                // 스케일링 없음
+                return baseStat;
+        }
     }
 }
 
