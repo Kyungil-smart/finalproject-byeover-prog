@@ -95,7 +95,8 @@ public class CombatSystem : MonoBehaviour
             _skillSystem.FireBasicAttack();
  
         _combinationModel.CheckIngredient(type);
-        if (_combinationModel.HasCompletedRecipe())
+        // 한 번의 정렬로 여러 조합식이 동시에 완성될 수 있으므로 전부 발동 (최대 레시피 수만큼, 무한루프 가드)
+        for (int guard = 0; guard < 3 && _combinationModel.HasCompletedRecipe(); guard++)
         {
             int idx = _combinationModel.GetCompletedRecipeIndex();
             int skillId = _combinationModel.GetRecipeSkillId(idx);
@@ -105,7 +106,7 @@ public class CombatSystem : MonoBehaviour
                 var combiSkill = _spellRepo.GetSkill(skillId);
                 _skillSystem.FireSkill(combiSkill, AttackType.Combi);
             }
-            
+
             _combinationModel.ConsumeRecipe(idx);
         }
  

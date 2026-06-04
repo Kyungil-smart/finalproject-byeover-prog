@@ -80,7 +80,10 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         MaxHP = stats != null ? stats.MaxHP : 1;
         CurrentHP = MaxHP;
         _attack = stats != null ? stats.Attack : 1;
-        _attackInterval = stats != null ? stats.BaseAttackSpeed : 1.5f;
+        // BaseAttackSpeed는 게이지 충전율(값이 클수록 빠름, 범위 0.01~1).
+        // 공격 간격(초) = 1 / 충전율. (0 이하/누락이면 기본 1.5초)
+        float atkSpeed = stats != null ? stats.BaseAttackSpeed : 0f;
+        _attackInterval = atkSpeed > 0f ? 1f / atkSpeed : 1.5f;
         
         _defense = monsterStats != null ? monsterStats.Defense : 0;
         _range = monsterStats != null ? monsterStats.Range : 1;
@@ -110,18 +113,21 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
             ? monsterStats.MoveSpeed
             : 3f;
 
-        if (monsterStats != null)
+        // 이동 패턴 파싱. Enum.Parse는 빈 값/오타에 예외를 던지므로 TryParse로 안전 처리.
+        // 잘못된/누락 값이면 기본값 Straight. (_movement는 항상 설정해 Update NRE 방지)
+        MoveType moveType = MoveType.Straight;
+        if (monsterStats != null && !string.IsNullOrEmpty(monsterStats.MovementPattern))
+            Enum.TryParse(monsterStats.MovementPattern, out moveType);
+
+        switch (moveType)
         {
-            MoveType moveType = (MoveType)Enum.Parse(typeof(MoveType), monsterStats.MovementPattern);
-            switch (moveType)
-            {
-                case MoveType.Straight:
-                    _movement = new StraightDownMovement(moveSpeed);
-                    break;
-                case MoveType.Zigzag:
-                    _movement = new ZigzagMovement(moveSpeed);
-                    break;
-            }
+            case MoveType.Zigzag:
+                _movement = new ZigzagMovement(moveSpeed);
+                break;
+            case MoveType.Straight:
+            default:
+                _movement = new StraightDownMovement(moveSpeed);
+                break;
         }
 
         // 이동 범위 (화면 양 끝)
@@ -203,7 +209,8 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // ---------- 공격 지원 ----------
     private void AttackSupport()
     {
-        _animator.SetTrigger("Attack");
+        if (_animator != null)
+            _animator.SetTrigger("Attack");
 
         switch (_attackType)
         {

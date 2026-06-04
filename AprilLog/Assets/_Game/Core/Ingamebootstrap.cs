@@ -46,6 +46,10 @@ public class InGameBootstrap : MonoBehaviour
     [Tooltip("투사체 풀 사전 생성 수량")]
     [SerializeField] private int _projectilePoolSize = 20;
 
+    [Header("웨이브")]
+    [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
+    [SerializeField] private int _defaultChapterId = 1;
+
     private GameObject _projectileTemplate;
 
     private void Start()
@@ -101,6 +105,12 @@ public class InGameBootstrap : MonoBehaviour
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();
 
+        // [6] 실제 웨이브 시스템 시작 (데이터 기반). 더미 테스터는 비활성화.
+        int chapterId = (isResume && saveData != null) ? saveData.chapterId : _defaultChapterId;
+        int startStageIndex = (isResume && saveData != null) ? saveData.clearedStage : 0;
+        DisableDummyTester();
+        StartWaveSystem(chapterId, startStageIndex, seed);
+
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }
 
@@ -143,6 +153,34 @@ public class InGameBootstrap : MonoBehaviour
             skillSystem.SetFirePoint(playerView.FirePoint);
         else if (skillSystem == null)
             Debug.LogWarning("[InGameBootstrap] SkillSystem을 찾지 못해 발사점을 연결하지 못했습니다.");
+    }
+
+    // 웨이브 시스템(StageLoopManager+StageBootstrapper)을 보장하고 챕터를 시작한다.
+    // 씬에 없으면 런타임 생성 — 두 컴포넌트가 서로/스포너/플레이어를 자동 탐색해 연결된다.
+    private void StartWaveSystem(int chapterId, int startStageIndex, int seed)
+    {
+        var loop = FindFirstObjectByType<StageLoopManager>();
+        if (loop == null)
+        {
+            var go = new GameObject("WaveSystem");
+            go.AddComponent<StageBootstrapper>();
+            loop = go.AddComponent<StageLoopManager>();
+        }
+
+        loop.StartChapter(chapterId, startStageIndex, seed);
+    }
+
+    // 실제 웨이브로 진행하므로 에디터 테스트용 더미 스포너를 끈다.
+    private void DisableDummyTester()
+    {
+#if UNITY_EDITOR
+        var dummy = FindFirstObjectByType<DummyCombatTester>();
+        if (dummy != null)
+        {
+            dummy.gameObject.SetActive(false);
+            Debug.Log("[InGameBootstrap] 실제 웨이브 시스템 사용 — DummyCombatTester 비활성화.");
+        }
+#endif
     }
 
     // 캐릭터(플레이어) 월드 Y = 카메라 뷰포트 기준 _characterViewportY. 카메라 없으면 폴백.

@@ -32,17 +32,27 @@ public class StageBootstrapper : MonoBehaviour
 
     private void OnDestroy()
     {
-        _currentPresenter.Release();
+        if (_currentPresenter != null)
+            _currentPresenter.Release();
     }
 
     // ---------- 시스템 조립 ----------
     public void InitAndStart(StageData stageData, System.Random rng, Action onStageComplete)
     {
+        // 참조 자동 탐색(씬 배치/런타임 생성 모두 지원)
+        if (_spawner == null) _spawner = FindFirstObjectByType<MonsterSpawner>();
+        if (_loopManager == null) _loopManager = FindFirstObjectByType<StageLoopManager>();
+        if (_spawner == null || _loopManager == null)
+        {
+            Debug.LogError("[StageBootstrapper] MonsterSpawner/StageLoopManager를 찾지 못해 조립할 수 없습니다.");
+            return;
+        }
+
         if (_currentPresenter != null)
         {
             _currentPresenter.Release();
         }
-        
+
         var waveRuleDict = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageData.Stage_ID);
         
         if (waveRuleDict == null || waveRuleDict.Count == 0)

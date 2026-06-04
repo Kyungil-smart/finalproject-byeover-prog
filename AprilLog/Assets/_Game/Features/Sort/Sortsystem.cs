@@ -128,19 +128,22 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         _model.PlaceUnit(table, slot, unit);
     }
 
-    // 드롭한 슬롯이 차있으면 같은 테이블 빈 슬롯 찾기
-    // 우측부터 순환 탐색
+    // 드롭한 슬롯이 차있으면 같은 테이블 빈 슬롯 찾기.
+    // 기획 1-2-5: 드롭 지점에서 가장 가까운 '우측' 슬롯부터 확인, 없으면 좌측으로 폴백.
     private int ResolveDropSlot(int tableIdx, int targetSlot)
     {
         if (_model.GetUnit(tableIdx, targetSlot) < 0)
             return targetSlot;
 
-       for (int offset = 1; offset < SortModel.SLOTS_PER_TABLE; offset++)
-        {
-            int idx = (targetSlot + offset) % SortModel.SLOTS_PER_TABLE;
-            if (_model.GetUnit(tableIdx, idx) < 0)
-                return idx;
-        }
+        // 우측 우선
+        for (int s = targetSlot + 1; s < SortModel.SLOTS_PER_TABLE; s++)
+            if (_model.GetUnit(tableIdx, s) < 0)
+                return s;
+
+        // 우측이 없으면 좌측(앞쪽) 빈 슬롯
+        for (int s = 0; s < targetSlot; s++)
+            if (_model.GetUnit(tableIdx, s) < 0)
+                return s;
 
         return -1;  // 테이블 꽉 참
     }
