@@ -175,33 +175,32 @@ public class SortModel : MonoBehaviour
 
     public List<(int t, int s)> GetHintTargets()
     {
-        var tableStates = new List<(int tableIdx, int unitType, int count)>();
+        var twoMatches = new List<(int tableIdx, int unitType)>();
 
         for (int t = 0; t < TABLE_COUNT; t++)
         {
-            int type = GetHintUnit(t);
-            int count = GetCountInTable(t, type);
-            if (type != -1) tableStates.Add((t, type, count));
+            for (int type = 0; type < UNIT_TYPE_COUNT; type++)
+            {
+                if (GetCountInTable(t, type) == 2)
+                {
+                    twoMatches.Add((t, type));
+                }
+            }
         }
 
-        foreach (var target in tableStates.FindAll(x => x.count == 2))
+        foreach (var target in twoMatches)
         {
-            foreach (var helper in tableStates.FindAll(x => x.count == 1 && x.unitType == target.unitType))
+            for (int helperIdx = 0; helperIdx < TABLE_COUNT; helperIdx++)
             {
-                return CreateTargetList(target.tableIdx, helper.tableIdx, target.unitType);
+                if (target.tableIdx == helperIdx) continue;
+
+                if (GetCountInTable(helperIdx, target.unitType) == 1)
+                {
+                    return CreateTargetList(target.tableIdx, helperIdx, target.unitType);
+                }
             }
         }
         return new List<(int t, int s)>();
-    }
-
-    private int GetHintUnit(int tableIdx)
-    {
-        for (int s = 0; s < SLOTS_PER_TABLE; s++)
-        { 
-            if (GetUnit(tableIdx, s) != -1) return 
-                    GetUnit(tableIdx, s); 
-        }
-        return -1;
     }
 
     private int GetCountInTable(int tableIdx, int unitType)
