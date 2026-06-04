@@ -73,7 +73,7 @@ public class SortModel : MonoBehaviour
     public void SetWaiting(int index, WaitingCombo combo)
     {
         _waitingQueue[index] = combo;
-        Debug.Log($"[모델] 대기열 {index}번 갱신됨! 유닛 타입: {combo.unitTypes[0]}");
+        // Debug.Log($"[모델] 대기열 {index}번 갱신됨! 유닛 타입: {combo.unitTypes[0]}");
         OnWaitingUpdated?.Invoke(index, combo);
     }
 
@@ -171,5 +171,64 @@ public class SortModel : MonoBehaviour
             }
         }
         return _cachedCounts;
+    }
+
+    public List<(int t, int s)> GetHintTargets()
+    {
+        var tableStates = new List<(int tableIdx, int unitType, int count)>();
+
+        for (int t = 0; t < TABLE_COUNT; t++)
+        {
+            int type = GetHintUnit(t);
+            int count = GetCountInTable(t, type);
+            if (type != -1) tableStates.Add((t, type, count));
+        }
+
+        foreach (var target in tableStates.FindAll(x => x.count == 2))
+        {
+            foreach (var helper in tableStates.FindAll(x => x.count == 1 && x.unitType == target.unitType))
+            {
+                return CreateTargetList(target.tableIdx, helper.tableIdx, target.unitType);
+            }
+        }
+        return new List<(int t, int s)>();
+    }
+
+    private int GetHintUnit(int tableIdx)
+    {
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+        { 
+            if (GetUnit(tableIdx, s) != -1) return 
+                    GetUnit(tableIdx, s); 
+        }
+        return -1;
+    }
+
+    private int GetCountInTable(int tableIdx, int unitType)
+    {
+        int count = 0;
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+            if (GetUnit(tableIdx, s) == unitType) count++;
+        return count;
+    }
+    private List<(int t, int s)> CreateTargetList(int t1, int t2, int unitType)
+    {
+        var list = new List<(int t, int s)>();
+
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+        {
+            if (GetUnit(t1, s) == unitType)
+                list.Add((t1, s));
+        }
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+        {
+            if (GetUnit(t2, s) == unitType)
+            {
+                list.Add((t2, s));
+                break;
+            }
+        }
+
+        return list;
     }
 }
