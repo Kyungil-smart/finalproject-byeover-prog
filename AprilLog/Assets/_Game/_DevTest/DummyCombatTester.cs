@@ -66,16 +66,18 @@ public class DummyCombatTester : MonoBehaviour
         }
 
         EnsurePoolManagerWithProjectile();
-        InjectFirePoint();
+        // InjectFirePoint();  // 발사점은 InGameBootstrap의 PlayerView가 제공한다(덮어쓰기 방지).
         RegisterDummySkills();
         CacheSpawnerAliveList();
 
+        // 임시 타겟용 더미 몬스터만 공급한다. (정식 웨이브 시스템 배치 전까지 한시적)
         for (int i = 0; i < _monsterCount; i++)
             SpawnDummyMonster();
 
-        _combatSystem.EnableAutoAttack();
+        // 자동공격은 기획상 '자동공격 인챈트' 선택 시에만 켜진다. 상시 켜지 않는다.
+        // _combatSystem.EnableAutoAttack();
 
-        Debug.Log("[DummyCombatTester] 준비 완료. 정렬하거나 자동공격으로 투사체가 발사됩니다.");
+        Debug.Log("[DummyCombatTester] 준비 완료. 3-sort 정렬을 완성하면 플레이어가 발사합니다.");
     }
 
     // ---------- 풀 / 투사체 ----------

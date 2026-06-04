@@ -57,6 +57,15 @@ public class PoolManager : MonoBehaviour
         Debug.Log($"[Pool] WarmUp 완료. {_pools.Count}개 풀 등록됨.");
     }
 
+    /// <summary>
+    /// 런타임에 풀을 보장한다(이미 있으면 무시). 코드로 만든 프리팹/템플릿 등록용.
+    /// </summary>
+    public void EnsurePool(string key, GameObject prefab, int initialCount)
+    {
+        if (string.IsNullOrEmpty(key) || prefab == null) return;
+        RegisterPool(key, prefab, initialCount);
+    }
+
     private void RegisterPool(string key, GameObject prefab, int count)
     {
         if (_pools.ContainsKey(key)) return;

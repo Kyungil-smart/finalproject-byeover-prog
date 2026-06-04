@@ -51,6 +51,13 @@ public class SkillSystem : MonoBehaviour
         ResolveReferences();
     }
 
+    // ---------- 외부 주입 ----------
+    /// <summary>발사 기준점(보통 PlayerView.FirePoint)을 연결한다.</summary>
+    public void SetFirePoint(Transform firePoint)
+    {
+        _firePoint = firePoint;
+    }
+
     // ---------- 스킬 등록 ----------
     public void RegisterSortSkill(UnitType type, Legacy_SkillData data)
     {

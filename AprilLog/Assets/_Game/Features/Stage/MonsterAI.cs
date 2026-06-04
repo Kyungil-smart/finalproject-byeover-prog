@@ -88,7 +88,14 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _zigzagAmplitude = monsterStats != null ? monsterStats.ZigzagAmplitude : -1;
         
         _isBoss = isBoss;
-        
+
+        // 방벽 정지선: DefenseLine(방벽) 오브젝트의 Y를 단일 진실 소스로 사용한다.
+        // 플레이어도 같은 DefenseLine에 정렬되므로 정지선과 플레이어 위치가 항상 일치한다.
+        // (오브젝트가 없으면 serialized 기본값 _defenseLineY 유지)
+        var defenseLine = GameObject.Find("DefenseLine");
+        if (defenseLine != null)
+            _defenseLineY = defenseLine.transform.position.y;
+
         _state = State.Moving;
         _attackTimer = 0f;
 
