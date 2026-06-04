@@ -97,6 +97,7 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     private Coroutine _typingRoutine;
     private Coroutine _autoRoutine;
     private bool _isTyping;
+    private bool _autoPaused;   // 로그 등이 열려 자동진행을 잠시 멈춘 상태
 
     private Material _grayMaterial;
     private CanvasGroup _textboxGroup;
@@ -269,11 +270,26 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     
     private void OnTextFullyShown()
     {
-        if (_autoPlay)
+        if (_autoPlay && !_autoPaused)
         {
             StopAuto();
             _autoRoutine = StartCoroutine(AutoAdvanceRoutine());
         }
+    }
+
+    /// <summary>로그 등이 열릴 때 자동진행 일시정지 (_autoPlay 설정값은 유지)</summary>
+    public void PauseAuto()
+    {
+        _autoPaused = true;
+        StopAuto();
+    }
+
+    /// <summary>일시정지 해제 — 자동진행이 켜져있고 텍스트가 다 나왔으면 재개</summary>
+    public void ResumeAuto()
+    {
+        _autoPaused = false;
+        if (_autoPlay && !_isTyping)
+            OnTextFullyShown();
     }
 
     private IEnumerator AutoAdvanceRoutine()

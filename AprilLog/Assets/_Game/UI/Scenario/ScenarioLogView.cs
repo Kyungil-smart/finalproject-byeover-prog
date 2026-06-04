@@ -27,7 +27,6 @@ public class ScenarioLogView : MonoBehaviour
     [Tooltip("로그 한 줄 프리팹 (TMP_Text)")]
     [SerializeField] private TMP_Text _entryPrefab;
 
-    // ------------------------------------------------------------------
     private void Awake()
     {
         if (_view == null)
@@ -45,12 +44,15 @@ public class ScenarioLogView : MonoBehaviour
         if (_openButton != null)  _openButton.onClick.RemoveListener(Open);
         if (_closeButton != null) _closeButton.onClick.RemoveListener(Close);
     }
-
-    // ------------------------------------------------------------------
+    
     public void Open()
     {
         if (_logPanel != null)
             _logPanel.SetActive(true);
+
+        // 로그가 떠 있는 동안 자동진행 멈춤
+        if (_view != null)
+            _view.PauseAuto();
 
         Rebuild();
         ScrollToBottom();
@@ -60,6 +62,10 @@ public class ScenarioLogView : MonoBehaviour
     {
         if (_logPanel != null)
             _logPanel.SetActive(false);
+
+        // 자동진행 재개 (켜져 있었다면)
+        if (_view != null)
+            _view.ResumeAuto();
     }
 
     public void Toggle()
@@ -67,8 +73,7 @@ public class ScenarioLogView : MonoBehaviour
         if (_logPanel != null && _logPanel.activeSelf) Close();
         else Open();
     }
-
-    // ------------------------------------------------------------------
+    
     private void Rebuild()
     {
         if (_content == null || _entryPrefab == null || _view == null)

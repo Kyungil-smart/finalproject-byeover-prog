@@ -43,8 +43,12 @@ public class ScenarioDummyDriver : MonoBehaviour
 
     [SerializeField] private bool _playOnStart = true;
 
+    /// <summary>마지막 대사 이후(또는 스킵) 시나리오 종료 시 호출</summary>
+    public event System.Action OnFinished;
+
     private int _index;
-    
+    private bool _finished;
+
     private void Awake()
     {
         if (_view == null)
@@ -60,14 +64,14 @@ public class ScenarioDummyDriver : MonoBehaviour
     {
         if (_view == null) return;
         _view.OnAdvanceRequested += Next;
-        _view.OnSkipRequested    += SkipToEnd;
+        _view.OnSkipRequested    += Finish;   // 스킵 = 스토리 끝내고 다음으로
     }
 
     private void OnDisable()
     {
         if (_view == null) return;
         _view.OnAdvanceRequested -= Next;
-        _view.OnSkipRequested    -= SkipToEnd;
+        _view.OnSkipRequested    -= Finish;
     }
 
     private void Start()
@@ -84,6 +88,7 @@ public class ScenarioDummyDriver : MonoBehaviour
             return;
         }
         _index = 0;
+        _finished = false;
         Show();
     }
 
@@ -91,17 +96,19 @@ public class ScenarioDummyDriver : MonoBehaviour
     {
         if (_index >= _lines.Count - 1)
         {
-            Debug.Log("[ScenarioDummyDriver] 시나리오 끝");
+            Finish();   // 마지막 줄에서 한 번 더 진행 → 종료
             return;
         }
         _index++;
         Show();
     }
 
-    private void SkipToEnd()
+    private void Finish()
     {
-        _index = _lines.Count - 1;
-        Show();
+        if (_finished) return;   // 중복 방지
+        _finished = true;
+        Debug.Log("[ScenarioDummyDriver] 시나리오 끝");
+        OnFinished?.Invoke();
     }
 
     private void Show()
@@ -144,7 +151,7 @@ public class ScenarioDummyDriver : MonoBehaviour
             _lines.Add(line);
         }
 
-        // --- GroupID 3001 (TextBox 0, 절벽 위) ---
+        
         Add(false, "???",     "이 길이 맞아?",                        ScenarioSpeakerSlot.None,  _bg3001, false);
         Add(false, "???",     "그래! 여기가 맞아!",                   ScenarioSpeakerSlot.None,  _bg3001, false);
         Add(false, "???",     "하...하지만, 여긴 절벽이야. 래리!",    ScenarioSpeakerSlot.None,  _bg3001, false);
@@ -154,7 +161,7 @@ public class ScenarioDummyDriver : MonoBehaviour
         Add(false, "래리",    "가자! 야호!",                          ScenarioSpeakerSlot.Right, _bg3001, true);
         Add(false, "에이프릴", "꺄악!",                               ScenarioSpeakerSlot.Left,  _bg3001, true);
 
-        // --- GroupID 3002 (TextBox 1, 절벽 아래) ---
+       
         Add(true,  "",        "...",                                  ScenarioSpeakerSlot.None,  _bg3002, false);
         Add(true,  "???",     "...릴! ...프릴!",                      ScenarioSpeakerSlot.None,  _bg3002, false);
         Add(true,  "래리",    "에이프릴!",                            ScenarioSpeakerSlot.Right, _bg3002, true);
