@@ -4,6 +4,10 @@
 // 수정자 : 정승우
 // 수정내용 : Model 참조가 비어 있을 때 Presenter 생성을 건너뛰어 테스트 씬 NullReference 방지
 
+// 수정자 : 김영찬
+// 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
+
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -17,33 +21,76 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     [Header("데이터 참조")]
     [SerializeField] private PlayerModel _playerModel;
     [SerializeField] private ComboModel _comboModel;
+    [SerializeField] private StageLoopManager _loopManager;
+    [SerializeField] private StageBootstrapper _stageBootstrapper;
+    [SerializeField] private InGameGrowthSystem _growthSystem;
 
     [Header("UI")]
     [SerializeField] private Slider _hpSlider;
-    [SerializeField] private Slider _shieldSlider;
+    [SerializeField] private TMP_Text _hpText;
     [SerializeField] private Slider _expSlider;
+    [SerializeField] private TMP_Text _expText;
+    [SerializeField] private TMP_Text _levelText;
     [SerializeField] private TMP_Text _comboText;
-    [SerializeField] private Slider _comboTimerSlider;
-    [SerializeField] private Slider _stageProgressSlider;
-
+    [SerializeField] private TMP_Text _stageProgressTimer;
+    [SerializeField] private TMP_Text _curChapterViwerText;
+    [SerializeField] private TMP_Text _curStageViwerText;
+    [SerializeField] private TMP_Text _waveStateText;
+    
     // ---------- Private ----------
     private InGameHUDPresenter _presenter;
+    private StageModel _stageModel;
+    
+    // ---------- 이벤트 ----------
+    public event Action OnComboTimerActive;
+    public event Action<StageModel.SpawnType> OnSpecialWaveActive;
+    
+    // ---------- Const Text ----------
+    private const string CHAPTER_KOR_TEXT = "챕터";
+    private const string STAGE_KOR_TEXT = "스테이지";
+    private const string CHAPTER_ENG_TEXT = "Chapter";
+    private const string STAGE_ENG_TEXT = "Stage";
+    
+    private const string REMAIN_TIME_KOR_TEXT = "남은 시간";
+    private const string REMAIN_TIME_ENG_TEXT = "Remain Time";
+    private const string TRANSITION_TIME_KOR_TEXT = "다음 웨이브 대기";
+    private const string TRANSITION_TIME_ENG_TEXT = "Transition Time";
+
+    private const string COMBO_TEXT = "COMBO";
+    
+    private const string LEVEL_KOR_TEXT = "레벨";
+    private const string LEVEL_ENG_TEXT = "Level";
 
     // ---------- 생명주기 ----------
-    private void Awake()
+    private void OnEnable()
     {
-        if (_playerModel == null || _comboModel == null)
-        {
-            Debug.LogWarning("[InGameHUDView] PlayerModel 또는 ComboModel 참조가 비어 있어 초기화를 건너뜁니다.", this);
-            return;
-        }
+        if(_stageBootstrapper != null)
+            _stageBootstrapper.OnStageInitComplete += Init;
+    }
 
-        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel);
+    private void OnDisable()
+    {
+        if(_stageBootstrapper != null)
+            _stageBootstrapper.OnStageInitComplete -= Init;
     }
 
     private void OnDestroy()
     {
         _presenter?.Dispose();
+    }
+    
+    // ---------- 초기화 ----------
+    private void Init(StageModel stageModel)
+    {
+        if (_playerModel == null || _comboModel == null || _growthSystem == null || _loopManager == null)
+        {
+            Debug.LogWarning("[InGameHUDView] PlayerModel 또는 ComboModel 또는 InGameGrowthSystem 또는 StageLoopManager 참조가 비어 있어 초기화를 건너뜁니다.", this);
+            return;
+        }
+        
+        _presenter?.Dispose();
+        _stageModel = stageModel;
+        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem,  _loopManager,_stageModel);
     }
 
     // ---------- IInGameHUDView ----------
@@ -53,9 +100,10 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
             _hpSlider.value = ratio;
     }
 
-    public void UpdateShield(float ratio)
+    public void UpdateHPText(int current, int max)
     {
-        if (_shieldSlider != null) _shieldSlider.value = ratio;
+        if(_hpText != null)
+            _hpText.text = $"{current.ToString("N0")} / {max.ToString("N0")}";
     }
 
     public void UpdateEXP(float ratio)
@@ -64,21 +112,69 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
             _expSlider.value = ratio;
     }
 
+    public void UpdateEXPText(int current, int max)
+    {
+        if(_expText != null)
+            _expText.text = $"{current.ToString("N0")} / {max.ToString("N0")}";
+    }
+
+    public void UpdateLevelText(int current)
+    {
+        if(_levelText != null)
+            _levelText.text = $"{LEVEL_KOR_TEXT} {current}";
+    }
+
     public void UpdateCombo(int count)
     {
+        if(count == 0) return;
+        
         if (_comboText != null)
-            _comboText.SetText("{0}", count);
+        {
+            _comboText.text = $"{count} {COMBO_TEXT}";
+            OnComboTimerActive?.Invoke();
+        }
     }
 
-    public void UpdateComboTimer(float remainRatio)
+    public void UpdateStageTimer(float remainingTime)
     {
-        if (_comboTimerSlider != null) _comboTimerSlider.value = remainRatio;
+        if (_stageProgressTimer != null)
+        {
+            float displayTime = Mathf.Max(0f, remainingTime);
+            _stageProgressTimer.text = displayTime.ToString("F2");
+        }
     }
 
-    public void UpdateStageProgress(float ratio)
+    public void UpdateWaveStateText(StageModel.WaveState waveState)
     {
-        if (_stageProgressSlider != null)
-            _stageProgressSlider.value = ratio;
+        if (waveState == StageModel.WaveState.WaveRunning)
+        {
+            _waveStateText.text = REMAIN_TIME_KOR_TEXT;
+        }
+        else if (waveState == StageModel.WaveState.WaveTransition)
+        {
+            _waveStateText.text = TRANSITION_TIME_KOR_TEXT;
+        }
+    }
+
+    public void UpdateSpecialWavePopup(StageModel.SpawnType spawnType)
+    {
+        OnSpecialWaveActive?.Invoke(spawnType);
+    }
+
+    public void UpdateStageProgress(int stageId)
+    {
+        if (_curChapterViwerText != null && _curStageViwerText != null)
+        {
+            int chapterIndex = stageId / 100;
+            int stageIndex = stageId % 100;
+            _curChapterViwerText.text = $"{chapterIndex} {CHAPTER_KOR_TEXT}";
+            _curStageViwerText.text = $"{stageIndex} {STAGE_KOR_TEXT}";
+        }
+    }
+
+    public void Translation()
+    {
+        // ToDO : 차후 번역 나오면 작성
     }
 
     public void ShowLevelUpEffect() { /* DOTween 연출 넣을 자리 */ }

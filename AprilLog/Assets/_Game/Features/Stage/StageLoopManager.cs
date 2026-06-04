@@ -13,6 +13,9 @@
 // 수정자 : 김영찬
 // 수정내용 : 데모버전 DB에 맞춰 최신화
 
+// 수정자 : 김영찬
+// 수정내용 : 인게임 UI에 넘겨줄 정보 이벤트 연결
+
 using System;
 using UnityEngine;
 
@@ -79,7 +82,7 @@ public class StageLoopManager : MonoBehaviour
             return;
         }
 
-        OnStageChanged?.Invoke(_currentStageIndex);
+        OnStageChanged?.Invoke(stageId);
 
         // 웨이브 수는 StageModel이 데이터(StageWaveRuleData 목록)에서 직접 산출한다.
         _bootstrapper.InitAndStart(stageData, _rng, ClearStage);
