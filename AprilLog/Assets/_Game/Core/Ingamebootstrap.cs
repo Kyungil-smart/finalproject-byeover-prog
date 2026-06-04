@@ -33,15 +33,18 @@ public class InGameBootstrap : MonoBehaviour
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;
 
-    [Header("플레이어/전투 셋업")]
-    [Tooltip("플레이어 사각형 비주얼이 생성될 월드 위치")]
-    [SerializeField] private Vector3 _playerSpawnPosition = new Vector3(0f, -2.5f, 0f);
+    [Header("플레이어/방벽 위치 (자동 생성 시 · 씬에 PlayerView 두면 무시)")]
+    [Tooltip("캐릭터(플레이어) 세로 위치. 0=화면 하단, 1=상단. 노드 바로 위로 두려면 0.40~0.45")]
+    [SerializeField, Range(0f, 1f)] private float _characterViewportY = 0.42f;
+
+    [Tooltip("방벽(DefenseLine)이 캐릭터보다 위에 있는 거리(월드 단위). 양수 = 위")]
+    [SerializeField] private float _barrierAboveCharacter = 0.5f;
+
+    [Tooltip("카메라가 없을 때 사용할 캐릭터 기본 Y")]
+    [SerializeField] private float _fallbackCharacterY = -0.8f;
 
     [Tooltip("투사체 풀 사전 생성 수량")]
     [SerializeField] private int _projectilePoolSize = 20;
-
-    [Tooltip("방벽(DefenseLine) 세로 위치. 0=화면 하단, 1=상단. 퍼즐 위로 두려면 0.4~0.5 권장")]
-    [SerializeField, Range(0f, 1f)] private float _defenseLineViewportY = 0.5f;
 
     private GameObject _projectileTemplate;
 
@@ -115,36 +118,23 @@ public class InGameBootstrap : MonoBehaviour
             _projectileTemplate = BuildProjectileTemplate();
         pool.EnsurePool("Projectile_Basic", _projectileTemplate, _projectilePoolSize);
 
-        // 방벽(DefenseLine)을 퍼즐 위(카메라 뷰포트 기준)로 재배치한다.
-        // DefenseLine을 옮기면 플레이어(자식)와 몬스터 정지선(이 Y를 읽음)이 함께 따라온다.
-        var defenseLine = GameObject.Find("DefenseLine");
-        if (defenseLine != null)
-        {
-            var cam = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
-            if (cam != null)
-            {
-                Vector3 wp = cam.ViewportToWorldPoint(
-                    new Vector3(0.5f, _defenseLineViewportY, Mathf.Abs(cam.transform.position.z)));
-                defenseLine.transform.position = new Vector3(wp.x, wp.y, 0f);
-            }
-        }
-
-        // 플레이어 비주얼(사각형) + 발사점. 씬에 PlayerView가 있으면 우선 사용, 없으면 방벽 자식으로 생성.
+        // 플레이어/방벽 배치.
+        // 씬에 PlayerView를 직접 두면 그 위치를 존중하고 자동 배치하지 않는다(완전 수동 제어).
+        // 없으면 인스펙터 값(_characterViewportY, _barrierAboveCharacter)으로 자동 배치한다.
         var playerView = FindFirstObjectByType<PlayerView>();
         if (playerView == null)
         {
+            float characterY = ResolveCharacterWorldY();
+
+            // 캐릭터(플레이어)는 노드 바로 위에 배치 (기획 1)
             var go = new GameObject("Player");
-            if (defenseLine != null)
-            {
-                go.transform.SetParent(defenseLine.transform, false);
-                go.transform.localPosition = Vector3.zero; // 방벽 위에 정렬, 방벽 이동 시 따라감
-            }
-            else
-            {
-                Debug.LogWarning("[InGameBootstrap] 'DefenseLine'(방벽)을 찾지 못해 기본 위치에 플레이어를 둡니다.");
-                go.transform.position = _playerSpawnPosition;
-            }
+            go.transform.position = new Vector3(0f, characterY, 0f);
             playerView = go.AddComponent<PlayerView>();
+
+            // 방벽(DefenseLine)은 캐릭터보다 살짝 위 → 몬스터가 캐릭터 위에서 멈춤 (기획 3)
+            var defenseLine = GameObject.Find("DefenseLine");
+            if (defenseLine != null)
+                defenseLine.transform.position = new Vector3(0f, characterY + _barrierAboveCharacter, 0f);
         }
 
         // SkillSystem에 발사점 연결 (이제 정렬 완성 시 플레이어 위치에서 발사)
@@ -153,6 +143,19 @@ public class InGameBootstrap : MonoBehaviour
             skillSystem.SetFirePoint(playerView.FirePoint);
         else if (skillSystem == null)
             Debug.LogWarning("[InGameBootstrap] SkillSystem을 찾지 못해 발사점을 연결하지 못했습니다.");
+    }
+
+    // 캐릭터(플레이어) 월드 Y = 카메라 뷰포트 기준 _characterViewportY. 카메라 없으면 폴백.
+    private float ResolveCharacterWorldY()
+    {
+        var cam = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+        if (cam != null)
+        {
+            Vector3 wp = cam.ViewportToWorldPoint(
+                new Vector3(0.5f, _characterViewportY, Mathf.Abs(cam.transform.position.z)));
+            return wp.y;
+        }
+        return _fallbackCharacterY;
     }
 
     // 코드로 만든 투사체 템플릿(사각형). DummyCombatTester의 런타임 생성 로직을 정식화.

@@ -1161,6 +1161,10 @@ MonoBehaviour:
   _combinationModel: {fileID: 830662636}
   _enchantModel: {fileID: 673703853}
   _sortSystem: {fileID: 579918531}
+  _characterViewportY: 0.42
+  _barrierAboveCharacter: 0.5
+  _fallbackCharacterY: -0.8
+  _projectilePoolSize: 20
 --- !u!4 &341681047
 Transform:
   m_ObjectHideFlags: 0
@@ -7107,7 +7111,10 @@ MonoBehaviour:
   - {fileID: 1152430208}
   - {fileID: 1997423986}
   - {fileID: 665814797}
-  _sameLineYThreshold: 0.05
+  _normalSpawnLineY: 0
+  _normalSpawnLineXMin: 0
+  _normalSpawnLineXMax: 0
+  _playerModel: {fileID: 0}
   _distanceTieThreshold: 0.0001
 --- !u!4 &2077593745
 Transform:

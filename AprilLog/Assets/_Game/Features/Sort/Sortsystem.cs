@@ -100,9 +100,25 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         _hintSystem.ResetTimer();
 
         if (_model.IsTableMatched(toTable))
+        {
             StartCoroutine(ProcessMatch(toTable));
-        else
-            CheckDeadlock();
+            return;
+        }
+
+        // 이동으로 빈 테이블(3슬롯 모두 공백)이 생기면 대기열로 채워 빈 공간을 없앤다 (기획 2)
+        FillEmptyTablesFromQueue();
+
+        // 대기열에서 채운 조합이 곧바로 매칭될 수 있으니 확인
+        for (int t = 0; t < SortModel.TABLE_COUNT; t++)
+        {
+            if (_model.IsTableMatched(t))
+            {
+                StartCoroutine(ProcessMatch(t));
+                return;
+            }
+        }
+
+        CheckDeadlock();
     }
 
     private void RestoreUnit(int table, int slot)
