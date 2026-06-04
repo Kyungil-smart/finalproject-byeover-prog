@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -22,15 +23,31 @@ public enum ScenarioSpeakerSlot
     Right  = 3,   // 오른쪽 화자
 }
 
+/// <summary>로그(백로그) 한 줄</summary>
+public readonly struct ScenarioLogEntry
+{
+    public readonly string Name;
+    public readonly string Text;
+    public ScenarioLogEntry(string name, string text) { Name = name; Text = text; }
+}
+
 public class ScenarioView : MonoBehaviour, IPointerClickHandler
 {
     // 이벤트
     public event Action OnAdvanceRequested;   // 텍스트 출력 완료 후 터치 -> 다음 줄
     public event Action OnSkipRequested;      // 스킵 버튼
+    public event Action<ScenarioLogEntry> OnLineLogged;   // 대사 표시 시 로그 추가
+
+    // 지나온 대사 기록 (백로그)
+    private readonly List<ScenarioLogEntry> _history = new();
+    public IReadOnlyList<ScenarioLogEntry> History => _history;
 
     // ---------- UI 참조 ----------
     [Header("텍스트 박스")]
-    [SerializeField] private GameObject _textboxRoot;   // Textbox 0/1 토글
+    [Tooltip("박스 프레임/배경만 — TextBox=0이면 숨김 (텍스트는 계속 표시)")]
+    [SerializeField] private GameObject _boxFrame;
+    [Tooltip("이름+대사 묶음 (텍스트 페이드용, 항상 표시)")]
+    [SerializeField] private GameObject _textboxRoot;
     [SerializeField] private TMP_Text  _nameText;
     [SerializeField] private TMP_Text  _dialogueText;
 
@@ -142,12 +159,18 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
         BringSpeakerToFront(speaker);
 
         PlayText(text);
+
+        // 로그(백로그) 기록
+        var entry = new ScenarioLogEntry(name, text);
+        _history.Add(entry);
+        OnLineLogged?.Invoke(entry);
     }
 
     public void SetTextbox(bool visible)
     {
-        if (_textboxRoot != null)
-            _textboxRoot.SetActive(visible);
+        // TextBox 0/1 = 박스 프레임만 토글. 텍스트(이름/대사)는 항상 표시.
+        if (_boxFrame != null)
+            _boxFrame.SetActive(visible);
     }
 
     public void SetName(string name)
