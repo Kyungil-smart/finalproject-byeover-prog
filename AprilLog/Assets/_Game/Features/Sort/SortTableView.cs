@@ -196,7 +196,8 @@ public class SortTableView : MonoBehaviour, ISortTableView
         Vector3 originalPos = _puzzleSlots[idx].transform.position;
 
         _puzzleSlots[idx].transform.DOShakePosition(0.5f, 0.2f, 10, 90f)
-            .OnComplete(() => {
+            .OnComplete(() =>
+            {
                 _puzzleSlots[idx].transform.position = originalPos;
             });
     }
@@ -205,8 +206,17 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         foreach (var slot in _waitingSlots)
         {
-            if (slot != null)
-                slot.transform.DOShakePosition(0.5f, 0.1f);
+            if (slot == null)
+            {
+                continue;
+            }
+
+            Vector3 originalPos = slot.transform.position;
+            slot.transform.DOShakePosition(0.3f, 0.2f)
+                   .OnComplete(() =>
+                    {
+                        slot.transform.position = originalPos;
+                    });
         }
     }
 }
