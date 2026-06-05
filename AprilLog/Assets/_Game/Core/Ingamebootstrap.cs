@@ -159,6 +159,22 @@ public class InGameBootstrap : MonoBehaviour
             skillSystem.SetFirePoint(playerView.FirePoint);
         else if (skillSystem == null)
             Debug.LogWarning("[InGameBootstrap] SkillSystem을 찾지 못해 발사점을 연결하지 못했습니다.");
+
+        // 몬스터 스폰 라인을 화면 최상단으로 맞춤 → 위에서 생성되어 방벽으로 하강.
+        // (플레이어/방벽과 좌표를 일관되게 코드에서 함께 설정)
+        var spawner = FindFirstObjectByType<MonsterSpawner>();
+        if (spawner != null)
+        {
+            var cam = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+            if (cam != null)
+            {
+                float z = Mathf.Abs(cam.transform.position.z);
+                float topY = cam.ViewportToWorldPoint(new Vector3(0.5f, 1.05f, z)).y;   // 화면 위 살짝 밖
+                float leftX = cam.ViewportToWorldPoint(new Vector3(0.12f, 0.5f, z)).x;
+                float rightX = cam.ViewportToWorldPoint(new Vector3(0.88f, 0.5f, z)).x;
+                spawner.SetNormalSpawnLine(topY, leftX, rightX);
+            }
+        }
     }
 
     // 웨이브 시스템(StageLoopManager+StageBootstrapper)을 보장하고 챕터를 시작한다.
