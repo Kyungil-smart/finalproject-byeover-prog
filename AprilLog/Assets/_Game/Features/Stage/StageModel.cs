@@ -126,7 +126,12 @@ public class StageModel
             }
             
             if (spawnQueue.Count > 0)
-                OnSpawnRequested?.Invoke(spawnQueue, currentInterval * 0.2f); // 시차 소환
+            {
+                // 시차 소환: 기준시차(주기×0.2)에 0.3~1.0 가변 배율 적용 (기획 3-6-2)
+                float baseStagger = currentInterval * 0.2f;
+                float variance = 0.3f + (float)_rng.NextDouble() * 0.7f;
+                OnSpawnRequested?.Invoke(spawnQueue, baseStagger * variance);
+            }
         }
 
         // --- 웨이브 종료 판정 (WaveEndType) ---
@@ -199,19 +204,17 @@ public class StageModel
                 return; 
             }
 
-            // 특수 스폰 실행
+            // 특수 스폰 실행 (Instant = 1회성). 트리거 직후 한 번만 발동.
+            // (float 동등비교 대신 _isSpecialWaveFinished 가드로 1회 보장)
             if (_currentSpecialRule.EndType == "Instant")
             {
-                if (_specialWaveActiveTimer == deltaTime) // 프레임 첫 진입 시 딱 1번만 발동!
-                {
-                    ExecuteSpecialSpawn();
-                    _isSpecialWaveFinished = true; 
-                }
+                ExecuteSpecialSpawn();
+                _isSpecialWaveFinished = true;
                 return;
             }
 
             // Duration / WaveEnd 타입일 때의 주기적 스폰 (WaveType별 간격)
-            float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? 0.5f : 3.0f; 
+            float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? 0.2f : 3.0f; // 러시 전용 0.2초 (기획 4-1-2)
 
             if (_specialSpawnTimer >= spawnInterval)
             {
@@ -297,7 +300,7 @@ public class StageModel
         SpawnType sType = Enum.TryParse(_currentSpecialRule.WaveType, out SpawnType parsedType) ? parsedType : SpawnType.Normal;
         
         // 특수 웨이브 타입에 따른 한 틱당 물량 설정
-        int spawnAmount = (sType == SpawnType.Rush) ? 3 : 1; 
+        int spawnAmount = (sType == SpawnType.Rush) ? 2 : 1; // 러시 전용 2마리 (기획 4-1-2)
         
         // 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀 ID를 사용!
         int poolId = _currentSpecialRule.MonsterWavePool_ID; 

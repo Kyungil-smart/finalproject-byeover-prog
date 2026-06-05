@@ -46,6 +46,10 @@ public class InGameBootstrap : MonoBehaviour
     [Tooltip("투사체 풀 사전 생성 수량")]
     [SerializeField] private int _projectilePoolSize = 20;
 
+    [Header("웨이브")]
+    [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
+    [SerializeField] private int _defaultChapterId = 1;
+
     private GameObject _projectileTemplate;
 
     private void Start()
@@ -56,6 +60,8 @@ public class InGameBootstrap : MonoBehaviour
     private void InitializeAll()
     {
         Debug.Log("[InGameBootstrap] === InGame 초기화 시작 ===");
+
+        RunStats.Reset(); // 한 판 통계(총 데미지 등) 초기화
 
         // [1] Repository 초기화는 DataManager 싱글톤에서 처리됨 (김영찬)
 
@@ -101,6 +107,12 @@ public class InGameBootstrap : MonoBehaviour
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();
 
+        // [6] 실제 웨이브 시스템 시작 (데이터 기반). 더미 테스터는 비활성화.
+        int chapterId = (isResume && saveData != null) ? saveData.chapterId : _defaultChapterId;
+        int startStageIndex = (isResume && saveData != null) ? saveData.clearedStage : 0;
+        DisableDummyTester();
+        StartWaveSystem(chapterId, startStageIndex, seed);
+
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }
 
@@ -117,6 +129,10 @@ public class InGameBootstrap : MonoBehaviour
         if (_projectileTemplate == null)
             _projectileTemplate = BuildProjectileTemplate();
         pool.EnsurePool("Projectile_Basic", _projectileTemplate, _projectilePoolSize);
+
+        // 단독 _InGame 실행(Boot 미경유) 시 몬스터 풀이 비어 있어 스폰이 실패한다.
+        // 에디터 테스트 편의로 Monsters 폴더 프리팹을 풀에 자동 등록 (빌드는 Boot 경유라 제외).
+        EnsureMonsterPoolsInEditor(pool);
 
         // 플레이어/방벽 배치.
         // 씬에 PlayerView를 직접 두면 그 위치를 존중하고 자동 배치하지 않는다(완전 수동 제어).
@@ -143,6 +159,77 @@ public class InGameBootstrap : MonoBehaviour
             skillSystem.SetFirePoint(playerView.FirePoint);
         else if (skillSystem == null)
             Debug.LogWarning("[InGameBootstrap] SkillSystem을 찾지 못해 발사점을 연결하지 못했습니다.");
+
+        // 몬스터 스폰 라인을 화면 최상단으로 맞춤 → 위에서 생성되어 방벽으로 하강.
+        // (플레이어/방벽과 좌표를 일관되게 코드에서 함께 설정)
+        var spawner = FindFirstObjectByType<MonsterSpawner>();
+        if (spawner != null)
+        {
+            var cam = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+            if (cam != null)
+            {
+                float z = Mathf.Abs(cam.transform.position.z);
+                float topY = cam.ViewportToWorldPoint(new Vector3(0.5f, 1.05f, z)).y;   // 화면 위 살짝 밖
+                float leftX = cam.ViewportToWorldPoint(new Vector3(0.12f, 0.5f, z)).x;
+                float rightX = cam.ViewportToWorldPoint(new Vector3(0.88f, 0.5f, z)).x;
+                spawner.SetNormalSpawnLine(topY, leftX, rightX);
+            }
+        }
+    }
+
+    // 웨이브 시스템(StageLoopManager+StageBootstrapper)을 보장하고 챕터를 시작한다.
+    // 씬에 없으면 런타임 생성 — 두 컴포넌트가 서로/스포너/플레이어를 자동 탐색해 연결된다.
+    private void StartWaveSystem(int chapterId, int startStageIndex, int seed)
+    {
+        var loop = FindFirstObjectByType<StageLoopManager>();
+        if (loop == null)
+        {
+            var go = new GameObject("WaveSystem");
+            go.AddComponent<StageBootstrapper>();
+            loop = go.AddComponent<StageLoopManager>();
+        }
+
+        // 챕터 종료(승/패) → 정산 팝업
+        loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지
+        loop.OnChapterEnd += ShowSettlement;
+
+        loop.StartChapter(chapterId, startStageIndex, seed);
+    }
+
+    // 챕터 종료 시 정산 팝업 표시 + 데이터 주입 (기획: 승패/콤보/총뎀/보상)
+    private void ShowSettlement(bool isVictory)
+    {
+        var view = FindFirstObjectByType<SettlementView>(FindObjectsInactive.Include);
+        if (view == null)
+        {
+            Debug.LogWarning("[InGameBootstrap] SettlementView를 찾지 못해 정산 팝업을 띄우지 못했습니다.");
+            return;
+        }
+
+        int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
+        int totalDamage = RunStats.TotalDamage;
+
+        // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
+        int gold = isVictory ? 100 : 0;
+        int parchment = isVictory ? 10 : 0;
+
+        view.Show();
+        view.SetResult(isVictory);
+        view.SetStats(maxCombo, totalDamage);
+        view.SetRewards(gold, parchment);
+    }
+
+    // 실제 웨이브로 진행하므로 에디터 테스트용 더미 스포너를 끈다.
+    private void DisableDummyTester()
+    {
+#if UNITY_EDITOR
+        var dummy = FindFirstObjectByType<DummyCombatTester>();
+        if (dummy != null)
+        {
+            dummy.gameObject.SetActive(false);
+            Debug.Log("[InGameBootstrap] 실제 웨이브 시스템 사용 — DummyCombatTester 비활성화.");
+        }
+#endif
     }
 
     // 캐릭터(플레이어) 월드 Y = 카메라 뷰포트 기준 _characterViewportY. 카메라 없으면 폴백.
@@ -156,6 +243,23 @@ public class InGameBootstrap : MonoBehaviour
             return wp.y;
         }
         return _fallbackCharacterY;
+    }
+
+    // [에디터 전용] 단독 _InGame 실행 시 Monsters 폴더의 프리팹을 풀에 자동 등록.
+    // 빌드/정식 플로우는 Boot의 PoolManager configs를 사용하므로 이 블록은 컴파일에서 제외됨.
+    private void EnsureMonsterPoolsInEditor(PoolManager pool)
+    {
+#if UNITY_EDITOR
+        const string dir = "Assets/_Game/Prefabs/Monsters";
+        var guids = UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { dir });
+        foreach (var guid in guids)
+        {
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab != null)
+                pool.EnsurePool(prefab.name, prefab, 5); // key = 프리팹명(Monster_11 …) = 풀키 규칙
+        }
+#endif
     }
 
     // 코드로 만든 투사체 템플릿(사각형). DummyCombatTester의 런타임 생성 로직을 정식화.

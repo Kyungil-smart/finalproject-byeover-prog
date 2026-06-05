@@ -200,17 +200,28 @@ public class StageRepo : MonoBehaviour
     public int GetMonsterPoolId(int wavePoolId, string type)
     {
         if (_poolMasters == null) return -1;
-        
+
+        int fallbackPoolId = -1;
         foreach (var data in _poolMasters.Values)
         {
-            if (data.MonsterWavePool_ID == wavePoolId && data.WavePoolType == type)
-            {
+            if (data.MonsterWavePool_ID != wavePoolId) continue;
+
+            // 타입까지 일치하면 즉시 반환 (정상 경로)
+            if (data.MonsterPoolType == type)
                 return data.MonsterPool_ID;
-            }
+
+            // 같은 웨이브풀의 첫 풀을 폴백 후보로 기억
+            // (데이터의 MonsterPoolType가 비어있거나 불일치할 때 대비 — 매 프레임 스팸/스폰 실패 방지)
+            if (fallbackPoolId < 0)
+                fallbackPoolId = data.MonsterPool_ID;
         }
 
-        Debug.LogWarning($"[StageRepo] 매칭되는 MonsterPool_ID를 찾을 수 없습니다! WavePool_ID: {wavePoolId}, Type: {type}");
-        return -1; // 실패 시 -1 반환
+        if (fallbackPoolId >= 0)
+            return fallbackPoolId; // 타입 매칭 실패 → 같은 웨이브풀 첫 풀로 폴백
+
+        // 웨이브풀 자체가 없을 때만 경고 (이건 진짜 데이터 누락)
+        Debug.LogWarning($"[StageRepo] WavePool_ID {wavePoolId}에 연결된 MonsterPool이 없습니다.");
+        return -1;
     }
 
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(
