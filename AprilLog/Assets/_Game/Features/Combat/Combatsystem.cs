@@ -52,11 +52,29 @@ public class CombatSystem : MonoBehaviour
     private void OnEnable()
     {
         ResolveCharacterRepository();
+        ResolveSystemReferences();
+
         if (_sortNotifier == null)
             _sortNotifier = _sortSystemObj as ISortNotifier;
 
-        if (_sortNotifier == null) return;
+        if (_sortNotifier == null)
+        {
+            Debug.LogWarning("[전투진단] CombatSystem: SortSystem(ISortNotifier)을 못 찾아 정렬 완성을 수신하지 못합니다 → 공격 안 나감.", this);
+            return;
+        }
+
         _sortNotifier.OnSortCompleted += HandleSortCompleted;
+        Debug.Log("[전투진단] CombatSystem: OnSortCompleted 구독 완료 (정렬 성공 시 공격 발동).");
+    }
+
+    // 씬에서 참조가 안 꽂혀 있어도 동작하도록 자동 탐색 (다른 시스템과 동일 패턴).
+    private void ResolveSystemReferences()
+    {
+        if (_sortSystemObj == null) _sortSystemObj = FindFirstObjectByType<SortSystem>();
+        if (_skillSystem == null) _skillSystem = FindFirstObjectByType<SkillSystem>();
+        if (_comboModel == null) _comboModel = FindFirstObjectByType<ComboModel>();
+        if (_combinationModel == null) _combinationModel = FindFirstObjectByType<CombinationModel>();
+        if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
     }
  
     private void OnDisable()
@@ -79,14 +97,24 @@ public class CombatSystem : MonoBehaviour
  
     private void HandleSortCompleted(UnitType type)
     {
+        Debug.Log($"[전투진단] 정렬 완성 수신: type={type} → 공격 발동 시도");
+
         ResolveSpellRepository();
-        
+        ResolveSystemReferences();
+
+        if (_skillSystem == null)
+        {
+            Debug.LogWarning("[전투진단] SkillSystem이 없어 공격을 발사할 수 없습니다.", this);
+            return;
+        }
+
         if (_spellRepo == null)
         {
             Debug.LogError("[CombatSystem] SpellRepo를 찾을 수 없어 인첸트가 발동되지 않습니다.");
         }
-        
-        _comboModel.IncrementCombo();
+
+        if (_comboModel != null)
+            _comboModel.IncrementCombo();
  
         var sortSkill = _skillSystem.GetSortSkill(type);
         if (sortSkill != null)
@@ -94,25 +122,31 @@ public class CombatSystem : MonoBehaviour
         else
             _skillSystem.FireBasicAttack();
  
-        _combinationModel.CheckIngredient(type);
-        // 한 번의 정렬로 여러 조합식이 동시에 완성될 수 있으므로 전부 발동 (최대 레시피 수만큼, 무한루프 가드)
-        for (int guard = 0; guard < 3 && _combinationModel.HasCompletedRecipe(); guard++)
+        if (_combinationModel != null)
         {
-            int idx = _combinationModel.GetCompletedRecipeIndex();
-            int skillId = _combinationModel.GetRecipeSkillId(idx);
-
-            if (_spellRepo != null)
+            _combinationModel.CheckIngredient(type);
+            // 한 번의 정렬로 여러 조합식이 동시에 완성될 수 있으므로 전부 발동 (최대 레시피 수만큼, 무한루프 가드)
+            for (int guard = 0; guard < 3 && _combinationModel.HasCompletedRecipe(); guard++)
             {
-                var combiSkill = _spellRepo.GetSkill(skillId);
-                _skillSystem.FireSkill(combiSkill, AttackType.Combi);
-            }
+                int idx = _combinationModel.GetCompletedRecipeIndex();
+                int skillId = _combinationModel.GetRecipeSkillId(idx);
 
-            _combinationModel.ConsumeRecipe(idx);
+                if (_spellRepo != null)
+                {
+                    var combiSkill = _spellRepo.GetSkill(skillId);
+                    _skillSystem.FireSkill(combiSkill, AttackType.Combi);
+                }
+
+                _combinationModel.ConsumeRecipe(idx);
+            }
         }
- 
-        var comboSkills = _skillSystem.GetTriggeredComboSkills(_comboModel.CurrentCombo);
-        for (int i = 0; i < comboSkills.Count; i++)
-            _skillSystem.FireSkill(comboSkills[i], AttackType.Combo);
+
+        if (_comboModel != null)
+        {
+            var comboSkills = _skillSystem.GetTriggeredComboSkills(_comboModel.CurrentCombo);
+            for (int i = 0; i < comboSkills.Count; i++)
+                _skillSystem.FireSkill(comboSkills[i], AttackType.Combo);
+        }
     }
  
     // 데미지 공식 -- 능력치 시트 1.04와 데미지 공식 1.01 기준
