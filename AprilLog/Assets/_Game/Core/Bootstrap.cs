@@ -84,6 +84,7 @@ public class Bootstrap : MonoBehaviour
         // 추가: 조규민 - Google 이전 세션도 회원가입 프로필 확인을 거친 뒤에만 로비로 이동한다.
         bool loginCompleted = false;
         bool loginSucceeded = false;
+        bool isAutomaticLoginFlow = CanUsePreviousSessionAutoSignIn() || _autoGuestSignInForDevelopment;
         string loginError = null;
 
         Action<string> onLoginSucceeded = null;
@@ -98,7 +99,12 @@ public class Bootstrap : MonoBehaviour
         onLoginFailed = (error) =>
         {
             loginError = error;
-            loginCompleted = true;
+
+            // 수동 로그인 화면에서는 Google 취소/실패 후 게스트 재시도가 가능해야 하므로 부팅 대기를 끝내지 않는다.
+            if (isAutomaticLoginFlow)
+            {
+                loginCompleted = true;
+            }
         };
 
         GameManager.Instance.OnLoginSucceeded += onLoginSucceeded;
