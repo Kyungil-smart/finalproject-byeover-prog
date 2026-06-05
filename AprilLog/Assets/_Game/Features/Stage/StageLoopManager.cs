@@ -84,6 +84,7 @@ public class StageLoopManager : MonoBehaviour
         _state = State.RunningStage;
 
         int stageId = GetStageId();
+        Debug.Log($"[StageLoopManager] ▶ 시작: 챕터{_chapterId} 스테이지{_currentStageIndex + 1} (Stage_ID={stageId})");
         var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
         if (stageData == null)
         {

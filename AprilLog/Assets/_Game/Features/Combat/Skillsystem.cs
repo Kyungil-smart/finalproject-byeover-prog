@@ -164,7 +164,10 @@ public class SkillSystem : MonoBehaviour
         }
 
         if (!_monsterSpawner.TryFindAttackTarget(_firePoint.position, out MonsterAI target))
+        {
+            Debug.Log("[전투진단] 발사 취소: 살아있는 공격 타겟(몬스터)이 없습니다.");
             return false;
+        }
 
         targetPos = target.transform.position;
         return true;
