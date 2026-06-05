@@ -37,8 +37,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [SerializeField] private Transform _choiceContainer;
     [Tooltip("스크롤 뷰를 제어하기 위함")]
     [SerializeField] private ScrollRect _scrollRect;
-    [SerializeField] private GameObject _deleteConfirmPanel;
     [SerializeField] private Button _skipButton;
+    [SerializeField] private Button _rerollButton;
     
     [Header("UI 프리팹 세팅")]
     [Tooltip("EnchantCard 프리팹")]
@@ -133,7 +133,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     }
     public void ShowDeleteConfirm(Legacy_EnchantDisplayData toDelete, Legacy_EnchantDisplayData toAcquire)
     {
-        if (_deleteConfirmPanel != null) _deleteConfirmPanel.SetActive(true);
+        
     }
 
     // View 버튼에서 호출

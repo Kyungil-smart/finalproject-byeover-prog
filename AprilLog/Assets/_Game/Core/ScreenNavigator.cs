@@ -30,9 +30,6 @@ public class ScreenNavigator : MonoBehaviour
     [Tooltip("옵션 팝업")]
     [SerializeField] private GameObject _optionPopup;
     
-    [Tooltip("배경 어둡게 연출")]
-    [SerializeField] private GameObject _dimBackground;
-    
     [Tooltip("콤보 텍스트 팝업")]
     [SerializeField] private GameObject _comboTextPopup;
     
@@ -186,14 +183,10 @@ public class ScreenNavigator : MonoBehaviour
     private void OpenMenu()
     {
         Time.timeScale = 0f;
-        if(_dimBackground != null)
-            _dimBackground.SetActive(true);
     }
 
     private void CloseMenu()
     {
-        if (_dimBackground != null)
-            _dimBackground.SetActive(false);
         Time.timeScale = 1f;
     }
 
