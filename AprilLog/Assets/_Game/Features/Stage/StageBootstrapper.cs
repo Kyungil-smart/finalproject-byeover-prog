@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 수정내용 : 데모버전 DB에 맞춰 최신화
 
+// 수정자 : 김영찬
+// 수정내용 : 인게임 UI에 넘겨줄 정보 이벤트 연결
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +23,9 @@ public class StageBootstrapper : MonoBehaviour
     [SerializeField] private StageLoopManager _loopManager;
     
     private StagePresenter _currentPresenter;
+    
+    // ---------- Event for UI ----------
+    public event Action<StageModel> OnStageInitComplete;
     
     // ---------- 이벤트 함수 ----------
     private void Update()
@@ -65,5 +71,7 @@ public class StageBootstrapper : MonoBehaviour
         
         StageModel newModel = new StageModel(stageData, waveRules, rng, _loopManager.WaveTransitionDelay);
         _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
+        
+        OnStageInitComplete?.Invoke(newModel);
     }
 }

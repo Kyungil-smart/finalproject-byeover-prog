@@ -67,6 +67,7 @@ public class HintSystem : MonoBehaviour
         }
         else
         {
+            Debug.Log("[힌트] 대기열 흔들기 시도!");
             OnHintWaiting?.Invoke();
         }
     }

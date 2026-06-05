@@ -9,6 +9,9 @@
 // 수정자 : 김영찬
 // 수정내용 : 데모버전 DB에 맞춰 최신화
 
+// 수정자 : 김영찬
+// 수정내용 : 인게임 UI에 넘겨줄 정보 이벤트 연결
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -26,8 +29,8 @@ public class StageModel
     private SpecialWaveRuleData _currentSpecialRule; 
     private System.Random _rng;
     
-    private enum State { WaveRunning, WaveTransition }
-    private State _state;
+    public enum WaveState { WaveRunning, WaveTransition }
+    private WaveState _state;
     
     // 정규 웨이브 변수
     private float _waveTimer;
@@ -64,6 +67,9 @@ public class StageModel
     public event Action OnStageClearTriggered;
     public event Action<Queue<SpawnCommand>, float> OnSpawnRequested;
     public event Action OnDespawnRemainingRequested;
+    public event Action<float> OnTimeChanged;
+    public event Action<WaveState> OnWaveStateChanged;
+    public event Action<SpawnType> OnSpecialWaveEntered;
     
     // ---------- 생성자 ----------
     public StageModel(StageData stageData, List<StageWaveRuleData> waveRules, System.Random rng, float transitionTime)
@@ -75,7 +81,7 @@ public class StageModel
         _stageLevel = _stageData.Stage_ID % 100; // 101 -> 1
 
         _currentWaveIndex = 0;
-        _state = State.WaveTransition;
+        _state = WaveState.WaveTransition;
         _waveTransitionDelay = transitionTime;
         _transitionTimer = _waveTransitionDelay; // 시작하자마자 첫 웨이브 진입
     }
@@ -83,14 +89,16 @@ public class StageModel
     // ---------- Update ----------
     public void Tick(float deltaTime)
     {
-        if (_state == State.WaveRunning)
+        if (_state == WaveState.WaveRunning)
         {
             UpdateWaveRunning(deltaTime);
             UpdateSpecialWave(deltaTime); // 💡 정규 스폰과 정지 없이 백그라운드 병렬 작동!
+            OnTimeChanged?.Invoke(_currentRule.WaveDuration - _waveTimer);
         }
-        else if (_state == State.WaveTransition)
+        else if (_state == WaveState.WaveTransition)
         {
             UpdateWaveTransition(deltaTime);
+            OnTimeChanged?.Invoke(_waveTransitionDelay - _transitionTimer);
         }
     }
     
@@ -153,8 +161,9 @@ public class StageModel
                 OnStageClearTriggered?.Invoke();
             else
             {
-                _state = State.WaveTransition;
+                _state = WaveState.WaveTransition;
                 _transitionTimer = 0f;
+                OnWaveStateChanged?.Invoke(_state);
             }
         }
     }
@@ -169,6 +178,7 @@ public class StageModel
             _isSpecialWaveTriggered = true;
             _specialWaveActiveTimer = 0f;
             _specialSpawnTimer = 0f; // 즉시 스폰을 위해 초기화
+            OnSpecialWaveEntered?.Invoke(Enum.TryParse(_currentSpecialRule.WaveType, out SpawnType parsedType) ? parsedType : SpawnType.Normal);
         }
 
         // --- 지속 및 종료 로직 ---
@@ -222,25 +232,28 @@ public class StageModel
         if (_transitionTimer >= _waveTransitionDelay)
         {
             _transitionTimer = 0f;
-            _state = State.WaveRunning;
+
+            // 일반 웨이브 룰 불러오기
+            _currentRule = _waveRules[_currentWaveIndex];
+            
+            // 일반 웨이브 상태 초기화
             _waveTimer = 0f;
             _spawnTimer = 0f;
 
-            // 1. 일반 웨이브 룰 장전
-            _currentRule = _waveRules[_currentWaveIndex];
-
-            // 💡 2. 각 웨이브에 종속된 '특수 웨이브 룰' 능동 장전 (조립기 개입 X)
-            // (함수명은 프로젝트 구조에 맞게 수정: 예 GetSpecialWaveRuleForWave)
+            // 각 웨이브에 종속된 특수 웨이브 룰 불러오기
             _currentSpecialRule = DataManager.Instance.StageRepo.GetSpecialWaveRuleForStage(_currentRule.SpecialWave_ID); 
 
-            // 3. 특수 웨이브 상태 초기화
+            // 특수 웨이브 상태 초기화
             _isSpecialWaveTriggered = false;
             _isSpecialWaveFinished = false;
             _specialWaveActiveTimer = 0f;
             _specialSpawnTimer = 0f;
             _isBossKilled = false;
 
+            // 웨이브 상태 변경 및 전파
+            _state = WaveState.WaveRunning;
             OnWaveStarted?.Invoke(_currentWaveIndex, _waveCount);
+            OnWaveStateChanged?.Invoke(_state);
         }
     }
     
@@ -289,7 +302,7 @@ public class StageModel
         // 특수 웨이브 타입에 따른 한 틱당 물량 설정
         int spawnAmount = (sType == SpawnType.Rush) ? 2 : 1; // 러시 전용 2마리 (기획 4-1-2)
         
-        // 💡 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀 ID를 사용!
+        // 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀 ID를 사용!
         int poolId = _currentSpecialRule.MonsterWavePool_ID; 
         
         for (int i = 0; i < spawnAmount; i++)
