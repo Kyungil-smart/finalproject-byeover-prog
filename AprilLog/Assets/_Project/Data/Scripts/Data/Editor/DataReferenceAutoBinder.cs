@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 public static class DataReferenceAutoBinder
 {
     private const string SO_FOLDER = "Assets/_Project/Data/SO";
-    private const string DATA_MANAGER_PREFAB_PATH = "Assets/_Game/Prefabs/DataManager.prefab";
+    private const string DATA_MANAGER_PREFAB_PATH = "Assets/Resources/DataManager.prefab";
 
     private static readonly Dictionary<string, string> FieldAssetMap = new Dictionary<string, string>
     {
