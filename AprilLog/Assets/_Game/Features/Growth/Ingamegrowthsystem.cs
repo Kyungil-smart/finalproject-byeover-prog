@@ -34,6 +34,9 @@ public class InGameGrowthSystem : MonoBehaviour
  
     [Header("설정")]
     [SerializeField] private int _maxLevel = 30;
+
+    // 데드락 통지(SortSystem.OnDeadlockDetected) 구독용. 비면 런타임 자동 탐색.
+    [SerializeField] private SortSystem _sortSystem;
  
     // ---------- 데이터 ----------
     public int CurrentLevel { get; private set; }
@@ -61,12 +64,20 @@ public class InGameGrowthSystem : MonoBehaviour
 
         if (_spawner != null)
             _spawner.OnMonsterDied += HandleMonsterDied;
+
+        // 데드락 발생 시 EXP 10% 감소(기획 4-2-6) 연결
+        if (_sortSystem == null) _sortSystem = FindFirstObjectByType<SortSystem>();
+        if (_sortSystem != null)
+            _sortSystem.OnDeadlockDetected += ApplyDeadlockPenalty;
     }
- 
+
     private void OnDisable()
     {
         if (_spawner != null)
             _spawner.OnMonsterDied -= HandleMonsterDied;
+
+        if (_sortSystem != null)
+            _sortSystem.OnDeadlockDetected -= ApplyDeadlockPenalty;
     }
  
     private void HandleMonsterDied(MonsterAI monster, bool isKamikaze = false)

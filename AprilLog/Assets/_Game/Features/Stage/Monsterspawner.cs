@@ -67,7 +67,15 @@ public class MonsterSpawner : MonoBehaviour
     // ---------- Update ----------
     public void Tick(float deltaTime)
     {
-        
+
+    }
+
+    // 일반 스폰 라인(상단 Y + 좌우 X 범위)을 외부에서 설정. InGameBootstrap이 카메라 기준으로 맞춤.
+    public void SetNormalSpawnLine(float y, float xMin, float xMax)
+    {
+        _normalSpawnLineY = y;
+        _normalSpawnLineXMin = xMin;
+        _normalSpawnLineXMax = xMax;
     }
 
     // ---------- 스폰 ----------

@@ -173,61 +173,27 @@ public class SortModel : MonoBehaviour
         return _cachedCounts;
     }
 
+    // 기획 3-2: 퍼즐 테이블에 '3개 이상' 배치된 유닛 종류 중 하나를 랜덤 선택해
+    //           그 종류의 유닛들을 흔든다. 3개 이상인 종류가 없으면 빈 리스트 반환
+    //           → HintSystem이 대기 테이블을 흔든다 (3-2-4).
     public List<(int t, int s)> GetHintTargets()
     {
-        var twoMatches = new List<(int tableIdx, int unitType)>();
+        var counts = CountUnitTypes();
+        var candidates = new List<int>();
+        foreach (var pair in counts)
+            if (pair.Value >= 3) candidates.Add(pair.Key);
+
+        var result = new List<(int t, int s)>();
+        if (candidates.Count == 0)
+            return result;
+
+        int chosenType = candidates[UnityEngine.Random.Range(0, candidates.Count)];
 
         for (int t = 0; t < TABLE_COUNT; t++)
-        {
-            for (int type = 0; type < UNIT_TYPE_COUNT; type++)
-            {
-                if (GetCountInTable(t, type) == 2)
-                {
-                    twoMatches.Add((t, type));
-                }
-            }
-        }
+            for (int s = 0; s < SLOTS_PER_TABLE; s++)
+                if (_puzzleTables[t][s] == chosenType)
+                    result.Add((t, s));
 
-        foreach (var target in twoMatches)
-        {
-            for (int helperIdx = 0; helperIdx < TABLE_COUNT; helperIdx++)
-            {
-                if (target.tableIdx == helperIdx) continue;
-
-                if (GetCountInTable(helperIdx, target.unitType) == 1)
-                {
-                    return CreateTargetList(target.tableIdx, helperIdx, target.unitType);
-                }
-            }
-        }
-        return new List<(int t, int s)>();
-    }
-
-    private int GetCountInTable(int tableIdx, int unitType)
-    {
-        int count = 0;
-        for (int s = 0; s < SLOTS_PER_TABLE; s++)
-            if (GetUnit(tableIdx, s) == unitType) count++;
-        return count;
-    }
-    private List<(int t, int s)> CreateTargetList(int t1, int t2, int unitType)
-    {
-        var list = new List<(int t, int s)>();
-
-        for (int s = 0; s < SLOTS_PER_TABLE; s++)
-        {
-            if (GetUnit(t1, s) == unitType)
-                list.Add((t1, s));
-        }
-        for (int s = 0; s < SLOTS_PER_TABLE; s++)
-        {
-            if (GetUnit(t2, s) == unitType)
-            {
-                list.Add((t2, s));
-                break;
-            }
-        }
-
-        return list;
+        return result;
     }
 }

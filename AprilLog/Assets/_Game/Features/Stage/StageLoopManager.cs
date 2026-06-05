@@ -55,6 +55,15 @@ public class StageLoopManager : MonoBehaviour
     // ---------- 초기화 ----------
     public void StartChapter(int chapterId, int startStageIndex, int seed)
     {
+        // 참조가 비어 있으면 자동 탐색(씬 배치/런타임 생성 모두 지원)
+        if (_bootstrapper == null) _bootstrapper = FindFirstObjectByType<StageBootstrapper>();
+        if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
+        if (_bootstrapper == null || _playerModel == null)
+        {
+            Debug.LogError("[StageLoopManager] StageBootstrapper/PlayerModel을 찾지 못해 챕터를 시작할 수 없습니다.");
+            return;
+        }
+
         _chapterId = chapterId;
         _currentStageIndex = startStageIndex;
         _rng = new System.Random(seed);

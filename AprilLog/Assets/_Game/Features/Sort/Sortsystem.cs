@@ -128,19 +128,22 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         _model.PlaceUnit(table, slot, unit);
     }
 
-    // 드롭한 슬롯이 차있으면 같은 테이블 빈 슬롯 찾기
-    // 우측부터 순환 탐색
+    // 드롭한 슬롯이 차있으면 같은 테이블 빈 슬롯 찾기.
+    // 기획 1-2-5: 드롭 지점에서 가장 가까운 '우측' 슬롯부터 확인, 없으면 좌측으로 폴백.
     private int ResolveDropSlot(int tableIdx, int targetSlot)
     {
         if (_model.GetUnit(tableIdx, targetSlot) < 0)
             return targetSlot;
 
-       for (int offset = 1; offset < SortModel.SLOTS_PER_TABLE; offset++)
-        {
-            int idx = (targetSlot + offset) % SortModel.SLOTS_PER_TABLE;
-            if (_model.GetUnit(tableIdx, idx) < 0)
-                return idx;
-        }
+        // 우측 우선
+        for (int s = targetSlot + 1; s < SortModel.SLOTS_PER_TABLE; s++)
+            if (_model.GetUnit(tableIdx, s) < 0)
+                return s;
+
+        // 우측이 없으면 좌측(앞쪽) 빈 슬롯
+        for (int s = 0; s < targetSlot; s++)
+            if (_model.GetUnit(tableIdx, s) < 0)
+                return s;
 
         return -1;  // 테이블 꽉 참
     }
@@ -364,13 +367,17 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     private IEnumerator HandleDeadlock()
     {
         _isProcessing = true;
-        OnDeadlockDetected?.Invoke();
 
-        yield return new WaitForSeconds(1.5f);
+        // 기획 4-2: 일시정지 → 알람 통지 → 테이블 리셋 → 진행
+        Time.timeScale = 0f;                         // 4-2-1 인게임 일시정지
+        OnDeadlockDetected?.Invoke();                // 4-2-2 알람팝업(UI)·4-2-6 EXP 감소(Growth) 구독자에 통지
 
-        _model.ResetBoard();
-        FillEmptyTablesFromQueue();
+        yield return new WaitForSecondsRealtime(1.5f); // timeScale=0 중에도 흐르도록 Realtime 사용
 
+        _model.ResetBoard();                          // 4-2-3 퍼즐 유닛 전체 삭제
+        FillEmptyTablesFromQueue();                   // 4-2-4 대기 테이블에서 채우기
+
+        Time.timeScale = 1f;                          // 4-2-5 인게임 진행 재개
         _isProcessing = false;
     }
 }

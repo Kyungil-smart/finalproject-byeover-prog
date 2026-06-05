@@ -80,7 +80,10 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         MaxHP = stats != null ? stats.MaxHP : 1;
         CurrentHP = MaxHP;
         _attack = stats != null ? stats.Attack : 1;
-        _attackInterval = stats != null ? stats.BaseAttackSpeed : 1.5f;
+        // BaseAttackSpeed는 게이지 충전율(값이 클수록 빠름, 범위 0.01~1).
+        // 공격 간격(초) = 1 / 충전율. (0 이하/누락이면 기본 1.5초)
+        float atkSpeed = stats != null ? stats.BaseAttackSpeed : 0f;
+        _attackInterval = atkSpeed > 0f ? 1f / atkSpeed : 1.5f;
         
         _defense = monsterStats != null ? monsterStats.Defense : 0;
         _range = monsterStats != null ? monsterStats.Range : 1;
@@ -110,18 +113,21 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
             ? monsterStats.MoveSpeed
             : 3f;
 
-        if (monsterStats != null)
+        // 이동 패턴 파싱. Enum.Parse는 빈 값/오타에 예외를 던지므로 TryParse로 안전 처리.
+        // 잘못된/누락 값이면 기본값 Straight. (_movement는 항상 설정해 Update NRE 방지)
+        MoveType moveType = MoveType.Straight;
+        if (monsterStats != null && !string.IsNullOrEmpty(monsterStats.MovementPattern))
+            Enum.TryParse(monsterStats.MovementPattern, out moveType);
+
+        switch (moveType)
         {
-            MoveType moveType = (MoveType)Enum.Parse(typeof(MoveType), monsterStats.MovementPattern);
-            switch (moveType)
-            {
-                case MoveType.Straight:
-                    _movement = new StraightDownMovement(moveSpeed);
-                    break;
-                case MoveType.Zigzag:
-                    _movement = new ZigzagMovement(moveSpeed);
-                    break;
-            }
+            case MoveType.Zigzag:
+                _movement = new ZigzagMovement(moveSpeed, _zigzagAmplitude);
+                break;
+            case MoveType.Straight:
+            default:
+                _movement = new StraightDownMovement(moveSpeed);
+                break;
         }
 
         // 이동 범위 (화면 양 끝)
@@ -203,7 +209,8 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // ---------- 공격 지원 ----------
     private void AttackSupport()
     {
-        _animator.SetTrigger("Attack");
+        if (_animator != null)
+            _animator.SetTrigger("Attack");
 
         switch (_attackType)
         {
@@ -268,7 +275,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         // 유효 방어력 하한 0 (관통이 방어력보다 커도 데미지가 증폭되지 않도록, 기획 2-4-4)
         int effectiveArmor = Mathf.Max(0, _defense - penetration);
         int finalDamage = Mathf.FloorToInt(baseDamage * (1 - effectiveArmor / (float)(100 + effectiveArmor)));
-        
+
+        RunStats.AddDamage(finalDamage); // 정산용 총 데미지 누적
+
         CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
 
@@ -347,24 +356,31 @@ public class ZigzagMovement : IMovementPattern
 {
     private float _speed;
     private float _horizontalDir;
+    private float _amplitude;   // 스폰 X 기준 좌우 반복 거리 (데이터 ZigzagAmplitude). 0 이하면 기존 기본값
+    private float _originX;
+    private bool _originSet;
 
-    public ZigzagMovement(float speed)
+    public ZigzagMovement(float speed, float amplitude = 0f)
     {
         _speed = speed;
+        _amplitude = amplitude > 0f ? amplitude : speed * 0.5f; // 데이터 없으면 기존 동작 유지
         _horizontalDir = -1f;
     }
 
     public Vector2 CalculateNextPosition(Vector2 current, float dt, Rect bounds)
     {
-        float newY = current.y - _speed * dt;
-        float newX = current.x + _horizontalDir * _speed * 0.5f * dt;
+        // 스폰 X를 기준점으로 ± amplitude 만큼 좌우 반복 (기획 6-1-2/6-1-4)
+        if (!_originSet) { _originX = current.x; _originSet = true; }
 
-        // 영역 벗어나면 방향 반전
-        if (newX <= bounds.xMin || newX >= bounds.xMax)
-        {
-            _horizontalDir *= -1f;
-            newX = Mathf.Clamp(newX, bounds.xMin, bounds.xMax);
-        }
+        float newY = current.y - _speed * dt;
+        float newX = current.x + _horizontalDir * _speed * dt;
+
+        // 좌우 한계 = 스폰X ± amplitude, 단 이동 영역(bounds) 안으로 제한
+        float leftLimit = Mathf.Max(bounds.xMin, _originX - _amplitude);
+        float rightLimit = Mathf.Min(bounds.xMax, _originX + _amplitude);
+
+        if (newX <= leftLimit) { newX = leftLimit; _horizontalDir = 1f; }
+        else if (newX >= rightLimit) { newX = rightLimit; _horizontalDir = -1f; }
 
         return new Vector2(newX, newY);
     }
