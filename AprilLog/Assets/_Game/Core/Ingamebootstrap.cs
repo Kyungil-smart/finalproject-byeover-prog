@@ -61,6 +61,8 @@ public class InGameBootstrap : MonoBehaviour
     {
         Debug.Log("[InGameBootstrap] === InGame 초기화 시작 ===");
 
+        RunStats.Reset(); // 한 판 통계(총 데미지 등) 초기화
+
         // [1] Repository 초기화는 DataManager 싱글톤에서 처리됨 (김영찬)
 
         // [2] 이어하기 체크
@@ -128,6 +130,10 @@ public class InGameBootstrap : MonoBehaviour
             _projectileTemplate = BuildProjectileTemplate();
         pool.EnsurePool("Projectile_Basic", _projectileTemplate, _projectilePoolSize);
 
+        // 단독 _InGame 실행(Boot 미경유) 시 몬스터 풀이 비어 있어 스폰이 실패한다.
+        // 에디터 테스트 편의로 Monsters 폴더 프리팹을 풀에 자동 등록 (빌드는 Boot 경유라 제외).
+        EnsureMonsterPoolsInEditor(pool);
+
         // 플레이어/방벽 배치.
         // 씬에 PlayerView를 직접 두면 그 위치를 존중하고 자동 배치하지 않는다(완전 수동 제어).
         // 없으면 인스펙터 값(_characterViewportY, _barrierAboveCharacter)으로 자동 배치한다.
@@ -167,7 +173,34 @@ public class InGameBootstrap : MonoBehaviour
             loop = go.AddComponent<StageLoopManager>();
         }
 
+        // 챕터 종료(승/패) → 정산 팝업
+        loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지
+        loop.OnChapterEnd += ShowSettlement;
+
         loop.StartChapter(chapterId, startStageIndex, seed);
+    }
+
+    // 챕터 종료 시 정산 팝업 표시 + 데이터 주입 (기획: 승패/콤보/총뎀/보상)
+    private void ShowSettlement(bool isVictory)
+    {
+        var view = FindFirstObjectByType<SettlementView>(FindObjectsInactive.Include);
+        if (view == null)
+        {
+            Debug.LogWarning("[InGameBootstrap] SettlementView를 찾지 못해 정산 팝업을 띄우지 못했습니다.");
+            return;
+        }
+
+        int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
+        int totalDamage = RunStats.TotalDamage;
+
+        // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
+        int gold = isVictory ? 100 : 0;
+        int parchment = isVictory ? 10 : 0;
+
+        view.Show();
+        view.SetResult(isVictory);
+        view.SetStats(maxCombo, totalDamage);
+        view.SetRewards(gold, parchment);
     }
 
     // 실제 웨이브로 진행하므로 에디터 테스트용 더미 스포너를 끈다.
@@ -194,6 +227,23 @@ public class InGameBootstrap : MonoBehaviour
             return wp.y;
         }
         return _fallbackCharacterY;
+    }
+
+    // [에디터 전용] 단독 _InGame 실행 시 Monsters 폴더의 프리팹을 풀에 자동 등록.
+    // 빌드/정식 플로우는 Boot의 PoolManager configs를 사용하므로 이 블록은 컴파일에서 제외됨.
+    private void EnsureMonsterPoolsInEditor(PoolManager pool)
+    {
+#if UNITY_EDITOR
+        const string dir = "Assets/_Game/Prefabs/Monsters";
+        var guids = UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { dir });
+        foreach (var guid in guids)
+        {
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab != null)
+                pool.EnsurePool(prefab.name, prefab, 5); // key = 프리팹명(Monster_11 …) = 풀키 규칙
+        }
+#endif
     }
 
     // 코드로 만든 투사체 템플릿(사각형). DummyCombatTester의 런타임 생성 로직을 정식화.

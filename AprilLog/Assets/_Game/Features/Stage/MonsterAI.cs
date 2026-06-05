@@ -122,7 +122,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         switch (moveType)
         {
             case MoveType.Zigzag:
-                _movement = new ZigzagMovement(moveSpeed);
+                _movement = new ZigzagMovement(moveSpeed, _zigzagAmplitude);
                 break;
             case MoveType.Straight:
             default:
@@ -275,7 +275,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         // 유효 방어력 하한 0 (관통이 방어력보다 커도 데미지가 증폭되지 않도록, 기획 2-4-4)
         int effectiveArmor = Mathf.Max(0, _defense - penetration);
         int finalDamage = Mathf.FloorToInt(baseDamage * (1 - effectiveArmor / (float)(100 + effectiveArmor)));
-        
+
+        RunStats.AddDamage(finalDamage); // 정산용 총 데미지 누적
+
         CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
 
@@ -354,24 +356,31 @@ public class ZigzagMovement : IMovementPattern
 {
     private float _speed;
     private float _horizontalDir;
+    private float _amplitude;   // 스폰 X 기준 좌우 반복 거리 (데이터 ZigzagAmplitude). 0 이하면 기존 기본값
+    private float _originX;
+    private bool _originSet;
 
-    public ZigzagMovement(float speed)
+    public ZigzagMovement(float speed, float amplitude = 0f)
     {
         _speed = speed;
+        _amplitude = amplitude > 0f ? amplitude : speed * 0.5f; // 데이터 없으면 기존 동작 유지
         _horizontalDir = -1f;
     }
 
     public Vector2 CalculateNextPosition(Vector2 current, float dt, Rect bounds)
     {
-        float newY = current.y - _speed * dt;
-        float newX = current.x + _horizontalDir * _speed * 0.5f * dt;
+        // 스폰 X를 기준점으로 ± amplitude 만큼 좌우 반복 (기획 6-1-2/6-1-4)
+        if (!_originSet) { _originX = current.x; _originSet = true; }
 
-        // 영역 벗어나면 방향 반전
-        if (newX <= bounds.xMin || newX >= bounds.xMax)
-        {
-            _horizontalDir *= -1f;
-            newX = Mathf.Clamp(newX, bounds.xMin, bounds.xMax);
-        }
+        float newY = current.y - _speed * dt;
+        float newX = current.x + _horizontalDir * _speed * dt;
+
+        // 좌우 한계 = 스폰X ± amplitude, 단 이동 영역(bounds) 안으로 제한
+        float leftLimit = Mathf.Max(bounds.xMin, _originX - _amplitude);
+        float rightLimit = Mathf.Min(bounds.xMax, _originX + _amplitude);
+
+        if (newX <= leftLimit) { newX = leftLimit; _horizontalDir = 1f; }
+        else if (newX >= rightLimit) { newX = rightLimit; _horizontalDir = -1f; }
 
         return new Vector2(newX, newY);
     }

@@ -194,14 +194,12 @@ public class StageModel
                 return; 
             }
 
-            // 특수 스폰 실행
+            // 특수 스폰 실행 (Instant = 1회성). 트리거 직후 한 번만 발동.
+            // (float 동등비교 대신 _isSpecialWaveFinished 가드로 1회 보장)
             if (_currentSpecialRule.EndType == "Instant")
             {
-                if (_specialWaveActiveTimer == deltaTime) // 프레임 첫 진입 시 딱 1번만 발동!
-                {
-                    ExecuteSpecialSpawn();
-                    _isSpecialWaveFinished = true; 
-                }
+                ExecuteSpecialSpawn();
+                _isSpecialWaveFinished = true;
                 return;
             }
 

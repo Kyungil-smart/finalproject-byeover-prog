@@ -367,13 +367,17 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     private IEnumerator HandleDeadlock()
     {
         _isProcessing = true;
-        OnDeadlockDetected?.Invoke();
 
-        yield return new WaitForSeconds(1.5f);
+        // 기획 4-2: 일시정지 → 알람 통지 → 테이블 리셋 → 진행
+        Time.timeScale = 0f;                         // 4-2-1 인게임 일시정지
+        OnDeadlockDetected?.Invoke();                // 4-2-2 알람팝업(UI)·4-2-6 EXP 감소(Growth) 구독자에 통지
 
-        _model.ResetBoard();
-        FillEmptyTablesFromQueue();
+        yield return new WaitForSecondsRealtime(1.5f); // timeScale=0 중에도 흐르도록 Realtime 사용
 
+        _model.ResetBoard();                          // 4-2-3 퍼즐 유닛 전체 삭제
+        FillEmptyTablesFromQueue();                   // 4-2-4 대기 테이블에서 채우기
+
+        Time.timeScale = 1f;                          // 4-2-5 인게임 진행 재개
         _isProcessing = false;
     }
 }
