@@ -10,7 +10,6 @@ public class EnchantCardUI : MonoBehaviour
     [Header("UI 컴포넌트 참조")]
     [SerializeField] private TextMeshProUGUI _typeText;
     [SerializeField] private TextMeshProUGUI _nameText;
-    [SerializeField] private TextMeshProUGUI _levelText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private Image _iconImage;
     
@@ -58,10 +57,6 @@ public class EnchantCardUI : MonoBehaviour
         // 인챈트 이름 반영 (예: "공격력 증가", "체인 라이트닝" 등)
         if (_nameText != null) 
             _nameText.text = data.Name;
-
-        // 프레젠터가 계산해서 넘겨준 다음 레벨 반영 (예: "Lv.3")
-        if (_levelText != null) 
-            _levelText.text = $"Lv.{data.Level}";
         
         // 인챈트 상세 설명 반영
         if (_descriptionText != null)
