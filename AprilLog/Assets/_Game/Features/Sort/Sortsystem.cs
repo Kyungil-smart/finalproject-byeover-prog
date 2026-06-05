@@ -70,10 +70,15 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     // ---------- 유닛 이동 처리 ----------
     private void HandleUnitDropped(int fromTable, int fromSlot, int toTable, int toSlot)
     {        
-        if (_isProcessing) return;
-   
+        if (_isProcessing)
+        {
+            Debug.Log($"[SORT진단] 이동 무시 — _isProcessing 잠김 상태(매치/데드락 처리 중). from=({fromTable},{fromSlot})");
+            return;
+        }
+
         if (toTable == -1) // 이동 불가
         {
+            Debug.Log($"[SORT진단] 거부: 드롭 지점이 어떤 슬롯과도 가깝지 않음(toTable=-1, touchRadius 밖). from=({fromTable},{fromSlot})");
             RestoreUnit(fromTable, fromSlot);
             return;
         }
@@ -81,16 +86,19 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         int actualSlot = ResolveDropSlot(toTable, toSlot);
         if (actualSlot == -1) // 꽉찬 슬롯
         {
-            Debug.Log("이동 불가! 꽉 찬 테이블입니다.");
+            Debug.Log($"[SORT진단] 거부: 대상 테이블 {toTable} 이 꽉 참(빈 슬롯 없음). from=({fromTable},{fromSlot}) toSlot={toSlot}");
             RestoreUnit(fromTable, fromSlot);
-            return;  
+            return;
         }
 
         if (fromTable == toTable && fromSlot == actualSlot) // 같은 자리
         {
+            Debug.Log($"[SORT진단] 거부: 같은 자리 드롭. ({fromTable},{fromSlot})");
             RestoreUnit(fromTable, fromSlot);
-            return; 
+            return;
         }
+
+        Debug.Log($"[SORT진단] 이동 성공: ({fromTable},{fromSlot}) → ({toTable},{actualSlot})  [드롭타겟슬롯={toSlot}]");
 
         // 유닛 이동
         int unit = _model.GetUnit(fromTable, fromSlot);

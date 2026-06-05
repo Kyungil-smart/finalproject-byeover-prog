@@ -118,7 +118,15 @@ public class StageLoopManager : MonoBehaviour
 
     private void EndChapter(bool isVictory)
     {
+        // 이미 승/패가 확정됐으면 중복 처리 금지 (예: 클리어와 사망 동시 발생)
+        if (_state == State.ChapterEnd) return;
         _state = State.ChapterEnd;
+
+        // 승/패 확정 시 웨이브 진행(스폰·Tick)을 완전히 멈춘다.
+        // 이게 없으면 패배/승리 후에도 몬스터가 계속 스폰된다.
+        if (_bootstrapper != null)
+            _bootstrapper.StopStage();
+
         OnChapterEnd?.Invoke(isVictory);
     }
 

@@ -217,6 +217,18 @@ public class InGameBootstrap : MonoBehaviour
         view.SetResult(isVictory);
         view.SetStats(maxCombo, totalDamage);
         view.SetRewards(gold, parchment);
+
+        // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
+        // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.
+        DisablePlayerInputOnGameEnd();
+    }
+
+    // 게임 종료(승/패) 시 퍼즐 입력을 차단해 더 이상 조작/공격이 일어나지 않게 한다. (기획 1-3-1)
+    private void DisablePlayerInputOnGameEnd()
+    {
+        var sortInput = FindFirstObjectByType<SortInputHandler>();
+        if (sortInput != null)
+            sortInput.enabled = false;
     }
 
     // 실제 웨이브로 진행하므로 에디터 테스트용 더미 스포너를 끈다.

@@ -42,6 +42,23 @@ public class StageBootstrapper : MonoBehaviour
             _currentPresenter.Release();
     }
 
+    // 챕터 종료(승/패) 시 웨이브 진행을 완전히 멈춘다.
+    // 스폰 정지 + 남은 몬스터 정리 + presenter Tick 중단.
+    public void StopStage()
+    {
+        if (_spawner != null)
+        {
+            _spawner.StopSpawning();
+            _spawner.DespawnAllAliveMonsters();
+        }
+
+        if (_currentPresenter != null)
+        {
+            _currentPresenter.Release();
+            _currentPresenter = null; // Update에서 더 이상 Tick 안 함
+        }
+    }
+
     // ---------- 시스템 조립 ----------
     public void InitAndStart(StageData stageData, System.Random rng, Action onStageComplete)
     {
