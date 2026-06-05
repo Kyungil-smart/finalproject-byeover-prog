@@ -20,6 +20,9 @@ public class ScreenNavigator : MonoBehaviour
     
     [Tooltip("인챈트 교체 팝업")]
     [SerializeField] private GameObject _enchantChangePopup;
+    
+    [Tooltip("인첸트 리스트 팝업")]
+    [SerializeField] private GameObject _enchantListPopup;
 
     [Tooltip("정산 화면")]
     [SerializeField] private GameObject _settlementPopup;
@@ -40,7 +43,7 @@ public class ScreenNavigator : MonoBehaviour
     
     [Header("팝업 시간")] 
     [SerializeField][Range(0,10f)] private float _comboPopupTime = 1.5f;
-    [SerializeField][Range(0,10f)] private float _spcialWavePopupTime = 3f;
+    [SerializeField][Range(0,10f)] private float _specialWavePopupTime = 3f;
 
     // ---------- private ----------
     private float _comboPopupTimer;
@@ -92,7 +95,7 @@ public class ScreenNavigator : MonoBehaviour
         {
             _wavePopupTimer += deltaTime;
 
-            if (_wavePopupTimer >= _spcialWavePopupTime)
+            if (_wavePopupTimer >= _specialWavePopupTime)
             {
                 HideWavePopup();
             }
@@ -121,13 +124,11 @@ public class ScreenNavigator : MonoBehaviour
     {
         if (_enchantSelectPopup != null)
             _enchantSelectPopup.SetActive(false);
-        CloseMenu();
     }
     
     // ---------- 인챈트 선택 ----------
     public void ShowEnchantChange()
     {
-        HideOption();
         if (_enchantChangePopup != null)
             _enchantChangePopup.SetActive(true);
     }
@@ -136,6 +137,20 @@ public class ScreenNavigator : MonoBehaviour
     {
         if (_enchantChangePopup != null)
             _enchantChangePopup.SetActive(false);
+    }
+    
+    // ---------- 인챈트 선택 ----------
+    public void ShowEnchantList()
+    {
+        HideOption();
+        if (_enchantListPopup != null)
+            _enchantListPopup.SetActive(true);
+    }
+
+    private void HideEnchantList()
+    {
+        if (_enchantListPopup != null)
+            _enchantListPopup.SetActive(false);
     }
 
     // ---------- 정산 ----------
@@ -156,7 +171,7 @@ public class ScreenNavigator : MonoBehaviour
     // ---------- 옵션 ----------
     public void ShowOption()
     {
-        HideEnchantChange();
+        HideEnchantList();
         if (_optionPopup != null)
             _optionPopup.SetActive(true);
     }
@@ -186,12 +201,14 @@ public class ScreenNavigator : MonoBehaviour
     public void OnPauseButtonClick()
     {
         OpenMenu();
-        ShowEnchantChange();
+        ShowEnchantList();
     }
     
     public void OnCloseButtonClick()
     {
+        HideEnchantSelection();
         HideEnchantChange();
+        HideEnchantList();
         HideOption();
         CloseMenu();
     }

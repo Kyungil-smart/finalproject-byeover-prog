@@ -19,21 +19,29 @@ MonoBehaviour:
     TriggerTime: 20
     EndType: Duration
     ActiveDuration: 20
+    SpecialSpawnInterval: 5
+    SpecialSpawnAmount: 3
   - SpecialWave_ID: 2002
     MonsterWavePool_ID: 1006
     WaveType: Gimmick
     TriggerTime: 5
     EndType: WaveEnd
     ActiveDuration: 0
+    SpecialSpawnInterval: 5
+    SpecialSpawnAmount: 2
   - SpecialWave_ID: 2003
     MonsterWavePool_ID: 1007
     WaveType: Elite
     TriggerTime: 10
     EndType: Instant
     ActiveDuration: 0
+    SpecialSpawnInterval: 5
+    SpecialSpawnAmount: 1
   - SpecialWave_ID: 2004
     MonsterWavePool_ID: 1008
     WaveType: Boss
     TriggerTime: 10
     EndType: Instant
     ActiveDuration: 0
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
