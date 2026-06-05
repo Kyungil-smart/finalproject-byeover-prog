@@ -35,8 +35,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [Header("UI")]
     [Tooltip("Horizontal Layout Group이 붙은 Content")]
     [SerializeField] private Transform _choiceContainer;
-    [Tooltip("스크롤 뷰를 제어하기 위함")]
-    [SerializeField] private ScrollRect _scrollRect;
     [SerializeField] private Button _skipButton;
     [SerializeField] private Button _rerollButton;
     
@@ -113,22 +111,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                     Hide();              
                 };
             }
-        }
-        
-        if (choices.Length <= 3)
-        {
-            // 카드가 3개 이하라면 스크롤 기능을 끄고, Content를 정중앙(0, 0)으로 강제 고정합니다.
-            if (_scrollRect != null) _scrollRect.enabled = false;
-            
-            if (_choiceContainer.TryGetComponent<RectTransform>(out var rect))
-            {
-                rect.anchoredPosition = Vector2.zero; // Pos X, Y를 0으로 고정!
-            }
-        }
-        else
-        {
-            // 카드가 4개 이상이라면 가로 스크롤이 필요하므로 스크롤 기능을 켭니다.
-            if (_scrollRect != null) _scrollRect.enabled = true;
         }
     }
     public void ShowDeleteConfirm(Legacy_EnchantDisplayData toDelete, Legacy_EnchantDisplayData toAcquire)

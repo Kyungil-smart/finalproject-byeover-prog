@@ -68,7 +68,7 @@ public class ScreenNavigator : MonoBehaviour
         HideComboTextPopup();
         HideWavePopup();
         HideSettlement();
-        CloseMenu();
+        OnCloseButtonClick();
     }
     
     // ---------- 시간 계산 ----------
