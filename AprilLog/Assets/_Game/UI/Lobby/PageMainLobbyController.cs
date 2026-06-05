@@ -2,7 +2,7 @@
 // 설명   : Page_MainLobby — 이전/다음 버튼으로 챕터 슬롯 슬라이드 전환
 //          - ChapterTestDataSO에서 데이터 읽기
 //          - DOTween으로 카드 슬라이드 인/아웃 연출
-//          - 첫 번째 챕터면 이전 버튼 비활성화
+//          - 첫 번째/마지막 챕터면 이동 불가 버튼 숨김
 
 using DG.Tweening;
 using UnityEngine;
@@ -119,9 +119,11 @@ public class PageMainLobbyController : MonoBehaviour
 
     private void RefreshButtons()
     {
-        SetButtonsInteractable(true);
-        if (_btnPrev != null) _btnPrev.interactable = _currentIndex > 0;
-        if (_btnNext != null) _btnNext.interactable = _data != null && _currentIndex < _data.ChapterCount - 1;
+        bool hasPrev = _currentIndex > 0;
+        bool hasNext = _data != null && _currentIndex < _data.ChapterCount - 1;
+
+        SetButtonVisible(_btnPrev, hasPrev);
+        SetButtonVisible(_btnNext, hasNext);
     }
 
     private void SetButtonsInteractable(bool value)
@@ -131,5 +133,13 @@ public class PageMainLobbyController : MonoBehaviour
             if (_btnPrev != null) _btnPrev.interactable = false;
             if (_btnNext != null) _btnNext.interactable = false;
         }
+    }
+
+    private static void SetButtonVisible(Button button, bool visible)
+    {
+        if (button == null) return;
+
+        button.gameObject.SetActive(visible);
+        button.interactable = visible;
     }
 }
