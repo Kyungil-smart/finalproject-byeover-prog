@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // DataManager 최신화 중 기존 연결을 Legacy로 변경
 
+// 수정자 : 김영찬
+// ScreenNavigator의 변경에 따른 버튼 연결 최신화
+
 using System.Collections.Generic;
 
 /// <summary>
@@ -57,11 +60,11 @@ public class EnchantSelectPresenter
     {
         if (index < 0 || index >= _currentChoices.Count) return;
         _model.AcquireEnchant(_currentChoices[index].EnchantID);
-        _navigator.HideEnchantSelection();
+        _navigator.OnCloseButtonClick();
     }
 
     private void HandleSkip()
     {
-        _navigator.HideEnchantSelection();
+        _navigator.OnCloseButtonClick();
     }
 }
