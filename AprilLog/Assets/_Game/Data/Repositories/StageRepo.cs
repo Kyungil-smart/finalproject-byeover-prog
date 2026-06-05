@@ -207,7 +207,7 @@ public class StageRepo : MonoBehaviour
             if (data.MonsterWavePool_ID != wavePoolId) continue;
 
             // 타입까지 일치하면 즉시 반환 (정상 경로)
-            if (data.MonsterPoolType == type)
+            if (data.WavePoolType == type)
                 return data.MonsterPool_ID;
 
             // 같은 웨이브풀의 첫 풀을 폴백 후보로 기억
