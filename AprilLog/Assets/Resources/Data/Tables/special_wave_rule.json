@@ -7,7 +7,9 @@
       "WaveType": "Rush",
       "TriggerTime": 20,
       "EndType": "Duration",
-      "ActiveDuration": 20
+      "ActiveDuration": 20,
+      "SpecialSpawnInterval": 5,
+      "SpecialSpawnAmount": 3
     },
     {
       "#Type": "특수 웨이브",
@@ -16,7 +18,9 @@
       "WaveType": "Gimmick",
       "TriggerTime": 5,
       "EndType": "WaveEnd",
-      "ActiveDuration": 0
+      "ActiveDuration": 0,
+      "SpecialSpawnInterval": 5,
+      "SpecialSpawnAmount": 2
     },
     {
       "#Type": "엘리트 웨이브",
@@ -25,7 +29,9 @@
       "WaveType": "Elite",
       "TriggerTime": 10,
       "EndType": "Instant",
-      "ActiveDuration": 0
+      "ActiveDuration": 0,
+      "SpecialSpawnInterval": 5,
+      "SpecialSpawnAmount": 1
     },
     {
       "#Type": "보스 웨이브",
@@ -34,7 +40,9 @@
       "WaveType": "Boss",
       "TriggerTime": 10,
       "EndType": "Instant",
-      "ActiveDuration": 0
+      "ActiveDuration": 0,
+      "SpecialSpawnInterval": 0,
+      "SpecialSpawnAmount": 1
     }
   ]
 }

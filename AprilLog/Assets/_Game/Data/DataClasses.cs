@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 #region JSON 파싱용 래퍼
 
@@ -182,7 +183,7 @@ public class MonsterStatusData
 public class MonsterWavePoolData
 {
     public int MonsterWavePool_ID;
-    public string MonsterPoolType;  // Normal, Agile, Tank, Ranged, Infested, Gimmick, Elite, Boss
+    public string WavePoolType;  // Normal, Agile, Tank, Ranged, Infested, Gimmick, Elite, Boss
     public int MonsterPool_ID;      // PK
 }
 
@@ -228,6 +229,8 @@ public class SpecialWaveRuleData
     public int TriggerTime;
     public string EndType;  // Duration, WaveEnd, Instant
     public int ActiveDuration;
+    public int SpecialSpawnInterval;
+    public int SpecialSpawnAmount;
 }
 
 /// <summary>

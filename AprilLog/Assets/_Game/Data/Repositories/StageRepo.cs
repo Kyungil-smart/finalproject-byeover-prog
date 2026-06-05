@@ -203,7 +203,7 @@ public class StageRepo : MonoBehaviour
         
         foreach (var data in _poolMasters.Values)
         {
-            if (data.MonsterWavePool_ID == wavePoolId && data.MonsterPoolType == type)
+            if (data.MonsterWavePool_ID == wavePoolId && data.WavePoolType == type)
             {
                 return data.MonsterPool_ID;
             }
