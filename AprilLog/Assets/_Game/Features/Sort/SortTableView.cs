@@ -2,8 +2,11 @@
 // 설명   : Sort 퍼즐 View -- 슬롯 표시 + 드래그 피드백
 
 using DG.Tweening;
+using System;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.Rendering.DebugUI;
 
 /// <summary>
 /// 퍼즐 테이블과 대기열의 시각적 표시를 담당한다. 로직 없음.
@@ -40,8 +43,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         _presenter = new SortTablePresenter(this, _model, _inputHandler, _hintSystem);
 
-        // 슬롯 위치를 InputHandler에 전달
-        SetupSlotPositions();
+        StartCoroutine(SetupAfterLayout());
     }
 
     private void OnEnable()
@@ -66,21 +68,30 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         _presenter?.Dispose();
     }
+    private System.Collections.IEnumerator SetupAfterLayout()
+    {
+        yield return new WaitForEndOfFrame();
+
+        Canvas.ForceUpdateCanvases();
+
+        SetupSlotPositions();
+    }
 
     private void SetupSlotPositions()
     {
         var positions = new Vector2[SortModel.TABLE_COUNT][];
-        int currentIdx = 0;
 
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
         {
             positions[t] = new Vector2[SortModel.SLOTS_PER_TABLE];
             for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
             {
-                if (currentIdx < _puzzleSlots.Length)
+                int index = t * SortModel.SLOTS_PER_TABLE + s;
+
+                if (index < _puzzleSlots.Length)
                 {
-                    positions[t][s] = _puzzleSlots[currentIdx].transform.position;
-                    currentIdx++;
+                    RectTransform rt = _puzzleSlots[index].GetComponent<RectTransform>();
+                    positions[t][s] = RectTransformUtility.WorldToScreenPoint(null, rt.position); 
                 }
             }
         }

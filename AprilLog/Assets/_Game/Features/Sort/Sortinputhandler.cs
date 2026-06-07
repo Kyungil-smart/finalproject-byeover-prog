@@ -26,10 +26,10 @@ public class SortInputHandler : MonoBehaviour
 
     [Header("설정")]
     [Tooltip("드래그로 인식하는 최소 이동 거리(px)")]
-    [SerializeField] private float _dragThreshold = 10f;
+    [SerializeField] private float _dragThreshold = 100f;
 
     [Tooltip("슬롯 히트 영역 반경(world). 손가락 크기 보정용")]
-    [SerializeField] private float _touchRadius = 0.5f;
+    [SerializeField] private float _touchRadius = 100f;
 
     // ---------- Private ----------
     private Camera _cam;
@@ -120,10 +120,7 @@ public class SortInputHandler : MonoBehaviour
         _touchStartScreen = screenPos;
         _isDragging = false;
 
-        Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
-        Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
-
-        FindSlot(worldPos, out _selectedTable, out _selectedSlot);
+        FindSlot(screenPos, out _selectedTable, out _selectedSlot);
 
         if (_selectedTable >= 0)
         {
@@ -156,7 +153,7 @@ public class SortInputHandler : MonoBehaviour
             Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
             Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
 
-            OnDragging?.Invoke(worldPos);
+            OnDragging?.Invoke(screenPos);
         }
     }
 
@@ -172,7 +169,7 @@ public class SortInputHandler : MonoBehaviour
         Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
         Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
 
-        FindSlot(worldPos, out int toTable, out int toSlot);
+        FindSlot(screenPos, out int toTable, out int toSlot);
 
         OnUnitDropped?.Invoke(_selectedTable, _selectedSlot, toTable, toSlot);
         OnDragEnded?.Invoke();
@@ -183,7 +180,7 @@ public class SortInputHandler : MonoBehaviour
     }
 
     // 월드 좌표에서 가장 가까운 슬롯 찾기
-    private void FindSlot(Vector2 worldPos, out int tableIdx, out int slotIdx)
+    private void FindSlot(Vector2 screenPos, out int tableIdx, out int slotIdx)
     {
         tableIdx = -1;
         slotIdx = -1;
@@ -193,7 +190,7 @@ public class SortInputHandler : MonoBehaviour
         {
             for (int s = 0; s < _slotPositions[t].Length; s++)
             {
-                float dist = Vector2.Distance(worldPos, _slotPositions[t][s]);
+                float dist = Vector2.Distance(screenPos, _slotPositions[t][s]);
 
                 if (dist < minDistance)
                 {
@@ -206,8 +203,14 @@ public class SortInputHandler : MonoBehaviour
 
         if (minDistance > _touchRadius)
         {
+            Debug.Log($"[인풋] 선택 실패: minDistance({minDistance}) > touchRadius({_touchRadius}) | 위치: {screenPos}");
             tableIdx = -1;
             slotIdx = -1;
+        }
+
+        else
+        {
+            Debug.Log($"[인풋] 선택 성공! 거리: {minDistance}, 위치: {screenPos}");
         }
     }
 }
