@@ -3,6 +3,7 @@
 
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// 퍼즐 테이블과 대기열의 시각적 표시를 담당한다. 로직 없음.
@@ -18,17 +19,17 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     [Header("퍼즐 슬롯")]
     [Tooltip("9테이블 x 3슬롯. 순서대로 드래그")]
-    [SerializeField] private Transform[] _puzzleSlots;
+    [SerializeField] private Image[] _puzzleSlots;
 
     [Header("대기열 슬롯")]
     [Tooltip("4테이블 x 3슬롯. 순서대로 드래그")]
-    [SerializeField] private Transform[] _waitingSlots;
+    [SerializeField] private Image[] _waitingSlots;
 
     [Header("유닛 스프라이트")]
     [SerializeField] private Sprite[] _unitSprites;
 
     [Header("드래그 연출용 가짜 유닛")]
-    [SerializeField] private SpriteRenderer _dragFeedbackSR;
+    [SerializeField] private Image _dragFeedbackImg;
 
     // ---------- Private ----------
     private SortTablePresenter _presenter;
@@ -78,7 +79,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
             {
                 if (currentIdx < _puzzleSlots.Length)
                 {
-                    positions[t][s] = _puzzleSlots[currentIdx].position;
+                    positions[t][s] = _puzzleSlots[currentIdx].transform.position;
                     currentIdx++;
                 }
             }
@@ -92,13 +93,13 @@ public class SortTableView : MonoBehaviour, ISortTableView
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
         if (idx >= _puzzleSlots.Length) return;
 
-        var sr = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
-        if (sr != null && unitType >= 0 && unitType < _unitSprites.Length)
+        var img = _puzzleSlots[idx];
+        if (img != null && unitType >= 0 && unitType < _unitSprites.Length)
         {
             // Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
-            sr.sprite = _unitSprites[unitType];
-            sr.enabled = true;
-            sr.color = Color.white;
+            img.sprite = _unitSprites[unitType];
+            img.enabled = true;
+            img.color = Color.white;
         }
     }
 
@@ -107,13 +108,13 @@ public class SortTableView : MonoBehaviour, ISortTableView
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
         if (idx >= _puzzleSlots.Length) return;
 
-        var sr = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
-        if (sr != null)
+        var img = _puzzleSlots[idx];
+        if (img != null)
         {
             // Debug.Log($"[뷰] {tableIdx}, {slotIdx} 삭제! (sr.enabled = false)");
-            sr.sprite = null;
-            sr.color = Color.clear;
-            sr.enabled = false;
+            img.sprite = null;
+            img.color = Color.clear;
+            img.enabled = false;
         }
     }
 
@@ -122,16 +123,16 @@ public class SortTableView : MonoBehaviour, ISortTableView
         int idx = fromTable * SortModel.SLOTS_PER_TABLE + fromSlot;
         if (idx >= _puzzleSlots.Length) return;
 
-        var originalSR = _puzzleSlots[idx].GetComponent<SpriteRenderer>();
-        if (originalSR == null || !originalSR.enabled) return;
+        var originalImg = _puzzleSlots[idx].GetComponent<Image>();
+        if (originalImg == null || !originalImg.enabled) return;
 
-        originalSR.enabled = false;
+        originalImg.enabled = false;
 
-        if (_dragFeedbackSR != null)
+        if (_dragFeedbackImg != null)
         {
-            _dragFeedbackSR.sprite = originalSR.sprite;
-            _dragFeedbackSR.color = originalSR.color;
-            _dragFeedbackSR.enabled = true;
+            _dragFeedbackImg.sprite = originalImg.sprite;
+            _dragFeedbackImg.color = originalImg.color;
+            _dragFeedbackImg.enabled = true;
         }
 
         UpdateDragFeedbackPosition(dragPos);
@@ -139,20 +140,20 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void UpdateDragFeedbackPosition(Vector2 dragPos)
     {
-        if (_dragFeedbackSR != null && _dragFeedbackSR.enabled)
+        if (_dragFeedbackImg != null && _dragFeedbackImg.enabled)
         {
             Vector3 finalWorldPos = new Vector3(dragPos.x, dragPos.y, 0f);
-            _dragFeedbackSR.transform.position = finalWorldPos;
+            _dragFeedbackImg.transform.position = finalWorldPos;
         }
     }
 
     public void HideDragFeedback()
     {
-        if (_dragFeedbackSR != null)
+        if (_dragFeedbackImg != null)
         {
-            _dragFeedbackSR.enabled = false;
-            _dragFeedbackSR.sprite = null;
-            _dragFeedbackSR.color = Color.clear;
+            _dragFeedbackImg.enabled = false;
+            _dragFeedbackImg.sprite = null;
+            _dragFeedbackImg.color = Color.clear;
         }
     }
 
@@ -169,19 +170,19 @@ public class SortTableView : MonoBehaviour, ISortTableView
             int slotIdx = baseSlotIdx + i;
             if (slotIdx < 0 || slotIdx >= _waitingSlots.Length) continue;
             //Debug.Log($"[매칭확인] 모델 대기열 {waitingIdx}번의 {i}번 유닛(타입:{combo.unitTypes[i]}) -> 뷰 슬롯 {slotIdx}번으로 배치");
-            var sr = _waitingSlots[slotIdx].GetComponent<SpriteRenderer>();
-            if (sr == null) continue;
+            var img = _waitingSlots[slotIdx];
+            if (img == null) continue;
 
             int unitType = combo.unitTypes[i];
 
             if (unitType >= 0 && unitType < _unitSprites.Length)
             {
-                sr.sprite = _unitSprites[unitType];
-                sr.enabled = true;
+                img.sprite = _unitSprites[unitType];
+                img.enabled = true;
             }
             else
             {
-                sr.enabled = false;
+                img.enabled = false;
             }
         }
     }
