@@ -67,6 +67,25 @@ public class CombatSystem : MonoBehaviour
         Debug.Log("[전투진단] CombatSystem: OnSortCompleted 구독 완료 (정렬 성공 시 공격 발동).");
     }
 
+    /// <summary>
+    /// SortSystem이 런타임에 생성되는 경우, CombatSystem.OnEnable 시점엔 아직 없어서
+    /// OnSortCompleted 구독을 놓친다(=공격 안 나감). 생성 직후 InGameBootstrap이 이걸 호출해
+    /// 명시적으로 바인딩한다. 중복 구독은 방지한다.
+    /// </summary>
+    public void BindSortSystem(SortSystem sortSystem)
+    {
+        if (sortSystem == null) return;
+
+        if (_sortNotifier != null)
+            _sortNotifier.OnSortCompleted -= HandleSortCompleted;
+
+        _sortSystemObj = sortSystem;
+        _sortNotifier = sortSystem;   // SortSystem : ISortNotifier
+        _sortNotifier.OnSortCompleted += HandleSortCompleted;
+
+        Debug.Log("[전투진단] CombatSystem: SortSystem 런타임 바인딩 완료 (정렬 성공 시 공격 발동).");
+    }
+
     // 씬에서 참조가 안 꽂혀 있어도 동작하도록 자동 탐색 (다른 시스템과 동일 패턴).
     private void ResolveSystemReferences()
     {

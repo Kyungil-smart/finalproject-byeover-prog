@@ -26,6 +26,9 @@ public class StageBootstrapper : MonoBehaviour
     
     // ---------- Event for UI ----------
     public event Action<StageModel> OnStageInitComplete;
+
+    // 마지막으로 조립된 스테이지 모델. UI가 늦게 구독해도 즉시 동기화할 수 있도록 캐시한다.
+    public StageModel CurrentStageModel { get; private set; }
     
     // ---------- 이벤트 함수 ----------
     private void Update()
@@ -88,7 +91,8 @@ public class StageBootstrapper : MonoBehaviour
         
         StageModel newModel = new StageModel(stageData, waveRules, rng, _loopManager.WaveTransitionDelay);
         _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
-        
+
+        CurrentStageModel = newModel;
         OnStageInitComplete?.Invoke(newModel);
     }
 }

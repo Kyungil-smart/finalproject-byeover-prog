@@ -143,6 +143,12 @@ public class InGameBootstrap : MonoBehaviour
         }
         _sortSystem.Initialize(seed);
 
+        // CombatSystem은 OnEnable(씬 로드) 시점엔 아직 없던 SortSystem 구독을 놓쳤을 수 있으므로,
+        // SortSystem 생성/초기화 직후 명시적으로 바인딩한다 (→ 정렬 성공 시 공격 발동).
+        var combatSystem = FindFirstObjectByType<CombatSystem>();
+        if (combatSystem != null)
+            combatSystem.BindSortSystem(_sortSystem);
+
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();
 
