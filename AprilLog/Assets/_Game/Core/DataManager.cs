@@ -9,14 +9,14 @@
 
 using System;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 public class DataManager : MonoBehaviour
 {
     private static DataManager _instance;
     private bool _isInitialized;
+
+    // Assets/Resources/DataManager.prefab (폴더/확장자 제외한 이름)
+    private const string PrefabResourceName = "DataManager";
 
     public static DataManager Instance
     {
@@ -28,25 +28,21 @@ public class DataManager : MonoBehaviour
 
                 if (_instance == null)
                 {
-#if UNITY_EDITOR
-                    string prefabPath = "Assets/_Game/Prefabs/DataManager.prefab";
-                    GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                    // 에디터/빌드 공통: Resources에서 자동 로드해 어떤 씬에서 시작해도 데이터가 보장되도록 함
+                    GameObject prefab = Resources.Load<GameObject>(PrefabResourceName);
 
                     if (prefab != null)
                     {
-                        Debug.LogWarning($"[DataManager] 씬에 없어서 '{prefabPath}'에서 에디터 전용 로드.");
+                        Debug.LogWarning($"[DataManager] 씬에 없어서 Resources/'{PrefabResourceName}'에서 자동 로드.");
                         GameObject go = Instantiate(prefab);
-                        go.name = "DataManager_TestHarness";
+                        go.name = "DataManager_AutoSpawn";
                         _instance = go.GetComponent<DataManager>();
                         _instance.InitRepo();
                     }
                     else
                     {
-                        Debug.LogError($"[DataManager] '{prefabPath}'에 프리팹 없음. 경로 확인.");
+                        Debug.LogError($"[DataManager] Resources/'{PrefabResourceName}' 프리팹 없음. DataManager.prefab을 Resources 폴더에 넣어주세요.");
                     }
-#else
-                    Debug.LogError("[DataManager] 인스턴스 없음. Boot 씬을 통해 진입해야 합니다.");
-#endif
                 }
             }
             return _instance;
@@ -77,14 +73,13 @@ public class DataManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-#if UNITY_EDITOR
+    // 에디터/빌드 공통: 첫 씬 로드 전에 DataManager를 보장 (에디터에서만 되던 동작을 빌드까지 확장)
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void InitializeBeforeFirstScene()
     {
         if (_instance != null) return;
         var _ = Instance;
     }
-#endif
 
     // ---------- 초기화 ----------
     public void InitRepo()
