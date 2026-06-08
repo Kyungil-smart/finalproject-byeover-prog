@@ -274,11 +274,7 @@ public class InGameBootstrap : MonoBehaviour
         {
             GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment);
         }
-
-        view.Show();
-        view.SetResult(isVictory);
-        view.SetStats(maxCombo, totalDamage);
-        view.SetRewards(gold, parchment);
+        
         view.Show(isVictory, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, gold, parchment);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
