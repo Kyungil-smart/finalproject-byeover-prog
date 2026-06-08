@@ -93,8 +93,13 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         // 데이터 교체
         for (int i = 0; i < choices.Length; i++)
         {
-            int index = i; 
-            
+            int index = i;
+
+            // 이전 선택에서 DisableAllCardButtons()로 꺼둔 버튼을 다시 켠다.
+            // (카드를 재사용하므로, 안 켜면 두 번째 팝업부터 클릭이 안 먹힘)
+            if (_spawnedCards[i].TryGetComponent<Button>(out var cardBtn))
+                cardBtn.interactable = true;
+
             if (_spawnedCards[i].TryGetComponent<EnchantCardUI>(out var cardUI))
             {
                 // 데이터 갱신
