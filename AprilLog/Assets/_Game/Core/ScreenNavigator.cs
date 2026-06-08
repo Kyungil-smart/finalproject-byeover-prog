@@ -30,6 +30,9 @@ public class ScreenNavigator : MonoBehaviour
     [Tooltip("옵션 팝업")]
     [SerializeField] private GameObject _optionPopup;
     
+    [Tooltip("로비로 이동 팝업")]
+    [SerializeField] private GameObject _toLobbyPopup;
+    
     [Tooltip("콤보 텍스트 팝업")]
     [SerializeField] private GameObject _comboTextPopup;
     
@@ -65,9 +68,14 @@ public class ScreenNavigator : MonoBehaviour
     // ---------- 최초에 비활성화 하지만 혹시 모르니 Start에 다시 비활성화 시킴 ----------
     private void Start()
     {
+        HideEnchantList();
+        HideToLobby();
         HideComboTextPopup();
-        HideWavePopup();
+        HideEnchantChange();
+        HideEnchantSelection();
+        HideOption();
         HideSettlement();
+        HideWavePopup();
         CloseMenu();
     }
     
@@ -123,7 +131,7 @@ public class ScreenNavigator : MonoBehaviour
             _enchantSelectPopup.SetActive(false);
     }
     
-    // ---------- 인챈트 선택 ----------
+    // ---------- 인챈트 교체 ----------
     public void ShowEnchantChange()
     {
         if (_enchantChangePopup != null)
@@ -136,7 +144,7 @@ public class ScreenNavigator : MonoBehaviour
             _enchantChangePopup.SetActive(false);
     }
     
-    // ---------- 인챈트 선택 ----------
+    // ---------- 인챈트 목록 ----------
     public void ShowEnchantList()
     {
         HideOption();
@@ -144,7 +152,7 @@ public class ScreenNavigator : MonoBehaviour
             _enchantListPopup.SetActive(true);
     }
 
-    private void HideEnchantList()
+    public void HideEnchantList()
     {
         if (_enchantListPopup != null)
             _enchantListPopup.SetActive(false);
@@ -178,8 +186,21 @@ public class ScreenNavigator : MonoBehaviour
         if (_optionPopup != null)
             _optionPopup.SetActive(false);
     }
+
+    // ---------- 로비로 이동 팝업 ----------
+    public void ShowToLobby()
+    {
+        if (_toLobbyPopup != null)
+            _toLobbyPopup.SetActive(true);
+    }
+
+    public void HideToLobby()
+    {
+        if (_toLobbyPopup != null)
+            _toLobbyPopup.SetActive(false);
+    }
     
-    // ---------- 메뉴 개폐 ----------
+    // ---------- 게임 일시 정지 / 해제 ----------
     private void OpenMenu()
     {
         Time.timeScale = 0f;
@@ -190,7 +211,7 @@ public class ScreenNavigator : MonoBehaviour
         Time.timeScale = 1f;
     }
 
-    // ---------- 게임 일시 정지 / 해제 버튼 ----------
+    // ---------- UI 버튼 연동 ----------
     public void OnPauseButtonClick()
     {
         OpenMenu();
@@ -204,6 +225,25 @@ public class ScreenNavigator : MonoBehaviour
         HideEnchantList();
         HideOption();
         CloseMenu();
+    }
+
+    public void OnCloseButtonClickInEnchantListPopup()
+    {
+        if (_enchantSelectPopup.activeInHierarchy)
+        {
+            HideEnchantList();
+        }
+        else
+        {
+            OnCloseButtonClick();
+        }
+    }
+
+    // 로비로 돌아가기 경고창 > '예' 버튼 누를 때 동작 -> 로비로 이동
+    public void ToLobbyAction()
+    {
+        Debug.Log("로비로 이동");
+        // ToDo : 현재 상황을 저장하고 로비로 이동하도록 스크립트 구성 할 것
     }
     
     // ---------- 특수 웨이브 ----------
