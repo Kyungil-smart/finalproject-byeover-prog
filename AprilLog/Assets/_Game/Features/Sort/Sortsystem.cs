@@ -38,26 +38,9 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     private float _warningProb = 0.35f;
     private float _highProb = 0.25f;
 
-    // 씬에 직렬화 참조가 비어 있어도 런타임에 자가 연결한다 (씬 배선 없이도 동작하도록).
-    private void ResolveRefs()
-    {
-        if (_model == null) _model = FindFirstObjectByType<SortModel>();
-        if (_inputHandler == null) _inputHandler = FindFirstObjectByType<SortInputHandler>();
-        if (_deadlockDetector == null) _deadlockDetector = FindFirstObjectByType<DeadlockDetector>();
-        if (_hintSystem == null) _hintSystem = FindFirstObjectByType<HintSystem>();
-        if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
-    }
-
     // ---------- 초기화 ----------
     public void Initialize(int seed)
     {
-        ResolveRefs();
-        if (_model == null)
-        {
-            Debug.LogError("[SortSystem] SortModel을 찾을 수 없어 초기화할 수 없습니다.");
-            return;
-        }
-
         _rng = new System.Random(seed);
         _model.Initialize();
 
@@ -76,20 +59,17 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     // ---------- 생명주기 ----------
     private void OnEnable()
     {
-        ResolveRefs();
-        if (_inputHandler != null)
-            _inputHandler.OnUnitDropped += HandleUnitDropped;
+        _inputHandler.OnUnitDropped += HandleUnitDropped;
     }
 
     private void OnDisable()
     {
-        if (_inputHandler != null)
-            _inputHandler.OnUnitDropped -= HandleUnitDropped;
+        _inputHandler.OnUnitDropped -= HandleUnitDropped;
     }
 
     // ---------- 유닛 이동 처리 ----------
     private void HandleUnitDropped(int fromTable, int fromSlot, int toTable, int toSlot)
-    {        
+    {
         if (_isProcessing)
         {
             Debug.Log($"[SORT진단] 이동 무시 — _isProcessing 잠김 상태(매치/데드락 처리 중). from=({fromTable},{fromSlot})");
