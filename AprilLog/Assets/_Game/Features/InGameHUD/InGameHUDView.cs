@@ -61,33 +61,67 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     private const string LEVEL_KOR_TEXT = "레벨";
     private const string LEVEL_ENG_TEXT = "Level";
 
+    private bool _boundToStageBootstrapper;
+
     // ---------- 생명주기 ----------
     private void OnEnable()
     {
-        if(_stageBootstrapper != null)
-            _stageBootstrapper.OnStageInitComplete += Init;
+        TryBindStageBootstrapper();
     }
 
     private void OnDisable()
     {
-        if(_stageBootstrapper != null)
+        if (_boundToStageBootstrapper && _stageBootstrapper != null)
+        {
             _stageBootstrapper.OnStageInitComplete -= Init;
+            _boundToStageBootstrapper = false;
+        }
+    }
+
+    private void Update()
+    {
+        // StageBootstrapper는 런타임에 생성/조립되어 OnEnable 시점엔 아직 없을 수 있다.
+        // 늦게라도 찾아서 구독되면 더 이상 폴링하지 않는다.
+        if (!_boundToStageBootstrapper)
+            TryBindStageBootstrapper();
+    }
+
+    // StageBootstrapper를 찾아 OnStageInitComplete를 구독한다.
+    // 이미 스테이지가 조립됐으면(캐시된 모델 존재) 즉시 초기화한다 → 씬 배선 없이도 HUD가 동작.
+    private void TryBindStageBootstrapper()
+    {
+        if (_boundToStageBootstrapper) return;   // 이미 구독됨 (멱등 보장 — 중복 구독 방지)
+
+        if (_stageBootstrapper == null) _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
+        if (_stageBootstrapper == null) return;
+
+        _stageBootstrapper.OnStageInitComplete += Init;
+        _boundToStageBootstrapper = true;
+
+        if (_stageBootstrapper.CurrentStageModel != null)
+            Init(_stageBootstrapper.CurrentStageModel);
     }
 
     private void OnDestroy()
     {
         _presenter?.Dispose();
     }
-    
+
     // ---------- 초기화 ----------
     private void Init(StageModel stageModel)
     {
+        // 런타임 생성된 모델/시스템을 자가 연결 (씬에 직렬화 참조가 비어 있어도 동작).
+        if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
+        if (_comboModel == null) _comboModel = FindFirstObjectByType<ComboModel>();
+        if (_growthSystem == null) _growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
+        if (_loopManager == null) _loopManager = FindFirstObjectByType<StageLoopManager>();
+
         if (_playerModel == null || _comboModel == null || _growthSystem == null || _loopManager == null)
         {
             Debug.LogWarning("[InGameHUDView] PlayerModel 또는 ComboModel 또는 InGameGrowthSystem 또는 StageLoopManager 참조가 비어 있어 초기화를 건너뜁니다.", this);
             return;
         }
-        
+
         _presenter?.Dispose();
         _stageModel = stageModel;
         _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem,  _loopManager,_stageModel);

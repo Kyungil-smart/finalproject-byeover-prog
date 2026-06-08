@@ -32,18 +32,18 @@ public class HintSystem : MonoBehaviour
 
     private void Update()
     {
-        // Sort가 아직 초기화되지 않았으면(예: 씬에 SortSystem 미배치로 SortModel.Initialize 미호출)
-        // 힌트 로직이 빈 보드를 접근해 NRE를 매 프레임 던지므로 건너뛴다.
-        if (_model == null || !_model.IsInitialized)
-            return;
-
         _timer += Time.deltaTime;
 
         if (_timer >= GetDelay())
         {
+            Debug.Log("[힌트] 조건 만족! ShowHint 호출");
             ShowHint();
             _timer = 0f;
         }
+    }
+    private void Start()
+    {
+        Debug.Log("[힌트] HintSystem 시작됨");
     }
 
     public void ResetTimer()
@@ -62,11 +62,12 @@ public class HintSystem : MonoBehaviour
     private void ShowHint()
     {
         var targets = _model.GetHintTargets();
-
+        Debug.Log($"[힌트] 타겟 개수: {targets.Count}");
         if (targets.Count > 0)
         {
             foreach (var t in targets)
             {
+                Debug.Log($"[힌트] 타겟 흔들기: 테이블 {t.t}, 슬롯 {t.s}");
                 OnHintShow?.Invoke(t.t, t.s);
             }
         }
