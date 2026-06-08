@@ -20,31 +20,49 @@ public class SortTablePresenter
         _input = input;
         _hint = hint;
 
-        _model.Initialize();
-        _model.OnSlotChanged += HandleSlotChanged;
-        _model.OnTableCleared += HandleTableCleared;
-        _model.OnWaitingUpdated += HandleWaitingUpdated;
-        _model.OnBoardReset += HandleBoardReset;
-        _input.OnDragStarted += HandleDragStarted;
-        _input.OnDragging += HandleDragging;
-        _input.OnDragCanceled += HandleDragCanceled;
-        _input.OnDragEnded += HandleDragEnded;
-        _hint.OnHintShow += HandleHint;
-        _hint.OnHintWaiting += HandleHintWaiting;
+        if (_model != null)
+        {
+            _model.Initialize();
+            _model.OnSlotChanged += HandleSlotChanged;
+            _model.OnTableCleared += HandleTableCleared;
+            _model.OnWaitingUpdated += HandleWaitingUpdated;
+            _model.OnBoardReset += HandleBoardReset;
+        }
+        if (_input != null)
+        {
+            _input.OnDragStarted += HandleDragStarted;
+            _input.OnDragging += HandleDragging;
+            _input.OnDragCanceled += HandleDragCanceled;
+            _input.OnDragEnded += HandleDragEnded;
+        }
+        if (_hint != null)
+        {
+            _hint.OnHintShow += HandleHint;
+            _hint.OnHintWaiting += HandleHintWaiting;
+        }
     }
 
     public void Dispose()
     {
-        _model.OnSlotChanged -= HandleSlotChanged;
-        _model.OnTableCleared -= HandleTableCleared;
-        _model.OnWaitingUpdated -= HandleWaitingUpdated;
-        _model.OnBoardReset -= HandleBoardReset;
-        _input.OnDragStarted -= HandleDragStarted;
-        _input.OnDragging -= HandleDragging;
-        _input.OnDragCanceled -= HandleDragCanceled;
-        _input.OnDragEnded -= HandleDragEnded;
-        _hint.OnHintShow -= HandleHint;
-        _hint.OnHintWaiting -= HandleHintWaiting;
+        if (_model != null)
+        {
+            _model.OnSlotChanged -= HandleSlotChanged;
+            _model.OnTableCleared -= HandleTableCleared;
+            _model.OnWaitingUpdated -= HandleWaitingUpdated;
+            _model.OnBoardReset -= HandleBoardReset;
+        }
+        if (_input != null)
+        {
+            _input.OnDragStarted -= HandleDragStarted;
+            _input.OnDragging -= HandleDragging;
+            _input.OnDragCanceled -= HandleDragCanceled;
+            _input.OnDragEnded -= HandleDragEnded;
+        }
+        if (_hint != null)
+        {
+            _hint.OnHintShow -= HandleHint;
+            _hint.OnHintWaiting -= HandleHintWaiting;
+        }
     }
 
     private void HandleSlotChanged(int t, int s, int unit)

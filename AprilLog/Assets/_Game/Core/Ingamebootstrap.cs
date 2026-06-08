@@ -125,18 +125,23 @@ public class InGameBootstrap : MonoBehaviour
         else
             seed = Random.Range(0, int.MaxValue);
 
-        // SortSystem 참조가 비어 있으면 씬에서 탐색 (CombatSystem·InGameGrowthSystem과 동일 폴백 패턴).
-        // → 씬에 SortSystem 컴포넌트만 있으면 Bootstrap에 수동 배선하지 않아도 동작.
+        // Sort 컨트롤러(SortSystem/SortInputHandler)가 씬에 없으면 런타임에 생성한다.
+        // → 씬 배선 없이도 동작. 각 컴포넌트는 ResolveRefs()로 의존성을 자가 연결한다.
+        if (FindFirstObjectByType<SortInputHandler>() == null)
+        {
+            var sortModel = FindFirstObjectByType<SortModel>();
+            GameObject host = sortModel != null ? sortModel.gameObject : gameObject;
+            host.AddComponent<SortInputHandler>();
+            Debug.LogWarning("[InGameBootstrap] SortInputHandler가 씬에 없어 런타임에 생성했습니다.");
+        }
+
         if (_sortSystem == null) _sortSystem = FindFirstObjectByType<SortSystem>();
-        if (_sortSystem != null)
+        if (_sortSystem == null)
         {
-            _sortSystem.Initialize(seed);
+            _sortSystem = gameObject.AddComponent<SortSystem>();
+            Debug.LogWarning("[InGameBootstrap] SortSystem이 씬에 없어 런타임에 생성했습니다.");
         }
-        else
-        {
-            Debug.LogError("[InGameBootstrap] SortSystem을 찾을 수 없습니다. 현재 _InGame 씬에 SortSystem 컴포넌트가 없습니다. " +
-                           "(참고: Scenes/CDH/_InGameTest.unity 에는 존재) Sort/전투/EXP 루프가 동작하지 않으니 씬에 SortSystem을 추가하세요.");
-        }
+        _sortSystem.Initialize(seed);
 
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();

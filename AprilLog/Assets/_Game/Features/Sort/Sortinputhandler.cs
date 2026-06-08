@@ -45,6 +45,7 @@ public class SortInputHandler : MonoBehaviour
     private void Awake()
     {
         _cam = Camera.main;
+        if (_model == null) _model = FindFirstObjectByType<SortModel>();
     }
 
     // View가 슬롯 오브젝트 위치를 기반으로 채워줌
