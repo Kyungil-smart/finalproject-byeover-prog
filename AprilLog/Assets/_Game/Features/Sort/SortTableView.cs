@@ -153,15 +153,17 @@ public class SortTableView : MonoBehaviour, ISortTableView
         int idx = fromTable * SortModel.SLOTS_PER_TABLE + fromSlot;
         if (idx >= _puzzleSlots.Length) return;
 
-        var originalImg = _puzzleSlots[idx].GetComponent<Image>();
+        var originalImg = _puzzleSlots[idx];
         if (originalImg == null || !originalImg.enabled) return;
 
-        originalImg.enabled = false;
+        Color color = originalImg.color;
+        color.a = 0.3f;
+        originalImg.color = color;
 
         if (_dragFeedbackImg != null)
         {
             _dragFeedbackImg.sprite = originalImg.sprite;
-            _dragFeedbackImg.color = originalImg.color;
+            Color feedbackColor = Color.white;
             _dragFeedbackImg.enabled = true;
         }
 
@@ -178,11 +180,16 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void HideDragFeedback()
     {
-        if (_dragFeedbackImg != null)
+        if (_dragFeedbackImg != null) _dragFeedbackImg.enabled = false;
+
+        foreach (var slot in _puzzleSlots)
         {
-            _dragFeedbackImg.enabled = false;
-            _dragFeedbackImg.sprite = null;
-            _dragFeedbackImg.color = Color.clear;
+            if (slot != null && slot.enabled)
+            {
+                Color c = slot.color;
+                c.a = 1.0f;
+                slot.color = c;
+            }
         }
     }
 
