@@ -4,7 +4,8 @@
 //          (이전엔 구독자가 없어 인챈트를 골라도 스탯이 전혀 변하지 않았다.)
 //
 // ⚠️ INTERIM: LinkedStatType 코드 체계(어떤 스탯을 올리는지)가 기획/데이터에 아직 미확정.
-//    현재 실제로 존재하는 더미 인챈트 2종만 매핑한다 → 1=Attack, 2=Pierce.
+//    매핑(INTERIM): 1=Attack(Rate %), 2=Pierce(Add, 데모 비활성), 3=MaxHP(flat Add),
+//    4=CritRate(Add 소수), 5=CritDmg(Add 소수).
 //    기획에서 stat-type enum이 확정되면 ApplyStat()의 switch 만 교체하면 된다.
 //    또한 데이터에 Add/Rate 구분 필드가 없어, 적용 방식은 코드 컨벤션으로 정한다.
 
@@ -17,9 +18,12 @@ using UnityEngine;
 /// </summary>
 public class EnchantApplicationSystem : MonoBehaviour
 {
-    // ⚠️ INTERIM: 현재 데이터에 존재하는 LinkedStatType 코드만. (enum 미확정)
+    // ⚠️ INTERIM: 현재 더미 데이터의 LinkedStatType 코드 체계. (기획 enum 확정 시 교체)
     private const int StatType_Attack = 1;
     private const int StatType_Pierce = 2;
+    private const int StatType_MaxHP = 3;
+    private const int StatType_CritRate = 4;
+    private const int StatType_CritDmg = 5;
 
     [SerializeField] private PlayerModel _playerModel;
     private EnchantModel _enchantModel;
@@ -135,13 +139,24 @@ public class EnchantApplicationSystem : MonoBehaviour
         switch (statType)
         {
             case StatType_Attack:
-                // Value(0.1/0.2/0.3)를 공격력 배율(%) 증가로 해석.
-                // 공격력 base가 int라 Add(예: +0.1)는 반올림으로 묻히므로 Rate를 사용.
+                // 공격력 배율(%) 증가. base가 int라 Add(+0.1)는 반올림으로 묻히므로 Rate.
                 _playerModel.ApplyAttackBonus_Rate(amount);
                 break;
             case StatType_Pierce:
-                // PercentagePierce(관통)에 가산.
+                // PercentagePierce(관통)에 가산. (데모에선 관통 비활성이라 효과 안 보임)
                 _playerModel.ApplyPierceBonus_Add(amount);
+                break;
+            case StatType_MaxHP:
+                // 최대 체력 정수 가산 (Value=100/200/300 등).
+                _playerModel.ApplyHpBonus_Add(Mathf.RoundToInt(amount));
+                break;
+            case StatType_CritRate:
+                // 치명타 확률(0~1)에 소수 가산.
+                _playerModel.ApplyCriRateBonus_AddF(amount);
+                break;
+            case StatType_CritDmg:
+                // 치명타 피해 보너스에 소수 가산.
+                _playerModel.ApplyCriDmgBonus_AddF(amount);
                 break;
             default:
                 Debug.LogWarning($"[EnchantApplication] 미정의 LinkedStatType={statType} (enchant {enchantId}). " +

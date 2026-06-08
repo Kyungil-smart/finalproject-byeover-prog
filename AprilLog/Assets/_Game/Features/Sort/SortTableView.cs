@@ -95,7 +95,10 @@ public class SortTableView : MonoBehaviour, ISortTableView
                 }
             }
         }
-        _inputHandler.SetSlotPositions(positions);
+        // 입력 핸들러가 런타임에 생성됐을 수 있으니 비어 있으면 다시 탐색.
+        if (_inputHandler == null) _inputHandler = FindFirstObjectByType<SortInputHandler>();
+        if (_inputHandler != null)
+            _inputHandler.SetSlotPositions(positions);
     }
 
     // ---------- ISortTableView ----------

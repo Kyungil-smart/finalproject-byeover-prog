@@ -31,6 +31,8 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private EnchantModel _enchantModel;
     [Tooltip("비워두면 런타임에 자동 생성됨")]
     [SerializeField] private EnchantApplicationSystem _enchantApplicationSystem;
+    [Tooltip("비워두면 런타임에 씬에서 탐색")]
+    [SerializeField] private InGameGrowthSystem _growthSystem;
 
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;
@@ -96,6 +98,10 @@ public class InGameBootstrap : MonoBehaviour
             _enchantApplicationSystem = gameObject.AddComponent<EnchantApplicationSystem>();
         _enchantApplicationSystem.Initialize(_playerModel, _enchantModel);
 
+        // 인게임 성장 시스템(레벨/EXP) 초기화. 비어 있으면 씬에서 탐색.
+        // (기존엔 어디서도 Initialize/RestoreFromSave를 호출하지 않아 레벨/EXP가 미초기화 상태였음)
+        if (_growthSystem == null) _growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
+
         if (isResume && saveData != null)
         {
             _playerModel.RestoreFromSave(saveData);
@@ -103,6 +109,13 @@ public class InGameBootstrap : MonoBehaviour
             // 이어하기: 세이브된 인챈트 효과를 최종 레벨 누적값으로 재적용
             // (RestoreFromSave는 이벤트를 발행하지 않으므로 직접 재적용 필요)
             _enchantApplicationSystem.ReapplyFromSave(saveData.acquiredEnchants);
+
+            if (_growthSystem != null)
+                _growthSystem.RestoreFromSave(saveData.inGameLevel, saveData.currentEXP);
+        }
+        else if (_growthSystem != null)
+        {
+            _growthSystem.Initialize();
         }
 
         // [4] Sort 초기화
@@ -112,6 +125,22 @@ public class InGameBootstrap : MonoBehaviour
         else
             seed = Random.Range(0, int.MaxValue);
 
+        // Sort 컨트롤러(SortSystem/SortInputHandler)가 씬에 없으면 런타임에 생성한다.
+        // → 씬 배선 없이도 동작. 각 컴포넌트는 ResolveRefs()로 의존성을 자가 연결한다.
+        if (FindFirstObjectByType<SortInputHandler>() == null)
+        {
+            var sortModel = FindFirstObjectByType<SortModel>();
+            GameObject host = sortModel != null ? sortModel.gameObject : gameObject;
+            host.AddComponent<SortInputHandler>();
+            Debug.LogWarning("[InGameBootstrap] SortInputHandler가 씬에 없어 런타임에 생성했습니다.");
+        }
+
+        if (_sortSystem == null) _sortSystem = FindFirstObjectByType<SortSystem>();
+        if (_sortSystem == null)
+        {
+            _sortSystem = gameObject.AddComponent<SortSystem>();
+            Debug.LogWarning("[InGameBootstrap] SortSystem이 씬에 없어 런타임에 생성했습니다.");
+        }
         _sortSystem.Initialize(seed);
 
         // [5] 플레이어 비주얼 + 전투 발사 셋업
