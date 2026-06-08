@@ -22,8 +22,14 @@ public class LobbyPageController : MonoBehaviour
         [Header("하단 탭 비주얼")]
         [Tooltip("선택 상태를 나타내는 인디케이터 오브젝트 (BottomBtn_Select)")]
         public GameObject selectIndicator;
-        [Tooltip("위아래로 이동할 아이콘 RectTransform (Icon_Main)")]
+        [Tooltip("이동시킬 아이콘 RectTransform (Icon_Main)")]
         public RectTransform icon;
+
+        [Tooltip("선택 시 아이콘이 이동할 목표 위치(빈 RectTransform 마커). 비우면 기본 '위로 이동' 사용")]
+        public RectTransform selectedIconTarget;
+
+        [Tooltip("선택 시 켜질 라벨/텍스트 오브젝트 (원하는 위치에 미리 배치)")]
+        public GameObject selectedLabel;
     }
 
     [Header("기본 페이지")]
@@ -42,8 +48,8 @@ public class LobbyPageController : MonoBehaviour
 
     private readonly Dictionary<LobbyPageType, GameObject> _pageMap = new();
 
-    // 각 아이콘의 기본 anchoredPosition.y 저장
-    private readonly Dictionary<LobbyPageType, float> _iconBaseY = new();
+    // 각 아이콘의 기본 anchoredPosition 저장 (선택 해제 시 복귀 위치)
+    private readonly Dictionary<LobbyPageType, Vector2> _iconBasePos = new();
 
     private LobbyPageType _currentPage;
 
@@ -93,7 +99,7 @@ public class LobbyPageController : MonoBehaviour
             if (entry == null || entry.icon == null)
                 continue;
 
-            _iconBaseY[entry.pageType] = entry.icon.anchoredPosition.y;
+            _iconBasePos[entry.pageType] = entry.icon.anchoredPosition;
         }
     }
 
@@ -136,24 +142,34 @@ public class LobbyPageController : MonoBehaviour
             if (entry.selectIndicator != null)
                 entry.selectIndicator.SetActive(isSelected);
 
-            // ② 아이콘 Y 이동
-            if (entry.icon != null && _iconBaseY.TryGetValue(entry.pageType, out float baseY))
+            // ② 선택 라벨/텍스트 켜기/끄기
+            if (entry.selectedLabel != null)
+                entry.selectedLabel.SetActive(isSelected);
+
+            // ③ 아이콘 이동 (선택 시 지정 위치, 해제 시 원위치)
+            if (entry.icon != null && _iconBasePos.TryGetValue(entry.pageType, out Vector2 basePos))
             {
-                float targetY = isSelected ? baseY + _iconUpOffset : baseY;
+                Vector2 targetPos;
+                if (isSelected)
+                {
+                    // 목표 마커가 있으면 그 위치, 없으면 기본(위로 이동)
+                    targetPos = entry.selectedIconTarget != null
+                        ? entry.selectedIconTarget.anchoredPosition
+                        : basePos + new Vector2(0f, _iconUpOffset);
+                }
+                else
+                {
+                    targetPos = basePos;
+                }
 
                 entry.icon.DOKill();
 
                 if (instant)
-                {
-                    entry.icon.anchoredPosition = new Vector2(
-                        entry.icon.anchoredPosition.x, targetY);
-                }
+                    entry.icon.anchoredPosition = targetPos;
                 else
-                {
-                    entry.icon.DOAnchorPosY(targetY, _iconAnimDuration)
+                    entry.icon.DOAnchorPos(targetPos, _iconAnimDuration)
                         .SetEase(_iconEase)
                         .SetUpdate(true);
-                }
             }
         }
     }
