@@ -110,8 +110,11 @@ public class InGameGrowthSystem : MonoBehaviour
         {
             CurrentEXP -= required;
             CurrentLevel++;
- 
-            _playerModel.Heal(Mathf.RoundToInt(levelData.HPRecovery));
+
+            // HPRecovery는 최대 체력 대비 비율(예: 0.08 = 8%)이다.
+            // 기존엔 RoundToInt(0.08)=0 이라 회복이 전혀 적용되지 않았다.
+            if (_playerModel != null)
+                _playerModel.Heal(Mathf.RoundToInt(_playerModel.MaxHP * levelData.HPRecovery));
             OnLevelUp?.Invoke(CurrentLevel);
  
             if (_navigator != null)

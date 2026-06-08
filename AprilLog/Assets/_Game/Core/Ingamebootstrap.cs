@@ -29,6 +29,8 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private ComboModel _comboModel;
     [SerializeField] private CombinationModel _combinationModel;
     [SerializeField] private EnchantModel _enchantModel;
+    [Tooltip("비워두면 런타임에 자동 생성됨")]
+    [SerializeField] private EnchantApplicationSystem _enchantApplicationSystem;
 
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;
@@ -89,10 +91,18 @@ public class InGameBootstrap : MonoBehaviour
         _combinationModel.Initialize();
         _enchantModel.Initialize();
 
+        // 인챈트 효과 적용 시스템: EnchantModel 이벤트 구독 (없으면 자동 생성 → 씬 배선 불필요)
+        if (_enchantApplicationSystem == null)
+            _enchantApplicationSystem = gameObject.AddComponent<EnchantApplicationSystem>();
+        _enchantApplicationSystem.Initialize(_playerModel, _enchantModel);
+
         if (isResume && saveData != null)
         {
             _playerModel.RestoreFromSave(saveData);
             _enchantModel.RestoreFromSave(saveData.acquiredEnchants);
+            // 이어하기: 세이브된 인챈트 효과를 최종 레벨 누적값으로 재적용
+            // (RestoreFromSave는 이벤트를 발행하지 않으므로 직접 재적용 필요)
+            _enchantApplicationSystem.ReapplyFromSave(saveData.acquiredEnchants);
         }
 
         // [4] Sort 초기화

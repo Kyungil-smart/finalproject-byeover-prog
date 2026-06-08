@@ -120,7 +120,13 @@ public class PlayerModel : MonoBehaviour, IDamageable
         if (bonus < 1) bonus = 1 + bonus;
         Attack *= bonus;
     }
-    
+
+    // 관통(PercentagePierce) 가산. 인챈트 효과 적용용.
+    public void ApplyPierceBonus_Add(float bonus)
+    {
+        PercentagePierce += bonus;
+    }
+
     public void ApplyCriRateBonus_Add(int bonus)
     {
         CriticalRate += bonus;
