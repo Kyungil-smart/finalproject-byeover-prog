@@ -1,6 +1,9 @@
 // 작성자 : 홍정옥
 // 설명 : 게임 오버/클리어 시 뜨는 결산(Result) 팝업 - 결과/기록/인챈트/보상/버튼 표시
 
+// 수정자 : 김영찬
+// 설명 : 팝업 개/폐시 ScreenNavigator의 함수를 사용하도록 수정 및 로비로 돌아가는 키 입력에 대한 기능 ScreenNavigator와 통합
+
 using System;
 using TMPro;
 using UnityEngine;
@@ -11,11 +14,10 @@ public class ResultPopup : MonoBehaviour
     // ---------- 이벤트 (필요 시 외부 구독) ----------
     public event Action OnRetryClicked;
     public event Action OnNextChapterClicked;
-    public event Action OnLobbyClicked;
 
-    // ---------- 팝업 루트 ----------
-    [Header("팝업 루트 (비우면 자기 자신)")]
-    [SerializeField] private GameObject _root;
+    // ---------- 참조 ----------
+    [Header("참조")] 
+    [SerializeField] private ScreenNavigator _navigator;
 
     // ---------- Header : 오버/클리어 ----------
     [Header("Header")]
@@ -50,9 +52,6 @@ public class ResultPopup : MonoBehaviour
     
     private void Awake()
     {
-        if (_root == null)
-            _root = gameObject;
-
         if (_retryButton != null)       _retryButton.onClick.AddListener(Retry);
         if (_nextChapterButton != null) _nextChapterButton.onClick.AddListener(NextChapter);
         if (_lobbyButton != null)       _lobbyButton.onClick.AddListener(GoLobby);
@@ -109,16 +108,17 @@ public class ResultPopup : MonoBehaviour
 
     public void Open()
     {
-        if (_root != null) _root.SetActive(true);
+        if (_navigator != null) _navigator.ShowSettlement();
     }
 
     public void Close()
     {
-        if (_root != null) _root.SetActive(false);
+        if (_navigator != null) _navigator.HideSettlement();
     }
     
     private void Retry()
     {
+        Close();
         OnRetryClicked?.Invoke();
         if (GameManager.Instance != null)
             GameManager.Instance.LoadInGame();   // 현재 스테이지 다시 시작
@@ -126,6 +126,7 @@ public class ResultPopup : MonoBehaviour
 
     private void NextChapter()
     {
+        Close();
         OnNextChapterClicked?.Invoke();
         if (GameManager.Instance != null)
         {
@@ -136,9 +137,7 @@ public class ResultPopup : MonoBehaviour
 
     private void GoLobby()
     {
-        OnLobbyClicked?.Invoke();
-        if (GameManager.Instance != null)
-            GameManager.Instance.LoadLobby();
+        if (_navigator != null) _navigator.ToLobbyAction();
     }
     
     private static string FormatK(long value)

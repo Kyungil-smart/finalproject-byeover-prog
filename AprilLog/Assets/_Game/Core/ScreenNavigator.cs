@@ -4,6 +4,7 @@
 // 수정자 : 김영찬
 // 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
 
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -51,6 +52,9 @@ public class ScreenNavigator : MonoBehaviour
     
     private bool _comboTimerActive;
     private bool _waveTimerActive;
+    
+    // ---------- Event ----------
+    public event Action OnLobbyClicked;
 
     // ---------- 이벤트 구독 & 해제 ----------
     private void OnEnable()
@@ -243,7 +247,9 @@ public class ScreenNavigator : MonoBehaviour
     public void ToLobbyAction()
     {
         Debug.Log("로비로 이동");
-        // ToDo : 현재 상황을 저장하고 로비로 이동하도록 스크립트 구성 할 것
+        OnLobbyClicked?.Invoke();
+        if (GameManager.Instance != null)
+            GameManager.Instance.LoadLobby();
     }
     
     // ---------- 특수 웨이브 ----------
