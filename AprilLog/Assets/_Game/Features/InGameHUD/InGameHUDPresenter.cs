@@ -54,6 +54,19 @@ public class InGameHUDPresenter
             _stage.OnWaveStateChanged += HandleWaveState;
             _stage.OnSpecialWaveEntered += HandleSpecialWaveEntered;
         }
+
+        SyncInitialState();
+    }
+
+    // Presenter는 Model 초기화 이후에 생성되므로, 구독만으론 이미 지나간 초기 이벤트를 못 받는다.
+    // 생성 직후 현재 값을 한 번 강제로 끌어와 씬에 박힌 placeholder(예: "10,000", "Level 30")를 덮어쓴다.
+    private void SyncInitialState()
+    {
+        if (_player != null)
+            HandleHp(_player.CurrentHP, _player.MaxHP);
+
+        if (_growthSystem != null)
+            _growthSystem.EmitCurrentState();
     }
 
     public void Dispose()
