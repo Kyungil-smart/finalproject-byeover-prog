@@ -220,15 +220,19 @@ public class SortTableView : MonoBehaviour, ISortTableView
     public void ShowHint(int tableIdx, int slotIdx)
     {
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
-
         if (idx < 0 || idx >= _puzzleSlots.Length) return;
 
-        Vector3 originalPos = _puzzleSlots[idx].transform.position;
+        RectTransform rt = _puzzleSlots[idx].GetComponent<RectTransform>();
+        if (rt == null) return;
 
-        _puzzleSlots[idx].transform.DOShakePosition(0.5f, 0.2f, 10, 90f)
+        rt.DOKill();
+
+        Vector2 originalAnchorPos = rt.anchoredPosition;
+
+        rt.transform.DOShakePosition(0.5f, 20f, 10, 90f)
             .OnComplete(() =>
             {
-                _puzzleSlots[idx].transform.position = originalPos;
+                rt.anchoredPosition = originalAnchorPos;
             });
     }
 
@@ -241,11 +245,17 @@ public class SortTableView : MonoBehaviour, ISortTableView
                 continue;
             }
 
-            Vector3 originalPos = slot.transform.position;
-            slot.transform.DOShakePosition(0.3f, 0.2f)
+            RectTransform rt = slot.GetComponent<RectTransform>();
+            if (rt == null) continue;
+
+            rt.DOKill();
+
+            Vector2 originalPos = rt.anchoredPosition;
+
+            rt.DOShakeAnchorPos(0.3f, 20f, 10, 90f)
                    .OnComplete(() =>
                     {
-                        slot.transform.position = originalPos;
+                        rt.anchoredPosition = originalPos;
                     });
         }
     }
