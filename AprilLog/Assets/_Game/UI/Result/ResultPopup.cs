@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 설명 : 팝업 개/폐시 ScreenNavigator의 함수를 사용하도록 수정 및 로비로 돌아가는 키 입력에 대한 기능 ScreenNavigator와 통합
 
+// 수정자 : 김영찬
+// 설명 : Ingamebootstrap.cs 와의 연결 재 구성
+
 using System;
 using TMPro;
 using UnityEngine;
@@ -31,13 +34,19 @@ public class ResultPopup : MonoBehaviour
     [SerializeField] private TMP_Text _maxDamageText;
 
     // ---------- Enchant : 인챈트 3종이 가한 데미지 ----------
-    [Header("Enchant (3종 데미지)")]
-    [Tooltip("일반 스킬 인챈트 데미지 (예: Text_Enchant_ATK)")]
+    [Header("Enchant (최대 데미지 1,2,3 등)")]
+    [Tooltip("1등 스킬 인첸트 데미지")]
     [SerializeField] private TMP_Text _enchantDamage1;
-    [Tooltip("조합 스킬 인챈트 데미지")]
+    [Tooltip("1등 스킬 인첸트 이미지")]
+    [SerializeField] private Image _enchantImage1;
+    [Tooltip("2등 스킬 인첸트 데미지")]
     [SerializeField] private TMP_Text _enchantDamage2;
-    [Tooltip("콤보 스킬 인챈트 데미지")]
+    [Tooltip("2등 스킬 인첸트 이미지")]
+    [SerializeField] private Image _enchantImage2;
+    [Tooltip("3등 스킬 인첸트 데미지")]
     [SerializeField] private TMP_Text _enchantDamage3;
+    [Tooltip("3등 스킬 인첸트 이미지")]
+    [SerializeField] private Image _enchantImage3;
 
     // ---------- Compensation : 보상(코인/양피지) ----------
     [Header("Compensation")]
@@ -95,6 +104,7 @@ public class ResultPopup : MonoBehaviour
 
     public void SetEnchants(long damage1, long damage2, long damage3)
     {
+        // ToDo : 차후 폴리싱 작업 때 인첸트 이미지도 같이 바뀌도록 수정
         if (_enchantDamage1 != null) _enchantDamage1.text = FormatK(damage1);  // 예: 4.9K
         if (_enchantDamage2 != null) _enchantDamage2.text = FormatK(damage2);
         if (_enchantDamage3 != null) _enchantDamage3.text = FormatK(damage3);
@@ -147,3 +157,5 @@ public class ResultPopup : MonoBehaviour
         return (value / 1_000_000f).ToString("0.#") + "M";
     }
 }
+
+

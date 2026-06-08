@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 한 판(챕터) 동안의 통계 누적 — 정산 화면용. 챕터 시작 시 Reset() 호출.
 
+// 수정자 : 김영찬
+// 설명 : 수정된 정산창 내용에 맞춰 임시 변수 추가
+
 /// <summary>
 /// 인게임 한 판의 통계(총 데미지 등)를 누적한다. 정산에서 읽어 표시.
 /// 챕터 시작 시 InGameBootstrap이 Reset()을 호출한다.
@@ -8,6 +11,10 @@
 public static class RunStats
 {
     public static int TotalDamage { get; private set; }
+    public static int HighestDamage { get; private set; }
+    public static int HighestEnchantDamage1 { get; private set; }
+    public static int HighestEnchantDamage2 { get; private set; }
+    public static int HighestEnchantDamage3 { get; private set; }
 
     public static void Reset()
     {
