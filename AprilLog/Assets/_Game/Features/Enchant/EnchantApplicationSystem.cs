@@ -54,8 +54,17 @@ public class EnchantApplicationSystem : MonoBehaviour
     private void OnDestroy() => Unsubscribe();
 
     // 신규 획득(level 1) / 강화: 직전 레벨 대비 증가분(델타)만 적용한다.
-    private void HandleAcquired(int enchantId, int level) => ApplyDelta(enchantId, level);
-    private void HandleLevelUp(int enchantId, int newLevel) => ApplyDelta(enchantId, newLevel);
+    private void HandleAcquired(int enchantId, int level)
+    {
+        Debug.Log($"[인챈트이벤트] 신규획득 id={enchantId} lv={level} → 효과 적용 시도");
+        ApplyDelta(enchantId, level);
+    }
+
+    private void HandleLevelUp(int enchantId, int newLevel)
+    {
+        Debug.Log($"[인챈트이벤트] 레벨업 id={enchantId} lv={newLevel} → 효과 적용 시도");
+        ApplyDelta(enchantId, newLevel);
+    }
 
     /// <summary>
     /// 이어하기: 세이브된 인챈트들을 라이브 강화와 "동일한 순서의 레벨별 델타"로 재적용한다.
@@ -136,6 +145,10 @@ public class EnchantApplicationSystem : MonoBehaviour
     {
         if (Mathf.Approximately(amount, 0f)) return;
 
+        // [진단 로그] 인챈트 효과가 실제로 PlayerModel에 누적되는지 확인용 (원인 파악 후 제거 예정)
+        float beforeAtk = _playerModel.Attack;
+        int beforeHp = _playerModel.MaxHP;
+
         switch (statType)
         {
             case StatType_Attack:
@@ -163,5 +176,10 @@ public class EnchantApplicationSystem : MonoBehaviour
                                  "효과 미적용 — 기획 stat-type enum 확정 필요.");
                 break;
         }
+
+        // [진단 로그] 적용 전/후 비교 — 이게 매 선택마다 누적(증가)되면 정상.
+        Debug.Log($"[인챈트적용] id={enchantId} statType={statType} delta={amount:0.###} | " +
+                  $"ATK {beforeAtk:0.##}→{_playerModel.Attack:0.##}, MaxHP {beforeHp}→{_playerModel.MaxHP}, " +
+                  $"CritRate={_playerModel.CriticalRate:0.###}, CritDmg={_playerModel.CriticalDamage:0.##}");
     }
 }

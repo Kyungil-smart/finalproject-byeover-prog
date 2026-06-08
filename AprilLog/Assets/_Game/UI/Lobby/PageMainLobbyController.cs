@@ -122,6 +122,7 @@ public class PageMainLobbyController : MonoBehaviour
         bool hasPrev = _currentIndex > 0;
         bool hasNext = _data != null && _currentIndex < _data.ChapterCount - 1;
 
+        // 첫 챕터면 이전 숨김, 마지막 챕터면 다음 숨김 (그 외엔 보이고 활성)
         SetButtonVisible(_btnPrev, hasPrev);
         SetButtonVisible(_btnNext, hasNext);
     }
@@ -138,7 +139,6 @@ public class PageMainLobbyController : MonoBehaviour
     private static void SetButtonVisible(Button button, bool visible)
     {
         if (button == null) return;
-
         button.gameObject.SetActive(visible);
         button.interactable = visible;
     }

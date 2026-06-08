@@ -95,6 +95,7 @@ public class EnchantSelectPresenter
     private void HandleChoice(int index)
     {
         if (index < 0 || index >= _currentChoices.Count) return;
+        Debug.Log($"[인챈트선택] index={index} id={_currentChoices[index].EnchantID} → AcquireEnchant 호출");
         _model.AcquireEnchant(_currentChoices[index].EnchantID);
         _navigator.OnCloseButtonClick();
     }

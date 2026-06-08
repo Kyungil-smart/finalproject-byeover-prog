@@ -80,13 +80,12 @@ public class InGameGrowthSystem : MonoBehaviour
  
     private void OnEnable()
     {
-        ResolveRepository();
+        ResolveRepository();   // _spawner/_navigator/_sortSystem 등 자가 연결
 
         if (_spawner != null)
             _spawner.OnMonsterDied += HandleMonsterDied;
 
         // 데드락 발생 시 EXP 10% 감소(기획 4-2-6) 연결
-        if (_sortSystem == null) _sortSystem = FindFirstObjectByType<SortSystem>();
         if (_sortSystem != null)
             _sortSystem.OnDeadlockDetected += ApplyDeadlockPenalty;
     }
@@ -165,11 +164,16 @@ public class InGameGrowthSystem : MonoBehaviour
         OnEXPChanged?.Invoke(CurrentEXP, levelData.RequiredEXP);
     }
 
+    // 씬에 직렬화 참조가 비어 있어도 동작하도록 모든 의존성을 자가 연결한다 (다른 시스템과 동일 패턴).
+    // 특히 _navigator(레벨업 시 인챈트 팝업 호출)와 _spawner(몬스터 처치 EXP 수신)가 핵심.
     private void ResolveRepository()
     {
-        if (_configRepo != null) return;
-        if (DataManager.Instance == null) return;
+        if (_configRepo == null && DataManager.Instance != null)
+            _configRepo = DataManager.Instance.ConfigRepo;
 
-        _configRepo = DataManager.Instance.ConfigRepo;
+        if (_spawner == null) _spawner = FindFirstObjectByType<MonsterSpawner>();
+        if (_navigator == null) _navigator = FindFirstObjectByType<ScreenNavigator>();
+        if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
+        if (_sortSystem == null) _sortSystem = FindFirstObjectByType<SortSystem>();
     }
 }
