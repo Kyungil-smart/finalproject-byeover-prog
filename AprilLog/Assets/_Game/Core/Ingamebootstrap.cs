@@ -16,6 +16,9 @@
 // 5차 수정자 : 김영찬
 // 플레이어 스텟 초기화 시 CharacterStatus 반영하도록 수정
 
+// 6차 수정자 : 김영찬
+// 정산 창을 정옥님이 작성하신 코드로 변경
+
 using UnityEngine;
 
 /// <summary>
@@ -238,7 +241,7 @@ public class InGameBootstrap : MonoBehaviour
     // 챕터 종료 시 정산 팝업 표시 + 데이터 주입 (기획: 승패/콤보/총뎀/보상)
     private void ShowSettlement(bool isVictory)
     {
-        var view = FindFirstObjectByType<SettlementView>(FindObjectsInactive.Include);
+        var view = FindFirstObjectByType<ResultPopup>(FindObjectsInactive.Include);
         if (view == null)
         {
             Debug.LogWarning("[InGameBootstrap] SettlementView를 찾지 못해 정산 팝업을 띄우지 못했습니다.");
@@ -246,16 +249,17 @@ public class InGameBootstrap : MonoBehaviour
         }
 
         int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
-        int totalDamage = RunStats.TotalDamage;
+        int maxDamage = RunStats.HighestDamage;
+        
+        int enchantDamage1 = RunStats.HighestEnchantDamage1;
+        int enchantDamage2 = RunStats.HighestEnchantDamage2;
+        int enchantDamage3 = RunStats.HighestEnchantDamage1;
 
         // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
         int gold = isVictory ? 100 : 0;
         int parchment = isVictory ? 10 : 0;
 
-        view.Show();
-        view.SetResult(isVictory);
-        view.SetStats(maxCombo, totalDamage);
-        view.SetRewards(gold, parchment);
+        view.Show(isVictory, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, gold, parchment);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
         // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.
