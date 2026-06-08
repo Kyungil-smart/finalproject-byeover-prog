@@ -53,6 +53,20 @@ public class SortTableView : MonoBehaviour, ISortTableView
             _hintSystem.OnHintShow += ShowHint;
             _hintSystem.OnHintWaiting += ShowWaitingHint;
         }
+
+        if (_inputHandler != null)
+        {
+            _inputHandler.OnDragging += UpdateDragFeedbackPosition;
+
+            _inputHandler.OnDragStarted += (tableIdx, slotIdx) =>
+            {
+                Vector2 currentPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                ShowDragFeedback(tableIdx, slotIdx, currentPos);
+            };
+
+            _inputHandler.OnDragEnded += HideDragFeedback;
+            _inputHandler.OnDragCanceled += HideDragFeedback;
+        }
     }
 
     private void OnDisable()
@@ -61,6 +75,11 @@ public class SortTableView : MonoBehaviour, ISortTableView
         {
             _hintSystem.OnHintShow -= ShowHint;
             _hintSystem.OnHintWaiting -= ShowWaitingHint;
+        }
+
+        if (_inputHandler != null)
+        {
+            _inputHandler.OnDragging -= UpdateDragFeedbackPosition;
         }
     }
 
@@ -91,14 +110,11 @@ public class SortTableView : MonoBehaviour, ISortTableView
                 if (index < _puzzleSlots.Length)
                 {
                     RectTransform rt = _puzzleSlots[index].GetComponent<RectTransform>();
-                    positions[t][s] = RectTransformUtility.WorldToScreenPoint(null, rt.position); 
+                    positions[t][s] = RectTransformUtility.WorldToScreenPoint(null, rt.position);
                 }
             }
         }
-        // 입력 핸들러가 런타임에 생성됐을 수 있으니 비어 있으면 다시 탐색.
-        if (_inputHandler == null) _inputHandler = FindFirstObjectByType<SortInputHandler>();
-        if (_inputHandler != null)
-            _inputHandler.SetSlotPositions(positions);
+        _inputHandler.SetSlotPositions(positions);
     }
 
     // ---------- ISortTableView ----------
@@ -156,8 +172,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         if (_dragFeedbackImg != null && _dragFeedbackImg.enabled)
         {
-            Vector3 finalWorldPos = new Vector3(dragPos.x, dragPos.y, 0f);
-            _dragFeedbackImg.transform.position = finalWorldPos;
+            _dragFeedbackImg.rectTransform.position = dragPos;
         }
     }
 
@@ -205,15 +220,19 @@ public class SortTableView : MonoBehaviour, ISortTableView
     public void ShowHint(int tableIdx, int slotIdx)
     {
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
-
         if (idx < 0 || idx >= _puzzleSlots.Length) return;
 
-        Vector3 originalPos = _puzzleSlots[idx].transform.position;
+        RectTransform rt = _puzzleSlots[idx].GetComponent<RectTransform>();
+        if (rt == null) return;
 
-        _puzzleSlots[idx].transform.DOShakePosition(0.5f, 0.2f, 10, 90f)
+        rt.DOKill();
+
+        Vector2 originalAnchorPos = rt.anchoredPosition;
+
+        rt.transform.DOShakePosition(0.5f, 20f, 10, 90f)
             .OnComplete(() =>
             {
-                _puzzleSlots[idx].transform.position = originalPos;
+                rt.anchoredPosition = originalAnchorPos;
             });
     }
 
@@ -226,12 +245,18 @@ public class SortTableView : MonoBehaviour, ISortTableView
                 continue;
             }
 
-            Vector3 originalPos = slot.transform.position;
-            slot.transform.DOShakePosition(0.3f, 0.2f)
+            RectTransform rt = slot.GetComponent<RectTransform>();
+            if (rt == null) continue;
+
+            rt.DOKill();
+
+            Vector2 originalPos = rt.anchoredPosition;
+
+            rt.DOShakeAnchorPos(0.3f, 20f, 10, 90f)
                    .OnComplete(() =>
-                    {
-                        slot.transform.position = originalPos;
-                    });
+                   {
+                       rt.anchoredPosition = originalPos;
+                   });
         }
     }
 }
