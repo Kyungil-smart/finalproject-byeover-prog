@@ -31,6 +31,8 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private EnchantModel _enchantModel;
     [Tooltip("비워두면 런타임에 자동 생성됨")]
     [SerializeField] private EnchantApplicationSystem _enchantApplicationSystem;
+    [Tooltip("비워두면 런타임에 씬에서 탐색")]
+    [SerializeField] private InGameGrowthSystem _growthSystem;
 
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;
@@ -96,6 +98,10 @@ public class InGameBootstrap : MonoBehaviour
             _enchantApplicationSystem = gameObject.AddComponent<EnchantApplicationSystem>();
         _enchantApplicationSystem.Initialize(_playerModel, _enchantModel);
 
+        // 인게임 성장 시스템(레벨/EXP) 초기화. 비어 있으면 씬에서 탐색.
+        // (기존엔 어디서도 Initialize/RestoreFromSave를 호출하지 않아 레벨/EXP가 미초기화 상태였음)
+        if (_growthSystem == null) _growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
+
         if (isResume && saveData != null)
         {
             _playerModel.RestoreFromSave(saveData);
@@ -103,6 +109,13 @@ public class InGameBootstrap : MonoBehaviour
             // 이어하기: 세이브된 인챈트 효과를 최종 레벨 누적값으로 재적용
             // (RestoreFromSave는 이벤트를 발행하지 않으므로 직접 재적용 필요)
             _enchantApplicationSystem.ReapplyFromSave(saveData.acquiredEnchants);
+
+            if (_growthSystem != null)
+                _growthSystem.RestoreFromSave(saveData.inGameLevel, saveData.currentEXP);
+        }
+        else if (_growthSystem != null)
+        {
+            _growthSystem.Initialize();
         }
 
         // [4] Sort 초기화
@@ -112,7 +125,18 @@ public class InGameBootstrap : MonoBehaviour
         else
             seed = Random.Range(0, int.MaxValue);
 
-        _sortSystem.Initialize(seed);
+        // SortSystem 참조가 비어 있으면 씬에서 탐색 (CombatSystem·InGameGrowthSystem과 동일 폴백 패턴).
+        // → 씬에 SortSystem 컴포넌트만 있으면 Bootstrap에 수동 배선하지 않아도 동작.
+        if (_sortSystem == null) _sortSystem = FindFirstObjectByType<SortSystem>();
+        if (_sortSystem != null)
+        {
+            _sortSystem.Initialize(seed);
+        }
+        else
+        {
+            Debug.LogError("[InGameBootstrap] SortSystem을 찾을 수 없습니다. 현재 _InGame 씬에 SortSystem 컴포넌트가 없습니다. " +
+                           "(참고: Scenes/CDH/_InGameTest.unity 에는 존재) Sort/전투/EXP 루프가 동작하지 않으니 씬에 SortSystem을 추가하세요.");
+        }
 
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();

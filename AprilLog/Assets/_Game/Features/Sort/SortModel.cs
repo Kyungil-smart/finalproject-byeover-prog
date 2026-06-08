@@ -30,6 +30,9 @@ public class SortModel : MonoBehaviour
     private int[][] _puzzleTables;
     private WaitingCombo[] _waitingQueue;
 
+    /// <summary>Initialize() 호출 전이면 false. 초기화 전 슬롯 접근(NRE) 방지용.</summary>
+    public bool IsInitialized => _puzzleTables != null;
+
     // ---------- 초기화 ----------
     public void Initialize()
     {

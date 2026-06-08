@@ -57,6 +57,26 @@ public class InGameGrowthSystem : MonoBehaviour
         CurrentLevel = level;
         CurrentEXP = exp;
     }
+
+    /// <summary>
+    /// 현재 레벨/EXP 상태를 이벤트로 한 번 발행한다.
+    /// HUD Presenter가 모델 초기화 이후에 생성되어 구독만으론 현재 값을 못 받는 경우,
+    /// 이걸 호출해 초기 동기화(placeholder 덮어쓰기)를 한다.
+    /// </summary>
+    public void EmitCurrentState()
+    {
+        ResolveRepository();
+
+        OnLevelUp?.Invoke(CurrentLevel);
+
+        int required = 0;
+        if (_configRepo != null)
+        {
+            var levelData = _configRepo.GetInLevel(CurrentLevel);
+            if (levelData != null) required = levelData.RequiredEXP;
+        }
+        OnEXPChanged?.Invoke(CurrentEXP, required);
+    }
  
     private void OnEnable()
     {

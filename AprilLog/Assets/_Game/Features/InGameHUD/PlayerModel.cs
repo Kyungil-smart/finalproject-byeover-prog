@@ -148,4 +148,15 @@ public class PlayerModel : MonoBehaviour, IDamageable
         if (bonus < 1) bonus = 1 + bonus;
         CriticalDamage *= bonus;
     }
+
+    // 인챈트 효과 적용용 (float 가산). 기존 _Add는 int라 소수(예: +0.05)가 0으로 묻힘.
+    public void ApplyCriRateBonus_AddF(float bonus)
+    {
+        CriticalRate += bonus;
+    }
+
+    public void ApplyCriDmgBonus_AddF(float bonus)
+    {
+        CriticalDamage += bonus;
+    }
 }

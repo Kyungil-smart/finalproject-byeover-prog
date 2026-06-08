@@ -50,9 +50,9 @@ public class EnchantCardUI : MonoBehaviour
     {
         if (data == null) return;
 
-        // 인챈트 타입 반영 (예: "스킬 인첸트", "스텟 인첸트" 등)
-        if (_typeText != null) 
-            _typeText.text = GetEnchantTypeText(data.EnchantId);
+        // 인챈트 타입 라벨 반영 (Presenter가 stat-type 기반으로 채움)
+        if (_typeText != null)
+            _typeText.text = data.TypeLabel;
         
         // 인챈트 이름 반영 (예: "공격력 증가", "체인 라이트닝" 등)
         if (_nameText != null) 
@@ -69,11 +69,5 @@ public class EnchantCardUI : MonoBehaviour
         {
             // ToDo : 스킬 이미지 어떻게 전달되는지에 따라 이미지 삽입 형태 변경
         }
-    }
-
-    private string GetEnchantTypeText(int enchantId)
-    {
-        // ToDo : 인첸트 아이디 형식에 따라 분류할 것.
-        return "temp";
     }
 }

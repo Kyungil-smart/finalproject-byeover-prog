@@ -150,6 +150,7 @@ public class Legacy_EnchantDisplayData
     public string Description;
     public int Level;
     public string ImageKey;
+    public string TypeLabel;   // 카드 타입 표시용 (Presenter가 stat-type 기반으로 채움)
 }
 
 [Serializable]

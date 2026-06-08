@@ -32,6 +32,11 @@ public class HintSystem : MonoBehaviour
 
     private void Update()
     {
+        // Sort가 아직 초기화되지 않았으면(예: 씬에 SortSystem 미배치로 SortModel.Initialize 미호출)
+        // 힌트 로직이 빈 보드를 접근해 NRE를 매 프레임 던지므로 건너뛴다.
+        if (_model == null || !_model.IsInitialized)
+            return;
+
         _timer += Time.deltaTime;
 
         if (_timer >= GetDelay())
