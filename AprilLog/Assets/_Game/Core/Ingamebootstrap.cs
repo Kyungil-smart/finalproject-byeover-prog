@@ -17,6 +17,7 @@
 // 플레이어 스텟 초기화 시 CharacterStatus 반영하도록 수정
 
 using UnityEngine;
+// 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
 /// <summary>
 /// InGame 씬 로드 후 모든 시스템을 의존성 순서대로 초기화한다.
@@ -251,6 +252,15 @@ public class InGameBootstrap : MonoBehaviour
         // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
         int gold = isVictory ? 100 : 0;
         int parchment = isVictory ? 10 : 0;
+
+        var loop = FindFirstObjectByType<StageLoopManager>();
+        int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
+        int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment);
+        }
 
         view.Show();
         view.SetResult(isVictory);

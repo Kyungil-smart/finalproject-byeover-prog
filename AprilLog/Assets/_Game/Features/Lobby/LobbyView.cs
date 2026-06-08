@@ -4,6 +4,7 @@
 using System;
 using UnityEngine;
 using TMPro;
+// 추가: 조규민 - 로비 진입 시 계정 클라우드 데이터 바인더를 자동 연결한다.
 
 public class LobbyView : MonoBehaviour, ILobbyView
 {
@@ -27,6 +28,8 @@ public class LobbyView : MonoBehaviour, ILobbyView
 
     private void Awake()
     {
+        EnsureCloudDataBinder();
+
         if (_progress == null || _currency == null)
         {
             Debug.LogWarning("[LobbyView] Required model is missing. LobbyPresenter creation skipped.");
@@ -73,4 +76,14 @@ public class LobbyView : MonoBehaviour, ILobbyView
     public void OnGrowthButtonClicked() => OnGrowthClicked?.Invoke();
     public void OnBookButtonClicked() => OnBookClicked?.Invoke();
     public void OnOptionButtonClicked() => OnOptionClicked?.Invoke();
+
+    private void EnsureCloudDataBinder()
+    {
+        if (GetComponent<LobbyCloudDataBinder>() != null)
+        {
+            return;
+        }
+
+        gameObject.AddComponent<LobbyCloudDataBinder>();
+    }
 }
