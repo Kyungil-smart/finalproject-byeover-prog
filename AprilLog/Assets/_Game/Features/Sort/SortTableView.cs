@@ -53,6 +53,20 @@ public class SortTableView : MonoBehaviour, ISortTableView
             _hintSystem.OnHintShow += ShowHint;
             _hintSystem.OnHintWaiting += ShowWaitingHint;
         }
+
+        if (_inputHandler != null)
+        {
+            _inputHandler.OnDragging += UpdateDragFeedbackPosition;
+
+            _inputHandler.OnDragStarted += (tableIdx, slotIdx) =>
+            {
+                Vector2 currentPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                ShowDragFeedback(tableIdx, slotIdx, currentPos);
+            };
+
+            _inputHandler.OnDragEnded += HideDragFeedback;
+            _inputHandler.OnDragCanceled += HideDragFeedback;
+        }
     }
 
     private void OnDisable()
@@ -61,6 +75,11 @@ public class SortTableView : MonoBehaviour, ISortTableView
         {
             _hintSystem.OnHintShow -= ShowHint;
             _hintSystem.OnHintWaiting -= ShowWaitingHint;
+        }
+
+        if (_inputHandler != null)
+        {
+            _inputHandler.OnDragging -= UpdateDragFeedbackPosition;
         }
     }
 
@@ -153,8 +172,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         if (_dragFeedbackImg != null && _dragFeedbackImg.enabled)
         {
-            Vector3 finalWorldPos = new Vector3(dragPos.x, dragPos.y, 0f);
-            _dragFeedbackImg.transform.position = finalWorldPos;
+            _dragFeedbackImg.rectTransform.position = dragPos;
         }
     }
 
