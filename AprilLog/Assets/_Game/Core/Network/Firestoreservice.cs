@@ -12,6 +12,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+// 추가: 조규민 - 계정별 로컬 백업 분리와 Firestore 저장 타임아웃 방어 추가
 #if FIREBASE_ENABLED
 using System.Threading.Tasks;
 #endif
@@ -44,9 +45,11 @@ public class FirestoreService : MonoBehaviour
 
     public IEnumerator SaveCoroutine(UserCloudData data)
     {
+        LastError = null;
+
         if (data == null)
         {
-            OnError?.Invoke("저장할 유저 데이터가 없습니다.");
+            SetError("저장할 유저 데이터가 없습니다.");
             yield break;
         }
 
@@ -61,22 +64,28 @@ public class FirestoreService : MonoBehaviour
         if (_db == null)
         {
             SaveLocalBackup(data);
-            OnError?.Invoke("Firestore가 초기화되지 않았습니다.");
+            SetError("Firestore가 초기화되지 않았습니다.");
             yield break;
         }
 
         var docRef = _db.Collection("users").Document(_uid);
         var task = docRef.SetAsync(CreateUserCloudDataDictionary(data)); // 추가: 조규민 - Firestore SDK가 사용자 클래스를 직접 변환하지 못해 Dictionary로 변환해 저장한다.
-        yield return new WaitUntil(() => task.IsCompleted);
+        bool saveCompleted = false;
+        yield return StartCoroutine(WaitForFirestoreTask(task, "Firestore 저장 시간이 초과되었습니다.", result => saveCompleted = result));
+        if (!saveCompleted)
+        {
+            SaveLocalBackup(data);
+            yield break;
+        }
+
         if (task.IsFaulted)
         {
             SaveLocalBackup(data);
-            OnError?.Invoke(GetExceptionMessage(task.Exception, "저장 실패"));
+            SetError(GetExceptionMessage(task.Exception, "저장 실패"));
             yield break;
         }
-#else
-        SaveLocalBackup(data);
 #endif
+        SaveLocalBackup(data);
         OnSaveComplete?.Invoke();
     }
 
@@ -114,6 +123,7 @@ public class FirestoreService : MonoBehaviour
         else
         {
             var newData = UserCloudData.CreateDefault();
+            newData.uid = _uid;
             yield return StartCoroutine(SaveCoroutine(newData));
             OnDataLoaded?.Invoke(newData);
         }
@@ -607,7 +617,27 @@ public class FirestoreService : MonoBehaviour
     }
 
     public bool HasLocalBackup() => File.Exists(GetBackupPath());
-    private string GetBackupPath() => Path.Combine(Application.persistentDataPath, LOCAL_BACKUP_FILE);
+
+    private string GetBackupPath()
+    {
+        if (string.IsNullOrWhiteSpace(_uid))
+        {
+            return Path.Combine(Application.persistentDataPath, LOCAL_BACKUP_FILE);
+        }
+
+        return Path.Combine(Application.persistentDataPath, "cloud_backup_" + SanitizeFileName(_uid) + ".json");
+    }
+
+    private string SanitizeFileName(string value)
+    {
+        var invalidCharacters = Path.GetInvalidFileNameChars();
+        foreach (char invalidCharacter in invalidCharacters)
+        {
+            value = value.Replace(invalidCharacter, '_');
+        }
+
+        return value;
+    }
 
     private bool HasLocalGoogleProfileForCurrentUser()
     {

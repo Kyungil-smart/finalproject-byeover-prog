@@ -4,8 +4,11 @@
 // 2차 수정자 : 조규민
 // 수정 내용 : 로그인 이벤트 전달, 게스트 중복 방어, 실제 씬 이름 전환, Portrait 고정, Google 로그인 실패 유형 전달, Editor Google 테스트 계정 입력 전달, Firestore 회원가입 UID 보정, 기존 Editor Email/Password 계정 로그인 요청 중계 추가
 
+// 추가: 조규민 - 로그인 계정의 아웃게임 모델과 정산 결과를 UserCloudData로 저장하는 공용 진입점 추가
+
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -606,8 +609,152 @@ public class GameManager : MonoBehaviour
         if (!IsLoggedIn) return;
         if (_firestoreService == null) return;
 
+        EnsureCloudIdentity(data);
         CloudData = data;
         StartCoroutine(_firestoreService.SaveCoroutine(data));
+    }
+
+    public void ApplyCloudDataToOutGameModels(PlayerProgressModel progressModel, CurrencyModel currencyModel)
+    {
+        if (CloudData == null)
+        {
+            CloudData = UserCloudData.CreateDefault();
+        }
+
+        EnsureCloudIdentity(CloudData);
+
+        if (progressModel != null)
+        {
+            progressModel.Initialize(
+                CloudData.characterLevel,
+                CloudData.currentChapter,
+                CloudData.currentStage,
+                CloneUnlockedStages(CloudData.unlockedStages));
+        }
+
+        if (currencyModel != null)
+        {
+            currencyModel.Initialize(CloudData.gold, CloudData.parchment);
+        }
+    }
+
+    public void SaveOutGameProgress(PlayerProgressModel progressModel, CurrencyModel currencyModel)
+    {
+        if (!IsLoggedIn)
+        {
+            return;
+        }
+
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+
+        if (progressModel != null)
+        {
+            data.characterLevel = progressModel.CharacterLevel;
+            data.currentChapter = progressModel.CurrentChapter;
+            data.currentStage = progressModel.CurrentStage;
+            data.unlockedStages = CloneUnlockedStages(progressModel.UnlockedStages);
+        }
+
+        if (currencyModel != null)
+        {
+            data.gold = currencyModel.Gold;
+            data.parchment = currencyModel.Parchment;
+        }
+
+        SyncToCloud(data);
+    }
+
+    public void SaveChapterResult(bool isVictory, int chapterId, int completedStageCount, int rewardGold, int rewardParchment)
+    {
+        if (!IsLoggedIn)
+        {
+            return;
+        }
+
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+
+        data.gold = Mathf.Max(0, data.gold + Mathf.Max(0, rewardGold));
+        data.parchment = Mathf.Max(0, data.parchment + Mathf.Max(0, rewardParchment));
+
+        if (isVictory)
+        {
+            int safeChapterId = Mathf.Max(1, chapterId);
+            int safeCompletedStageCount = Mathf.Max(1, completedStageCount);
+            data.currentChapter = Mathf.Max(data.currentChapter, safeChapterId);
+            data.currentStage = Mathf.Max(data.currentStage, safeCompletedStageCount);
+            AddUnlockedStage(data, BuildStageId(safeChapterId, safeCompletedStageCount));
+            AddNextStageIfExists(data, safeChapterId, safeCompletedStageCount + 1);
+        }
+
+        SyncToCloud(data);
+    }
+
+    private void EnsureCloudIdentity(UserCloudData data)
+    {
+        if (data == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(data.uid))
+        {
+            data.uid = UserUID;
+        }
+
+        if (string.IsNullOrWhiteSpace(data.provider))
+        {
+            data.provider = LastSignInWasGoogle ? "google" : "guest";
+        }
+    }
+
+    private static List<int> CloneUnlockedStages(List<int> unlockedStages)
+    {
+        return unlockedStages == null ? new List<int>() : new List<int>(unlockedStages);
+    }
+
+    private void AddNextStageIfExists(UserCloudData data, int chapterId, int nextStageNumber)
+    {
+        int nextStageId = BuildStageId(chapterId, nextStageNumber);
+        if (HasStage(nextStageId))
+        {
+            AddUnlockedStage(data, nextStageId);
+            return;
+        }
+
+        int nextChapterFirstStageId = BuildStageId(chapterId + 1, 1);
+        if (HasStage(nextChapterFirstStageId))
+        {
+            AddUnlockedStage(data, nextChapterFirstStageId);
+            data.currentChapter = Mathf.Max(data.currentChapter, chapterId + 1);
+            data.currentStage = 1;
+        }
+    }
+
+    private bool HasStage(int stageId)
+    {
+        return DataManager.Instance != null
+            && DataManager.Instance.StageRepo != null
+            && DataManager.Instance.StageRepo.GetStage(stageId) != null;
+    }
+
+    private static int BuildStageId(int chapterId, int stageNumber)
+    {
+        return chapterId * 100 + Mathf.Max(1, stageNumber);
+    }
+
+    private static void AddUnlockedStage(UserCloudData data, int stageId)
+    {
+        if (data.unlockedStages == null)
+        {
+            data.unlockedStages = new List<int>();
+        }
+
+        if (!data.unlockedStages.Contains(stageId))
+        {
+            data.unlockedStages.Add(stageId);
+        }
     }
 
     // ---------- 로컬 세이브 (인게임) ----------

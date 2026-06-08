@@ -18,6 +18,7 @@
 
 using System;
 using UnityEngine;
+// 추가: 조규민 - 정산 저장에서 현재 챕터와 클리어 스테이지 수를 읽을 수 있도록 공개 속성 추가
 
 /// <summary>
 /// 챕터 내 스테이지 -> 웨이브 전체 루프를 관리하는 컨트롤러.
@@ -51,6 +52,9 @@ public class StageLoopManager : MonoBehaviour
     private int _chapterId;
     private int _currentStageIndex;
     private System.Random _rng;
+
+    public int CurrentChapterId => _chapterId;
+    public int CompletedStageCount => Mathf.Max(0, _currentStageIndex);
 
     // ---------- 초기화 ----------
     public void StartChapter(int chapterId, int startStageIndex, int seed)

@@ -20,6 +20,7 @@
 // 정산 창을 정옥님이 작성하신 코드로 변경
 
 using UnityEngine;
+// 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
 /// <summary>
 /// InGame 씬 로드 후 모든 시스템을 의존성 순서대로 초기화한다.
@@ -265,6 +266,19 @@ public class InGameBootstrap : MonoBehaviour
         int gold = isVictory ? 100 : 0;
         int parchment = isVictory ? 10 : 0;
 
+        var loop = FindFirstObjectByType<StageLoopManager>();
+        int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
+        int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment);
+        }
+
+        view.Show();
+        view.SetResult(isVictory);
+        view.SetStats(maxCombo, totalDamage);
+        view.SetRewards(gold, parchment);
         view.Show(isVictory, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, gold, parchment);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
