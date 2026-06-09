@@ -25,10 +25,10 @@ public class SortInputHandler : MonoBehaviour
     [SerializeField] private SortModel _model;
 
     [Header("설정")]
-    [Tooltip("드래그로 인식하는 최소 이동 거리(px)")]
-    [SerializeField] private float _dragThreshold = 100f;
+    [Tooltip("드래그로 인식하는 최소 이동 거리(screen px). 인접 슬롯 간격(1080p ~86px)보다 작아야 옆칸 드래그가 탭으로 안 버려진다.")]
+    [SerializeField] private float _dragThreshold = 30f;
 
-    [Tooltip("슬롯 히트 영역 반경(world). 손가락 크기 보정용")]
+    [Tooltip("슬롯 히트 영역 반경(screen px). 손가락 크기 보정용")]
     [SerializeField] private float _touchRadius = 100f;
 
     // ---------- Private ----------
@@ -64,29 +64,18 @@ public class SortInputHandler : MonoBehaviour
         var ts = Touchscreen.current;
         if (ts == null) return;
 
-        // [빌드 버그 수정] 기존엔 touches[0] + isInProgress 가드를 썼는데, 손가락을 뗄 때(Ended/Canceled)는
-        // isInProgress가 false라 early-return → EndInput(=OnUnitDropped 드롭)이 영영 호출되지 않았다.
-        // 그래서 빌드에서 유닛을 집어도 '드롭'이 안 돼 퍼즐을 맞출 수 없었다. primaryTouch로 모든 phase를 처리한다.
+        // [빌드 버그 수정] phase enum을 Update당 1회 polling하면 Began이 코얼레스/누락되거나(픽업 실패),
+        // 손가락 뗄 때 Ended를 놓쳐(드롭 실패) 빌드에서 퍼즐을 못 맞췄다.
+        // press의 엣지(wasPressedThisFrame/wasReleasedThisFrame)로 마우스 경로와 동일하게 이산 처리한다.
         var touch = ts.primaryTouch;
-        var phase = touch.phase.ReadValue();
-        Vector2 touchPosition = touch.position.ReadValue();
+        Vector2 pos = touch.position.ReadValue();
 
-        switch (phase)
-        {
-            case UnityEngine.InputSystem.TouchPhase.Began:
-                BeginInput(touchPosition);
-                break;
-
-            case UnityEngine.InputSystem.TouchPhase.Moved:
-            case UnityEngine.InputSystem.TouchPhase.Stationary:
-                MoveInput(touchPosition);
-                break;
-
-            case UnityEngine.InputSystem.TouchPhase.Ended:
-            case UnityEngine.InputSystem.TouchPhase.Canceled:
-                EndInput(touchPosition);
-                break;
-        }
+        if (touch.press.wasPressedThisFrame)
+            BeginInput(pos);
+        else if (touch.press.isPressed)
+            MoveInput(pos);
+        else if (touch.press.wasReleasedThisFrame)
+            EndInput(pos);
     }
 
     // ---------- 마우스 (에디터 테스트용) ----------

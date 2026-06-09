@@ -38,12 +38,31 @@ public class SortTableView : MonoBehaviour, ISortTableView
     private SortTablePresenter _presenter;
     private int _currentDraggingUnitType = -1;
 
+    // 슬롯 화면좌표 재캐싱 트리거. 안드로이드는 SafeArea/해상도가 1~3프레임 늦게 확정되고,
+    // SafeAreaFitter/ScreenLayoutManager가 슬롯의 조상 RectTransform을 사후 재배치하므로
+    // 변화를 감지해 좌표를 다시 계산하지 않으면 캐시가 실제 슬롯과 어긋나 터치 히트가 전부 실패한다.
+    private Vector2Int _lastScreenSize;
+    private Rect _lastSafeArea;
+
     // ---------- 생명주기 ----------
     private void Awake()
     {
         _presenter = new SortTablePresenter(this, _model, _inputHandler, _hintSystem);
 
         StartCoroutine(SetupAfterLayout());
+    }
+
+    private void Update()
+    {
+        // 해상도 또는 SafeArea가 바뀌면(안드로이드 초기 확정 + 회전 등) 슬롯 좌표를 다시 캐싱.
+        var size = new Vector2Int(Screen.width, Screen.height);
+        if (size != _lastScreenSize || Screen.safeArea != _lastSafeArea)
+        {
+            _lastScreenSize = size;
+            _lastSafeArea = Screen.safeArea;
+            Canvas.ForceUpdateCanvases();
+            SetupSlotPositions();
+        }
     }
 
     private void OnEnable()
@@ -60,7 +79,9 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
             _inputHandler.OnDragStarted += (tableIdx, slotIdx) =>
             {
-                Vector2 currentPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                // 빌드(터치)에서 Mouse.current는 null → NRE. Pointer.current(마우스/터치 공용)로 읽는다.
+                var pointer = UnityEngine.InputSystem.Pointer.current;
+                Vector2 currentPos = pointer != null ? pointer.position.ReadValue() : Vector2.zero;
                 ShowDragFeedback(tableIdx, slotIdx, currentPos);
             };
 
@@ -89,15 +110,22 @@ public class SortTableView : MonoBehaviour, ISortTableView
     }
     private System.Collections.IEnumerator SetupAfterLayout()
     {
-        yield return new WaitForEndOfFrame();
-
-        Canvas.ForceUpdateCanvases();
-
-        SetupSlotPositions();
+        // 안드로이드는 SafeArea/해상도 확정 + SafeAreaFitter/ScreenLayoutManager의 사후 재배치가
+        // 시작 직후 여러 프레임에 걸쳐 일어난다. 초기 몇 프레임 동안 반복 재캐싱해 어긋남을 잡는다.
+        for (int i = 0; i < 6; i++)
+        {
+            yield return new WaitForEndOfFrame();
+            Canvas.ForceUpdateCanvases();
+            SetupSlotPositions();
+        }
+        _lastScreenSize = new Vector2Int(Screen.width, Screen.height);
+        _lastSafeArea = Screen.safeArea;
     }
 
     private void SetupSlotPositions()
     {
+        if (_inputHandler == null || _puzzleSlots == null) return;
+
         var positions = new Vector2[SortModel.TABLE_COUNT][];
 
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
