@@ -179,9 +179,9 @@ public class InGameBootstrap : MonoBehaviour
             _projectileTemplate = BuildProjectileTemplate();
         pool.EnsurePool("Projectile_Basic", _projectileTemplate, _projectilePoolSize);
 
-        // 단독 _InGame 실행(Boot 미경유) 시 몬스터 풀이 비어 있어 스폰이 실패한다.
-        // 에디터 테스트 편의로 Monsters 폴더 프리팹을 풀에 자동 등록 (빌드는 Boot 경유라 제외).
-        EnsureMonsterPoolsInEditor(pool);
+        // 몬스터 풀 보장: Boot 풀이 유실돼도(머지로 DontDestroyOnLoad가 사라지는 사고 포함) 빌드/에디터 모두
+        // Resources/Monsters 프리팹으로 풀을 채운다. (RegisterPool 멱등이라 Boot가 이미 채웠으면 no-op)
+        EnsureMonsterPools(pool);
 
         // 플레이어/방벽 배치.
         // 씬에 PlayerView를 직접 두면 그 위치를 존중하고 자동 배치하지 않는다(완전 수동 제어).
@@ -316,21 +316,23 @@ public class InGameBootstrap : MonoBehaviour
         return _fallbackCharacterY;
     }
 
-    // [에디터 전용] 단독 _InGame 실행 시 Monsters 폴더의 프리팹을 풀에 자동 등록.
-    // 빌드/정식 플로우는 Boot의 PoolManager configs를 사용하므로 이 블록은 컴파일에서 제외됨.
-    private void EnsureMonsterPoolsInEditor(PoolManager pool)
+    // Boot의 PoolManager 풀이 (단독 _InGame 실행이거나 머지로 DontDestroyOnLoad가 유실돼) 비어 있어도
+    // 몬스터가 스폰되도록, Resources/Monsters 폴더의 프리팹을 풀에 등록한다. 에디터·빌드 공통(AssetDatabase 비의존).
+    // RegisterPool이 멱등이라 Boot가 이미 등록한 키는 무시되므로 중복 등록은 안전하다.
+    private void EnsureMonsterPools(PoolManager pool)
     {
-#if UNITY_EDITOR
-        const string dir = "Assets/_Game/Prefabs/Monsters";
-        var guids = UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { dir });
-        foreach (var guid in guids)
+        var prefabs = Resources.LoadAll<GameObject>("Monsters");
+        if (prefabs == null || prefabs.Length == 0)
         {
-            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Debug.LogWarning("[InGameBootstrap] Resources/Monsters 에서 몬스터 프리팹을 못 찾음. 프리팹이 Assets/Resources/Monsters/ 에 있는지 확인.");
+            return;
+        }
+
+        foreach (var prefab in prefabs)
+        {
             if (prefab != null)
                 pool.EnsurePool(prefab.name, prefab, 5); // key = 프리팹명(Monster_11 …) = 풀키 규칙
         }
-#endif
     }
 
     // 코드로 만든 투사체 템플릿(사각형). DummyCombatTester의 런타임 생성 로직을 정식화.

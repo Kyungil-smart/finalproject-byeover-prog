@@ -33,6 +33,7 @@ public class PoolManager : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);   // Boot에서 워밍업한 몬스터 풀(Monster_11..30 등)이 _InGame까지 유지되도록. 없으면 빌드에서 몬스터 미스폰.
 
         _pools = new Dictionary<string, Queue<GameObject>>();
         _prefabs = new Dictionary<string, GameObject>();
