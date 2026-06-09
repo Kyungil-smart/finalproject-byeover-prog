@@ -137,6 +137,16 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         // [임시] 재화 최대 버튼
         if (btnSetMax != null)
             btnSetMax.onClick.RemoveListener(SetCurrencyMaxForTest);
+
+        // 탭 전환 등으로 비활성화될 때 진행 중인 팝업 코루틴이 끊겨
+        // 팝업이 켜진 채 남는 문제 방지 -> 강제로 닫는다.
+        if (_popupCoroutine != null)
+        {
+            StopCoroutine(_popupCoroutine);
+            _popupCoroutine = null;
+        }
+        if (popupArea != null)
+            popupArea.SetActive(false);
     }
 
     // ===== 임시 테스트용 (나중에 삭제) =====

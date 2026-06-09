@@ -408,6 +408,8 @@ public class HousingInteractionController : MonoBehaviour
 
     private void EnableMultiTouch()
     {
+        // 구 Input(multiTouchEnabled)은 New Input System 전용 빌드에서 throw하므로 레거시 빌드에서만 사용.
+#if ENABLE_LEGACY_INPUT_MANAGER
         if (!_hasPreviousMultiTouchValue)
         {
             _previousMultiTouchEnabled = Input.multiTouchEnabled;
@@ -415,6 +417,7 @@ public class HousingInteractionController : MonoBehaviour
         }
 
         Input.multiTouchEnabled = true;
+#endif
 
 #if ENABLE_INPUT_SYSTEM
         UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Enable();
@@ -423,11 +426,13 @@ public class HousingInteractionController : MonoBehaviour
 
     private void RestoreMultiTouch()
     {
+#if ENABLE_LEGACY_INPUT_MANAGER
         if (!_hasPreviousMultiTouchValue)
             return;
 
         Input.multiTouchEnabled = _previousMultiTouchEnabled;
         _hasPreviousMultiTouchValue = false;
+#endif
     }
 
     private string GetSlotSaveKey(int _slotId)

@@ -81,10 +81,10 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         // 모바일 필수 설정
-        Application.targetFrameRate = 30;
+        Application.targetFrameRate = 60;   // 60fps (vSync=0이라 그대로 적용됨)
         QualitySettings.vSyncCount = 0;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
-        Input.multiTouchEnabled = false;
+        // (구 Input의 multiTouchEnabled는 New Input System 전용 빌드(activeInputHandler=1)에서 throw하므로 제거)
 
         // 추가: 조규민 - 씬 진입 후에도 Portrait 고정을 한 번 더 적용한다.
         ApplyPortraitOrientation();
