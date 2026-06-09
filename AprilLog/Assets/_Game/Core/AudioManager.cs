@@ -48,6 +48,7 @@ public class AudioManager : MonoBehaviour
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+        DontDestroyOnLoad(gameObject);   // _Boot→_Lobby→_InGame 씬 전환에도 오디오 유지
 
         _bgmSource = EnsureAudioSource(_bgmSource, nameof(_bgmSource));
         _sfxSource = EnsureAudioSource(_sfxSource, nameof(_sfxSource));

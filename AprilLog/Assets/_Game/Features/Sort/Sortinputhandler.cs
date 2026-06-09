@@ -32,7 +32,6 @@ public class SortInputHandler : MonoBehaviour
     [SerializeField] private float _touchRadius = 100f;
 
     // ---------- Private ----------
-    private Camera _cam;
     private int _selectedTable = -1;
     private int _selectedSlot = -1;
     private bool _isDragging;
@@ -40,12 +39,6 @@ public class SortInputHandler : MonoBehaviour
 
     // 슬롯 위치 캐싱. View가 초기화할 때 넣어줌.
     private Vector2[][] _slotPositions;
-
-    // ---------- 생명주기 ----------
-    private void Awake()
-    {
-        _cam = Camera.main;
-    }
 
     // View가 슬롯 오브젝트 위치를 기반으로 채워줌
     public void SetSlotPositions(Vector2[][] positions)
@@ -68,14 +61,15 @@ public class SortInputHandler : MonoBehaviour
     // ---------- 터치 ----------
     private void HandleTouch()
     {
-        if (Touchscreen.current == null || Touchscreen.current.touches.Count == 0) return;
+        var ts = Touchscreen.current;
+        if (ts == null) return;
 
-        var touchControl = Touchscreen.current.touches[0];
-
-        if (!touchControl.isInProgress) return;
-
-        var phase = touchControl.phase.ReadValue();
-        Vector2 touchPosition = touchControl.position.ReadValue();
+        // [빌드 버그 수정] 기존엔 touches[0] + isInProgress 가드를 썼는데, 손가락을 뗄 때(Ended/Canceled)는
+        // isInProgress가 false라 early-return → EndInput(=OnUnitDropped 드롭)이 영영 호출되지 않았다.
+        // 그래서 빌드에서 유닛을 집어도 '드롭'이 안 돼 퍼즐을 맞출 수 없었다. primaryTouch로 모든 phase를 처리한다.
+        var touch = ts.primaryTouch;
+        var phase = touch.phase.ReadValue();
+        Vector2 touchPosition = touch.position.ReadValue();
 
         switch (phase)
         {
@@ -150,9 +144,6 @@ public class SortInputHandler : MonoBehaviour
         }
         else
         {
-            Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
-            Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
-
             OnDragging?.Invoke(screenPos);
         }
     }
@@ -165,9 +156,6 @@ public class SortInputHandler : MonoBehaviour
             _selectedTable = -1;
             return;
         }
-
-        Vector3 mousePos3D = new Vector3(screenPos.x, screenPos.y, Mathf.Abs(_cam.transform.position.z));
-        Vector2 worldPos = _cam.ScreenToWorldPoint(mousePos3D);
 
         FindSlot(screenPos, out int toTable, out int toSlot);
 
