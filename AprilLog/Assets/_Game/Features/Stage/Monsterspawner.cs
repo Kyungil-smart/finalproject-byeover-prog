@@ -93,6 +93,7 @@ public class MonsterSpawner : MonoBehaviour
     // 순차 소환 코루틴
     private IEnumerator ProcessSpawnQueue(Queue<StageModel.SpawnCommand> queue, float delay)
     {
+        Debug.Log($"{delay}초의 간격을 두고 총 {queue.Count}만큼 생산명령 접수");
         while (queue.Count > 0)
         {
             var cmd = queue.Dequeue();
