@@ -27,6 +27,9 @@ public class LobbyView : MonoBehaviour, ILobbyView
 
     private void Awake()
     {
+        // LocalizationManager는 _Boot에만 있고 씬 간 직렬화 참조가 불가능하므로 DontDestroyOnLoad된 싱글톤에서 자가 탐색.
+        if (_localization == null) _localization = LocalizationManager.Instance;
+
         if (_progress == null || _currency == null)
         {
             Debug.LogWarning("[LobbyView] Required model is missing. LobbyPresenter creation skipped.");

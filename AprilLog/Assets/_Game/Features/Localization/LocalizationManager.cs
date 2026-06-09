@@ -12,6 +12,11 @@ using UnityEngine;
 /// </summary>
 public class LocalizationManager : MonoBehaviour
 {
+    // ---------- 싱글톤 ----------
+    // _Boot 씬에만 1개 존재. 씬 전환(_Boot→_Lobby→_InGame)에도 살아남도록 DontDestroyOnLoad.
+    // _Lobby/_InGame의 View들은 씬 간 직렬화 참조가 불가능하므로 이 Instance로 자가 탐색한다.
+    public static LocalizationManager Instance { get; private set; }
+
     // ---------- 이벤트 ----------
     public event Action OnLanguageChanged;
 
@@ -25,6 +30,13 @@ public class LocalizationManager : MonoBehaviour
     private string _currentLang;  // "ko" or "en"
 
     public string CurrentLanguage => _currentLang;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
 
     // ---------- 초기화 ----------
     public void Initialize()

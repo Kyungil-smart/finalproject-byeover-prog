@@ -33,6 +33,9 @@ public class PoolManager : MonoBehaviour
         }
 
         Instance = this;
+        // Boot에서 등록한 몬스터/투사체 풀이 Lobby→_InGame 씬 전환 후에도 유지되어야 한다.
+        // (없으면 빌드에서 _InGame이 빈 풀을 새로 만들어 몬스터 스폰이 전부 실패함)
+        DontDestroyOnLoad(gameObject);
 
         _pools = new Dictionary<string, Queue<GameObject>>();
         _prefabs = new Dictionary<string, GameObject>();

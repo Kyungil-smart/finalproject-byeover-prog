@@ -46,6 +46,19 @@ public class SortTableView : MonoBehaviour, ISortTableView
         StartCoroutine(SetupAfterLayout());
     }
 
+    // 안드로이드 빌드에서 시작 직후 해상도가 늦게 확정되면 처음 계산한 슬롯 좌표가 어긋나
+    // 터치 히트 판정이 전부 실패할 수 있다. 화면 크기가 바뀔 때마다 슬롯 좌표를 다시 계산한다.
+    private Vector2Int _lastScreenSize;
+    private void Update()
+    {
+        var size = new Vector2Int(Screen.width, Screen.height);
+        if (size != _lastScreenSize)
+        {
+            _lastScreenSize = size;
+            SetupSlotPositions();
+        }
+    }
+
     private void OnEnable()
     {
         if (_hintSystem != null)
@@ -60,7 +73,9 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
             _inputHandler.OnDragStarted += (tableIdx, slotIdx) =>
             {
-                Vector2 currentPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                // 빌드(터치) 대응: Mouse.current는 터치 기기에서 null → NRE. Pointer.current(마우스/터치 공용)로 읽는다.
+                var pointer = UnityEngine.InputSystem.Pointer.current;
+                Vector2 currentPos = pointer != null ? pointer.position.ReadValue() : Vector2.zero;
                 ShowDragFeedback(tableIdx, slotIdx, currentPos);
             };
 
@@ -110,7 +125,12 @@ public class SortTableView : MonoBehaviour, ISortTableView
                 if (index < _puzzleSlots.Length)
                 {
                     RectTransform rt = _puzzleSlots[index].GetComponent<RectTransform>();
-                    positions[t][s] = RectTransformUtility.WorldToScreenPoint(null, rt.position);
+                    // 빌드 대응: 캔버스가 ScreenSpace-Camera/WorldSpace면 null 카메라로 변환 시 좌표가 어긋나
+                    // 터치 히트 판정이 전부 실패한다(에디터 Overlay에선 우연히 맞음). 렌더모드에 맞는 카메라 사용.
+                    Canvas canvas = rt.GetComponentInParent<Canvas>();
+                    Camera screenCam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                        ? canvas.worldCamera : null;
+                    positions[t][s] = RectTransformUtility.WorldToScreenPoint(screenCam, rt.position);
                 }
             }
         }
