@@ -8,9 +8,6 @@
 
 using System;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 public class Legacy_DataManager : MonoBehaviour
 {
@@ -27,25 +24,21 @@ public class Legacy_DataManager : MonoBehaviour
 
                 if (_instance == null)
                 {
-#if UNITY_EDITOR
-                    string prefabPath = "Assets/_Game/Prefabs/Legacy_DataManager.prefab";
-                    GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-
+                    // 씬에 없으면 Resources에서 로드한다(에디터·빌드 공통).
+                    // Legacy_DataManager는 어느 씬에도 없어서, 예전엔 에디터만 AssetDatabase로 자동 로드되고
+                    // 빌드(APK)에선 null → 인챈트 등이 Instance.CharacterRepo에서 NRE로 먹통이었다.
+                    GameObject prefab = Resources.Load<GameObject>("Legacy_DataManager");
                     if (prefab != null)
                     {
-                        Debug.LogWarning($"[DataManager] 씬에 없어서 '{prefabPath}'에서 에디터 전용 로드.");
                         GameObject go = Instantiate(prefab);
-                        go.name = "DataManager_TestHarness";
+                        go.name = "Legacy_DataManager";
                         _instance = go.GetComponent<Legacy_DataManager>();
                         _instance.InitRepo();
                     }
                     else
                     {
-                        Debug.LogError($"[Legacy_DataManager] '{prefabPath}'에 프리팹 없음. 경로 확인.");
+                        Debug.LogError("[Legacy_DataManager] Resources/Legacy_DataManager 프리팹을 찾지 못함. Assets/Resources/Legacy_DataManager.prefab 확인.");
                     }
-#else
-                    Debug.LogError("[DataManager] 인스턴스 없음. Boot 씬을 통해 진입해야 합니다.");
-#endif
                 }
             }
             return _instance;
@@ -72,14 +65,13 @@ public class Legacy_DataManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-#if UNITY_EDITOR
+    // 첫 씬 로드 전에 Resources에서 미리 생성(에디터·빌드 공통). 인챈트 등 어디서 접근해도 null이 아니도록.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void InitializeBeforeFirstScene()
     {
         if (_instance != null) return;
         var _ = Instance;
     }
-#endif
 
     // ---------- 초기화 ----------
     public void InitRepo()
