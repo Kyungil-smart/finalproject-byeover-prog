@@ -104,6 +104,120 @@ public class CommonStatusData
 
 #endregion
 
+#region G
+
+/// <summary>
+/// 아티펙트 가챠 확률
+/// 생성일 : 26.06.11
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GachaBoxData
+{
+    public int Gacha_ID;
+    public string GachaName; // RareBox, EpicBox, LegendaryBox
+    public string CostType; // Gold, Diamond
+    public int CostAmount;
+    public float RareRate;
+    public float EpicRate;
+    public float LegendaryRate;
+    public string FreeDrawType; // Cooldown, AdDaily, None
+    public int FreeCooldownHour;
+    public bool AdRequired;
+    public string PityType; // None, SelectPity
+    public int PityCount;
+}
+
+/// <summary>
+/// 아티팩트 능력 및 효과 연결을 위한 연결 데이터
+/// 생성일 : 26.06.11
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GearMasterData
+{
+    public int Gear_ID;
+    public int Special_ID; // 특수 능력치
+    public int OwnedSpecial_ID; // 보유 특수 능력치
+    public string GearGrade; // Rare, Epic, Legendary
+    public int MaxHPBaseAmount;
+    public int AttackBaseAmount;
+    public int GearName; // 기어이름 : 번역 연결용
+    public int Explanation; // 기어 설명 : 번역 연결용
+}
+
+/// <summary>
+/// 기어 등급에 따른 공통 데이터
+/// 생성일 : 26.06.11
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GearGradeData
+{
+    public string GearGrade;
+    public int MaxLevel;
+    public int MaxAscension; // 최대 돌파
+    public int MaxOwned;
+    public int UpgradeStone; // 분해 시 나오는 강화석 개수
+    public int BaseLevel; // 기본 레벨 상한
+    public int LevelCapIncrease; // 돌파 당 레벨 상한 증가량
+    public string AscensionType; // 돌파 재료 타입 : SameGear, None -> 추후 변동 가능성 있음
+    public int AscensionAmount; // 돌파에 필요한 재료 수
+}
+
+/// <summary>
+/// 각 기어 별 레벨에 따른 능력치 증가 데이터
+/// 생성일 : 26.06.11
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GearLevelData
+{
+    public int Gear_ID;
+    public int StartLevel; // 최초 획득 시 시작 레벨
+    public int EndLevel; // 모든 돌파 적용 후 최종 레벨
+    public int MaxHPValue; // 레벨업 당 Hp 증가량 : 최종 MaxHP = MaxHPBaseAmount + (MaxHPBaseAmount × MaxHPValue) × (현재 레벨 - 1)
+    public int AttackValue; // 레벨업 당 Attack 증가량 : 최종 Attack = AttackBaseAmount + (AttackBaseAmount × AttackValue) × (현재 레벨 - 1)
+}
+
+/// <summary>
+/// 각 기어 별 레벨업에 필요한 재화 데이터
+/// 생성일 : 26.06.11
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GearUpgradeCostData
+{
+    public int Gear_ID;
+    public int StartLevel; // 최초 획득 시 시작 레벨
+    public int EndLevel; // 모든 돌파 적용 후 최종 레벨
+    public string Type; // 업그레이드에 들어가는 재화 종류 : Gold, UpgradeStone
+    public int BaseAmount; // 업그레이드에 들어가는 재화의 기본 수치
+    public float GrowthValue; // 업그레이드에 들어가는 재화의 성장 보정치 : 최종 필요 재화량 = BaseAmount × GrowthValue ^ (현재 레벨 - StartLevel), 소수점이 발생할 경우, 소수점 이하 올림.
+}
+
+/// <summary>
+/// 기어에 적용되는 특수 효과 정의 데이터
+/// 생성일 : 26.06.11
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GearSpecialEffectData
+{
+    public int Special_ID;
+    public string Special; // 특수능력치 종류 일람, 자세한 내용은 확인 할 것
+    public string EffectType; // 발동 타입 : Equipped - 장착 시 발동, Owned - 보유 시 효과
+    public int Start; // 최초 획득 시 특수 효과 첫 레벨 - 레벨 0일때 처리 어떻게 하는지 확인 할 것
+    public int End; // 특수 효과 최대 레벨, 레벨 증가 조건 확인 할 것.
+    public float BaseAmount; // 해당 특수 능력치의 기본 값, 65001(ATK), 65002(HP)는 %가 아닌 정수
+    public string GrowthType; // None, Add, Rate > 없음, 합연산, 곱연산
+    public float Value; // 1레벨 당 성장치, 65001(ATK), 65002(HP)는 %가 아닌 정수
+    public string TriggerType; // 특수 능력치의 발동 조건
+    public string LimitType; // 특수 능력치의 발동 조건의 제한(언제 발동되는지), 확인 필요
+}
+
+#endregion
+
 #region ----- I -----
 
 /// <summary>

@@ -6,6 +6,9 @@
 // 2차 수정자 : 김영찬
 // 수정 내용 : 관리중인 리스트와 Legacy 리스트 분리
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : CBT 추가 컨텐츠에 적용되는 DB 추가
+
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
@@ -44,6 +47,13 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("CharacterMaster", "character_master", "CharacterMasterData", "CharacterMasterTable", true),
         new DataTableSchema("CharacterStatus", "character_status", "CharacterStatusData", "CharacterStatusTable", true),
         new DataTableSchema("CommonStatus", "common_status", "CommonStatusData", "CommonStatusTable", true),
+        
+        new DataTableSchema("GachaBox", "gacha_box", "GachaBoxData", "GachaBoxTable", true),
+        new DataTableSchema("GearMaster", "gear_master", "GearMasterData", "GearMasterTable", true),
+        new DataTableSchema("GearGrade", "gear_grade", "GearGradeData", "GearGradeTable", true),
+        new DataTableSchema("GearLevel", "gear_level", "GearLevelData", "GearLevelTable", true),
+        new DataTableSchema("GearUpgradeCost", "gear_upgrade_cost", "GearUpgradeCostData", "GearUpgradeCostTable", true),
+        new DataTableSchema("GearSpecialEffect", "gear_special_effect", "GearSpecialEffectData", "GearSpecialEffectTable", true),
         
         new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
         

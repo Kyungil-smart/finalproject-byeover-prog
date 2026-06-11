@@ -1,0 +1,475 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae92b68dbbe07fa48bb6746e184b63b0, type: 3}
+  m_Name: GearSpecialEffectTable
+  m_EditorClassIdentifier: Assembly-CSharp::GearSpecialEffectTable
+  rows:
+  - Special_ID: 60001
+    Special: ATKPercent
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0
+    GrowthType: Add
+    Value: 0.05
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60002
+    Special: HPPercent
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0
+    GrowthType: Add
+    Value: 0.05
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60003
+    Special: PlainDMG
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60004
+    Special: LightningDMG
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60005
+    Special: IceDMG
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60006
+    Special: WindDMG
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60007
+    Special: WaterDMG
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60008
+    Special: FireDMG
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60009
+    Special: WaveHealPercent
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.05
+    GrowthType: Add
+    Value: 0.05
+    TriggerType: RewardSettlement
+    LimitType: OncePerWave
+  - Special_ID: 60010
+    Special: GoldBonus
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.05
+    GrowthType: Add
+    Value: 0.05
+    TriggerType: RewardSettlement
+    LimitType: OncePerBattle
+  - Special_ID: 65001
+    Special: ATK
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 10
+    GrowthType: Add
+    Value: 1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65002
+    Special: HP
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 50
+    GrowthType: Add
+    Value: 1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65003
+    Special: WaveHealPercent
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.02
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65004
+    Special: GoldBonus
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.01
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60011
+    Special: ATKPercent
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 0.05
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60012
+    Special: HPPercent
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 0.05
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60013
+    Special: CriticalRate
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.02
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60014
+    Special: PlainDMG
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60015
+    Special: LightningDMG
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60016
+    Special: IceDMG
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60017
+    Special: WindDMG
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60018
+    Special: WaterDMG
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60019
+    Special: FireDMG
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60020
+    Special: GoldBonus
+    EffectType: 
+    Start: 0
+    End: 3
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.05
+    TriggerType: RewardSettlement
+    LimitType: OncePerBattle
+  - Special_ID: 65005
+    Special: ATKPercent
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.01
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65006
+    Special: HPPercent
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.01
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65007
+    Special: CriticalRate
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.01
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65008
+    Special: GoldBonus
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.02
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: RewardSettlement
+    LimitType: OncePerBattle
+  - Special_ID: 60021
+    Special: ATKPercent
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.02
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60022
+    Special: Reroll
+    EffectType: 
+    Start: 1
+    End: 2
+    BaseAmount: 1
+    GrowthType: None
+    Value: 0
+    TriggerType: OnEnchantSelect
+    LimitType: OncePerChapter
+  - Special_ID: 60022
+    Special: Reroll
+    EffectType: 
+    Start: 3
+    End: 4
+    BaseAmount: 2
+    GrowthType: None
+    Value: 0
+    TriggerType: OnEnchantSelect
+    LimitType: OncePerChapter
+  - Special_ID: 60022
+    Special: Reroll
+    EffectType: 
+    Start: 5
+    End: 5
+    BaseAmount: 3
+    GrowthType: None
+    Value: 0
+    TriggerType: OnEnchantSelect
+    LimitType: OncePerChapter
+  - Special_ID: 60023
+    Special: ElementDMG
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.2
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 60024
+    Special: AutoDMG
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.2
+    TriggerType: OnAuto
+    LimitType: None
+  - Special_ID: 60025
+    Special: RecipeDMG
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.2
+    TriggerType: OnRecipe
+    LimitType: None
+  - Special_ID: 60026
+    Special: ComboDMG
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 1
+    GrowthType: Add
+    Value: 0.2
+    TriggerType: OnCombo
+    LimitType: None
+  - Special_ID: 60027
+    Special: Execute
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 0.01
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnAttackHit
+    LimitType: None
+  - Special_ID: 60028
+    Special: GoldBonus
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 0.1
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: RewardSettlement
+    LimitType: OncePerBattle
+  - Special_ID: 60029
+    Special: Revive
+    EffectType: 
+    Start: 0
+    End: 1
+    BaseAmount: 0.2
+    GrowthType: Add
+    Value: 0.1
+    TriggerType: OnDeath
+    LimitType: OncePerBattle
+  - Special_ID: 60030
+    Special: HPDrain
+    EffectType: 
+    Start: 0
+    End: 5
+    BaseAmount: 0.05
+    GrowthType: Add
+    Value: 0.05
+    TriggerType: OnAttackHit
+    LimitType: None
+  - Special_ID: 65009
+    Special: ATKPercent
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.3
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65010
+    Special: ATKPercent
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.5
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65011
+    Special: HPPercent
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.5
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnStatusUp
+    LimitType: None
+  - Special_ID: 65012
+    Special: Reroll
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 1
+    GrowthType: None
+    Value: 0
+    TriggerType: OnEnchantSelect
+    LimitType: OncePerChapter
+  - Special_ID: 65013
+    Special: HPDrain
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.01
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: OnAttackHit
+    LimitType: None
+  - Special_ID: 65014
+    Special: GoldBonus
+    EffectType: 
+    Start: 0
+    End: 30
+    BaseAmount: 0.03
+    GrowthType: Add
+    Value: 0.01
+    TriggerType: RewardSettlement
+    LimitType: OncePerBattle
