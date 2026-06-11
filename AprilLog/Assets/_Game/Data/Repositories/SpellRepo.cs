@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 스테이터스와 스킬&인첸트 부분 분리
 
+// 수정자 : 김영찬
+// 수정 내용 : 새로운 인첸트 데이터 시트에 맞춰 재 정의
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,15 +19,12 @@ using UnityEngine;
 public class SpellRepo : MonoBehaviour
 {
     // ---------- SO 참조 (Inspector에서 드래그) ----------
-    [Header("스킬")]
-    [SerializeField] private Legacy_SkillMasterTable _skillMasterTable;
-    [SerializeField] private Legacy_SkillDataTable _skillDataTable;
-    [SerializeField] private Legacy_EffectDataTable _effectTable;
+    [Header("스킬 인첸트")]
+    [SerializeField] private SkillEnchantTable _skillTable;
+    [SerializeField] public EffectMasterTable _effectTable;
 
-    [Header("인챈트")]
-    [SerializeField] private Legacy_EnchantMasterTable _enchantMasterTable;
-    [SerializeField] private Legacy_EnchantLevelTable _enchantLevelTable;
-    [SerializeField] private Legacy_EnchantWeightTable _enchantWeightTable;
+    [Header("스텟 인챈트")]
+    [SerializeField] private StatEnchantTable _statTable;
 
     // ---------- Dictionary 캐시 ----------
     private Dictionary<int, Legacy_SkillMasterData> _skillMaster;
@@ -33,6 +33,16 @@ public class SpellRepo : MonoBehaviour
     private Dictionary<int, Legacy_EnchantMasterData> _enchantMaster;
     private Dictionary<string, Legacy_EnchantLevelData> _enchantLevels;
     private List<Legacy_EnchantWeightData> _enchantWeights;
+    
+    private Dictionary<int, List<SkillTableData>> _skillDataSortByName;
+    private Dictionary<int, SkillTableData> _skillDataSortByID;
+    private Dictionary<int, List<StatTableData>> _statDataSortByName;
+    private Dictionary<int, StatTableData> _statDataSortByID;
+    private Dictionary<int, EffectTableData> _effectData;
+    
+    
+    
+    
     private bool _isInitialized;
 
     // ---------- 초기화 ----------
@@ -40,35 +50,24 @@ public class SpellRepo : MonoBehaviour
     {
         if (_isInitialized)
         {
-            Debug.Log("[CharacterRepo] Already initialized. Skip.");
+            Debug.Log("[SpellRepo] Already initialized. Skip.");
             return;
         }
 
         // SO List -> Dictionary 변환 (파싱 아님, 이미 메모리에 있는 데이터 옮기기)
-        InitializeSkillTables();
-        InitializeEnchantTables();
+        _skillDataSortByName = BuildSkillDictionarySortByName();
+        _statDataSortByName = BuildStatDictionarySortByName();
+        _skillDataSortByID = BuildDictionary(_skillTable, nameof(_skillTable), r => r.Skill_ID, true);
+        _statDataSortByID = BuildDictionary(_statTable, nameof(_statTable), r => r.StatEnchant_ID, true);
+        _effectData = BuildDictionary(_effectTable, nameof(_effectTable), r => r.Effect_ID, true);
 
         _isInitialized = true;
-        Debug.Log($"[CharacterRepo] 초기화 완료. " +
+        Debug.Log($"[SpellRepo] 초기화 완료. " +
             $"SkillMaster: {_skillMaster.Count}, Skills: {_skills.Count}, Effects: {_effects.Count}, " +
             $"Enchants: {_enchantMaster.Count}, EnchantLevels: {_enchantLevels.Count}, EnchantWeights: {_enchantWeights.Count}");
     }
 
-    // ---------- Section initialization ----------
-    private void InitializeSkillTables()
-    {
-        _skillMaster = BuildDictionary(_skillMasterTable, nameof(_skillMasterTable), r => r.StandardID, false);
-        _skills = BuildDictionary(_skillDataTable, nameof(_skillDataTable), r => r.SkillID, false);
-        _effects = BuildDictionary(_effectTable, nameof(_effectTable), r => r.EffectID, false);
-    }
-
-    private void InitializeEnchantTables()
-    {
-        _enchantMaster = BuildDictionary(_enchantMasterTable, nameof(_enchantMasterTable), r => r.EnchantID, false);
-        _enchantLevels = BuildEnchantLevelDictionary();
-        _enchantWeights = BuildList(_enchantWeightTable, nameof(_enchantWeightTable), false);
-    }
-
+    // ---------- Build Dictionary ----------
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(
         DataTable<TData> table,
         string tableName,
@@ -86,7 +85,7 @@ public class SpellRepo : MonoBehaviour
 
         if (table.rows == null)
         {
-            Debug.LogWarning($"[CharacterRepo] {tableName}.rows is null. Empty dictionary will be used.");
+            Debug.LogWarning($"[SpellRepo] {tableName}.rows is null. Empty dictionary will be used.");
             return result;
         }
 
@@ -95,14 +94,14 @@ public class SpellRepo : MonoBehaviour
             TData row = table.rows[i];
             if (row == null)
             {
-                Debug.LogWarning($"[CharacterRepo] {tableName}.rows[{i}] is null. Skip.");
+                Debug.LogWarning($"[SpellRepo] {tableName}.rows[{i}] is null. Skip.");
                 continue;
             }
 
             TKey key = keySelector(row);
             if (result.ContainsKey(key))
             {
-                Debug.LogWarning($"[CharacterRepo] {tableName} has duplicate key '{key}'. Keep first row and skip index {i}.");
+                Debug.LogWarning($"[SpellRepo] {tableName} has duplicate key '{key}'. Keep first row and skip index {i}.");
                 continue;
             }
 
@@ -111,80 +110,85 @@ public class SpellRepo : MonoBehaviour
 
         return result;
     }
-
-    private Dictionary<string, Legacy_EnchantLevelData> BuildEnchantLevelDictionary()
+    
+    private Dictionary<int, List<SkillTableData>> BuildSkillDictionarySortByName()
     {
-        var result = new Dictionary<string, Legacy_EnchantLevelData>();
+        var result = new Dictionary<int, List<SkillTableData>>();
 
-        if (_enchantLevelTable == null)
+        if (_skillTable == null)
         {
-            LogMissingTable(nameof(_enchantLevelTable), false);
+            Debug.LogWarning($"[SpellRepo] {nameof(_skillTable)} is not assigned. Empty pool dictionary will be used.");
             return result;
         }
 
-        if (_enchantLevelTable.rows == null)
+        if (_skillTable.rows == null)
         {
-            Debug.LogWarning($"[CharacterRepo] {nameof(_enchantLevelTable)}.rows is null. Empty dictionary will be used.");
+            Debug.LogWarning($"[SpellRepo] {nameof(_skillTable)}.rows is null. Empty pool dictionary will be used.");
             return result;
         }
 
-        for (int i = 0; i < _enchantLevelTable.rows.Count; i++)
+        for (int i = 0; i < _skillTable.rows.Count; i++)
         {
-            Legacy_EnchantLevelData row = _enchantLevelTable.rows[i];
+            SkillTableData row = _skillTable.rows[i];
             if (row == null)
             {
-                Debug.LogWarning($"[CharacterRepo] {nameof(_enchantLevelTable)}.rows[{i}] is null. Skip.");
+                Debug.LogWarning($"[StageRepo] {nameof(_skillTable)}.rows[{i}] is null. Skip.");
                 continue;
             }
 
-            string key = $"{row.EnchantID}_{row.Level}";
-            if (result.ContainsKey(key))
+            if (!result.TryGetValue(row.Name, out var pool))
             {
-                Debug.LogWarning($"[CharacterRepo] {nameof(_enchantLevelTable)} has duplicate key '{key}'. Keep first row and skip index {i}.");
-                continue;
+                pool = new List<SkillTableData>();
+                result.Add(row.Name, pool);
             }
 
-            result.Add(key, row);
+            pool.Add(row);
         }
 
         return result;
     }
-
-    private List<TData> BuildList<TData>(DataTable<TData> table, string tableName, bool isRequired)
-        where TData : class
+    
+    private Dictionary<int, List<StatTableData>> BuildStatDictionarySortByName()
     {
-        var result = new List<TData>();
+        var result = new Dictionary<int, List<StatTableData>>();
 
-        if (table == null)
+        if (_statTable == null)
         {
-            LogMissingTable(tableName, isRequired);
+            Debug.LogWarning($"[SpellRepo] {nameof(_statTable)} is not assigned. Empty pool dictionary will be used.");
             return result;
         }
 
-        if (table.rows == null)
+        if (_statTable.rows == null)
         {
-            Debug.LogWarning($"[CharacterRepo] {tableName}.rows is null. Empty list will be used.");
+            Debug.LogWarning($"[SpellRepo] {nameof(_statTable)}.rows is null. Empty pool dictionary will be used.");
             return result;
         }
 
-        for (int i = 0; i < table.rows.Count; i++)
+        for (int i = 0; i < _statTable.rows.Count; i++)
         {
-            TData row = table.rows[i];
+            StatTableData row = _statTable.rows[i];
             if (row == null)
             {
-                Debug.LogWarning($"[CharacterRepo] {tableName}.rows[{i}] is null. Skip.");
+                Debug.LogWarning($"[StageRepo] {nameof(_statTable)}.rows[{i}] is null. Skip.");
                 continue;
             }
 
-            result.Add(row);
+            if (!result.TryGetValue(row.Stat_Name, out var pool))
+            {
+                pool = new List<StatTableData>();
+                result.Add(row.Stat_Name, pool);
+            }
+
+            pool.Add(row);
         }
 
         return result;
     }
+    
 
     private void LogMissingTable(string tableName, bool isRequired)
     {
-        string message = $"[CharacterRepo] {tableName} is not assigned. Empty data will be used.";
+        string message = $"[SpellRepo] {tableName} is not assigned. Empty data will be used.";
         if (isRequired)
             Debug.LogError(message);
         else
@@ -197,13 +201,86 @@ public class SpellRepo : MonoBehaviour
     public Legacy_EffectData GetEffect(int effectId) => GetData(_effects, effectId, nameof(GetEffect));
     public Legacy_EnchantMasterData GetEnchantMaster(int enchantId) => GetData(_enchantMaster, enchantId, nameof(GetEnchantMaster));
     public Legacy_EnchantLevelData GetEnchantLevel(int enchantId, int level) => GetData(_enchantLevels, $"{enchantId}_{level}", nameof(GetEnchantLevel));
+    
+    /// <summary>
+    /// 스킬 ID로 스킬 인첸트 데이터를 찾음
+    /// </summary>
+    /// <param name="skillId">스킬의 고유 ID</param>
+    /// <returns>스킬 인첸트 데이터</returns>
+    public SkillTableData GetSkillData(int skillId) => GetData(_skillDataSortByID, skillId, nameof(GetSkillData));
+    
+    /// <summary>
+    /// 스텟 ID로 스텟 인첸트 데이터를 찾음
+    /// </summary>
+    /// <param name="statId">스텟의 고유 ID</param>
+    /// <returns>스텟 인첸트 데이터</returns>
+    public StatTableData GetStatData(int statId) => GetData(_statDataSortByID, statId, nameof(GetStatData));
+    public EffectTableData GetEffectData(int effectID) => GetData(_effectData, effectID, nameof(GetEffectData));
+
+    /// <summary>
+    /// 스킬 이름과 스킬 레벨로 스킬 인첸트 데이터 테이블을 찾음
+    /// </summary>
+    /// <param name="nameIndex">스킬 이름의 ID</param>
+    /// <param name="level">스킬 인첸트 레벨</param>
+    /// <returns>스킬 인첸트 데이터</returns>
+    public SkillTableData GetSkillData(int nameIndex, int level)
+    {
+        if (_skillDataSortByName == null)
+        {
+            Debug.LogWarning("[SpellRepo] GetSkillData cache is not initialized. Sort Type : Name");
+            return null;
+        }
+
+        if (_skillDataSortByName.TryGetValue(nameIndex, out var temp))
+        {
+            foreach (var data in temp)
+            {
+                if(data.Level == level) 
+                {
+                    return data;
+                }
+            }
+        }
+        
+        Debug.LogWarning($"[SpellRepo] GetSkillData data not found. Key: {nameIndex}, Level: {level}");
+        return null;
+    }
+
+    /// <summary>
+    /// 스텟 이름과 스텟 레벨로 스텟 인첸트 데이터 테이블을 찾음
+    /// </summary>
+    /// <param name="nameIndex">스텟 이름의 ID</param>
+    /// <param name="level">스텟 인첸트 레벨</param>
+    /// <returns>스텟 인첸트 데이터</returns>
+    public StatTableData GetStatData(int nameIndex, int level)
+    {
+        if (_statDataSortByName == null)
+        {
+            Debug.LogWarning("[SpellRepo] GetStatData cache is not initialized. Sort Type : Name");
+            return null;
+        }
+        
+        if (_statDataSortByName.TryGetValue(nameIndex, out var temp))
+        {
+            foreach (var data in temp)
+            {
+                if(data.StatLevel == level) 
+                {
+                    return data;
+                }
+            }
+        }
+        
+        Debug.LogWarning($"[SpellRepo] GetSkillData data not found. Key: {nameIndex}, Level: {level}");
+        return null;
+    }
 
     // 전체 조회 (인챈트 선택 로직에서 필요)
     public IReadOnlyDictionary<int, Legacy_EnchantMasterData> GetAllEnchantMasters()
     {
         if (_enchantMaster == null)
         {
-            Debug.LogWarning("[CharacterRepo] EnchantMaster cache is not initialized. Empty dictionary will be returned.");
+            Debug.LogWarning("[SpellRepo] EnchantMaster cache is not initialized. Empty dictionary will be returned.");
             _enchantMaster = new Dictionary<int, Legacy_EnchantMasterData>();
         }
 
@@ -214,7 +291,7 @@ public class SpellRepo : MonoBehaviour
     {
         if (_enchantWeights == null)
         {
-            Debug.LogWarning("[CharacterRepo] EnchantWeight cache is not initialized. Empty list will be returned.");
+            Debug.LogWarning("[SpellRepo] EnchantWeight cache is not initialized. Empty list will be returned.");
             _enchantWeights = new List<Legacy_EnchantWeightData>();
         }
 
@@ -233,14 +310,14 @@ public class SpellRepo : MonoBehaviour
     {
         if (dictionary == null)
         {
-            Debug.LogWarning($"[CharacterRepo] {methodName} cache is not initialized. Key: {key}");
+            Debug.LogWarning($"[SpellRepo] {methodName} cache is not initialized. Sort Type : ID");
             return null;
         }
 
         if (dictionary.TryGetValue(key, out TData data))
             return data;
 
-        Debug.LogWarning($"[CharacterRepo] {methodName} data not found. Key: {key}");
+        Debug.LogWarning($"[SpellRepo] {methodName} data not found. Key: {key}");
         return null;
     }
 }
