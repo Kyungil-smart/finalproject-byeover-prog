@@ -34,6 +34,7 @@ Transform:
   - {fileID: 6943884832126940865}
   - {fileID: 3470293329070297349}
   - {fileID: 477945419651395269}
+  - {fileID: 7625400932578170336}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2686668722264016636
@@ -52,6 +53,7 @@ MonoBehaviour:
   _stageRepo: {fileID: 4548863597225917915}
   _configRepo: {fileID: 5312618537466236587}
   _spellRepo: {fileID: 2879789208227239077}
+  _gearRepo: {fileID: 5817649387064816332}
 --- !u!1 &1239554882421372277
 GameObject:
   m_ObjectHideFlags: 0
@@ -201,6 +203,56 @@ MonoBehaviour:
   _characterStatusTable: {fileID: 11400000, guid: b4f8c15678dbe39448d57aa888f52d40, type: 2}
   _monsterStatusTable: {fileID: 11400000, guid: 31290486419cda74788e6b35ce3eebf2, type: 2}
   _commonStatusTable: {fileID: 11400000, guid: 690bda1b322869343a7b963a11dbace5, type: 2}
+--- !u!1 &3775301964020598502
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7625400932578170336}
+  - component: {fileID: 5817649387064816332}
+  m_Layer: 0
+  m_Name: GearRepo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7625400932578170336
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3775301964020598502}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6732585189422164533}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5817649387064816332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3775301964020598502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bac8332bd60459749aff6a8b372c3a8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GearRepo
+  _gachaBoxTable: {fileID: 11400000, guid: ed82104384599264d947d4552533a71e, type: 2}
+  _gearTable: {fileID: 11400000, guid: 20a30195c23f49c4a9883b65fe9b55c4, type: 2}
+  _gradeTable: {fileID: 11400000, guid: f695442c3db7589439dab4910cebd939, type: 2}
+  _levelTable: {fileID: 11400000, guid: 760c364fe7a8e2746b353bb35e39ccfe, type: 2}
+  _upgradeCostTable: {fileID: 11400000, guid: 720dabe140eb2984f9e5a273e7d21398, type: 2}
+  _specialEffectTable: {fileID: 11400000, guid: c0a7d58481fcb5343bd074e3bd5f8c96, type: 2}
 --- !u!1 &5376704805018570339
 GameObject:
   m_ObjectHideFlags: 0
