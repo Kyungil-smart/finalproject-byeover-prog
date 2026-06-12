@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6784d2c56429e2848899c08e41932852, type: 3}
+  m_Name: EffectMasterTable
+  m_EditorClassIdentifier: Assembly-CSharp::EffectMasterTable
+  rows:
+  - Effect_ID: 13001
+    EffectName: 1
+    EffectType: DotDamage
+    OverLap: Refresh
+    GrowthType: Add
+    Value: 10
+    Duration: 10
+    Interval: 0.5
+  - Effect_ID: 13002
+    EffectName: 1
+    EffectType: DotDamage
+    OverLap: Ignore
+    GrowthType: Rate
+    Value: 0.1
+    Duration: 5
+    Interval: 1
+  - Effect_ID: 13003
+    EffectName: 1
+    EffectType: DotDamage
+    OverLap: Stack
+    GrowthType: Rate
+    Value: 0.01
+    Duration: 99
+    Interval: 1
