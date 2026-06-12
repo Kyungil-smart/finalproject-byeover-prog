@@ -476,6 +476,7 @@ public class StaminaData
 [Serializable]
 public class StatTableData
 {
+    public int StatGroup_ID;
     public int StatEnchant_ID;
     public int Stat_Name;
     public int Stat_Descrip;
