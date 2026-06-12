@@ -55,6 +55,25 @@ public class SkillSystem : MonoBehaviour
     // 기획 테이블 px 좌표계(화면 전체 폭 = 1440px) → 월드 변환용
     private const float TablePxFullWidth = 1440f;
     private Camera _cam;
+
+    // 불 속성 VFX 라이브러리 (Resources에서 1회 로드. 없어도 사각형 폴백으로 동작)
+    private FireSkillVfxLibrary _vfx;
+    private bool _vfxLoadTried;
+
+    private FireSkillVfxLibrary Vfx
+    {
+        get
+        {
+            if (!_vfxLoadTried)
+            {
+                _vfxLoadTried = true;
+                _vfx = Resources.Load<FireSkillVfxLibrary>("FireSkillVfxLibrary");
+                if (_vfx == null)
+                    Debug.LogWarning("[SkillSystem] Resources/FireSkillVfxLibrary.asset 을 찾지 못해 VFX 없이(사각형 폴백) 동작합니다.");
+            }
+            return _vfx;
+        }
+    }
     private bool _hasLoggedMissingFirePoint;
     private bool _hasLoggedMissingSpawner;
     private bool _hasTriedResolveSpawner;
@@ -242,12 +261,127 @@ public class SkillSystem : MonoBehaviour
                     break;
             }
 
-            DealHazardDamage(data, center, sizeWorld);
-            SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+            if (cfg.style == HazardStyle.MeteorStrike)
+            {
+                // 메테오: 타격마다 독립 시퀀스(마커→낙하→폭발+판정)를 병행 가동. 시작만 pulseInterval 간격.
+                StartCoroutine(MeteorStrikeRoutine(data, center, sizeWorld));
+            }
+            else
+            {
+                DealHazardDamage(data, center, sizeWorld);
+                SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+            }
 
             if (i < pulses - 1)
                 yield return new WaitForSeconds(cfg.pulseInterval);
         }
+    }
+
+    // 메테오 3단 시퀀스 (연출: 하늘에 생성 구역이 먼저 열리고, 그 자리에서 운석이 수직 낙하 → 착탄 폭발)
+    //   ① 착탄 지점 수직 위 '하늘'에 생성 구역(Flame_ellipse) 표시
+    //   ② 그 자리에서 몸체(Fireball_loop_2)가 수직으로 가속 낙하 (게이트는 잠시 후 닫힘)
+    //   ③ 착탄 폭발(explosion_5) + 고정 좌표에 데미지 판정 (기획 3-2-3)
+    private System.Collections.IEnumerator MeteorStrikeRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld)
+    {
+        var lib = Vfx;
+        float telegraph = lib != null ? lib.meteorTelegraph : 0.5f;
+        float fallTime = lib != null ? lib.meteorFallTime : 0.35f;
+        float fallHeight = lib != null ? lib.meteorFallHeight : 3.5f;
+        float fallOffsetX = lib != null ? lib.meteorFallOffsetX : 1.2f;
+
+        // 착탄 지점의 오른쪽 위에 생성 → 왼쪽 사선으로 낙하 (기획 요청)
+        Vector2 skyPos = center + new Vector2(fallOffsetX, fallHeight);
+
+        // ① 하늘에 생성 구역(게이트) 표시
+        GameObject marker = SpawnVfx(lib != null ? lib.meteorMarker : null, skyPos, lib != null ? lib.meteorMarkerScale : 1f, 54);
+        yield return new WaitForSeconds(telegraph);
+
+        // ② 생성 구역에서 몸체가 사선 낙하. 게이트는 운석이 나온 직후 닫힘.
+        GameObject ball = SpawnVfx(lib != null ? lib.meteorBall : null, skyPos, lib != null ? lib.meteorBallScale : 1f, 55);
+        if (ball != null)
+        {
+            // 몸체 이펙트가 '머리 왼쪽' 방향으로 제작돼 있어, 실제 낙하 방향으로 텍스처를 자동 회전.
+            // (뷰 정렬 빌보드 파티클이라 transform 회전은 안 먹고 startRotation을 돌려야 함)
+            // 머리(-1,0)를 낙하 방향 d로 보내는 시계방향 회전: θ = atan2(d.y, -d.x). 수직 낙하면 -90°.
+            Vector2 dir = (center - skyPos).normalized;
+            float autoDeg = Mathf.Atan2(dir.y, -dir.x) * Mathf.Rad2Deg;
+            float trimDeg = lib != null ? lib.meteorBallRotationTrimDeg : 0f;
+            ApplyParticleRotation(ball, autoDeg + trimDeg);
+        }
+        if (marker != null) Destroy(marker, 0.25f);
+
+        if (ball != null)
+        {
+            Vector3 from = skyPos;
+            Vector3 to = center;
+            float t = 0f;
+            while (t < fallTime)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / fallTime);
+                ball.transform.position = Vector3.Lerp(from, to, k * k); // 가속 낙하
+                yield return null;
+            }
+            Destroy(ball);
+        }
+        else
+        {
+            yield return new WaitForSeconds(fallTime); // VFX 미연결이어도 타이밍은 유지
+        }
+
+        // ③ 착탄: 몸체가 사라진 뒤 한 박자 쉬고 폭발 (폭발이 몸체를 가리는 것 방지) + 데미지 판정
+        float explosionDelay = lib != null ? lib.meteorExplosionDelay : 0.05f;
+        if (explosionDelay > 0f)
+            yield return new WaitForSeconds(explosionDelay);
+
+        GameObject expl = SpawnVfx(lib != null ? lib.meteorExplosion : null, center, lib != null ? lib.meteorExplosionScale : 1f, 56);
+        if (expl != null)
+            Destroy(expl, 1.2f);
+        else
+            SpawnHazardFlash(center, sizeWorld, new Color(1f, 0.15f, 0.05f, 0.45f)); // VFX 미연결 폴백
+
+        DealHazardDamage(data, center, sizeWorld);
+    }
+
+    /// <summary>
+    /// 뷰 정렬 빌보드 파티클의 텍스처 회전(startRotation)에 오프셋을 더한다 (도 단위, 양수=시계방향).
+    /// 옆 방향으로 제작된 이펙트를 진행 방향에 맞춰 돌릴 때 사용.
+    /// </summary>
+    private static void ApplyParticleRotation(GameObject go, float degrees)
+    {
+        if (Mathf.Approximately(degrees, 0f)) return;
+
+        float rad = degrees * Mathf.Deg2Rad;
+        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            var main = ps.main;
+            var sr = main.startRotation;
+            switch (sr.mode)
+            {
+                case ParticleSystemCurveMode.Constant:
+                    main.startRotation = new ParticleSystem.MinMaxCurve(sr.constant + rad);
+                    break;
+                case ParticleSystemCurveMode.TwoConstants:
+                    main.startRotation = new ParticleSystem.MinMaxCurve(sr.constantMin + rad, sr.constantMax + rad);
+                    break;
+                // 커브 모드는 거의 안 쓰여서 생략 (필요 시 추가)
+            }
+        }
+    }
+
+    /// <summary>VFX 프리팹 소환 + 파티클 정렬 순서 지정(게임 스프라이트 위에 보이도록). prefab이 null이면 null 반환.</summary>
+    private GameObject SpawnVfx(GameObject prefab, Vector2 pos, float scale, int sortingOrder)
+    {
+        if (prefab == null) return null;
+
+        var go = Instantiate(prefab, (Vector3)pos, Quaternion.identity);
+        if (!Mathf.Approximately(scale, 1f))
+            go.transform.localScale = go.transform.localScale * scale;
+
+        foreach (var r in go.GetComponentsInChildren<ParticleSystemRenderer>(true))
+            r.sortingOrder = sortingOrder;
+
+        return go;
     }
 
     private void DealHazardDamage(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld)
@@ -519,9 +653,17 @@ public enum HazardPlacement
     RandomTarget,   // 매 펄스 랜덤 타겟 (메테오)
 }
 
+/// <summary>장판 실행 스타일</summary>
+public enum HazardStyle
+{
+    InstantPulse,   // 즉시 판정 + 플래시 (파이어브레스/대지 균열)
+    MeteorStrike,   // 마커 → 낙하 → 폭발 3단 시퀀스 (메테오)
+}
+
 public struct HazardConfig
 {
     public HazardPlacement placement;
+    public HazardStyle style;
     public float widthPx;        // 기획 테이블 px 좌표계 (화면 폭 1440px 기준)
     public float heightPx;
     public float pulseInterval;  // 다회 타격 간격(초)

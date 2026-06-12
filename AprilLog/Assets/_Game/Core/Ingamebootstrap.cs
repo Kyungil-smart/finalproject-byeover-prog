@@ -351,8 +351,8 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(1042, earthCrack);
         skillSystem.RegisterHazardSkill(1043, earthCrack);
 
-        // 메테오 1051~53: 매 펄스 랜덤 타겟 머리 위 장판
-        var meteor = new HazardConfig { placement = HazardPlacement.RandomTarget, widthPx = 350, heightPx = 350, pulseInterval = 0.15f, flashColor = new Color(1f, 0.15f, 0.05f, 0.45f) };
+        // 메테오 1051~53: 매 펄스 랜덤 타겟 — 마커(Flame_ellipse)→낙하(Fireball_loop_2)→폭발(explosion_5) 3단 시퀀스
+        var meteor = new HazardConfig { placement = HazardPlacement.RandomTarget, style = HazardStyle.MeteorStrike, widthPx = 350, heightPx = 350, pulseInterval = 0.15f, flashColor = new Color(1f, 0.15f, 0.05f, 0.45f) };
         skillSystem.RegisterHazardSkill(1051, meteor);
         skillSystem.RegisterHazardSkill(1052, meteor);
         skillSystem.RegisterHazardSkill(1053, meteor);
