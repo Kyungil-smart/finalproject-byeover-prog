@@ -91,6 +91,9 @@ public class EnchantApplicationSystem : MonoBehaviour
     {
         if (!TryGetMaster(enchantId, out var master)) return;
 
+        // 스킬 인챈트(LinkedSkillID>0)는 SkillEnchantSystem이 스킬 등록으로 처리한다. 여기선 스탯만.
+        if (master.LinkedSkillID > 0) return;
+
         float current = GetValue(enchantId, level);
         float prev = level > 1 ? GetValue(enchantId, level - 1) : 0f;
         ApplyStat(enchantId, master.LinkedStatType, current - prev);

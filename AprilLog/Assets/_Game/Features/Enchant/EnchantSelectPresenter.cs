@@ -54,7 +54,7 @@ public class EnchantSelectPresenter
                 EnchantId = master.EnchantID,
                 Name = master.Name,
                 Level = nextLevel,
-                TypeLabel = GetTypeLabel(master.LinkedStatType),
+                TypeLabel = master.LinkedSkillID > 0 ? "스킬" : GetTypeLabel(master.LinkedStatType),
                 Description = BuildDescription(master, nextLevel),
                 ImageKey = master.ImageKey
             };
@@ -79,6 +79,10 @@ public class EnchantSelectPresenter
     // 다음 레벨에 도달했을 때의 누적 효과를 카드 설명으로 생성.
     private string BuildDescription(Legacy_EnchantMasterData master, int level)
     {
+        // 스킬 인챈트: 발동 조건 + 레벨 효과 요약 (인챈트 테이블 v1.03)
+        if (master.LinkedSkillID > 0)
+            return BuildSkillDescription(master.LinkedSkillID, level);
+
         var lv = _repo != null ? _repo.GetEnchantLevel(master.EnchantID, level) : null;
         float v = lv != null ? lv.Value : 0f;
         switch (master.LinkedStatType)
@@ -89,6 +93,30 @@ public class EnchantSelectPresenter
             case 4: return $"치명타 확률 +{Mathf.RoundToInt(v * 100)}%";
             case 5: return $"치명타 피해 +{Mathf.RoundToInt(v)}%";
             default: return master.Name;
+        }
+    }
+
+    // 스킬 인챈트 카드 설명 (베이스 SkillID 기준. 인챈트 테이블 v1.03 확정값)
+    private static string BuildSkillDescription(int baseSkillId, int level)
+    {
+        switch (baseSkillId)
+        {
+            case 1011:
+                int cadence = level >= 3 ? 10 : (level == 2 ? 13 : 15);
+                return $"자동공격 {cadence}회마다 타겟 위치에 화염 장판 3연타";
+            case 1021:
+                int shots = 2 + level; // 3/4/5발
+                return $"연두+빨강+파랑 정렬 조합 시 화염탄 {shots}발 발사";
+            case 1031:
+                return $"노랑+파랑+연두 정렬 조합 시 화염 정령 2마리 소환 (Lv{level} 화염 작렬 시전)";
+            case 1041:
+                int cracks = level >= 3 ? 4 : 3;
+                return $"콤보 7의 배수마다 전방 전체에 대지 균열 {cracks}연타";
+            case 1051:
+                int meteors = 2 + level; // 3/4/5회
+                return $"콤보 9의 배수마다 무작위 적에게 메테오 {meteors}회 낙하";
+            default:
+                return $"스킬 발동 (Lv{level})";
         }
     }
 
