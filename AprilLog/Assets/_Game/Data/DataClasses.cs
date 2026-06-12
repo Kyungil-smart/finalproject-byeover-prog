@@ -34,7 +34,7 @@ public class ChangeRewardData
     public int ChangeReward_ID;
     public int Start_ID;
     public int End_ID;
-    public string RewardType;       // Gold, Parchment
+    public string RewardType;       // Gold, Parchment, Diamond
     public int BaseAmount;
     public string GrowthType;       // None, Add, Rate
     public float GrowthValue;
@@ -74,16 +74,17 @@ public class CharacterMasterData
 /// <summary>
 /// 주인공 전용 스텟<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class CharacterStatusData
 {
     public int Character_ID;
     public float CriticalRate;
+    public int CriticalDamage;
+    public int FlatPierce;
     public float PercentagePierce;
-    public int StunPower;
-    public int SlowPower;
+    public int EffectPower;
     public int HitCount;
     public int AoE;
     public int MaxTargets;
@@ -332,7 +333,7 @@ public class MonsterWavePoolData
 /// <summary>
 /// 아웃게임 레벨<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class OutLevelData
@@ -342,8 +343,8 @@ public class OutLevelData
     public int RequiredParchment;
     public int MaxHP;
     public int Attack;
-    public int StunPower;
-    public int SlowPower;
+    public int EffectPower;
+    public int FlatPierce;
     public int NewEnchant;
 }
 
@@ -355,7 +356,7 @@ public class OutLevelData
 /// <summary>
 /// 스킬 인첸트 정보 일람<br/>
 /// 생성일 : 26.06.11<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class SkillTableData
@@ -373,7 +374,7 @@ public class SkillTableData
     public float Hit_Duration;
     public float Speed;
     public string PelletType; // 투사체 효과 : none, piercing, bounce
-    public int Count; // piercing/튕김 횟수
+    public float Count; // piercing / 튕김 횟수 / 장판의 interval(float값으로 변경)
     public int Effect_ID_1; // 효과
     public string E_ValueType_1; // 증감 항목
     public float E_Variation_1; // 증감율
@@ -417,7 +418,7 @@ public class SpecialWaveRuleData
 /// <summary>
 /// 스테이지 구성 데이터<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class StageData
@@ -425,8 +426,6 @@ public class StageData
     public int Chapter_ID;      // FK
     public int Stage_ID;        // PK
     public int StageOrder;
-    public int TimeLimit;
-    public int WaveGroup_ID;    // 현재 미사용, 향후 확장용
 }
 
 /// <summary>
@@ -472,7 +471,7 @@ public class StaminaData
 /// <summary>
 /// 스텟 인첸트 정보 일람<br/>
 /// 생성일 : 26.06.11<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class StatTableData
@@ -483,12 +482,12 @@ public class StatTableData
     public int Target_1; // 대상 효과 ID
     public int Target_2; // 스킬 조건
     public int StatLevel; // 
-    public string Variation_1;
-    public int Value_1;
-    public string Variation_2;
-    public float Value_2;
-    public string Variation_3;
-    public float Value_3;
+    public string ValueType_1;
+    public int Variation_1;
+    public string ValueType_2;
+    public float Variation_2;
+    public string ValueType_3;
+    public float Variation_3;
 }
 
 #endregion

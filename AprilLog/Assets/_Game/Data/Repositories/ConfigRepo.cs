@@ -7,6 +7,9 @@
 // 2차 수정자 : 김영찬
 // 수정 내용 : 행동력 데이터 삽입
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 26.06.12 DB 컬럼 변경 사항 반영하여 기절강화 둔화강화를 효과 강화로 연결
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -97,8 +100,8 @@ public class ConfigRepo : MonoBehaviour
 
             hpBonus += data.MaxHP;
             attackBonus += data.Attack;
-            stunBonus += data.StunPower;
-            slowBonus += data.SlowPower;
+            stunBonus += data.EffectPower;
+            slowBonus += data.EffectPower;
         }
     }
 

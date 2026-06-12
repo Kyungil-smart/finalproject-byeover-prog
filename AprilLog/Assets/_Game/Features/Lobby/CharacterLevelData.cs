@@ -1,3 +1,6 @@
+// 수정자 : 김영찬
+// 수정 내용 : 26.06.12 DB 컬럼 변경 사항 반영하여 기절강화 둔화강화를 효과 강화로 연결
+
 using UnityEngine;
 
 public readonly struct CharacterStatData
@@ -60,8 +63,8 @@ public static class CharacterLevelData
                 dataManager.ConfigRepo.GetOutGrowthBonusUntilLevel(level,
                     out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus);
 
-                int baseStun = characterStatus != null ? characterStatus.StunPower : 0;
-                int baseSlow = characterStatus != null ? characterStatus.SlowPower : 0;
+                int baseStun = characterStatus != null ? characterStatus.EffectPower : 0;
+                int baseSlow = characterStatus != null ? characterStatus.EffectPower : 0;
 
                 return new CharacterStatData(
                     hp:    common.MaxHP + hpBonus,
