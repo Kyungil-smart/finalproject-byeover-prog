@@ -1,0 +1,2394 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cc14954d8e336d4fbb7a8b2dd968bed, type: 3}
+  m_Name: StatEnchantTable
+  m_EditorClassIdentifier: Assembly-CSharp::StatEnchantTable
+  rows:
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70101
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: BaseAttackSpeed
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70102
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: BaseAttackSpeed
+    Variation_2: 0.25
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70103
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: BaseAttackSpeed
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70107
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70108
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.9
+    ValueType_3: HitSize_Y
+    Variation_3: 4.9
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70109
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70110
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: ActivePlusCount
+    Variation_1: 1
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.2
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70111
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: ActivePlusCount
+    Variation_1: 2
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.3
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70112
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: ActivePlusCount
+    Variation_1: 3
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.4
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70113
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: ActivePlusCount
+    Variation_1: 1
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.2
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70114
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: ActivePlusCount
+    Variation_1: 2
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.3
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70115
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: ActivePlusCount
+    Variation_1: 3
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.4
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70116
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: ActivePlusCount
+    Variation_1: 1
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.2
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70117
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: ActivePlusCount
+    Variation_1: 2
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.3
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70118
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 20
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: ActivePlusCount
+    Variation_1: 3
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.4
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70201
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 1
+    ValueType_1: CastPerKillCount
+    Variation_1: 100
+    ValueType_2: heal
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70202
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 2
+    ValueType_1: CastPerKillCount
+    Variation_1: 100
+    ValueType_2: heal
+    Variation_2: 0.07
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70203
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 3
+    ValueType_1: CastPerKillCount
+    Variation_1: 100
+    ValueType_2: heal
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70204
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: MaxHP
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70205
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: MaxHP
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70206
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 0
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: MaxHP
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70301
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70302
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70303
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70304
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70305
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70306
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70307
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70308
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70309
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70310
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70311
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70312
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70313
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70314
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70315
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70316
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70317
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70318
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70319
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70320
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70321
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70322
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70323
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70324
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70325
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70326
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70327
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70328
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 0.02
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70329
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 0.05
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70330
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 0.1
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70331
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70332
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70333
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70334
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70335
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70336
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70337
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70338
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70339
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70340
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70341
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70342
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70343
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70344
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70345
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70346
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70347
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70348
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70349
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70350
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70351
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70352
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70353
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70354
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70355
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70356
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70357
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70358
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70359
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70360
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70361
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70362
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70363
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70364
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70365
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70366
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70367
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70368
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70369
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70370
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70371
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70372
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70373
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70374
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70375
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70376
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70377
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70378
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70379
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70380
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70381
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70382
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70383
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70384
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70385
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70386
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70387
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70388
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70389
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70390
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70401
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70402
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70403
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70404
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70405
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70406
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70407
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70408
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70409
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70410
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70411
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70412
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70413
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70414
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70415
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70416
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70417
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70418
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70419
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70420
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70421
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70422
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70423
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70424
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70425
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70426
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70427
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 10
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70428
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70429
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70430
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 20
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 0.3
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70501
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70502
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70503
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70504
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70505
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70506
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70507
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 100000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70508
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 100000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70509
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 100000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70510
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70511
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70512
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70513
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70514
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70515
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70516
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 200000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70517
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 200000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70518
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 200000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70519
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70520
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70521
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13003
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70522
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70523
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70524
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13006
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70525
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 300000000
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70526
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 300000000
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70527
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 13007
+    Target_2: 300000000
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70601
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70602
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.9
+    ValueType_3: HitSize_Y
+    Variation_3: 4.9
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70603
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 2
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70604
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70605
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.9
+    ValueType_3: HitSize_Y
+    Variation_3: 4.9
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70606
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 3
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70607
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70608
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.9
+    ValueType_3: HitSize_Y
+    Variation_3: 4.9
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70609
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 5
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70610
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70611
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.9
+    ValueType_3: HitSize_Y
+    Variation_3: 4.9
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70612
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 7
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70613
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 1
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70614
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.9
+    ValueType_3: HitSize_Y
+    Variation_3: 4.9
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70615
+    Stat_Name: 0
+    Stat_Descrip: 0
+    Target_1: 0
+    Target_2: 9
+    StatLevel: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5

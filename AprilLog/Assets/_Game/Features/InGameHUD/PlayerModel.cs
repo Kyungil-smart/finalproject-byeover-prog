@@ -10,6 +10,9 @@
 // 3차 수정자 : 김영찬
 // 수정내용 : 초기화 시 CharacterStatus반영 하도록 수정
 
+// 4차 수정자 : 김영찬
+// 수정 내용 : 26.06.12 DB 컬럼 변경 사항 반영하여 기절강화 둔화강화를 효과 강화로 연결 및 FlatPierce 변수 추가
+
 using System;
 using UnityEngine;
 
@@ -28,6 +31,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public float Attack { get; private set; }
     public float CriticalRate { get; private set; }
     public float CriticalDamage { get; private set; }
+    public int FlatPierce { get; private set; }
     public float PercentagePierce { get; private set; }
     public int StunPower { get; private set; }
     public int SlowPower { get; private set; }
@@ -46,9 +50,11 @@ public class PlayerModel : MonoBehaviour, IDamageable
         _baseAttack = data.Attack;
         Attack = data.Attack;
         CriticalRate = characterData.CriticalRate;
+        CriticalDamage = characterData.CriticalDamage;
+        FlatPierce = characterData.FlatPierce;
         PercentagePierce = characterData.PercentagePierce;
-        StunPower = characterData.StunPower;
-        SlowPower = characterData.SlowPower;
+        StunPower = characterData.EffectPower;
+        SlowPower = characterData.EffectPower;
         HitCount = characterData.HitCount;
         AoE = characterData.AoE;
         MaxTargets = characterData.MaxTargets;
@@ -83,6 +89,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
 
     // 아웃게임 성장 보너스 적용 (홍정옥 로직 기반)
     // OutLevelData 기준: MaxHP, Attack, StunPower, SlowPower
+    // ToDo : 아웃게임 성장 DB 변경사항 반영 할 것
     public void ApplyStatBonus_OutGameBonus(int hpBonus, int attackBonus, int stunBonus, int slowBonus)
     {
         MaxHP += hpBonus;
@@ -90,7 +97,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
         Attack = _baseAttack + attackBonus;
         StunPower += stunBonus;
         SlowPower += slowBonus;
-
+        
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 

@@ -149,12 +149,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31a590dd842d59e409ef740ff64b019c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpellRepo
-  _skillMasterTable: {fileID: 11400000, guid: 7bc26558ea984c73a03fe9b38abc2733, type: 2}
-  _skillDataTable: {fileID: 11400000, guid: 2f618cddfed54384a947672ed4812a1b, type: 2}
-  _effectTable: {fileID: 11400000, guid: 63bf2a0b310f4653a1e0dafccd4dd83f, type: 2}
-  _enchantMasterTable: {fileID: 11400000, guid: 6c45431e6d114e3b9a1381ddbc71d76d, type: 2}
-  _enchantLevelTable: {fileID: 11400000, guid: 67516167bf2c41dd9af13d23051391ca, type: 2}
-  _enchantWeightTable: {fileID: 11400000, guid: cfc6fd881ace42b2923e7b37dc4509a9, type: 2}
+  _skillTable: {fileID: 11400000, guid: 5e08a4cee98ee954f94a94b7e29c33f3, type: 2}
+  _effectTable: {fileID: 11400000, guid: 092a509d8921a9d47a1622780acbff34, type: 2}
+  _statTable: {fileID: 11400000, guid: 2ac955bbd9d0a2f439c7ac0b7e135343, type: 2}
 --- !u!1 &2786283696942931756
 GameObject:
   m_ObjectHideFlags: 0
@@ -201,6 +198,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterRepo
   _characterMasterTable: {fileID: 11400000, guid: e6a5323f6decfa4458753462521c5f6d, type: 2}
   _characterStatusTable: {fileID: 11400000, guid: b4f8c15678dbe39448d57aa888f52d40, type: 2}
+  _unitMasterTable: {fileID: 11400000, guid: 78b02bc1a1dd35843a7598047cb0ad68, type: 2}
   _monsterStatusTable: {fileID: 11400000, guid: 31290486419cda74788e6b35ce3eebf2, type: 2}
   _commonStatusTable: {fileID: 11400000, guid: 690bda1b322869343a7b963a11dbace5, type: 2}
 --- !u!1 &3775301964020598502
@@ -301,3 +299,4 @@ MonoBehaviour:
   _outLevelTable: {fileID: 11400000, guid: c5fd848ea3763d9419afbe341734a8e5, type: 2}
   _achievementTable: {fileID: 11400000, guid: 7ff563ba66de41bfa11a27b592354c1d, type: 2}
   _changeRewardTable: {fileID: 11400000, guid: 0f79afb42e5249e44996d689df8599ac, type: 2}
+  _staminaTable: {fileID: 11400000, guid: 9d6b752f7710dd44db3be327423a3575, type: 2}

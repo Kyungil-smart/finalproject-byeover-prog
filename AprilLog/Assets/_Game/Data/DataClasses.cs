@@ -25,15 +25,16 @@ public class DataArray<T>
 /// <summary>
 /// 변동 보상 ID와 설정 매칭<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 26.05.29
+/// 최종 수정일 : 26.06.11
 /// </summary>
 [Serializable]
 public class ChangeRewardData
 {
+    public string RewardRepeat; // FirstClear, RepeatClear
     public int ChangeReward_ID;
     public int Start_ID;
     public int End_ID;
-    public string RewardType;       // Gold, Parchment
+    public string RewardType;       // Gold, Parchment, Diamond
     public int BaseAmount;
     public string GrowthType;       // None, Add, Rate
     public float GrowthValue;
@@ -73,16 +74,17 @@ public class CharacterMasterData
 /// <summary>
 /// 주인공 전용 스텟<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class CharacterStatusData
 {
     public int Character_ID;
     public float CriticalRate;
+    public int CriticalDamage;
+    public int FlatPierce;
     public float PercentagePierce;
-    public int StunPower;
-    public int SlowPower;
+    public int EffectPower;
     public int HitCount;
     public int AoE;
     public int MaxTargets;
@@ -104,11 +106,33 @@ public class CommonStatusData
 
 #endregion
 
+#region E
+
+/// <summary>
+/// 스킬의 부가 효과 일람<br/>
+/// 생성일 : 26.06.11<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class EffectTableData
+{
+    public int Effect_ID;
+    public int EffectName;
+    public string EffectType; // DotDamage, Stun, KnockBack, Heal, Slow
+    public string OverLap; // 중첩 여부 : Refresh, Ignore, Stack
+    public string GrowthType; // EffectType의 계산 방식 : Add, Rate
+    public float Value;
+    public float Duration;
+    public float Interval;
+}
+
+#endregion
+
 #region G
 
 /// <summary>
-/// 아티펙트 가챠 확률
-/// 생성일 : 26.06.11
+/// 아티펙트 가챠 확률<br/>
+/// 생성일 : 26.06.11<br/>
 /// 최종 수정일 : 
 /// </summary>
 [Serializable]
@@ -129,8 +153,8 @@ public class GachaBoxData
 }
 
 /// <summary>
-/// 아티팩트 능력 및 효과 연결을 위한 연결 데이터
-/// 생성일 : 26.06.11
+/// 아티팩트 능력 및 효과 연결을 위한 연결 데이터<br/>
+/// 생성일 : 26.06.11<br/>
 /// 최종 수정일 : 
 /// </summary>
 [Serializable]
@@ -147,8 +171,8 @@ public class GearMasterData
 }
 
 /// <summary>
-/// 기어 등급에 따른 공통 데이터
-/// 생성일 : 26.06.11
+/// 기어 등급에 따른 공통 데이터<br/>
+/// 생성일 : 26.06.11<br/>
 /// 최종 수정일 : 
 /// </summary>
 [Serializable]
@@ -166,8 +190,8 @@ public class GearGradeData
 }
 
 /// <summary>
-/// 각 기어 별 레벨에 따른 능력치 증가 데이터
-/// 생성일 : 26.06.11
+/// 각 기어 별 레벨에 따른 능력치 증가 데이터<br/>
+/// 생성일 : 26.06.11<br/>
 /// 최종 수정일 : 
 /// </summary>
 [Serializable]
@@ -181,8 +205,8 @@ public class GearLevelData
 }
 
 /// <summary>
-/// 각 기어 별 레벨업에 필요한 재화 데이터
-/// 생성일 : 26.06.11
+/// 각 기어 별 레벨업에 필요한 재화 데이터<br/>
+/// 생성일 : 26.06.11<br/>
 /// 최종 수정일 : 
 /// </summary>
 [Serializable]
@@ -197,8 +221,8 @@ public class GearUpgradeCostData
 }
 
 /// <summary>
-/// 기어에 적용되는 특수 효과 정의 데이터
-/// 생성일 : 26.06.11
+/// 기어에 적용되는 특수 효과 정의 데이터<br/>
+/// 생성일 : 26.06.11<br/>
 /// 최종 수정일 : 
 /// </summary>
 [Serializable]
@@ -309,7 +333,7 @@ public class MonsterWavePoolData
 /// <summary>
 /// 아웃게임 레벨<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class OutLevelData
@@ -319,8 +343,8 @@ public class OutLevelData
     public int RequiredParchment;
     public int MaxHP;
     public int Attack;
-    public int StunPower;
-    public int SlowPower;
+    public int EffectPower;
+    public int FlatPierce;
     public int NewEnchant;
 }
 
@@ -328,6 +352,50 @@ public class OutLevelData
 #endregion
 
 #region ----- S -----
+
+/// <summary>
+/// 스킬 인첸트 정보 일람<br/>
+/// 생성일 : 26.06.11<br/>
+/// 최종 수정일 : 26.06.12
+/// </summary>
+[Serializable]
+public class SkillTableData
+{
+    public int SkillGroup_ID;
+    public int Skill_ID;
+    public int Name;
+    public int Skill_Descrip;
+    public string Hit_Scope; // hazard, projectile, cone, movinghazard
+    public int Level;
+    public int Dmg;
+    public float CriticalRate; // 추가 치명타 확률
+    public float HitSize_X; // 범위 - 사각형
+    public float HitSize_Y;
+    public float Hit_Duration;
+    public float Speed;
+    public string PelletType; // 투사체 효과 : none, piercing, bounce
+    public float Count; // piercing / 튕김 횟수 / 장판의 interval(float값으로 변경)
+    public int Effect_ID_1; // 효과
+    public string E_ValueType_1; // 증감 항목
+    public float E_Variation_1; // 증감율
+    public int Effect_ID_2; // 효과
+    public string E_ValueType_2; // 증감 항목
+    public float E_Variation_2; // 증감율
+    public int ActiveCount; // 기본 발동 횟수
+    public int ActivePlusCount; // 시전 횟수
+    public float PelletGap; // projectile 간격
+    public float SubPelletDmg; // 보조 projectile 대미지 증감치
+    public float RequiredValue_1; // 메인 조건
+    public float RequiredValue_2; // 서브 조건
+    public float RequiredValue_3; // 서브 조건
+    public string RequiredValue_4; // 스킬의 타게팅 및 스폰 방법 구분 : normal, spawn, boss, random
+    public int Tag_ID_1; // 스킬에 부착되는 테그 - UI표시 및 테그 증뎀을 위함
+    public int Tag_ID_2;
+    public int Tag_ID_3;
+    public int Tag_ID_4;
+    public int Image_ID; // 이미지
+    public int Sfx_ID; // 효과
+}
 
 /// <summary>
 /// 웨이브 진행 중 특수 웨이브 삽입 데이터<br/>
@@ -350,7 +418,7 @@ public class SpecialWaveRuleData
 /// <summary>
 /// 스테이지 구성 데이터<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.12
 /// </summary>
 [Serializable]
 public class StageData
@@ -358,8 +426,6 @@ public class StageData
     public int Chapter_ID;      // FK
     public int Stage_ID;        // PK
     public int StageOrder;
-    public int TimeLimit;
-    public int WaveGroup_ID;    // 현재 미사용, 향후 확장용
 }
 
 /// <summary>
@@ -384,6 +450,62 @@ public class StageWaveRuleData
     public float RangedChance;
     public float InfestedChance;
     public int SpecialWave_ID;  // 0인 경우 발동하지않음
+}
+
+/// <summary>
+/// 행동력 보유량, 회복시간 등을 정의<br/>
+/// 생성일 : 26.06.11<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class StaminaData
+{
+    public int Stamina_ID;
+    public int MaxOwned; // 자동 회복으로 회복 가능한 상한선
+    public int RecoveryTime; // 단위 : sec
+    public int RecoveryCount;
+    public int InitialAmount; // 최초 계정 생성 시 적용 값
+    public int OverCapMax; // 초과 보유 상한
+}
+
+/// <summary>
+/// 스텟 인첸트 정보 일람<br/>
+/// 생성일 : 26.06.11<br/>
+/// 최종 수정일 : 26.06.12
+/// </summary>
+[Serializable]
+public class StatTableData
+{
+    public int StatGroup_ID;
+    public int StatEnchant_ID;
+    public int Stat_Name;
+    public int Stat_Descrip;
+    public int Target_1; // 대상 효과 ID
+    public int Target_2; // 스킬 조건
+    public int StatLevel; // 
+    public string ValueType_1;
+    public int Variation_1;
+    public string ValueType_2;
+    public float Variation_2;
+    public string ValueType_3;
+    public float Variation_3;
+}
+
+#endregion
+
+#region U
+
+/// <summary>
+/// 유닛(블록)의 ID와 타입을 정의<br/>
+/// 생성일 : 26.06.11<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class UnitTableData
+{
+    public int UnitID;
+    public string Name;
+    public string Type; // normal, special - 테이블 내 동일한 유닛 두개와 같이 있으면 동일 유닛 취급
 }
 
 #endregion

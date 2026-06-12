@@ -4,6 +4,12 @@
 // 1차 수정자 : 홍정옥
 // 수정내용 : GetOutGrowthBonusUntilLevel 메서드 추가 (아웃게임 성장 누적 보너스 계산)
 
+// 2차 수정자 : 김영찬
+// 수정 내용 : 행동력 데이터 삽입
+
+// 3차 수정자 : 김영찬
+// 수정 내용 : 26.06.12 DB 컬럼 변경 사항 반영하여 기절강화 둔화강화를 효과 강화로 연결
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,11 +28,15 @@ public class ConfigRepo : MonoBehaviour
     
     [Header("보상 데이터")]
     [SerializeField] private ChangeRewardTable _changeRewardTable;
+    
+    [Header("행동력 데이터")]
+    [SerializeField] private StaminaTable _staminaTable;
 
     private Dictionary<int, InLevelData> _inLevel;
     private Dictionary<int, OutLevelData> _outLevel;
     private Dictionary<int, Legacy_AchievementData> _achievements;
     private List<ChangeRewardData> _changeRewards;
+    private Dictionary<int, StaminaData> _stamina;
     private bool _isInitialized;
 
     public void Initialize()
@@ -41,6 +51,7 @@ public class ConfigRepo : MonoBehaviour
         _outLevel = BuildDictionary(_outLevelTable, nameof(_outLevelTable), r => r.OutLevel);
         _achievements = BuildDictionary(_achievementTable, nameof(_achievementTable), r => r.AchievementID);
         _changeRewards = BuildList(_changeRewardTable, nameof(_changeRewardTable));
+        _stamina = BuildDictionary(_staminaTable, nameof(_staminaTable), r => r.Stamina_ID);
         _isInitialized = true;
         Debug.Log($"[ConfigRepo] 초기화 완료. InLevel: {_inLevel.Count}, OutLevel: {_outLevel.Count}, Achievements: {_achievements.Count}, ChangeRewards: {_changeRewards.Count}");
     }
@@ -48,6 +59,7 @@ public class ConfigRepo : MonoBehaviour
     public InLevelData GetInLevel(int level) => GetData(_inLevel, level, nameof(GetInLevel));
     public OutLevelData GetOutLevel(int level) => GetData(_outLevel, level, nameof(GetOutLevel));
     public Legacy_AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
+    public StaminaData GetStaminaData(int id) => GetData(_stamina, id, nameof(GetStaminaData));
 
     public IReadOnlyDictionary<int, Legacy_AchievementData> GetAllAchievements()
     {
@@ -88,8 +100,8 @@ public class ConfigRepo : MonoBehaviour
 
             hpBonus += data.MaxHP;
             attackBonus += data.Attack;
-            stunBonus += data.StunPower;
-            slowBonus += data.SlowPower;
+            stunBonus += data.EffectPower;
+            slowBonus += data.EffectPower;
         }
     }
 

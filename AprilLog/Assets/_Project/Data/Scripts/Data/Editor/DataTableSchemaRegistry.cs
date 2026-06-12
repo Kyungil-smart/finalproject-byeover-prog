@@ -48,6 +48,8 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("CharacterStatus", "character_status", "CharacterStatusData", "CharacterStatusTable", true),
         new DataTableSchema("CommonStatus", "common_status", "CommonStatusData", "CommonStatusTable", true),
         
+        new DataTableSchema("EffectTable", "effect_table", "EffectTableData", "EffectMasterTable", true),
+        
         new DataTableSchema("GachaBox", "gacha_box", "GachaBoxData", "GachaBoxTable", true),
         new DataTableSchema("GearMaster", "gear_master", "GearMasterData", "GearMasterTable", true),
         new DataTableSchema("GearGrade", "gear_grade", "GearGradeData", "GearGradeTable", true),
@@ -64,9 +66,14 @@ public static class DataTableSchemaRegistry
         
         new DataTableSchema("OutLevel", "out_level", "OutLevelData", "OutLevelTable", true),
         
+        new DataTableSchema("SkillTable", "skill_table", "SkillTableData", "SkillEnchantTable", true),
         new DataTableSchema("SpecialWaveRule", "special_wave_rule", "SpecialWaveRuleData", "SpecialWaveRuleTable", true),
         new DataTableSchema("StageMaster", "stage_master", "StageData", "StageDataTable", true),
         new DataTableSchema("StageWaveRule", "stage_wave_rule", "StageWaveRuleData", "StageWaveRuleTable", true),
+        new DataTableSchema("Stamina", "stamina", "StaminaData", "StaminaTable", true),
+        new DataTableSchema("StatTable", "stat_table", "StatTableData", "StatEnchantTable", true),
+        
+        new DataTableSchema("UnitTable", "unit_table", "UnitTableData", "UnitMasterTable", true),
         
         // Legacy List
         new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),

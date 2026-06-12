@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 스테이터스와 스킬&인첸트 부분 분리
 
+// 수정자 : 김영찬
+// 수정 내용 : 검색 항목에 Unit 추가
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,6 +23,9 @@ public class CharacterRepo : MonoBehaviour
     [SerializeField] private CharacterMasterTable _characterMasterTable;
     [SerializeField] private CharacterStatusTable _characterStatusTable;
     
+    [Header("퍼즐 블록 데이터")]
+    [SerializeField] private UnitMasterTable _unitMasterTable;
+    
     [Header("몬스터 기본 데이터")]
     [SerializeField] private MonsterStatusTable _monsterStatusTable;
     
@@ -31,6 +37,7 @@ public class CharacterRepo : MonoBehaviour
     private Dictionary<int, CommonStatusData> _commonStatus;
     private Dictionary<int, CharacterStatusData> _characterStatus;
     private Dictionary<int, MonsterStatusData> _monsterStatus;
+    private Dictionary<int, UnitTableData> _unitData;
     private bool _isInitialized;
 
     // ---------- 초기화 ----------
@@ -58,6 +65,7 @@ public class CharacterRepo : MonoBehaviour
         _commonStatus = BuildDictionary(_commonStatusTable, nameof(_commonStatusTable), r => r.Character_ID, true);
         _characterStatus = BuildDictionary(_characterStatusTable, nameof(_characterStatusTable), r => r.Character_ID, true);
         _monsterStatus = BuildDictionary(_monsterStatusTable, nameof(_monsterStatusTable), r => r.Character_ID, true);
+        _unitData = BuildDictionary(_unitMasterTable, nameof(_unitMasterTable), r => r.UnitID, true);
     }
 
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(
@@ -148,6 +156,7 @@ public class CharacterRepo : MonoBehaviour
     public CommonStatusData GetCommonStatus(int id) => GetData(_commonStatus, id, nameof(GetCommonStatus));
     public CharacterStatusData GetCharacterStatus(int id) => GetData(_characterStatus, id, nameof(GetCharacterStatus));
     public MonsterStatusData GetMonsterStatus(int id) => GetData(_monsterStatus, id, nameof(GetMonsterStatus));
+    public UnitTableData GetUnitData(int id) => GetData(_unitData, id, nameof(GetUnitData));
 
     // 안전 조회 (키가 없을 수 있는 경우)
     public bool TryGetCommonStatus(int id, out CommonStatusData data)
