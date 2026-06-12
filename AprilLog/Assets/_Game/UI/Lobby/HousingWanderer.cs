@@ -33,6 +33,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     private void Awake()
     {
+        // 기능: 캐릭터 RectTransform과 이동 영역, 터치 대상 Graphic을 준비한다.
         _rectTransform = transform as RectTransform;
 
         if (_rectTransform == null)
@@ -46,6 +47,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     private void OnEnable()
     {
+        // 기능: 활성화 시 자동 배회 상태를 초기화하고 첫 목표 위치를 선택한다.
         _waitTimer = 0f;
         _arrivalCallback = null;
         _isInteractionMoving = false;
@@ -54,6 +56,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     public void MoveToInteractionTarget(Vector2 _targetPosition, Action _onArrived)
     {
+        // 기능: 가구 상호작용 위치로 이동하도록 목표 좌표와 도착 콜백을 설정한다.
         if (_rectTransform == null || _moveArea == null)
             return;
 
@@ -65,6 +68,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     public void MoveImmediatelyToInteractionTarget(Vector2 _targetPosition, Action _onArrived)
     {
+        // 기능: 프로토타입 연출용으로 캐릭터를 상호작용 위치에 즉시 배치하고 콜백을 실행한다.
         if (_rectTransform == null || _moveArea == null)
             return;
 
@@ -78,11 +82,13 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        // 기능: 캐릭터 터치 입력을 외부 Controller 이벤트로 전달한다.
         Clicked?.Invoke();
     }
 
     private void EnsureTouchTarget()
     {
+        // 기능: 캐릭터 UI가 터치 이벤트를 받을 수 있도록 Graphic Raycast를 켠다.
         _touchGraphic = GetComponent<Graphic>();
         if (_touchGraphic == null)
         {
@@ -95,6 +101,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     private void Update()
     {
+        // 기능: 대기 시간이 끝나면 목표 지점까지 캐릭터를 계속 이동시킨다.
         if (_rectTransform == null || _moveArea == null)
             return;
 
@@ -109,6 +116,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     private void MoveToTarget()
     {
+        // 기능: 현재 위치에서 목표 위치로 이동하고 도착 시 배회 또는 상호작용 콜백을 처리한다.
         Vector2 _currentPosition = _rectTransform.anchoredPosition;
         Vector2 _nextPosition = Vector2.MoveTowards(
             _currentPosition,
@@ -135,6 +143,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     private void PickNextTarget()
     {
+        // 기능: 이동 영역 안에서 다음 자동 배회 목표 좌표를 무작위로 선택한다.
         if (_moveArea == null)
             return;
 
@@ -148,6 +157,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     private Vector2 ClampToMoveArea(Vector2 _position)
     {
+        // 기능: 캐릭터 위치가 이동 영역과 여백 밖으로 나가지 않도록 제한한다.
         Rect _rect = _moveArea.rect;
         GetMoveBounds(_rect, out float _minX, out float _maxX, out float _minY, out float _maxY);
 
@@ -158,6 +168,7 @@ public class HousingWanderer : MonoBehaviour, IPointerClickHandler
 
     private void GetMoveBounds(Rect _rect, out float _minX, out float _maxX, out float _minY, out float _maxY)
     {
+        // 기능: 이동 영역 Rect와 가장자리 여백을 기준으로 실제 이동 가능 범위를 계산한다.
         _minX = _rect.xMin + _edgePadding.x;
         _maxX = _rect.xMax - _edgePadding.x;
         _minY = _rect.yMin + _edgePadding.y;

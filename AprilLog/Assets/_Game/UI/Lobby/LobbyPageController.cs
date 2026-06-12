@@ -7,6 +7,9 @@ using UnityEngine.UI;
 //작성자 : 홍정옥
 //설명 : 아래 버튼 클릭시 페이지 전환 + 선택 인디케이터 및 아이콘 애니메이션
 
+// 1차 수정자 : 조규민
+// 수정 내용 : 시나리오 다시보기 종료 후 로비 복귀 시 하우징 페이지로 돌아오도록 초기 페이지 예약 처리 추가
+
 public class LobbyPageController : MonoBehaviour
 {
     [Serializable]
@@ -63,8 +66,18 @@ public class LobbyPageController : MonoBehaviour
     private void Start()
     {
         // 인디케이터·아이콘 초기 상태를 즉시 적용 (애니메이션 없이)
-        ApplyTabVisual(defaultPage, instant: true);
-        ShowPage(defaultPage);
+        LobbyPageType initialPage = ResolveInitialPage();
+        ApplyTabVisual(initialPage, instant: true);
+        ShowPage(initialPage);
+    }
+
+    private LobbyPageType ResolveInitialPage()
+    {
+        // 추가:조규민 기능 설명: 다른 씬에서 _Lobby로 복귀하며 예약한 페이지가 있으면 초기 페이지로 사용한다.
+        if (LobbyReturnContext.TryConsumePage(out LobbyPageType pendingPage))
+            return pendingPage;
+
+        return defaultPage;
     }
 
     private void InitializePageMap()

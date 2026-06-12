@@ -26,6 +26,7 @@ public class HousingInteractionView : MonoBehaviour
 
     private void Awake()
     {
+        // 기능: 상호작용 문구 루트와 TMP 표시 대상을 준비한다.
         if (_interactionRoot == null)
             Debug.LogWarning("[HousingInteractionView] 상호작용 표시 루트가 연결되지 않았습니다.", this);
 
@@ -38,17 +39,20 @@ public class HousingInteractionView : MonoBehaviour
 
     private void OnEnable()
     {
+        // 기능: 활성화 시 이전 상호작용 문구가 남지 않도록 숨김 상태로 시작한다.
         Hide();
     }
 
     private void OnDisable()
     {
+        // 기능: 비활성화 시 예약된 숨김 코루틴과 표시 Tween을 정리한다.
         StopHideCoroutine();
         _interactionTween?.Kill();
     }
 
     public void Show(HousingFurnitureView _furniture)
     {
+        // 기능: 가구 View에 설정된 상호작용 문구를 표시한다.
         if (_furniture == null)
             return;
 
@@ -57,16 +61,19 @@ public class HousingInteractionView : MonoBehaviour
 
     public void ShowMessage(string _message)
     {
+        // 기능: 일반 상호작용 메시지를 지정 시간 동안 표시한다.
         ShowText(string.IsNullOrWhiteSpace(_message) ? "상호작용했습니다." : _message, _messageSeconds);
     }
 
     public void ShowEmote(string _emote)
     {
+        // 기능: 캐릭터 터치 반응용 짧은 이모티콘 문구를 표시한다.
         ShowText(string.IsNullOrWhiteSpace(_emote) ? "!" : _emote, _emoteSeconds);
     }
 
     public void Hide()
     {
+        // 기능: 상호작용 문구 UI를 숨기고 예약 숨김을 취소한다.
         StopHideCoroutine();
 
         if (_interactionRoot != null)
@@ -75,6 +82,7 @@ public class HousingInteractionView : MonoBehaviour
 
     private void ShowText(string _text, float _seconds)
     {
+        // 기능: 문구 내용을 갱신하고 표시 연출과 자동 숨김을 시작한다.
         if (_interactionRoot != null)
             _interactionRoot.SetActive(true);
 
@@ -91,12 +99,14 @@ public class HousingInteractionView : MonoBehaviour
 
     private IEnumerator HideAfterSeconds(float _seconds)
     {
+        // 기능: 지정 시간이 지난 뒤 상호작용 문구를 숨긴다.
         yield return new WaitForSecondsRealtime(Mathf.Max(0.1f, _seconds));
         Hide();
     }
 
     private void PlayShowTween()
     {
+        // 기능: 상호작용 문구가 나타날 때 간단한 확대 Tween 연출을 재생한다.
         if (_interactionRoot == null)
             return;
 
@@ -116,6 +126,7 @@ public class HousingInteractionView : MonoBehaviour
 
     private void StopHideCoroutine()
     {
+        // 기능: 진행 중인 자동 숨김 코루틴을 중지한다.
         if (_hideCoroutine == null)
             return;
 
@@ -125,6 +136,7 @@ public class HousingInteractionView : MonoBehaviour
 
     private void EnsureTextTarget()
     {
+        // 기능: TMP 텍스트가 없으면 루트 오브젝트에 추가해 표시 대상을 보장한다.
         if (_interactionText != null)
             return;
 
@@ -146,6 +158,7 @@ public class HousingInteractionView : MonoBehaviour
 
     private void DisableRootImage()
     {
+        // 기능: 문구 루트의 배경 Image를 꺼서 텍스트만 보이도록 한다.
         if (_interactionRoot == null)
             return;
 
