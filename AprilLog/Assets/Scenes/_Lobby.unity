@@ -12760,6 +12760,7 @@ GameObject:
   - component: {fileID: 409357556}
   - component: {fileID: 409357558}
   - component: {fileID: 409357559}
+  - component: {fileID: 409357560}
   m_Layer: 5
   m_Name: Artifact
   m_TagString: Untagged
@@ -12867,6 +12868,22 @@ MonoBehaviour:
   - container: {fileID: 964412741}
     emptySlot: {fileID: 967308157}
   _equipPrefab: {fileID: 6939321171884752201, guid: 6ae9dae2d40de91489b97c542da68a85, type: 3}
+--- !u!114 &409357560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409357554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 460c00b9fe8b8474b8999e8f3746e75e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArtifactDetailPopupPresenter
+  _listBinder: {fileID: 409357558}
+  _equipBinder: {fileID: 409357559}
+  _popup: {fileID: 1271872186}
+  _closeButton: {fileID: 1677282455}
 --- !u!1 &409461221
 GameObject:
   m_ObjectHideFlags: 0
