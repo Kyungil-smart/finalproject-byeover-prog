@@ -90,7 +90,11 @@ public class StagePresenter
     public void UpdateSystem(float deltaTime)
     {
         _model.Tick(deltaTime);
-        _spawner.Tick(deltaTime);
+
+        // _model.Tick 도중 스테이지 클리어 콜백이 동기적으로 다음 스테이지 조립(InitAndStart)을 타면
+        // 이 프레젠터는 이미 Release되어 _spawner가 null이다(재진입). 한 프레임 건너뛰면 새 프레젠터가 돈다.
+        if (_spawner != null)
+            _spawner.Tick(deltaTime);
     }
     
     // ---------- 메모리 할당 해제 ----------

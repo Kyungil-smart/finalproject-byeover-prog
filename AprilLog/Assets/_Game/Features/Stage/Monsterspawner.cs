@@ -290,6 +290,12 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     /// <summary>
+    /// 살아있는 몬스터 읽기 전용 목록 (장판/광역 스킬 판정용).
+    /// 항목이 null이거나 비활성일 수 있으므로 호출 측에서 거를 것.
+    /// </summary>
+    public IReadOnlyList<MonsterAI> AliveMonsters => _aliveMonsters;
+
+    /// <summary>
     /// 타겟 우선순위 (전투 기획 5-3):
     /// 1. 거리가 가장 가까운 몬스터
     /// 2. 거리가 같을 때 → 좌측(작은 x) 우선

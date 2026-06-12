@@ -299,6 +299,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     public void OnDespawn()
     {
+        // 풀 반납 후 스테일 참조로 TakeDamage가 들어와도 무시되도록 사망 상태로 둔다.
+        // (장판/광역 스킬이 스냅샷한 목록을 타격하는 동안 디스폰이 끼어드는 경우 방어)
+        _state = State.Dead;
         OnDeath = null;
         OnHPChanged = null;
         _playerModel = null;
