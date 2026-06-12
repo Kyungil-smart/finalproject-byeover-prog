@@ -7004,8 +7004,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 50
-  m_fontSizeBase: 50
+  m_fontSize: 45
+  m_fontSizeBase: 45
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -7433,7 +7433,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uB4F1\uAE09\uC21C"
+  m_text: "\uC815\uB82C"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d18a9cf070eed374ab29ec4f68aa8b73, type: 2}
   m_sharedMaterial: {fileID: -2721228260951242274, guid: d18a9cf070eed374ab29ec4f68aa8b73, type: 2}
@@ -7460,8 +7460,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 50
-  m_fontSizeBase: 50
+  m_fontSize: 45
+  m_fontSizeBase: 45
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -11730,6 +11730,9 @@ MonoBehaviour:
   m_MultiSelect: 0
   m_Options:
     m_Options:
+    - m_Text: "\uD544\uD130"
+      m_Image: {fileID: 0}
+      m_Color: {r: 1, g: 1, b: 1, a: 1}
     - m_Text: "\uC804\uCCB4"
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -12027,8 +12030,8 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1484117254}
-  - {fileID: 2090107724}
   - {fileID: 343117823}
+  - {fileID: 2090107724}
   - {fileID: 875195360}
   m_Father: {fileID: 1342362262}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -24513,14 +24516,14 @@ MonoBehaviour:
   _btnArtifact: {fileID: 1847461304}
   _playerLevelTab: {fileID: 1976874140}
   _artifactTab: {fileID: 409357554}
-  _topBarNormal: {fileID: 0}
-  _topBarDecomposition: {fileID: 0}
+  _topBarNormal: {fileID: 10355771}
+  _topBarDecomposition: {fileID: 649216354}
   _collection: {fileID: 1463830063}
   _artifactsSlot: {fileID: 1342362261}
   _decompositionSlot: {fileID: 124529559}
   _btnEnterDecompose: {fileID: 875195361}
   _btnDecomposeComplete: {fileID: 86697735}
-  _btnExitDecompose: {fileID: 0}
+  _btnExitDecompose: {fileID: 1768493750}
   _btnRare: {fileID: 688963142}
   _btnEpic: {fileID: 1240448647}
   _btnLegendary: {fileID: 1240448647}
@@ -24532,6 +24535,10 @@ MonoBehaviour:
   _popupBatchDecomposition: {fileID: 334532434}
   _btnBatchDecompose: {fileID: 396009183}
   _btnBatchCancel: {fileID: 54312169}
+  _sortingDropdown: {fileID: 2090107725}
+  _filterDropdown: {fileID: 343117824}
+  _defaultSortingIndex: 0
+  _defaultFilterIndex: 0
 --- !u!1 &1028403450
 GameObject:
   m_ObjectHideFlags: 0
@@ -29791,7 +29798,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC804\uCCB4"
+  m_text: "\uD544\uD130"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d18a9cf070eed374ab29ec4f68aa8b73, type: 2}
   m_sharedMaterial: {fileID: -2721228260951242274, guid: d18a9cf070eed374ab29ec4f68aa8b73, type: 2}
@@ -42038,6 +42045,9 @@ MonoBehaviour:
   m_MultiSelect: 0
   m_Options:
     m_Options:
+    - m_Text: "\uC815\uB82C"
+      m_Image: {fileID: 0}
+      m_Color: {r: 1, g: 1, b: 1, a: 1}
     - m_Text: "\uB4F1\uAE09\uC21C"
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}

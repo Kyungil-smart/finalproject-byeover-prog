@@ -21,6 +21,8 @@ public class ArtifactUIController : MonoBehaviour
     public event Action OnSingleDecomposeConfirmed;           // 단일 팝업 '분해' 클릭
     public event Action OnBatchDecomposeConfirmed;            // 일괄 팝업 '분해' 클릭
     public event Action OnDecomposeCancelled;                 // 팝업 '취소' 클릭
+    public event Action<int> OnSortChanged;                  // 정렬 드롭다운 선택(옵션 인덱스)
+    public event Action<int> OnFilterChanged;                // 필터 드롭다운 선택(옵션 인덱스)
 
     // ------------------------------------------------------------------
     // 참조 (Inspector에서 직접 연결)
@@ -62,12 +64,23 @@ public class ArtifactUIController : MonoBehaviour
     [SerializeField] private Button _btnBatchDecompose;         // 일괄 팝업 '분해'
     [SerializeField] private Button _btnBatchCancel;            // 일괄 팝업 '취소'
 
+    [Header("정렬 / 필터 드롭다운 (Artifacts_Slot)")]
+    [SerializeField] private TMP_Dropdown _sortingDropdown;     // Dropdown_Artifacts_Slot_Sorting (정렬)
+    [SerializeField] private TMP_Dropdown _filterDropdown;      // Dropdown_Artifacts_Slot_Filter (필터)
+    [Tooltip("탭 진입 시 사용자가 따로 바꾸지 않았다면 적용할 기본 정렬 옵션 인덱스")]
+    [SerializeField] private int _defaultSortingIndex = 0;
+    [Tooltip("탭 진입 시 사용자가 따로 바꾸지 않았다면 적용할 기본 필터 옵션 인덱스")]
+    [SerializeField] private int _defaultFilterIndex = 0;
+
     private bool _isDecompositionMode;
+    private bool _sortTouched;     // 사용자가 정렬을 직접 변경한 적이 있는가
+    private bool _filterTouched;   // 사용자가 필터를 직접 변경한 적이 있는가
 
     private void Awake()
     {
         BindButtons();
         BindSlider();
+        SetupDropdowns();
     }
 
     private void Start()
@@ -148,6 +161,75 @@ public class ArtifactUIController : MonoBehaviour
 
         // Artifact 탭은 항상 기본 상태(Collection + Artifacts_Slot)로 진입한다.
         ResetArtifactTabToDefault(notify: _isDecompositionMode);
+
+        // 사용자가 정렬/필터를 따로 바꾸지 않았다면 기본값으로 표시한다.
+        ApplySortFilterDefaultsIfUntouched();
+    }
+
+    // ==================================================================
+    // 정렬 / 필터 드롭다운 (Artifacts_Slot)
+    // ==================================================================
+    private void SetupDropdowns()
+    {
+        if (_sortingDropdown != null)
+        {
+            _sortingDropdown.SetValueWithoutNotify(ClampOption(_sortingDropdown, _defaultSortingIndex));
+            _sortingDropdown.onValueChanged.RemoveListener(HandleSortChanged);
+            _sortingDropdown.onValueChanged.AddListener(HandleSortChanged);
+        }
+        else
+        {
+            Debug.LogWarning("[ArtifactUIController] 정렬 드롭다운이 연결되지 않았습니다.", this);
+        }
+
+        if (_filterDropdown != null)
+        {
+            _filterDropdown.SetValueWithoutNotify(ClampOption(_filterDropdown, _defaultFilterIndex));
+            _filterDropdown.onValueChanged.RemoveListener(HandleFilterChanged);
+            _filterDropdown.onValueChanged.AddListener(HandleFilterChanged);
+        }
+        else
+        {
+            Debug.LogWarning("[ArtifactUIController] 필터 드롭다운이 연결되지 않았습니다.", this);
+        }
+    }
+
+    // 탭 진입 시 : 사용자가 직접 바꾼 적이 없으면 기본 정렬/필터를 표시하고 데이터 쪽에도 적용시킨다.
+    private void ApplySortFilterDefaultsIfUntouched()
+    {
+        if (!_sortTouched && _sortingDropdown != null)
+        {
+            int index = ClampOption(_sortingDropdown, _defaultSortingIndex);
+            _sortingDropdown.SetValueWithoutNotify(index);
+            OnSortChanged?.Invoke(index);
+        }
+
+        if (!_filterTouched && _filterDropdown != null)
+        {
+            int index = ClampOption(_filterDropdown, _defaultFilterIndex);
+            _filterDropdown.SetValueWithoutNotify(index);
+            OnFilterChanged?.Invoke(index);
+        }
+    }
+
+    private void HandleSortChanged(int index)
+    {
+        _sortTouched = true;
+        Debug.Log($"[ArtifactUIController] 정렬 변경 → {index}");
+        OnSortChanged?.Invoke(index);
+    }
+
+    private void HandleFilterChanged(int index)
+    {
+        _filterTouched = true;
+        Debug.Log($"[ArtifactUIController] 필터 변경 → {index}");
+        OnFilterChanged?.Invoke(index);
+    }
+
+    private static int ClampOption(TMP_Dropdown dropdown, int index)
+    {
+        int count = dropdown.options.Count;
+        return count > 0 ? Mathf.Clamp(index, 0, count - 1) : 0;
     }
 
     // ==================================================================
