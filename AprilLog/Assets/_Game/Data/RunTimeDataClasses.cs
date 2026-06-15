@@ -1,8 +1,37 @@
-// 작성자 : 김영찬
-// SpellRepo에서 사용하는 데이터를 목적에 맞춰 가공하기 위한 클래스들
-// 기대 효과 : SpellRepo에서 중복해서 데이터를 캐싱 할 필요 없음
+// 생성자 : 김영찬
+// 설명 : 인게임에서 사용하는 임시 구조체 및 클래스를 정리하는 스크립트입니다.
+// 주의 사항 : 기능 별로 region으로 분류하면 다른 작업자가 보기 편합니다.
 
+using System;
 using System.Collections.Generic;
+using UnityEngine;
+
+#region Sort 보조 구조체
+
+/// <summary>
+/// Sort 보조 구조체
+/// </summary>
+[Serializable]
+public struct WaitingCombo
+{
+    public int[] unitTypes;
+    public WaitingDifficulty difficulty;
+
+    public int FilledCount
+    {
+        get
+        {
+            int c = 0;
+            for (int i = 0; i < unitTypes.Length; i++)
+                if (unitTypes[i] >= 0) c++;
+            return c;
+        }
+    }
+}
+
+#endregion
+
+#region SpellRepo 지원
 
 /// <summary>
 /// 스킬 인첸트 데이터를 이름으로 묶음
@@ -107,3 +136,73 @@ public class StatGroupChainData
         StatNameChainData[data.Stat_Name].AddData(data);
     }
 }
+
+#endregion
+
+#region 인첸트 선택 지원
+
+public enum EnchantType { Skill, Stat }
+
+public class EnchantCandidate
+{
+    public EnchantType Type;
+    public int Name_ID;            
+    public int Specific_ID;        
+    public int Level;              
+    public float Weight;           
+    
+    public SkillTableData SkillData; 
+    public StatTableData StatData;   
+}
+
+[Serializable]
+public class EnchantProbabilityConfig
+{
+    [Header("스킬/스탯 통합 풀 등장 비율 (기본 100 : 100)")]
+    public float SkillPoolBaseWeight = 100f;
+    public float StatPoolBaseWeight = 100f;
+
+    [Header("스킬 - 1~2개 보유 시 (기획서 3-3-1-1 표의 단계 1)")]
+    public float SkillStage1_HeldWeight = 30f;
+    public float SkillStage1_UnheldWeight = 70f;
+
+    [Header("스킬 - 3~4개 보유 시 (해당 표의 단계 2)")]
+    public float SkillStage2_HeldWeight = 50f;
+    public float SkillStage2_UnheldWeight = 50f;
+
+    [Header("스킬 - 5개 보유 시 (해당 표의 단계 3)")]
+    public float SkillStage3_HeldWeight = 80f;
+    public float SkillStage3_UnheldWeight = 20f;
+
+    [Header("스탯 확률 (기획서 3-3-4)")]
+    public float Stat_HeldWeight = 60f;
+    public float Stat_UnheldWeight = 40f;
+}
+
+[Serializable]
+public class EnchantDisplayData
+{
+    public int EnchantId;
+    public string Name;
+    public string Description;
+    public int Level;
+    public string ImageKey;
+    public string TypeLabel;   // 카드 타입 표시용 (Presenter가 stat-type 기반으로 채움)
+}
+
+#endregion
+
+#region 인첸트 도감 지원
+
+[Serializable]
+public class EnchantBookDisplayData
+{
+    public int EnchantId;
+    public string Name;
+    public string Type;
+    public bool IsOwned;
+    public int Level;
+    public int MaxLevel;
+}
+
+#endregion

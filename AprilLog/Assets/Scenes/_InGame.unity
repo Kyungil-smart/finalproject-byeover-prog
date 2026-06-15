@@ -1513,8 +1513,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9150d9e410a6ac748ac8215e14ed60a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantSelectView
-  _enchantModel: {fileID: 673703853}
+  _probabilityConfig:
+    SkillPoolBaseWeight: 100
+    StatPoolBaseWeight: 100
+    SkillStage1_HeldWeight: 30
+    SkillStage1_UnheldWeight: 70
+    SkillStage2_HeldWeight: 50
+    SkillStage2_UnheldWeight: 50
+    SkillStage3_HeldWeight: 80
+    SkillStage3_UnheldWeight: 20
+    Stat_HeldWeight: 60
+    Stat_UnheldWeight: 40
+  _model: {fileID: 673703853}
   _navigator: {fileID: 1980292180}
+  _changeView: {fileID: 1446440523}
   _choiceContainer: {fileID: 1181439378}
   _skipButton: {fileID: 1674580069}
   _rerollButton: {fileID: 338214905}
@@ -8035,6 +8047,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5b66d35492f5e04abff8773b7ae2f57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantModel
+  _listView: {fileID: 951242438}
 --- !u!4 &673703854
 Transform:
   m_ObjectHideFlags: 0
@@ -17143,11 +17156,12 @@ MonoBehaviour:
   - {fileID: 1273865716}
   - {fileID: 1384413551}
   _afterEnchantChangeInfoTable: {fileID: 1856112191}
-  _changeExecuteButton: {fileID: 272648903}
+  _confirmButton: {fileID: 272648903}
   _cancelButton: {fileID: 1136372635}
   _headerText: {fileID: 1349802590}
   _changeExecuteButtonText: {fileID: 1082178137}
   _cancelButtonText: {fileID: 151535659}
+  _listView: {fileID: 951242438}
 --- !u!114 &1446440524
 MonoBehaviour:
   m_ObjectHideFlags: 0

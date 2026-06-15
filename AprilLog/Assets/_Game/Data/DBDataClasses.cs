@@ -1,10 +1,8 @@
 // 담당자 : 김영찬
-// 설명   : 데이터 테이블 구조체 모음 (신규)
+// 설명   : DB에 사용하는 클래스 및 구조체 모음 (신규)
 // 주의 사항 : 알파벳 순으로 정렬 할 것
 
 using System;
-using System.Collections.Generic;
-using UnityEngine.Serialization;
 
 #region JSON 파싱용 래퍼
 
@@ -18,7 +16,7 @@ public class DataArray<T>
     public T[] data;
 }
 
-    #endregion
+#endregion
 
 #region ----- C -----
 
@@ -106,7 +104,7 @@ public class CommonStatusData
 
 #endregion
 
-#region E
+#region ----- E -----
 
 /// <summary>
 /// 스킬의 부가 효과 일람<br/>
@@ -128,7 +126,7 @@ public class EffectTableData
 
 #endregion
 
-#region G
+#region ----- G -----
 
 /// <summary>
 /// 아티펙트 가챠 확률<br/>
@@ -393,8 +391,9 @@ public class SkillTableData
     public int Tag_ID_2;
     public int Tag_ID_3;
     public int Tag_ID_4;
-    public int Image_ID; // 이미지
-    public int Sfx_ID; // 효과
+    public int SkillIEffect_Id; // 이펙트 이미지
+    public int SkillIcon_ID; // 아이콘 이미지
+    public int Sfx_ID; // 사운드
 }
 
 /// <summary>
@@ -489,11 +488,12 @@ public class StatTableData
     public float Variation_2;
     public string ValueType_3;
     public float Variation_3;
+    public int Image_ID;
 }
 
 #endregion
 
-#region U
+#region ----- U -----
 
 /// <summary>
 /// 유닛(블록)의 ID와 타입을 정의<br/>
@@ -509,29 +509,4 @@ public class UnitTableData
 }
 
 #endregion
-
-#region Sort 보조 구조체
-
-/// <summary>
-/// Sort 보조 구조체
-/// </summary>
-[Serializable]
-public struct WaitingCombo
-{
-    public int[] unitTypes;
-    public WaitingDifficulty difficulty;
-
-    public int FilledCount
-    {
-        get
-        {
-            int c = 0;
-            for (int i = 0; i < unitTypes.Length; i++)
-                if (unitTypes[i] >= 0) c++;
-            return c;
-        }
-    }
-}
-
-    #endregion
 
