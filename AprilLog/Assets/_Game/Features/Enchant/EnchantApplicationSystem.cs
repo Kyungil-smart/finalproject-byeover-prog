@@ -12,6 +12,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 저장 관련 클래스 변수명 변경되어 적용함
 
+// 수정자 : 김영찬
+// 수정 내용 : 해당 부분이 확정된 인첸트 기획과 맞지 않아 Legacy처리 함
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,7 +22,7 @@ using UnityEngine;
 /// 인챈트 획득/강화 시 그 효과를 PlayerModel에 적용한다.
 /// InGameBootstrap이 생성·주입·구독을 담당(없으면 자동 생성).
 /// </summary>
-public class EnchantApplicationSystem : MonoBehaviour
+public class Legacy_EnchantApplicationSystem : MonoBehaviour
 {
     // ⚠️ INTERIM: 현재 더미 데이터의 LinkedStatType 코드 체계. (기획 enum 확정 시 교체)
     private const int StatType_Attack = 1;

@@ -37,7 +37,7 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private CombinationModel _combinationModel;
     [SerializeField] private EnchantModel _enchantModel;
     [Tooltip("비워두면 런타임에 자동 생성됨")]
-    [SerializeField] private EnchantApplicationSystem _enchantApplicationSystem;
+    [SerializeField] private Legacy_EnchantApplicationSystem _enchantApplicationSystem;
     [Tooltip("비워두면 런타임에 씬에서 탐색")]
     [SerializeField] private InGameGrowthSystem _growthSystem;
 
@@ -102,7 +102,7 @@ public class InGameBootstrap : MonoBehaviour
 
         // 인챈트 효과 적용 시스템: EnchantModel 이벤트 구독 (없으면 자동 생성 → 씬 배선 불필요)
         if (_enchantApplicationSystem == null)
-            _enchantApplicationSystem = gameObject.AddComponent<EnchantApplicationSystem>();
+            _enchantApplicationSystem = gameObject.AddComponent<Legacy_EnchantApplicationSystem>();
         _enchantApplicationSystem.Initialize(_playerModel, _enchantModel);
 
         // 인게임 성장 시스템(레벨/EXP) 초기화. 비어 있으면 씬에서 탐색.
