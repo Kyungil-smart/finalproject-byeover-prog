@@ -299,8 +299,11 @@ public class StageModel
         
         SpawnType sType = Enum.TryParse(_currentSpecialRule.WaveType, out SpawnType parsedType) ? parsedType : SpawnType.Normal;
         
-        // 특수 웨이브 타입에 따른 한 틱당 물량 설정
-        int spawnAmount = (sType == SpawnType.Rush) ? 2 : 1; // 러시 전용 2마리 (기획 4-1-2)
+        // 특수 웨이브 타입에 따른 한 틱당 물량 설정.
+        // 러시는 원래 2마리(기획 4-1-2)였으나 '몬스터 총량 50% 너프' 요청으로 1마리로 하향.
+        // (총량 = 틱 수 × 한 틱당 물량 → 물량 절반이면 총량도 절반. EndType가 Instant/Duration/WaveEnd 무엇이든 동일하게 50% 감소,
+        //  초당 생성률도 10→5마리/초로 떨어져 화면 과밀도 완화. 되돌리려면 러시만 2로 복구)
+        int spawnAmount = 1;
         
         // 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀을 사용!
         // 단, 룰의 MonsterWavePool_ID는 웨이브풀 '그룹' ID(1006~1008)라서 GetMonsterPoolId로

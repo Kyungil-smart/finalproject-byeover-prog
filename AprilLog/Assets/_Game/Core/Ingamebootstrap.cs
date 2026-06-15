@@ -338,8 +338,9 @@ public class InGameBootstrap : MonoBehaviour
         }
 
         // -- 장판 설정 (테이블 px 좌표계: 화면 폭 = 1440px) --
-        // 파이어브레스 1011~13: 최단거리 타겟 위치 고정 장판, 3회 타격 (Lv3는 범위 확대)
-        var fireBreath = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 500, heightPx = 700, pulseInterval = 0.4f, flashColor = new Color(1f, 0.3f, 0.05f, 0.35f) };
+        // 파이어브레스 1011~13: 최단거리 타겟 위치 고정 장판, 3회 타격 (Lv3는 범위 확대).
+        // style=FireBreath라 HazardRoutine 펄스루프를 우회 → 발사 간격은 pulseInterval이 아니라 SO의 fireBreathFlameInterval(0.5s)을 사용한다(아래 pulseInterval은 FireBreath에선 미사용).
+        var fireBreath = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.FireBreath, widthPx = 500, heightPx = 700, pulseInterval = 0.4f, flashColor = new Color(1f, 0.3f, 0.05f, 0.35f) };
         skillSystem.RegisterHazardSkill(1011, fireBreath);
         skillSystem.RegisterHazardSkill(1012, fireBreath);
         fireBreath.widthPx = 600; fireBreath.heightPx = 770;
