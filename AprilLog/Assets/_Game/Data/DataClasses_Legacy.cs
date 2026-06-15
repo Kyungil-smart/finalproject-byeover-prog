@@ -140,18 +140,7 @@ public class Legacy_LanguageEntry
     public string En;
 }
 
-// View 표시용 구조체
 
-[Serializable]
-public class Legacy_EnchantDisplayData
-{
-    public int EnchantId;
-    public string Name;
-    public string Description;
-    public int Level;
-    public string ImageKey;
-    public string TypeLabel;   // 카드 타입 표시용 (Presenter가 stat-type 기반으로 채움)
-}
 
 [Serializable]
 public class Legacy_StageDisplayData
@@ -161,29 +150,4 @@ public class Legacy_StageDisplayData
     public int StageOrder;
     public bool IsUnlocked;
     public bool IsCleared;
-}
-
-// 인게임 세이브
-
-[Serializable]
-public class Legacy_InGameSaveData
-{
-    public int chapterId;
-    public int clearedStage;
-    public int playerHP;
-    public int currentEXP;
-    public int inGameLevel;
-    public int[] puzzleSlots;
-    public int[] waitingSlots;
-    public List<Legacy_AcquiredEnchant> acquiredEnchants;
-    public int totalDamage;
-    public int maxCombo;
-    public int nextStageSeed;
-}
-
-[Serializable]
-public class Legacy_AcquiredEnchant
-{
-    public int enchantId;
-    public int level;
 }

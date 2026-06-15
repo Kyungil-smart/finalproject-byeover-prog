@@ -19,6 +19,9 @@
 // 6차 수정자 : 김영찬
 // 정산 창을 정옥님이 작성하신 코드로 변경
 
+// 7차 수정자 : 김영찬
+// SaveData 관련 Class Legacy 처리한 내용들을 SaveDataClasses.cs 신설 하면서 클래스명이 변화 한것 반영함
+
 using UnityEngine;
 // 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
@@ -75,7 +78,7 @@ public class InGameBootstrap : MonoBehaviour
 
         // [2] 이어하기 체크
         bool isResume = GameManager.Instance != null && GameManager.Instance.HasLocalSave();
-        Legacy_InGameSaveData saveData = null;
+        InGameSaveData saveData = null;
 
         if (isResume)
         {

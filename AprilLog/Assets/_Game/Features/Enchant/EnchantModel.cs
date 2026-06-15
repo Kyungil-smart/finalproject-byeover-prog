@@ -1,71 +1,259 @@
 // 담당자 : 정승우
 // 설명   : 인챈트 Model -- 보유 인챈트 목록 관리
 
+// 수정자 : 김영찬
+// 설명 : 기획서 - v1.04_인게임 성장 시스템_이균호 > 인첸트 시트 반영 (스킬/스탯 분리, 그룹별 보유 한도 적용), 스킬 파트 연동 이벤트 추가
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// 인게임에서 획득한 인챈트 목록과 레벨을 관리한다.
-/// 기획서: 스킬 인챈트 최대 5개, 조합 최대 3개, 콤보 최대 5개.
+/// 기획서: 스킬 인챈트 최대 5개(스킬 인첸트 중 조합 최대 3개) , 스텟 인첸트 최대 3개
 /// </summary>
 public class EnchantModel : MonoBehaviour
 {
+    [SerializeField] private EnchantListView _listView;
+    
     // ---------- 이벤트 ----------
-    public event Action<int, int> OnEnchantAcquired;    // enchantId, level
-    public event Action<int, int> OnEnchantLevelUp;     // enchantId, newLevel
-    public event Action<int> OnEnchantRemoved;          // enchantId
+    // 스킬 인첸트
+    // TODO: [스킬 담당자] 스킬 소환 및 인게임 액션 구현 시 아래 이벤트를 구독하여 처리해 주세요.
+    public event Action<int, int> OnSkillAcquired;     // Name, Level
+    public event Action<int, int> OnSkillLevelUp;      // Name, Level
+    public event Action<int> OnSkillRemoved;           // Name
+    
+    // 스텟 인첸트
+    public event Action<int, int> OnStatAcquired;    // Stat_Name, StatLevel
+    public event Action<int, int> OnStatLevelUp;     // Stat_Name, StatLevel
+    public event Action<int> OnStatRemoved;          // Stat_Name
+    
+    // ---------- Const ----------
+    // 스킬 그룹 ID
+    private const int GROUP_NORMAL_SKILL = 100000000;
+    private const int GROUP_COMBINATION_SKILL = 200000000;
+    private const int GROUP_COMBO_SKILL = 300000000;
 
+    // 스텟 그룹 ID
+    private const int GROUP_PROJECTILE_STAT = 100000;
+    private const int GROUP_HP_STAT = 200000;
+    private const int GROUP_CRIT_INTENSIFY_STAT = 300000;
+    private const int GROUP_CRIT_CHANCE_STAT = 400000;
+    private const int GROUP_CRIT_DAMAGE_STAT = 500000;
+    private const int GROUP_SKILL_DAMAGE_STAT = 600000;
+    private const int GROUP_EFFECT_INTENSIFY_STAT = 700000;
+    private const int GROUP_AREA_EXTENSION_STAT = 800000;
+    
     // ---------- 데이터 ----------
-    private Dictionary<int, int> _ownedEnchants = new Dictionary<int, int>();
+    // 스킬: Key = Name_ID, Value = 레벨과 그룹ID 보관
+    private Dictionary<int, AcquiredSkillData> _ownedSkills = new ();
+    public IReadOnlyDictionary<int, AcquiredSkillData> OwnedSkills => _ownedSkills;
+    
+    // 스탯: Key = Stat_Name_ID, Value = 레벨과 그룹ID 보관
+    private Dictionary<int, AcquiredStatData> _ownedStats = new ();
+    public IReadOnlyDictionary<int, AcquiredStatData> OwnedStats => _ownedStats;
 
-    public int GetOwnedCount() => _ownedEnchants.Count;
+    public struct AcquiredSkillData
+    {
+        public int Level;
+        public int GroupID;
+    }
+
+    public struct AcquiredStatData
+    {
+        public int Level;
+        public int GroupID;
+    }
 
     // ---------- 초기화 ----------
     public void Initialize()
     {
-        _ownedEnchants.Clear();
+        _ownedSkills.Clear();
+        _ownedStats.Clear();
+        _listView.InitializePresenter(this);
     }
 
-    public void RestoreFromSave(List<Legacy_AcquiredEnchant> saves)
+    // ---------- 획득 한도 체크 ----------
+    /// <summary>
+    /// 새로운 스킬을 획득할 수 있는 자리(여유 슬롯)가 있는지 확인합니다.
+    /// </summary>
+    public bool CanAcquireNewSkill(int nameId, int groupId)
     {
-        _ownedEnchants.Clear();
-        if (saves == null) return;
-
-        for (int i = 0; i < saves.Count; i++)
-            _ownedEnchants[saves[i].enchantId] = saves[i].level;
-    }
-
-    // ---------- 조작 ----------
-    public void AcquireEnchant(int enchantId)
-    {
-        if (_ownedEnchants.ContainsKey(enchantId))
+        // 이미 보유 중인 스킬이라면 단순히 레벨업이므로 슬롯을 차지하지 않음 (항상 true)
+        if (HasSkill(nameId))
         {
-            _ownedEnchants[enchantId]++;
-            OnEnchantLevelUp?.Invoke(enchantId, _ownedEnchants[enchantId]);
+            return true;
+        } 
+
+        // 전체 스킬 한도 체크 (최대 5개)
+        if (_ownedSkills.Count >= 5)
+        {
+            return false;
+        }
+
+        // 조합 스킬 한도 체크 (최대 3개)
+        if (groupId == GROUP_COMBINATION_SKILL)
+        {
+            int combinationCount = 0;
+            foreach (var skill in _ownedSkills.Values)
+            {
+                if (skill.GroupID == GROUP_COMBINATION_SKILL)
+                {
+                    combinationCount++;
+                }
+            }
+            
+            if (combinationCount >= 3)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 새로운 스탯을 획득할 수 있는 자리(여유 슬롯)가 있는지 확인합니다.
+    /// </summary>
+    public bool CanAcquireNewStat(int statNameId, int groupId)
+    {
+        // 이미 보유 중인 스탯이면 통과
+        if (HasStat(statNameId))
+        {
+            return true;
+        }
+        
+        // 스탯 전체 한도 체크 (최대 3개)
+        if (_ownedStats.Count >= 3)
+        {
+            return false;
+        }
+
+        return true;
+    }
+    
+    // ---------- 조작 ----------
+    public void AcquireSkill(int nameId, int groupId)
+    {
+        if (_ownedSkills.ContainsKey(nameId))
+        {
+            var data = _ownedSkills[nameId];
+            data.Level++;
+            _ownedSkills[nameId] = data;
+            
+            OnSkillLevelUp?.Invoke(nameId, data.Level);
         }
         else
         {
-            _ownedEnchants[enchantId] = 1;
-            OnEnchantAcquired?.Invoke(enchantId, 1);
+            _ownedSkills[nameId] = new AcquiredSkillData { Level = 1, GroupID = groupId };
+            OnSkillAcquired?.Invoke(nameId, 1);
         }
     }
 
-    public void RemoveEnchant(int enchantId)
+    public void AcquireStat(int statNameId, int groupId)
     {
-        if (_ownedEnchants.Remove(enchantId))
-            OnEnchantRemoved?.Invoke(enchantId);
+        if (_ownedStats.ContainsKey(statNameId))
+        {
+            var data = _ownedStats[statNameId];
+            data.Level++;
+            _ownedStats[statNameId] = data;
+            
+            OnStatLevelUp?.Invoke(statNameId, data.Level);
+        }
+        else
+        {
+            _ownedStats[statNameId] = new AcquiredStatData { Level = 1, GroupID = groupId };
+            OnStatAcquired?.Invoke(statNameId, 1);
+        }
+    }
+
+    public void RemoveSkill(int nameId)
+    {
+        if (_ownedSkills.Remove(nameId))
+            OnSkillRemoved?.Invoke(nameId);
+    }
+
+    public void RemoveStat(int statNameId)
+    {
+        if (_ownedStats.Remove(statNameId))
+            OnStatRemoved?.Invoke(statNameId);
     }
 
     // ---------- 조회 ----------
-    public bool HasEnchant(int enchantId) => _ownedEnchants.ContainsKey(enchantId);
-    public int GetEnchantLevel(int enchantId) => _ownedEnchants.TryGetValue(enchantId, out int lv) ? lv : 0;
+    public int GetHeldSkillCount() => _ownedSkills.Count;
+    public int GetHeldStatCount() => _ownedStats.Count;
 
-    public List<Legacy_AcquiredEnchant> ToSaveData()
+    public bool HasSkill(int nameId) => _ownedSkills.ContainsKey(nameId);
+    public bool HasStat(int statNameId) => _ownedStats.ContainsKey(statNameId);
+
+    public int GetSkillLevel(int nameId) => _ownedSkills.TryGetValue(nameId, out var data) ? data.Level : 0;
+    public int GetStatLevel(int statNameId) => _ownedStats.TryGetValue(statNameId, out var data) ? data.Level : 0;
+
+    // ---------- 세이브 / 로드 ----------
+    public void RestoreFromSave(List<AcquiredEnchantSaveData> saves)
     {
-        var list = new List<Legacy_AcquiredEnchant>();
-        foreach (var pair in _ownedEnchants)
-            list.Add(new Legacy_AcquiredEnchant { enchantId = pair.Key, level = pair.Value });
+        Initialize(); 
+        if (saves == null) return;
+
+        foreach (var save in saves)
+        {
+            int targetId = save.EnchantId; 
+            int targetLevel = save.EnchantId;
+
+            // 스킬 테이블에서 검색
+            int? skillGroupId = FindSkillGroupId(targetId);
+            if (skillGroupId.HasValue)
+            {
+                _ownedSkills[targetId] = new AcquiredSkillData { Level = targetLevel, GroupID = skillGroupId.Value };
+                continue; 
+            }
+
+            // 스탯 테이블에서 검색
+            int? statGroupId = FindStatGroupId(targetId);
+            if (statGroupId.HasValue)
+            {
+                _ownedStats[targetId] = new AcquiredStatData { Level = targetLevel, GroupID = statGroupId.Value };
+                continue;
+            }
+
+            Debug.LogWarning($"[EnchantModel] 세이브 복구 실패. 삭제되었거나 유효하지 않은 인챈트 ID: {targetId}");
+        }
+    }
+
+    public List<AcquiredEnchantSaveData> ToSaveData()
+    {
+        var list = new List<AcquiredEnchantSaveData>();
+
+        foreach (var pair in _ownedSkills)
+            list.Add(new AcquiredEnchantSaveData { EnchantId = pair.Key, Level = pair.Value.Level });
+
+        foreach (var pair in _ownedStats)
+            list.Add(new AcquiredEnchantSaveData { EnchantId = pair.Key, Level = pair.Value.Level });
+
         return list;
+    }
+    
+    private int? FindSkillGroupId(int nameId)
+    {
+        foreach (var group in DataManager.Instance.SpellRepo.GetAllSkillGroups().Values)
+        {
+            if (group.SkillNameChainData.ContainsKey(nameId))
+            {
+                return group.SkillGroup_ID;
+            }
+        }
+        return null;
+    }
+
+    private int? FindStatGroupId(int statNameId)
+    {
+        foreach (var group in DataManager.Instance.SpellRepo.GetAllStatGroups().Values)
+        {
+            if (group.StatNameChainData.ContainsKey(statNameId))
+            {
+                return group.StatGroup_ID;
+            }
+        }
+        return null;
     }
 }

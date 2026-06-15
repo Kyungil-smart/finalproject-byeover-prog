@@ -46,7 +46,7 @@ public class EnchantCardUI : MonoBehaviour
     /// <summary>
     /// 실제 데이터 구조를 받아 UI 텍스트를 갱신
     /// </summary>
-    public void Setup(Legacy_EnchantDisplayData data)
+    public void Setup(EnchantDisplayData data)
     {
         if (data == null) return;
 
