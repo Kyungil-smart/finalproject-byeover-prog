@@ -330,7 +330,7 @@ public class InGameBootstrap : MonoBehaviour
     // 불 속성 스킬의 '실행 설정'(장판 모양/소환 구성 — SkillID→실행 방식 매핑)을 등록하고,
     // 스킬 인챈트 시스템을 연결한다. 트리거/레시피는 여기서 등록하지 않는다 —
     // 레벨업 인챈트 선택에서 스킬 인챈트를 획득하면 SkillEnchantSystem이 등록한다 (테이블 v1.03 정식 흐름).
-    private void RegisterFireSkills(CombatSystem combatSystem, bool isResume, Legacy_InGameSaveData saveData)
+    private void RegisterFireSkills(CombatSystem combatSystem, bool isResume, InGameSaveData saveData)
     {
         var skillSystem = FindFirstObjectByType<SkillSystem>();
         var spellRepo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
