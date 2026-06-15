@@ -3,6 +3,9 @@
 //          - ScenarioView 연출 확인용. 실제 데이터 담당자 연동 시 삭제/교체.
 //          - View의 OnAdvanceRequested/OnSkipRequested를 구독해 더미 대사를 순서대로 먹인다.
 
+// 1차 수정자 : 조규민
+// 수정 내용 : 하우징 책장 다시보기로 진입한 경우 선택 챕터 기반 임시 연출 대사를 재생하도록 분기
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -56,7 +59,10 @@ public class ScenarioDummyDriver : MonoBehaviour
         if (_view == null)
             _view = FindFirstObjectByType<ScenarioView>();
 
-        if (_lines == null || _lines.Count == 0)
+        // 추가:조규민 기능 설명: 하우징 책장 다시보기로 진입한 경우 기본 더미 대사 대신 선택 챕터 대사를 구성한다.
+        if (ReplayStorySelectionContext.IsReplayMode)
+            FillReplayStory();
+        else if (_lines == null || _lines.Count == 0)
             FillDefault();
     }
 
@@ -82,6 +88,10 @@ public class ScenarioDummyDriver : MonoBehaviour
     
     public void Begin()
     {
+        // 추가:조규민 기능 설명: Begin 시점에도 다시보기 선택 정보가 최신 상태로 반영되도록 대사를 다시 구성한다.
+        if (ReplayStorySelectionContext.IsReplayMode)
+            FillReplayStory();
+
         if (_view == null)
         {
             Debug.LogWarning("[ScenarioDummyDriver] ScenarioView가 연결되지 않았습니다.", this);
@@ -185,5 +195,57 @@ public class ScenarioDummyDriver : MonoBehaviour
         Add(true,  "래리",    "몬스터를 처치할 때마다 경험치를 얻을 수도 있지!", ScenarioSpeakerSlot.Right, _bg3002, true);
         Add(true,  "래리",    "경험치를 채웠으니 성장을 할 때네!",    ScenarioSpeakerSlot.Right, _bg3002, true);
         Add(true,  "래리",    "레벨업을 하면 인챈트를 선택할 수 있다고 말해줬었지?", ScenarioSpeakerSlot.Right, _bg3002, true);
+    }
+
+    private void FillReplayStory()
+    {
+        // 추가:조규민 기능 설명: 다시보기 팝업에서 선택한 ChapterTestData 정보를 스토리 씬 연출용 임시 대사로 변환한다.
+        _lines = new List<DummyLine>();
+
+        string chapterLabel = string.IsNullOrWhiteSpace(ReplayStorySelectionContext.ChapterLabel)
+            ? "CHAPTER." + (ReplayStorySelectionContext.ChapterIndex + 1)
+            : ReplayStorySelectionContext.ChapterLabel;
+        string chapterName = string.IsNullOrWhiteSpace(ReplayStorySelectionContext.ChapterName)
+            ? "Chapter " + (ReplayStorySelectionContext.ChapterIndex + 1)
+            : ReplayStorySelectionContext.ChapterName;
+        string chapterDescription = string.IsNullOrWhiteSpace(ReplayStorySelectionContext.ChapterDescription)
+            ? "기록된 이야기를 다시 펼칩니다."
+            : ReplayStorySelectionContext.ChapterDescription;
+
+        void AddReplay(bool box, string name, string text, ScenarioSpeakerSlot speaker, Sprite background, bool showBoth)
+        {
+            // 추가:조규민 기능 설명: 기존 더미 연출과 같은 초상화/배경 규칙으로 다시보기 대사 한 줄을 추가한다.
+            DummyLine line = new DummyLine
+            {
+                showTextbox = box,
+                name = name,
+                text = text,
+                speaker = speaker,
+                background = background
+            };
+
+            if (showBoth)
+            {
+                line.portraitLeft = _spriteApril;
+                line.portraitRight = _spriteLarry;
+            }
+            else if (speaker == ScenarioSpeakerSlot.Left)
+            {
+                line.portraitLeft = _spriteApril;
+            }
+            else if (speaker == ScenarioSpeakerSlot.Right)
+            {
+                line.portraitRight = _spriteLarry;
+            }
+
+            _lines.Add(line);
+        }
+
+        AddReplay(false, string.Empty, chapterLabel, ScenarioSpeakerSlot.None, _bg3001, false);
+        AddReplay(true, "에이프릴", "책장에 기록된 이야기를 다시 펼쳐볼게.", ScenarioSpeakerSlot.Left, _bg3001, true);
+        AddReplay(true, "래리", chapterName + " 이야기구나!", ScenarioSpeakerSlot.Right, _bg3001, true);
+        AddReplay(true, "에이프릴", chapterDescription, ScenarioSpeakerSlot.Left, _bg3002, true);
+        AddReplay(true, "래리", "이 장면은 추후 실제 시나리오 데이터와 연결되면 같은 연출로 재생될 거야.", ScenarioSpeakerSlot.Right, _bg3002, true);
+        AddReplay(true, "에이프릴", "지금은 하우징 책장 다시보기 프로토타입으로 확인 중이야.", ScenarioSpeakerSlot.Left, _bg3002, true);
     }
 }
