@@ -165,19 +165,16 @@ public class ArtifactManager : MonoBehaviour
     {
         if (grade == "Rare")
         {
-            // 레어 등급 분해 시 강화석 N개 획득
             this.UpgradeStone += (amount * N);
             Debug.Log($"[자동 분해] 레어 {amount}개 분해 → 강화석 {amount * N}개 획득");
         }
         else if (grade == "Epic")
         {
-            // 에픽 등급 분해 시 강화석 M개 획득
             this.UpgradeStone += (amount * M);
             Debug.Log($"[자동 분해] 에픽 {amount}개 분해 → 강화석 {amount * M}개 획득");
         }
         else if (grade == "Legendary")
         {
-            // 레전더리 분해 시 조각 획득 (기획서 2-4-3-3)
             this.LegendaryShard += amount;
             Debug.Log($"[자동 분해] 레전더리 {amount}개 분해 → 조각 {amount}개 획득");
         }
