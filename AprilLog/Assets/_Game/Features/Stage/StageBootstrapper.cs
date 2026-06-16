@@ -88,7 +88,13 @@ public class StageBootstrapper : MonoBehaviour
         }
         
         List<StageWaveRuleData> waveRules = waveRuleDict.Values.ToList();
-        
+
+        // 테스트 씬 전용 튜닝: SkillTestStageTuning 컴포넌트가 "씬에 있을 때만" 스폰 간격/수량을 덮어쓴다.
+        // 정식 씬에는 이 컴포넌트가 없으므로 영향 없음. (룰은 복제본으로 적용되어 공용 SO 무손상)
+        var testTuning = FindFirstObjectByType<SkillTestStageTuning>();
+        if (testTuning != null)
+            waveRules = testTuning.ApplyTuning(waveRules);
+
         StageModel newModel = new StageModel(stageData, waveRules, rng, _loopManager.WaveTransitionDelay);
         _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
 

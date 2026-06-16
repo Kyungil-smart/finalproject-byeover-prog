@@ -302,8 +302,18 @@ public class StageModel
         // 특수 웨이브 타입에 따른 한 틱당 물량 설정
         int spawnAmount = (sType == SpawnType.Rush) ? 2 : 1; // 러시 전용 2마리 (기획 4-1-2)
         
-        // 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀 ID를 사용!
-        int poolId = _currentSpecialRule.MonsterWavePool_ID; 
+        // 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀을 사용!
+        // 단, 룰의 MonsterWavePool_ID는 웨이브풀 '그룹' ID(1006~1008)라서 GetMonsterPoolId로
+        // 실제 몬스터풀 ID(6~8)로 변환해야 한다. (직접 넘기면 풀 미발견 → 특수 웨이브 전부 스폰 실패였음)
+        int poolId = -1;
+        if (_currentSpecialRule.MonsterWavePool_ID > 0)
+            poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(_currentSpecialRule.MonsterWavePool_ID, _currentSpecialRule.WaveType);
+
+        // 러시(2001)는 데이터에 그룹이 미지정(0) — 물량러시 기획 의도대로 일반 몬스터 풀로 폴백.
+        if (poolId < 0)
+            poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(1001, "Normal");
+
+        if (poolId < 0) return; // 그래도 못 찾으면 스폰 포기 (경고 스팸 방지)
         
         for (int i = 0; i < spawnAmount; i++)
         {

@@ -19,6 +19,9 @@
 // 6차 수정자 : 김영찬
 // 정산 창을 정옥님이 작성하신 코드로 변경
 
+// 7차 수정자 : 김영찬
+// SaveData 관련 Class Legacy 처리한 내용들을 SaveDataClasses.cs 신설 하면서 클래스명이 변화 한것 반영함
+
 using UnityEngine;
 // 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
@@ -34,7 +37,7 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private CombinationModel _combinationModel;
     [SerializeField] private EnchantModel _enchantModel;
     [Tooltip("비워두면 런타임에 자동 생성됨")]
-    [SerializeField] private EnchantApplicationSystem _enchantApplicationSystem;
+    [SerializeField] private Legacy_EnchantApplicationSystem _enchantApplicationSystem;
     [Tooltip("비워두면 런타임에 씬에서 탐색")]
     [SerializeField] private InGameGrowthSystem _growthSystem;
 
@@ -75,7 +78,7 @@ public class InGameBootstrap : MonoBehaviour
 
         // [2] 이어하기 체크
         bool isResume = GameManager.Instance != null && GameManager.Instance.HasLocalSave();
-        Legacy_InGameSaveData saveData = null;
+        InGameSaveData saveData = null;
 
         if (isResume)
         {
@@ -91,15 +94,19 @@ public class InGameBootstrap : MonoBehaviour
         // 아웃게임 성장 보너스 적용 (홍정옥)
         int characterLevel = GetCharacterLevel();
         DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
-            out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus);
-        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, stunBonus, slowBonus);
+            out int hpBonus, out int attackBonus, out int effectPower, out int flatPierce);
+        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, effectPower, flatPierce);
 
         _combinationModel.Initialize();
+
+        // 불 속성 스킬(화염 작렬/정령 등)의 레시피·트리거는 더 이상 시작부터 켜지 않는다.
+        // 레벨업 → 인챈트 선택에서 해당 '스킬 인챈트'를 획득해야 SkillEnchantSystem이 등록한다 (테이블 v1.03 정식 흐름).
+
         _enchantModel.Initialize();
 
         // 인챈트 효과 적용 시스템: EnchantModel 이벤트 구독 (없으면 자동 생성 → 씬 배선 불필요)
         if (_enchantApplicationSystem == null)
-            _enchantApplicationSystem = gameObject.AddComponent<EnchantApplicationSystem>();
+            _enchantApplicationSystem = gameObject.AddComponent<Legacy_EnchantApplicationSystem>();
         _enchantApplicationSystem.Initialize(_playerModel, _enchantModel);
 
         // 인게임 성장 시스템(레벨/EXP) 초기화. 비어 있으면 씬에서 탐색.
@@ -155,6 +162,10 @@ public class InGameBootstrap : MonoBehaviour
 
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();
+
+        // [5.5] 불 속성 스킬 실행 설정(장판/소환) 등록 + 스킬 인챈트 시스템 연결.
+        // 스킬 자체는 레벨업 인챈트 선택으로 획득해야 발동된다 (자동공격도 일반 스킬 인챈트 획득 시 활성화).
+        RegisterFireSkills(combatSystem, isResume, saveData);
 
         // [6] 실제 웨이브 시스템 시작 (데이터 기반). 더미 테스터는 비활성화.
         int chapterId = (isResume && saveData != null) ? saveData.chapterId : _defaultChapterId;
@@ -314,6 +325,59 @@ public class InGameBootstrap : MonoBehaviour
             return wp.y;
         }
         return _fallbackCharacterY;
+    }
+
+    // 불 속성 스킬의 '실행 설정'(장판 모양/소환 구성 — SkillID→실행 방식 매핑)을 등록하고,
+    // 스킬 인챈트 시스템을 연결한다. 트리거/레시피는 여기서 등록하지 않는다 —
+    // 레벨업 인챈트 선택에서 스킬 인챈트를 획득하면 SkillEnchantSystem이 등록한다 (테이블 v1.03 정식 흐름).
+    private void RegisterFireSkills(CombatSystem combatSystem, bool isResume, InGameSaveData saveData)
+    {
+        var skillSystem = FindFirstObjectByType<SkillSystem>();
+        var spellRepo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        if (skillSystem == null || spellRepo == null)
+        {
+            Debug.LogWarning("[InGameBootstrap] SkillSystem/SpellRepo가 없어 불 속성 스킬 설정을 등록하지 못했습니다.");
+            return;
+        }
+
+        // -- 장판 설정 (테이블 px 좌표계: 화면 폭 = 1440px) --
+        // 파이어브레스 1011~13: 최단거리 타겟 위치 고정 장판, 3회 타격 (Lv3는 범위 확대)
+        var fireBreath = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 500, heightPx = 700, pulseInterval = 0.4f, flashColor = new Color(1f, 0.3f, 0.05f, 0.35f) };
+        skillSystem.RegisterHazardSkill(1011, fireBreath);
+        skillSystem.RegisterHazardSkill(1012, fireBreath);
+        fireBreath.widthPx = 600; fireBreath.heightPx = 770;
+        skillSystem.RegisterHazardSkill(1013, fireBreath);
+
+        // 대지 균열 1041~43: 전방 전체 폭 장판, 순차 다회 타격
+        var earthCrack = new HazardConfig { placement = HazardPlacement.PlayerFront, widthPx = 1440, heightPx = 300, pulseInterval = 0.35f, flashColor = new Color(1f, 0.55f, 0.1f, 0.35f) };
+        skillSystem.RegisterHazardSkill(1041, earthCrack);
+        skillSystem.RegisterHazardSkill(1042, earthCrack);
+        skillSystem.RegisterHazardSkill(1043, earthCrack);
+
+        // 메테오 1051~53: 매 펄스 랜덤 타겟 — 마커(Flame_ellipse)→낙하(Fireball_loop_2)→폭발(explosion_5) 3단 시퀀스
+        var meteor = new HazardConfig { placement = HazardPlacement.RandomTarget, style = HazardStyle.MeteorStrike, widthPx = 350, heightPx = 350, pulseInterval = 0.15f, flashColor = new Color(1f, 0.15f, 0.05f, 0.45f) };
+        skillSystem.RegisterHazardSkill(1051, meteor);
+        skillSystem.RegisterHazardSkill(1052, meteor);
+        skillSystem.RegisterHazardSkill(1053, meteor);
+
+        // 화염 정령 1031~33: 정령 2마리가 같은 레벨의 화염 작렬을 1초마다 5초간 시전
+        for (int lv = 1; lv <= 3; lv++)
+        {
+            var burst = spellRepo.GetSkill(1020 + lv); // 화염 작렬 1021~23
+            skillSystem.RegisterSummonSkill(1030 + lv, new SummonConfig { castSkill = burst, lifetime = 5f, castInterval = 1f });
+        }
+
+        // -- 스킬 인챈트 시스템: 인챈트 획득/레벨업 → 스킬 해금·교체 --
+        var skillEnchantSystem = GetComponent<SkillEnchantSystem>();
+        if (skillEnchantSystem == null)
+            skillEnchantSystem = gameObject.AddComponent<SkillEnchantSystem>();
+        skillEnchantSystem.Initialize(_enchantModel, skillSystem, _combinationModel, combatSystem);
+
+        // 이어하기: 세이브된 스킬 인챈트를 최종 레벨로 재등록 (RestoreFromSave는 이벤트를 안 쏘므로 직접)
+        if (isResume && saveData != null)
+            skillEnchantSystem.ReapplyFromSave(saveData.acquiredEnchants);
+
+        Debug.Log("[InGameBootstrap] 불 속성 스킬 설정 등록 완료 — 스킬은 레벨업 인챈트 선택으로 획득 시 발동");
     }
 
     // Boot의 PoolManager 풀이 (단독 _InGame 실행이거나 머지로 DontDestroyOnLoad가 유실돼) 비어 있어도

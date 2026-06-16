@@ -86,12 +86,12 @@ public class ConfigRepo : MonoBehaviour
     // 홍정옥 요청: 1레벨부터 targetLevel까지의 성장 보너스 누적합 계산
     // 예: 캐릭터가 10레벨이면 1~10레벨까지의 MaxHP, Attack 등 증가량을 전부 더함
     public void GetOutGrowthBonusUntilLevel(int targetLevel,
-        out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus)
+        out int hpBonus, out int attackBonus, out int effectPower, out int flatPierce)
     {
         hpBonus = 0;
         attackBonus = 0;
-        stunBonus = 0;
-        slowBonus = 0;
+        effectPower = 0;
+        flatPierce = 0;
 
         for (int lv = 1; lv <= targetLevel; lv++)
         {
@@ -100,8 +100,8 @@ public class ConfigRepo : MonoBehaviour
 
             hpBonus += data.MaxHP;
             attackBonus += data.Attack;
-            stunBonus += data.EffectPower;
-            slowBonus += data.EffectPower;
+            effectPower += data.EffectPower;
+            flatPierce += data.FlatPierce;
         }
     }
 

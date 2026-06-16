@@ -7,6 +7,9 @@
 // 수정자 : 김영찬
 // ScreenNavigator의 변경에 따른 버튼 연결 최신화
 
+// 수정자 : 김영찬
+// 수정내용 : 기획서 - v1.04_인게임 성장 시스템_이균호 > 인첸트 시트 반영 (확률 직렬화 Config 연동, 스킬/스탯 통합 출력, 한도 초과 시 교체 진입점 구성)
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,19 +20,24 @@ public class EnchantSelectPresenter
 {
     private readonly IEnchantSelectView _view;
     private readonly EnchantModel _model;
-    private readonly Legacy_CharacterRepo _repo;
+    private readonly SpellRepo _repo;
     private readonly ScreenNavigator _navigator;
-    private EnchantSelectionLogic _selectionLogic;
-    private List<Legacy_EnchantMasterData> _currentChoices;
+    private readonly EnchantChangePresenter _changePresenter;
+    
+    // 확률 생성기
+    private readonly EnchantSelector _selector; 
+    
+    // 현재 화면에 떠 있는 3개의 카드 정보
+    private List<EnchantCandidate> _currentChoices;
 
-    public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model,
-        Legacy_CharacterRepo repo, ScreenNavigator navigator)
+    public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model, SpellRepo repo, ScreenNavigator navigator, EnchantProbabilityConfig config, EnchantChangePresenter changePresenter)
     {
         _view = view;
         _model = model;
         _repo = repo;
         _navigator = navigator;
-        _selectionLogic = new EnchantSelectionLogic(repo, model, new System.Random());
+        _changePresenter = changePresenter;
+        _selector = new EnchantSelector(_repo, config);
 
         _view.OnChoiceSelected += HandleChoice;
         _view.OnSkipSelected += HandleSkip;
@@ -41,66 +49,77 @@ public class EnchantSelectPresenter
         _view.OnSkipSelected -= HandleSkip;
     }
 
-    public void ShowSelection()
+    public void ShowSelection(int pickCount = 3)
     {
-        _currentChoices = _selectionLogic.GenerateChoices();
-        var displayData = new Legacy_EnchantDisplayData[_currentChoices.Count];
+        _currentChoices = _selector.GenerateChoices(_model, pickCount);
+        DisplayChoicesToView();
+    }
+    
+    // ---------- UI용 포멧으로 변환 후 전달 ----------
+    private void DisplayChoicesToView()
+    {
+        var displayData = new EnchantDisplayData[_currentChoices.Count];
+        
         for (int i = 0; i < _currentChoices.Count; i++)
         {
-            var master = _currentChoices[i];
-            int nextLevel = _model.GetEnchantLevel(master.EnchantID) + 1;
-            displayData[i] = new Legacy_EnchantDisplayData
+            var candidate = _currentChoices[i];
+
+            displayData[i] = new EnchantDisplayData
             {
-                EnchantId = master.EnchantID,
-                Name = master.Name,
-                Level = nextLevel,
-                TypeLabel = GetTypeLabel(master.LinkedStatType),
-                Description = BuildDescription(master, nextLevel),
-                ImageKey = master.ImageKey
+                EnchantId = candidate.Specific_ID,
+                Level = candidate.Level,
+                // 카드 상단에 스킬/스탯 텍스트 표시
+                TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                
+                // 추후 로컬라이징 연동
+                Name = $"NameID: {candidate.Name_ID}", 
+                Description = candidate.Type == EnchantType.Skill ? 
+                    $"데미지: {candidate.SkillData.Dmg}" : 
+                    $"수치 증가: {candidate.StatData.Variation_2}"
             };
         }
+        
         _view.SetChoices(displayData);
     }
 
-    // INTERIM: stat-type 코드 → 카드 타입 라벨. (기획 enum 확정 시 교체)
-    private static string GetTypeLabel(int statType)
-    {
-        switch (statType)
-        {
-            case 1: return "공격";
-            case 2: return "관통";
-            case 3: return "체력";
-            case 4: return "치명타 확률";
-            case 5: return "치명타 피해";
-            default: return "특수";
-        }
-    }
-
-    // 다음 레벨에 도달했을 때의 누적 효과를 카드 설명으로 생성.
-    private string BuildDescription(Legacy_EnchantMasterData master, int level)
-    {
-        var lv = _repo != null ? _repo.GetEnchantLevel(master.EnchantID, level) : null;
-        float v = lv != null ? lv.Value : 0f;
-        switch (master.LinkedStatType)
-        {
-            case 1: return $"공격력 +{Mathf.RoundToInt(v * 100)}%";
-            case 2: return $"관통 +{Mathf.RoundToInt(v * 100)}%";
-            case 3: return $"최대 체력 +{Mathf.RoundToInt(v)}";
-            case 4: return $"치명타 확률 +{Mathf.RoundToInt(v * 100)}%";
-            case 5: return $"치명타 피해 +{Mathf.RoundToInt(v)}%";
-            default: return master.Name;
-        }
-    }
-
+    // ---------- 유저 클릭 처리 ----------
     private void HandleChoice(int index)
     {
         if (index < 0 || index >= _currentChoices.Count) return;
-        Debug.Log($"[인챈트선택] index={index} id={_currentChoices[index].EnchantID} → AcquireEnchant 호출");
-        _model.AcquireEnchant(_currentChoices[index].EnchantID);
-        _navigator.OnCloseButtonClick();
+        var selected = _currentChoices[index];
+
+        if (selected.Type == EnchantType.Skill)
+        {
+            if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
+            {
+                _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
+                ClosePopup(); 
+            }
+            else
+            {
+                _changePresenter.OpenChangePopup(selected); 
+            }
+        }
+        else if (selected.Type == EnchantType.Stat)
+        {
+            if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
+            {
+                _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
+                ClosePopup();
+            }
+            else
+            {
+                _changePresenter.OpenChangePopup(selected); 
+            }
+        }
+    }
+    
+    private void HandleSkip()
+    {
+        ClosePopup();
     }
 
-    private void HandleSkip()
+    private void ClosePopup()
     {
         _navigator.OnCloseButtonClick();
     }

@@ -28,16 +28,16 @@ public class PlayerModel : MonoBehaviour, IDamageable
     // ---------- 데이터 ----------
     public int CurrentHP { get; private set; }
     public int MaxHP { get; private set; }
-    public float Attack { get; private set; }
+    public int Attack { get; private set; }
     public float CriticalRate { get; private set; }
     public float CriticalDamage { get; private set; }
     public int FlatPierce { get; private set; }
     public float PercentagePierce { get; private set; }
-    public int StunPower { get; private set; }
-    public int SlowPower { get; private set; }
+    public int EffectPower { get; private set; }
     public int HitCount { get; private set; }
     public int AoE { get; private set; }
     public int MaxTargets { get; private set; }
+    public float AttackSpeed { get; private set; }
     public bool IsDead => CurrentHP <= 0;
 
     private int _baseAttack;
@@ -53,15 +53,15 @@ public class PlayerModel : MonoBehaviour, IDamageable
         CriticalDamage = characterData.CriticalDamage;
         FlatPierce = characterData.FlatPierce;
         PercentagePierce = characterData.PercentagePierce;
-        StunPower = characterData.EffectPower;
-        SlowPower = characterData.EffectPower;
+        EffectPower = characterData.EffectPower;
         HitCount = characterData.HitCount;
         AoE = characterData.AoE;
         MaxTargets = characterData.MaxTargets;
+        AttackSpeed = data.BaseAttackSpeed;
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 
-    public void RestoreFromSave(Legacy_InGameSaveData save)
+    public void RestoreFromSave(InGameSaveData save)
     {
         CurrentHP = save.playerHP;
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
@@ -88,15 +88,14 @@ public class PlayerModel : MonoBehaviour, IDamageable
     }
 
     // 아웃게임 성장 보너스 적용 (홍정옥 로직 기반)
-    // OutLevelData 기준: MaxHP, Attack, StunPower, SlowPower
-    // ToDo : 아웃게임 성장 DB 변경사항 반영 할 것
-    public void ApplyStatBonus_OutGameBonus(int hpBonus, int attackBonus, int stunBonus, int slowBonus)
+    // OutLevelData 기준: MaxHP, Attack, effectPower, flatPierce
+    public void ApplyStatBonus_OutGameBonus(int hpBonus, int attackBonus, int effectPower, int flatPierce)
     {
         MaxHP += hpBonus;
         CurrentHP += hpBonus;
         Attack = _baseAttack + attackBonus;
-        StunPower += stunBonus;
-        SlowPower += slowBonus;
+        EffectPower += effectPower;
+        FlatPierce += flatPierce;
         
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
@@ -111,9 +110,32 @@ public class PlayerModel : MonoBehaviour, IDamageable
     
     public void ApplyHpBonus_Rate(float bonus)
     {
-        if (bonus < 1) bonus = 1 + bonus;
-        MaxHP += Mathf.FloorToInt(MaxHP * bonus);
-        CurrentHP += Mathf.FloorToInt(CurrentHP * bonus);
+        bonus = 1 + bonus;
+        MaxHP = Mathf.FloorToInt(MaxHP * bonus);
+        CurrentHP = Mathf.FloorToInt(CurrentHP * bonus);
+        OnHPChanged?.Invoke(CurrentHP, MaxHP);
+    }
+
+    public void ApplyHpBonus_Remove(int bonus)
+    {
+        MaxHP -= bonus;
+        if(MaxHP < 1) MaxHP = 1;
+        
+        CurrentHP -= bonus;
+        if(CurrentHP < 1) CurrentHP = 1;
+        
+        OnHPChanged?.Invoke(CurrentHP, MaxHP);
+    }
+
+    public void ApplyHpBonus_RemoveF(float bonus)
+    {
+        if(bonus > 1) bonus = 1 - bonus;
+        MaxHP = Mathf.FloorToInt(MaxHP * bonus);
+        if(MaxHP < 1) MaxHP = 1;
+        
+        CurrentHP = Mathf.FloorToInt(CurrentHP * bonus);
+        if(CurrentHP < 1) CurrentHP = 1;
+        
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 
@@ -125,7 +147,20 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public void ApplyAttackBonus_Rate(float bonus)
     {
         if (bonus < 1) bonus = 1 + bonus;
-        Attack *= bonus;
+        Attack = Mathf.FloorToInt(Attack * bonus);
+    }
+
+    public void ApplyAttackBonus_RemoveA(int bonus)
+    {
+        Attack -= bonus;
+        if (Attack < 0) Attack = 0;
+    }
+
+    public void ApplyAttackBonus_RemoveR(float bonus)
+    {
+        if(bonus > 1) bonus = 1 - bonus;
+        Attack = Mathf.FloorToInt(Attack * bonus);
+        if (Attack < 0) Attack = 0;
     }
 
     // 관통(PercentagePierce) 가산. 인챈트 효과 적용용.
@@ -165,5 +200,27 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public void ApplyCriDmgBonus_AddF(float bonus)
     {
         CriticalDamage += bonus;
+    }
+
+    public void ApplyAttackSpeed_Add(float bonus)
+    {
+        AttackSpeed -= bonus;
+    }
+
+    public void ApplyAttackSpeed_Rate(float bonus)
+    {
+        bonus = 1 - bonus;
+        AttackSpeed *= bonus;
+    }
+
+    public void ApplyAttackSpeed_RemoveA(float bonus)
+    {
+        AttackSpeed += bonus;
+    }
+    
+    public void ApplyAttackSpeed_RemoveR(float bonus)
+    {
+        bonus = 1 + bonus;
+        AttackSpeed *= bonus;
     }
 }

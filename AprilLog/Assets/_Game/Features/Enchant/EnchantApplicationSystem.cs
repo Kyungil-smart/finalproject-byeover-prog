@@ -9,6 +9,12 @@
 //    기획에서 stat-type enum이 확정되면 ApplyStat()의 switch 만 교체하면 된다.
 //    또한 데이터에 Add/Rate 구분 필드가 없어, 적용 방식은 코드 컨벤션으로 정한다.
 
+// 수정자 : 김영찬
+// 수정 내용 : 저장 관련 클래스 변수명 변경되어 적용함
+
+// 수정자 : 김영찬
+// 수정 내용 : 해당 부분이 확정된 인첸트 기획과 맞지 않아 Legacy처리 함
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,7 +22,7 @@ using UnityEngine;
 /// 인챈트 획득/강화 시 그 효과를 PlayerModel에 적용한다.
 /// InGameBootstrap이 생성·주입·구독을 담당(없으면 자동 생성).
 /// </summary>
-public class EnchantApplicationSystem : MonoBehaviour
+public class Legacy_EnchantApplicationSystem : MonoBehaviour
 {
     // ⚠️ INTERIM: 현재 더미 데이터의 LinkedStatType 코드 체계. (기획 enum 확정 시 교체)
     private const int StatType_Attack = 1;
@@ -40,15 +46,15 @@ public class EnchantApplicationSystem : MonoBehaviour
     private void Subscribe()
     {
         if (_enchantModel == null) return;
-        _enchantModel.OnEnchantAcquired += HandleAcquired;
-        _enchantModel.OnEnchantLevelUp += HandleLevelUp;
+        _enchantModel.OnStatAcquired += HandleAcquired;
+        _enchantModel.OnStatLevelUp += HandleLevelUp;
     }
 
     private void Unsubscribe()
     {
         if (_enchantModel == null) return;
-        _enchantModel.OnEnchantAcquired -= HandleAcquired;
-        _enchantModel.OnEnchantLevelUp -= HandleLevelUp;
+        _enchantModel.OnStatAcquired -= HandleAcquired;
+        _enchantModel.OnStatLevelUp -= HandleLevelUp;
     }
 
     private void OnDestroy() => Unsubscribe();
@@ -73,13 +79,13 @@ public class EnchantApplicationSystem : MonoBehaviour
     /// 어긋나 세이브/로드 시 스탯이 변하므로, 반드시 lv 1..level 델타를 순서대로 재생한다.
     /// PlayerModel이 base+아웃게임보너스로 막 초기화된 직후에 호출되어야 한다.
     /// </summary>
-    public void ReapplyFromSave(List<Legacy_AcquiredEnchant> saved)
+    public void ReapplyFromSave(List<AcquiredEnchantSaveData> saved)
     {
         if (saved == null) return;
         for (int i = 0; i < saved.Count; i++)
         {
-            int enchantId = saved[i].enchantId;
-            int level = saved[i].level;
+            int enchantId = saved[i].EnchantId;
+            int level = saved[i].Level;
             for (int lv = 1; lv <= level; lv++)
                 ApplyDelta(enchantId, lv);
         }
@@ -90,6 +96,9 @@ public class EnchantApplicationSystem : MonoBehaviour
     private void ApplyDelta(int enchantId, int level)
     {
         if (!TryGetMaster(enchantId, out var master)) return;
+
+        // 스킬 인챈트(LinkedSkillID>0)는 SkillEnchantSystem이 스킬 등록으로 처리한다. 여기선 스탯만.
+        if (master.LinkedSkillID > 0) return;
 
         float current = GetValue(enchantId, level);
         float prev = level > 1 ? GetValue(enchantId, level - 1) : 0f;

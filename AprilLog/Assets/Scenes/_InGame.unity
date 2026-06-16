@@ -1513,8 +1513,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9150d9e410a6ac748ac8215e14ed60a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantSelectView
-  _enchantModel: {fileID: 673703853}
+  _probabilityConfig:
+    SkillPoolBaseWeight: 100
+    StatPoolBaseWeight: 100
+    SkillStage1_HeldWeight: 30
+    SkillStage1_UnheldWeight: 70
+    SkillStage2_HeldWeight: 50
+    SkillStage2_UnheldWeight: 50
+    SkillStage3_HeldWeight: 80
+    SkillStage3_UnheldWeight: 20
+    Stat_HeldWeight: 60
+    Stat_UnheldWeight: 40
+  _model: {fileID: 673703853}
   _navigator: {fileID: 1980292180}
+  _changeView: {fileID: 1446440523}
   _choiceContainer: {fileID: 1181439378}
   _skipButton: {fileID: 1674580069}
   _rerollButton: {fileID: 338214905}
@@ -2003,6 +2015,7 @@ Transform:
   - {fileID: 458159162}
   - {fileID: 1515552495}
   - {fileID: 1679270270}
+  - {fileID: 359282422}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &144412836
@@ -4597,6 +4610,52 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 355035346}
   m_CullTransparentMesh: 1
+--- !u!1 &359282421
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 359282422}
+  - component: {fileID: 359282423}
+  m_Layer: 0
+  m_Name: EnchantCalculator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &359282422
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 359282421}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 140313796}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &359282423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 359282421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49ab24cdc644c774bb9ca55178cdcabc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageCalculator
+  _playerModel: {fileID: 1508674580}
+  _enchantModel: {fileID: 673703853}
 --- !u!1 &370584936
 GameObject:
   m_ObjectHideFlags: 0
@@ -8035,6 +8094,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5b66d35492f5e04abff8773b7ae2f57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantModel
+  _listView: {fileID: 951242438}
 --- !u!4 &673703854
 Transform:
   m_ObjectHideFlags: 0
@@ -17143,11 +17203,12 @@ MonoBehaviour:
   - {fileID: 1273865716}
   - {fileID: 1384413551}
   _afterEnchantChangeInfoTable: {fileID: 1856112191}
-  _changeExecuteButton: {fileID: 272648903}
+  _confirmButton: {fileID: 272648903}
   _cancelButton: {fileID: 1136372635}
   _headerText: {fileID: 1349802590}
   _changeExecuteButtonText: {fileID: 1082178137}
   _cancelButtonText: {fileID: 151535659}
+  _listView: {fileID: 951242438}
 --- !u!114 &1446440524
 MonoBehaviour:
   m_ObjectHideFlags: 0

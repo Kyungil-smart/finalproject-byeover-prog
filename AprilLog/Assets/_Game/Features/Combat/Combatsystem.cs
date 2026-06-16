@@ -42,6 +42,7 @@ public class CombatSystem : MonoBehaviour
     // ---------- Private ----------
     private ISortNotifier _sortNotifier;
     private float _autoAttackTimer;
+    private int _autoAttackCount; // 누적 자동공격 횟수 (N회마다 일반 스킬 인챈트 발동용)
 
     private void Awake()
     {
@@ -104,13 +105,23 @@ public class CombatSystem : MonoBehaviour
  
     private void Update()
     {
-        if (!_autoAttackEnabled) return;
- 
+        if (!_autoAttackEnabled || _skillSystem == null) return;
+
         _autoAttackTimer += Time.deltaTime;
         if (_autoAttackTimer >= _autoAttackInterval)
         {
             _autoAttackTimer = 0f;
-            _skillSystem.FireBasicAttack();
+
+            // 자동공격 N회마다 발동하는 일반 스킬 인챈트 (인챈트 테이블 v1.03 — 파이어브레스 등).
+            // 카운트는 '발사 성공'만 센다 — 몬스터 공백(웨이브 전환 등) 중 틱에 N회째가 걸려
+            // 파이어브레스 발동이 무음 소실되는 것을 방지.
+            if (_skillSystem.FireBasicAttack())
+            {
+                _autoAttackCount++;
+                var autoSkills = _skillSystem.GetTriggeredAutoAttackSkills(_autoAttackCount);
+                for (int i = 0; i < autoSkills.Count; i++)
+                    _skillSystem.FireSkill(autoSkills[i], AttackType.Auto);
+            }
         }
     }
  
