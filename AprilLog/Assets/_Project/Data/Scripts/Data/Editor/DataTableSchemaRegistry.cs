@@ -65,6 +65,7 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("GachaReward", "gacha_reward", "GachaRewardData", "GachaRewardTable", true),
         
         new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
+        new DataTableSchema("ItemMaster", "item_master", "ItemData", "ItemTable", true),
         
         new DataTableSchema("LegendaryShardExchange", "legendary_shard_exchange", "LegendaryShardExchangeData", "LegendaryShardExchangeTable", true),
         

@@ -139,6 +139,67 @@ public class StatGroupChainData
 
 #endregion
 
+#region GearRepo 지원
+
+/// <summary>
+/// 기어 업그레이드 코스트를 저장 및 계산 도우미
+/// </summary>
+public class GearUpgradeSupporter
+{
+    public int GearId { get; private set; }
+    public int StartLevel { get; private set; }
+    public int EndLevel { get; private set; }
+    public Dictionary<int, UpgradeCostData> UpgradeCosts { get; private set; }
+
+    public GearUpgradeSupporter(int gearId, int startLevel, int endLevel)
+    {
+        GearId = gearId;
+        StartLevel = startLevel;
+        EndLevel = endLevel;
+        UpgradeCosts = new Dictionary<int, UpgradeCostData>();
+    }
+
+    public void AddData(GearUpgradeCostData data)
+    {
+        if (!UpgradeCosts.ContainsKey(data.Type))
+            UpgradeCosts[data.Type] = new UpgradeCostData(data.Type ,data.BaseAmount, data.GrowthValue);
+    }
+    
+    public int? CalculateUpgradeCosts(int curLevel, int costType)
+    {
+        if(curLevel < StartLevel || curLevel > EndLevel)
+        {
+            Debug.LogWarning($"[GearRepo] {curLevel}Level is wrong range Gear Level in this Gear");
+            return null;
+        }
+        
+        foreach (var data in UpgradeCosts.Values)
+        {
+            if (data.Type == costType)
+            {
+                return Mathf.FloorToInt(data.BaseAmount * data.GrowthValue * curLevel);
+            }
+        }
+        
+        return null;
+    }
+}
+
+public class UpgradeCostData
+{
+    public int Type { get; private set; }
+    public int BaseAmount { get; private set; }
+    public float GrowthValue { get; private set; }
+    public UpgradeCostData(int type, int baseAmount, float growthValue)
+    {
+        Type = type;
+        BaseAmount = baseAmount;
+        GrowthValue = growthValue;
+    }
+}
+
+#endregion
+
 #region 인첸트 시스템 지원
 
 public enum EnchantType { Skill, Stat }

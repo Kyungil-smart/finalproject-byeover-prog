@@ -336,6 +336,14 @@ public class InLevelData
     public float HPRecovery;
 }
 
+[Serializable]
+public class ItemData
+{
+    public int Item_ID;
+    public string ItemType; // Currency, GachaTicket, InGameItem, Material, RandomGearReward
+    public int Name;
+    public int Explanation;
+}
 
 #endregion
 
