@@ -73,7 +73,7 @@ public class ConfigRepo : MonoBehaviour
     public Legacy_AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
     public StaminaData GetStaminaData(int id) => GetData(_stamina, id, nameof(GetStaminaData));
     public BattleRewardData GetBattleReward(int id) => GetData(_battleRewards, id, nameof(GetBattleReward));
-    public ItemData GetItem(int id) => GetData(_items, id, nameof(GetItem));
+    public ItemData GetItemInfo(int id) => GetData(_items, id, nameof(GetItemInfo));
 
     public IReadOnlyDictionary<int, Legacy_AchievementData> GetAllAchievements()
     {
