@@ -33,7 +33,7 @@ public class GearRepo : MonoBehaviour
     private Dictionary<int, GearMasterData> _gears;
     private Dictionary<int, GearLevelData> _levels;
     private Dictionary<string, GearGradeData> _grades;
-    private Dictionary<int, GearUpgradeCostData> _upgradeCosts;
+    private Dictionary<int, GearUpgradeSupporter> _upgradeCosts;
     private Dictionary<string, Dictionary<string, GearAscensionCostData>> _ascensionCosts;
     private Dictionary<string, GearDismantleData> _dismantles;
     private Dictionary<int, LegendaryShardExchangeData> _shardExchange;
@@ -73,7 +73,7 @@ public class GearRepo : MonoBehaviour
         _gears = BuildDictionary(_gearTable, nameof(_gearTable), r => r.Gear_ID);
         _levels = BuildDictionary(_levelTable, nameof(_levelTable), r => r.Gear_ID);
         _grades = BuildDictionary(_gradeTable, nameof(_gradeTable), r => r.GearGrade);
-        _upgradeCosts = BuildDictionary(_upgradeCostTable, nameof(_upgradeCostTable), r => r.Gear_ID);
+        _upgradeCosts = BuildGearUpgradeCostDictionary();
         _ascensionCosts = BuildAscensionCostDictionary();
         _dismantles = BuildDictionary(_dismantleTable, nameof(_dismantleTable), r => r.GearGrade);
         _shardExchange = BuildDictionary(_shardExchangeTable, nameof(_shardExchangeTable), r => r.Exchange_ID);
@@ -84,7 +84,7 @@ public class GearRepo : MonoBehaviour
         _specialEffects = BuildDictionary(_specialEffectTable, nameof(_specialEffectTable), r => r.Special_ID);
     }
     
-    // ---------- Get Data ----------
+    // ---------- 조회 API ----------
     public GachaBoxData GetGachaBox(int id) => GetData(_gachas, id, nameof(GetGachaBox));
     public FreeGachaBoxData GetFreeGachaBox(int id) => GetData(_freeGachas, id, nameof(GetFreeGachaBox));
     public PaidGachaBoxData GetPaidGachaBox(int id) => GetData(_paidGachas, id, nameof(GetPaidGachaBox));
@@ -93,7 +93,6 @@ public class GearRepo : MonoBehaviour
     public GearMasterData GetGearData(int id) => GetData(_gears, id, nameof(GetGearData));
     public GearLevelData GetGearLevel(int id) => GetData(_levels, id, nameof(GetGearLevel));
     public GearGradeData GetGearGrade(string gearGrade) => GetData(_grades, gearGrade, nameof(GetGearGrade));
-    public GearUpgradeCostData GetGearUpgradeCost(int id) => GetData(_upgradeCosts, id, nameof(GetGearUpgradeCost));
     public GearDismantleData GetGearDismantleData(string gearGrade) => GetData(_dismantles, gearGrade, nameof(GetGearDismantleData));
     public LegendaryShardExchangeData GetLegendaryShardExchangeData(int id) => GetData(_shardExchange, id, nameof(GetLegendaryShardExchangeData));
     
@@ -121,6 +120,32 @@ public class GearRepo : MonoBehaviour
         
         Debug.LogWarning($"[GearRepo] GetAscensionCosts data not found. GearGrade: {gearGrade}, MaterialType: {materialType}");
         return null;
+    }
+
+    /// <summary>
+    /// 기어 업그레이드 코스트 계산
+    /// </summary>
+    /// <param name="gearId">DB의 기어 ID</param>
+    /// <param name="curLevel">기어의 현재 레벨</param>
+    /// <param name="costType">기어 업그레이드에 들어가는 재료 ID (ItemMaster 시트 참고)</param>
+    /// <returns></returns>
+    public int GetGearUpgradeCost(int gearId, int curLevel, int costType)
+    {
+        if (_upgradeCosts == null)
+        {
+            Debug.LogWarning($"[GearRepo] GetAscensionCosts cache is not initialized. Get 0.");
+            return 0;
+        }
+
+        if (_upgradeCosts.TryGetValue(gearId, out var temp))
+        {
+            int? cost = temp.CalculateUpgradeCosts(curLevel, costType);
+            
+            if (cost != null) return cost.Value;
+        }
+        
+        Debug.LogWarning($"[GearRepo] GetGearUpgradeCost data not found. Get 0.\nGearID: {gearId}, CurLevel: {curLevel}, CostType: {costType}");
+        return 0;
     }
     
     
@@ -174,13 +199,13 @@ public class GearRepo : MonoBehaviour
         
         if (table == null)
         {
-            Debug.LogWarning($"[GearRepo] AscensionCostTable is not assigned. Empty dictionary will be used.");
+            Debug.LogWarning($"[GearRepo] GearAscensionCostTable is not assigned. Empty dictionary will be used.");
             return result;
         }
         
         if (table.rows == null)
         {
-            Debug.LogWarning($"[GearRepo] AscensionCostTable.rows is null. Empty dictionary will be used.");
+            Debug.LogWarning($"[GearRepo] GearAscensionCostTable.rows is null. Empty dictionary will be used.");
             return result;
         }
 
@@ -189,7 +214,7 @@ public class GearRepo : MonoBehaviour
             var row = table.rows[i];
             if (row == null)
             {
-                Debug.LogWarning($"[GearRepo] AscensionCostTable.rows[{i}] is null. Skip.");
+                Debug.LogWarning($"[GearRepo] GearAscensionCostTable.rows[{i}] is null. Skip.");
                 continue;
             }
             
@@ -203,6 +228,47 @@ public class GearRepo : MonoBehaviour
             }
 
             pool[key2] = row;
+        }
+        
+        return result;
+    }
+
+    private Dictionary<int, GearUpgradeSupporter> BuildGearUpgradeCostDictionary()
+    {
+        var result = new Dictionary<int, GearUpgradeSupporter>();
+        var table = _upgradeCostTable;
+        
+        if (table == null)
+        {
+            Debug.LogWarning($"[GearRepo] GearUpgradeCostTable is not assigned. Empty dictionary will be used.");
+            return result;
+        }
+        
+        if (table.rows == null)
+        {
+            Debug.LogWarning($"[GearRepo] GearUpgradeCostTable.rows is null. Empty dictionary will be used.");
+            return result;
+        }
+        
+        for (int i = 0; i < table.rows.Count; i++)
+        {
+            var row = table.rows[i];
+            if (row == null)
+            {
+                Debug.LogWarning($"[GearRepo] GearUpgradeCostTable.rows[{i}] is null. Skip.");
+                continue;
+            }
+            
+            var key = row.Gear_ID;
+            
+            if (!result.TryGetValue(key, out var pool))
+            {
+                pool = new GearUpgradeSupporter(row.Gear_ID, row.StartLevel, row.EndLevel);
+                pool.AddData(row);
+                result.Add(key, pool);
+            }
+            
+            pool.AddData(row);
         }
         
         return result;
