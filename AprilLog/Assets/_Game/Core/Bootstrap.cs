@@ -5,7 +5,7 @@
 // 수정 내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, _boot 씬에서만 초기화 하면 되도록 수정
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 로그인 이벤트 분기, 시작 하단 로딩바, 이전 세션 옵션, 로비 로딩 애니메이션, Google 안내 팝업, 초기 Portrait 안정화, 시작 로딩 완료 이벤트 누락 방어, Editor Email/Password 테스트 시 이전 세션 자동 로그인 방지 추가
+// 수정 내용 : 로그인 이벤트 분기, 시작 하단 로딩바, 이전 세션 옵션, 로비 로딩 애니메이션, Google 안내 팝업, 초기 Portrait 안정화, 시작 로딩 완료 이벤트 누락 방어, Editor Email/Password 테스트 시 이전 세션 자동 로그인 방지, 이전 세션 자동 로그인 실패 시 로그인 화면 복구 추가
 
 using System;
 using System.Collections;
@@ -30,7 +30,7 @@ public class Bootstrap : MonoBehaviour
     [Tooltip("로그인 UI 연결 전 개발 확인용 자동 게스트 로그인 여부")]
     [SerializeField] private bool _autoGuestSignInForDevelopment; // 추가: 조규민 - Login UI 연결 전 테스트할 때만 Inspector에서 켠다.
     [Tooltip("켜면 Firebase 이전 세션이 있을 때 시작 터치/로그인 화면을 건너뛰고 자동으로 로비에 진입합니다.")]
-    [SerializeField] private bool _usePreviousSessionAutoSignIn; // 추가: 조규민 - 기본 실행에서는 시작 화면을 보여주기 위해 이전 세션 자동 로그인을 옵션화한다.
+    [SerializeField] private bool _usePreviousSessionAutoSignIn = true; // 추가: 조규민 - Firebase에 남아 있는 Google 이전 세션은 앱 재실행 시 자동 로그인으로 복구한다.
     [SerializeField] private LoginView _loginView; // 추가: 조규민 - Boot 씬에 직접 배치한 LoginCanvas의 LoginView를 Inspector에서 연결한다.
     [Tooltip("기본 화면에서 하단 로딩바 완료 이벤트를 보내는 View입니다. StartTouchCanvas에 연결된 StartView를 지정합니다.")]
     [SerializeField] private StartView _startView; // 추가: 조규민 - Boot 씬에 직접 배치한 StartTouchCanvas의 StartView를 Inspector에서 연결한다.
@@ -139,6 +139,11 @@ public class Bootstrap : MonoBehaviour
         if (!loginSucceeded)
         {
             Debug.LogWarning("[Bootstrap] 로그인 실패. 로그인 화면 유지: " + loginError);
+            if (isAutomaticLoginFlow)
+            {
+                ShowLoginAfterAutomaticLoginFailure();
+            }
+
             yield break;
         }
 
@@ -214,6 +219,23 @@ public class Bootstrap : MonoBehaviour
         }
 
         return !GameManager.Instance.RequiresEditorGoogleEmailPasswordInput;
+    }
+
+    private void ShowLoginAfterAutomaticLoginFailure()
+    {
+        if (_loginView == null)
+        {
+            Debug.LogWarning("[Bootstrap] 자동 로그인 실패 후 표시할 LoginView 참조가 없습니다. Boot Inspector 연결을 확인해 주세요.", this);
+            return;
+        }
+
+        if (_startView != null)
+        {
+            _startView.gameObject.SetActive(false);
+        }
+
+        ShowConnectedLoginView();
+        GameManager.Instance.ShowLoginUI();
     }
 
     // 추가: 조규민 - Inspector에 연결된 LoginCanvas를 활성화해 약관 동의 모달이 포함된 로그인 화면을 표시한다.

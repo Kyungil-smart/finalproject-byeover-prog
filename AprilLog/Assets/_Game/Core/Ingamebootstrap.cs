@@ -19,6 +19,9 @@
 // 6차 수정자 : 김영찬
 // 정산 창을 정옥님이 작성하신 코드로 변경
 
+// 7차 수정자 : 김영찬
+// SaveData 관련 Class Legacy 처리한 내용들을 SaveDataClasses.cs 신설 하면서 클래스명이 변화 한것 반영함
+
 using UnityEngine;
 // 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
@@ -34,7 +37,7 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private CombinationModel _combinationModel;
     [SerializeField] private EnchantModel _enchantModel;
     [Tooltip("비워두면 런타임에 자동 생성됨")]
-    [SerializeField] private EnchantApplicationSystem _enchantApplicationSystem;
+    [SerializeField] private Legacy_EnchantApplicationSystem _enchantApplicationSystem;
     [Tooltip("비워두면 런타임에 씬에서 탐색")]
     [SerializeField] private InGameGrowthSystem _growthSystem;
 
@@ -75,7 +78,7 @@ public class InGameBootstrap : MonoBehaviour
 
         // [2] 이어하기 체크
         bool isResume = GameManager.Instance != null && GameManager.Instance.HasLocalSave();
-        Legacy_InGameSaveData saveData = null;
+        InGameSaveData saveData = null;
 
         if (isResume)
         {
@@ -91,8 +94,8 @@ public class InGameBootstrap : MonoBehaviour
         // 아웃게임 성장 보너스 적용 (홍정옥)
         int characterLevel = GetCharacterLevel();
         DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
-            out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus);
-        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, stunBonus, slowBonus);
+            out int hpBonus, out int attackBonus, out int effectPower, out int flatPierce);
+        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, effectPower, flatPierce);
 
         _combinationModel.Initialize();
 
@@ -103,7 +106,7 @@ public class InGameBootstrap : MonoBehaviour
 
         // 인챈트 효과 적용 시스템: EnchantModel 이벤트 구독 (없으면 자동 생성 → 씬 배선 불필요)
         if (_enchantApplicationSystem == null)
-            _enchantApplicationSystem = gameObject.AddComponent<EnchantApplicationSystem>();
+            _enchantApplicationSystem = gameObject.AddComponent<Legacy_EnchantApplicationSystem>();
         _enchantApplicationSystem.Initialize(_playerModel, _enchantModel);
 
         // 인게임 성장 시스템(레벨/EXP) 초기화. 비어 있으면 씬에서 탐색.
@@ -327,7 +330,7 @@ public class InGameBootstrap : MonoBehaviour
     // 불 속성 스킬의 '실행 설정'(장판 모양/소환 구성 — SkillID→실행 방식 매핑)을 등록하고,
     // 스킬 인챈트 시스템을 연결한다. 트리거/레시피는 여기서 등록하지 않는다 —
     // 레벨업 인챈트 선택에서 스킬 인챈트를 획득하면 SkillEnchantSystem이 등록한다 (테이블 v1.03 정식 흐름).
-    private void RegisterFireSkills(CombatSystem combatSystem, bool isResume, Legacy_InGameSaveData saveData)
+    private void RegisterFireSkills(CombatSystem combatSystem, bool isResume, InGameSaveData saveData)
     {
         var skillSystem = FindFirstObjectByType<SkillSystem>();
         var spellRepo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;

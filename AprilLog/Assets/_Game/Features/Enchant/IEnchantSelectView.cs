@@ -7,8 +7,7 @@ public interface IEnchantSelectView
 {
     void Show();
     void Hide();
-    void SetChoices(Legacy_EnchantDisplayData[] choices);
-    void ShowDeleteConfirm(Legacy_EnchantDisplayData toDelete, Legacy_EnchantDisplayData toAcquire);
+    void SetChoices(EnchantDisplayData[] choices);
     event Action<int> OnChoiceSelected;
     event Action OnSkipSelected;
     event Action<int> OnDeleteConfirmed;

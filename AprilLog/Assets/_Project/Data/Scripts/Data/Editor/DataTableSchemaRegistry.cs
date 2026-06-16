@@ -6,6 +6,9 @@
 // 2차 수정자 : 김영찬
 // 수정 내용 : 관리중인 리스트와 Legacy 리스트 분리
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : CBT 추가 컨텐츠에 적용되는 DB 추가
+
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
@@ -39,24 +42,50 @@ public static class DataTableSchemaRegistry
     public static readonly IReadOnlyList<DataTableSchema> Schemas = new List<DataTableSchema>
     {
         // Managing List <알파벳 순서로 정렬>
+        new DataTableSchema("BattleReward", "battle_reward", "BattleRewardData", "BattleRewardTable", true),
+        
         new DataTableSchema("ChangeReward", "change_reward", "ChangeRewardData", "ChangeRewardTable", true),
         new DataTableSchema("ChapterMaster", "chapter_master", "ChapterData", "ChapterTable", true),
         new DataTableSchema("CharacterMaster", "character_master", "CharacterMasterData", "CharacterMasterTable", true),
         new DataTableSchema("CharacterStatus", "character_status", "CharacterStatusData", "CharacterStatusTable", true),
         new DataTableSchema("CommonStatus", "common_status", "CommonStatusData", "CommonStatusTable", true),
         
+        new DataTableSchema("EffectTable", "effect_table", "EffectTableData", "EffectMasterTable", true),
+        
+        new DataTableSchema("FreeGachaBox", "free_gacha_box", "FreeGachaBoxData", "FreeGachaBoxTable", true),
+        
+        new DataTableSchema("GachaBox", "gacha_box", "GachaBoxData", "GachaBoxTable", true),
+        new DataTableSchema("GearMaster", "gear_master", "GearMasterData", "GearMasterTable", true),
+        new DataTableSchema("GearGrade", "gear_grade", "GearGradeData", "GearGradeTable", true),
+        new DataTableSchema("GearLevel", "gear_level", "GearLevelData", "GearLevelTable", true),
+        new DataTableSchema("GearUpgradeCost", "gear_upgrade_cost", "GearUpgradeCostData", "GearUpgradeCostTable", true),
+        new DataTableSchema("GearSpecialEffect", "gear_special_effect", "GearSpecialEffectData", "GearSpecialEffectTable", true),
+        new DataTableSchema("GearDismantle", "gear_dismantle", "GearDismantleData", "GearDismantleTable", true),
+        new DataTableSchema("GearAscensionCost", "gear_ascension_cost", "GearAscensionCostData", "GearAscensionCostTable", true),
+        new DataTableSchema("GachaReward", "gacha_reward", "GachaRewardData", "GachaRewardTable", true),
+        
         new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
+        new DataTableSchema("ItemMaster", "item_master", "ItemData", "ItemTable", true),
+        
+        new DataTableSchema("LegendaryShardExchange", "legendary_shard_exchange", "LegendaryShardExchangeData", "LegendaryShardExchangeTable", true),
         
         new DataTableSchema("MonsterPool", "monster_pool", "MonsterPoolData", "MonsterPoolTable", true),
         new DataTableSchema("MonsterStageScaling", "monster_stage_scaling", "MonsterStageScalingData", "MonsterStageScalingTable", true),
         new DataTableSchema("MonsterStatus", "monster_status", "MonsterStatusData", "MonsterStatusTable", true),
         new DataTableSchema("MonsterWavePool", "monster_wave_pool", "MonsterWavePoolData", "MonsterPoolMasterTable", true),
-        
+
         new DataTableSchema("OutLevel", "out_level", "OutLevelData", "OutLevelTable", true),
         
+        new DataTableSchema("PaidGachaBox", "paid_gacha_box", "PaidGachaBoxData", "PaidGachaBoxTable", true),
+        
+        new DataTableSchema("SkillTable", "skill_table", "SkillTableData", "SkillEnchantTable", true),
         new DataTableSchema("SpecialWaveRule", "special_wave_rule", "SpecialWaveRuleData", "SpecialWaveRuleTable", true),
         new DataTableSchema("StageMaster", "stage_master", "StageData", "StageDataTable", true),
         new DataTableSchema("StageWaveRule", "stage_wave_rule", "StageWaveRuleData", "StageWaveRuleTable", true),
+        new DataTableSchema("Stamina", "stamina", "StaminaData", "StaminaTable", true),
+        new DataTableSchema("StatTable", "stat_table", "StatTableData", "StatEnchantTable", true),
+        
+        new DataTableSchema("UnitTable", "unit_table", "UnitTableData", "UnitMasterTable", true),
         
         // Legacy List
         new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),

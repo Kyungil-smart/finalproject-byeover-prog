@@ -7,6 +7,8 @@
 
 // 수정자 : 김영찬 - 새로운 DB 반영하여 Repo 분리 및 신설
 
+// 수정자 : 김영찬 - GearRepo 신설
+
 using System;
 using UnityEngine;
 
@@ -54,12 +56,14 @@ public class DataManager : MonoBehaviour
     [SerializeField] private StageRepo _stageRepo;
     [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private SpellRepo _spellRepo; //해당 부분은 아직 기획이 넘어오지 않은 Legacy DB임
+    [SerializeField] private GearRepo _gearRepo;
     
     // ---------- Public ----------
     public CharacterRepo CharacterRepo => _characterRepo;
     public StageRepo StageRepo => _stageRepo;
     public ConfigRepo ConfigRepo => _configRepo;
     public SpellRepo SpellRepo => _spellRepo;
+    public GearRepo GearRepo => _gearRepo;
     
     private void Awake()
     {
@@ -95,6 +99,7 @@ public class DataManager : MonoBehaviour
         InitializeRepo(nameof(_stageRepo), _stageRepo, () => _stageRepo.Initialize());
         InitializeRepo(nameof(_configRepo), _configRepo, () => _configRepo.Initialize());
         InitializeRepo(nameof(_spellRepo), _spellRepo, () => _spellRepo.Initialize());
+        InitializeRepo(nameof(_gearRepo), _gearRepo, () => _gearRepo.Initialize());
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");

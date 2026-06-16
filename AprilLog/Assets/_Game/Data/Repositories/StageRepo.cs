@@ -23,7 +23,6 @@ public class StageRepo : MonoBehaviour
     [SerializeField] private MonsterPoolMasterTable _poolMasterTable;
     [SerializeField] private MonsterPoolTable _poolTable;
     
-    [FormerlySerializedAs("_spawnRuleTable")]
     [Header("스폰 규칙 데이터")]
     [SerializeField] private StageWaveRuleTable _waveRuleTable;
     [SerializeField] private SpecialWaveRuleTable _specialRuleTable;

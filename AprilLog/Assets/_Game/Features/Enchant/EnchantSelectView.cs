@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>
@@ -29,9 +30,13 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public event Action<int> OnDeleteConfirmed;
     public event Action OnRerollSelected;
 
+    [Header("인챈트 등장 확률 설정")]
+    [SerializeField] private EnchantProbabilityConfig _probabilityConfig;
+    
     [Header("참조")]
-    [SerializeField] private EnchantModel _enchantModel;
+    [SerializeField] private EnchantModel _model;
     [SerializeField] private ScreenNavigator _navigator;
+    [SerializeField] private EnchantChangeView _changeView;
 
     [Header("UI")]
     [Tooltip("Horizontal Layout Group이 붙은 Content")]
@@ -43,7 +48,9 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [Tooltip("EnchantCard 프리팹")]
     [SerializeField] private GameObject _cardPrefab;
 
-    private EnchantSelectPresenter _presenter;
+    private EnchantSelectPresenter _selectPresenter;
+    private EnchantChangePresenter _changePresenter;
+    
     private bool _isInitialized;
     
     // 런타임에 생성된 카드들을 추적하기 위한 캐시 리스트
@@ -57,24 +64,39 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 return;
 
             _isInitialized = true;
-            _presenter = new EnchantSelectPresenter(this, _enchantModel, Legacy_DataManager.Instance.CharacterRepo, _navigator);
+            _changePresenter = new EnchantChangePresenter(_changeView, _model, _navigator);
+            
+            _selectPresenter = new EnchantSelectPresenter(
+                this, 
+                _model, 
+                DataManager.Instance.SpellRepo,
+                _navigator, 
+                _probabilityConfig,
+                _changePresenter
+            );
+            
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
             if (_rerollButton != null)
                 _rerollButton.onClick.AddListener(() => OnRerollSelected?.Invoke());
         }
         
         // 팝업이 열릴 때 자동으로 프레젠터에게 선택지를 생성하라고 요청
-        _presenter?.ShowSelection();
+        _selectPresenter?.ShowSelection();
     }
 
-    private void OnDestroy() => _presenter?.Dispose();
+    private void OnDestroy()
+    {
+        _selectPresenter?.Dispose();
+        _changePresenter?.Dispose();
+    }
 
     public void Show() => _navigator.ShowEnchantSelection();
     public void Hide() => _navigator.OnCloseButtonClick();
+    
     /// <summary>
     /// Presenter가 계산된 인챈트 데이터를 넘겨주면, 프리팹을 생성하고 UI를 갱신합니다.
     /// </summary>
-    public void SetChoices(Legacy_EnchantDisplayData[] choices)
+    public void SetChoices(EnchantDisplayData[] choices)
     {
         if (choices == null || _choiceContainer == null || _cardPrefab == null) return;
 
@@ -121,10 +143,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             }
         }
     }
-    public void ShowDeleteConfirm(Legacy_EnchantDisplayData toDelete, Legacy_EnchantDisplayData toAcquire)
-    {
-        
-    }
 
     // View 버튼에서 호출
     public void SelectChoice(int index) => OnChoiceSelected?.Invoke(index);
@@ -152,7 +170,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
     private bool HasRequiredReferences()
     {
-        if (_enchantModel != null && _navigator != null && _skipButton != null && Legacy_DataManager.Instance.CharacterRepo != null && _cardPrefab != null)
+        if (_model != null && _navigator != null && _skipButton != null && Legacy_DataManager.Instance.CharacterRepo != null && _cardPrefab != null)
             return true;
 
         Debug.LogWarning("[EnchantSelectView] 필수 참조가 비어 있어 초기화를 건너뜁니다.", this);

@@ -37,15 +37,15 @@ public class SkillEnchantSystem : MonoBehaviour
     private void Subscribe()
     {
         if (_enchantModel == null) return;
-        _enchantModel.OnEnchantAcquired += HandleChanged;
-        _enchantModel.OnEnchantLevelUp += HandleChanged;
+        _enchantModel.OnSkillAcquired += HandleChanged;
+        _enchantModel.OnSkillAcquired += HandleChanged;
     }
 
     private void Unsubscribe()
     {
         if (_enchantModel == null) return;
-        _enchantModel.OnEnchantAcquired -= HandleChanged;
-        _enchantModel.OnEnchantLevelUp -= HandleChanged;
+        _enchantModel.OnSkillAcquired -= HandleChanged;
+        _enchantModel.OnSkillLevelUp -= HandleChanged;
     }
 
     private void OnDestroy() => Unsubscribe();
@@ -59,11 +59,11 @@ public class SkillEnchantSystem : MonoBehaviour
     /// 이어하기: 세이브된 인챈트의 최종 레벨을 1회씩 적용한다.
     /// (스탯과 달리 스킬 등록은 교체식이라 델타 재생이 필요 없다.)
     /// </summary>
-    public void ReapplyFromSave(List<Legacy_AcquiredEnchant> saved)
+    public void ReapplyFromSave(List<AcquiredEnchantSaveData> saved)
     {
         if (saved == null) return;
         for (int i = 0; i < saved.Count; i++)
-            Apply(saved[i].enchantId, saved[i].level);
+            Apply(saved[i].EnchantId, saved[i].Level);
     }
 
     private void Apply(int enchantId, int level)
