@@ -14,38 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GachaBoxTable
   rows:
   - Gacha_ID: 1
-    GachaName: RareBox
-    CostType: Gold
-    CostAmount: 500
-    RareRate: 0.85
-    EpicRate: 0.15
-    LegendaryRate: 0
-    FreeDrawType: Cooldown
-    FreeCooldownHour: 24
-    AdRequired: 0
-    PityType: None
-    PityCount: 0
-  - Gacha_ID: 2
-    GachaName: EpicBox
-    CostType: Diamond
-    CostAmount: 20
+    CostAmount: 0
     RareRate: 0.7
     EpicRate: 0.29
     LegendaryRate: 0.01
-    FreeDrawType: AdDaily
-    FreeCooldownHour: 24
-    AdRequired: 0
     PityType: None
     PityCount: 0
+    Name: 0
+    Explanation: 0
+  - Gacha_ID: 2
+    CostAmount: 0
+    RareRate: 0.7
+    EpicRate: 0.29
+    LegendaryRate: 0.01
+    PityType: None
+    PityCount: 0
+    Name: 0
+    Explanation: 0
   - Gacha_ID: 3
-    GachaName: LegendaryBox
-    CostType: Diamond
-    CostAmount: 40
+    CostAmount: 0
     RareRate: 0.6
-    EpicRate: 0.37
-    LegendaryRate: 0.03
-    FreeDrawType: None
-    FreeCooldownHour: 0
-    AdRequired: 0
-    PityType: SelectPity
-    PityCount: 50
+    EpicRate: 0.35
+    LegendaryRate: 0.05
+    PityType: RandomLegendary
+    PityCount: 100
+    Name: 0
+    Explanation: 0

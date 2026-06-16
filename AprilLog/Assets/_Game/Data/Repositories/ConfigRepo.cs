@@ -19,6 +19,7 @@ using UnityEngine;
 /// </summary>
 public class ConfigRepo : MonoBehaviour
 {
+    // ---------- SO 참조 (Inspector에서 드래그) ----------
     [Header("성장 데이터")]
     [SerializeField] private InLevelTable _inLevelTable;
     [SerializeField] private OutLevelTable _outLevelTable;
@@ -28,17 +29,21 @@ public class ConfigRepo : MonoBehaviour
     
     [Header("보상 데이터")]
     [SerializeField] private ChangeRewardTable _changeRewardTable;
+    [SerializeField] private BattleRewardTable _battleRewardTable;
     
     [Header("행동력 데이터")]
     [SerializeField] private StaminaTable _staminaTable;
 
+    // ---------- Dictionary 캐시 ----------
     private Dictionary<int, InLevelData> _inLevel;
     private Dictionary<int, OutLevelData> _outLevel;
     private Dictionary<int, Legacy_AchievementData> _achievements;
     private List<ChangeRewardData> _changeRewards;
+    private Dictionary<int, BattleRewardData> _battleRewards;
     private Dictionary<int, StaminaData> _stamina;
     private bool _isInitialized;
 
+    // ---------- 초기화 ----------
     public void Initialize()
     {
         if (_isInitialized)
@@ -51,15 +56,18 @@ public class ConfigRepo : MonoBehaviour
         _outLevel = BuildDictionary(_outLevelTable, nameof(_outLevelTable), r => r.OutLevel);
         _achievements = BuildDictionary(_achievementTable, nameof(_achievementTable), r => r.AchievementID);
         _changeRewards = BuildList(_changeRewardTable, nameof(_changeRewardTable));
+        _battleRewards = BuildDictionary(_battleRewardTable, nameof(_battleRewardTable), r => r.Target_ID);
         _stamina = BuildDictionary(_staminaTable, nameof(_staminaTable), r => r.Stamina_ID);
         _isInitialized = true;
         Debug.Log($"[ConfigRepo] 초기화 완료. InLevel: {_inLevel.Count}, OutLevel: {_outLevel.Count}, Achievements: {_achievements.Count}, ChangeRewards: {_changeRewards.Count}");
     }
 
+    // ---------- 조회 API ----------
     public InLevelData GetInLevel(int level) => GetData(_inLevel, level, nameof(GetInLevel));
     public OutLevelData GetOutLevel(int level) => GetData(_outLevel, level, nameof(GetOutLevel));
     public Legacy_AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
     public StaminaData GetStaminaData(int id) => GetData(_stamina, id, nameof(GetStaminaData));
+    public BattleRewardData GetBattleReward(int id) => GetData(_battleRewards, id, nameof(GetBattleReward));
 
     public IReadOnlyDictionary<int, Legacy_AchievementData> GetAllAchievements()
     {
@@ -105,6 +113,7 @@ public class ConfigRepo : MonoBehaviour
         }
     }
 
+    // ---------- Build Dictionary ----------
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(
         DataTable<TData> table,
         string tableName,

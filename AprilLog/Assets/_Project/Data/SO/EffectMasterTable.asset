@@ -14,26 +14,58 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EffectMasterTable
   rows:
   - Effect_ID: 13001
-    EffectName: 1
+    EffectName: 0
+    EffectType: KnockBack
+    OverLap: 
+    GrowthType: None
+    Value: 600
+    Duration: 0
+    Interval: 0
+  - Effect_ID: 13002
+    EffectName: 0
+    EffectType: Slow
+    OverLap: 
+    GrowthType: None
+    Value: 0.5
+    Duration: 3
+    Interval: 0
+  - Effect_ID: 13003
+    EffectName: 0
+    EffectType: Stun
+    OverLap: 
+    GrowthType: None
+    Value: 0
+    Duration: 3
+    Interval: 0
+  - Effect_ID: 13004
+    EffectName: 0
     EffectType: DotDamage
-    OverLap: Refresh
+    OverLap: 
     GrowthType: Add
     Value: 10
-    Duration: 10
-    Interval: 0.5
-  - Effect_ID: 13002
-    EffectName: 1
-    EffectType: DotDamage
-    OverLap: Ignore
-    GrowthType: Rate
-    Value: 0.1
     Duration: 5
-    Interval: 1
-  - Effect_ID: 13003
-    EffectName: 1
+    Interval: 0.25
+  - Effect_ID: 13005
+    EffectName: 0
     EffectType: DotDamage
-    OverLap: Stack
-    GrowthType: Rate
-    Value: 0.01
-    Duration: 99
-    Interval: 1
+    OverLap: 
+    GrowthType: Add
+    Value: 10
+    Duration: 4
+    Interval: 0.5
+  - Effect_ID: 13006
+    EffectName: 0
+    EffectType: StatusUP
+    OverLap: 
+    GrowthType: Add
+    Value: 10
+    Duration: 5
+    Interval: 0
+  - Effect_ID: 13007
+    EffectName: 0
+    EffectType: StatusUP
+    OverLap: 
+    GrowthType: Add
+    Value: 12
+    Duration: 5
+    Interval: 0
