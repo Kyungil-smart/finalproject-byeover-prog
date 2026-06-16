@@ -64,8 +64,8 @@ public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
         if (_iconImage != null && icon != null)
             _iconImage.sprite = icon;
     }
-
-    public void OnPointerClick(PointerEventData eventData)
+    
+    public virtual void OnPointerClick(PointerEventData eventData)
     {
         Clicked?.Invoke(GearId);
     }
