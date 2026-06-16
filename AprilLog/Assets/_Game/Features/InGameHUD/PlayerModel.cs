@@ -28,7 +28,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
     // ---------- 데이터 ----------
     public int CurrentHP { get; private set; }
     public int MaxHP { get; private set; }
-    public float Attack { get; private set; }
+    public int Attack { get; private set; }
     public float CriticalRate { get; private set; }
     public float CriticalDamage { get; private set; }
     public int FlatPierce { get; private set; }
@@ -37,6 +37,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public int HitCount { get; private set; }
     public int AoE { get; private set; }
     public int MaxTargets { get; private set; }
+    public float AttackSpeed { get; private set; }
     public bool IsDead => CurrentHP <= 0;
 
     private int _baseAttack;
@@ -56,6 +57,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
         HitCount = characterData.HitCount;
         AoE = characterData.AoE;
         MaxTargets = characterData.MaxTargets;
+        AttackSpeed = data.BaseAttackSpeed;
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 
@@ -109,8 +111,8 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public void ApplyHpBonus_Rate(float bonus)
     {
         bonus = 1 + bonus;
-        MaxHP += Mathf.FloorToInt(MaxHP * bonus);
-        CurrentHP += Mathf.FloorToInt(CurrentHP * bonus);
+        MaxHP = Mathf.FloorToInt(MaxHP * bonus);
+        CurrentHP = Mathf.FloorToInt(CurrentHP * bonus);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
 
@@ -128,10 +130,10 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public void ApplyHpBonus_RemoveF(float bonus)
     {
         if(bonus > 1) bonus = 1 - bonus;
-        MaxHP -= Mathf.FloorToInt(MaxHP * bonus);
+        MaxHP = Mathf.FloorToInt(MaxHP * bonus);
         if(MaxHP < 1) MaxHP = 1;
         
-        CurrentHP -= Mathf.FloorToInt(CurrentHP * bonus);
+        CurrentHP = Mathf.FloorToInt(CurrentHP * bonus);
         if(CurrentHP < 1) CurrentHP = 1;
         
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
@@ -145,7 +147,20 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public void ApplyAttackBonus_Rate(float bonus)
     {
         if (bonus < 1) bonus = 1 + bonus;
-        Attack *= bonus;
+        Attack = Mathf.FloorToInt(Attack * bonus);
+    }
+
+    public void ApplyAttackBonus_RemoveA(int bonus)
+    {
+        Attack -= bonus;
+        if (Attack < 0) Attack = 0;
+    }
+
+    public void ApplyAttackBonus_RemoveR(float bonus)
+    {
+        if(bonus > 1) bonus = 1 - bonus;
+        Attack = Mathf.FloorToInt(Attack * bonus);
+        if (Attack < 0) Attack = 0;
     }
 
     // 관통(PercentagePierce) 가산. 인챈트 효과 적용용.
@@ -185,5 +200,27 @@ public class PlayerModel : MonoBehaviour, IDamageable
     public void ApplyCriDmgBonus_AddF(float bonus)
     {
         CriticalDamage += bonus;
+    }
+
+    public void ApplyAttackSpeed_Add(float bonus)
+    {
+        AttackSpeed -= bonus;
+    }
+
+    public void ApplyAttackSpeed_Rate(float bonus)
+    {
+        bonus = 1 - bonus;
+        AttackSpeed *= bonus;
+    }
+
+    public void ApplyAttackSpeed_RemoveA(float bonus)
+    {
+        AttackSpeed += bonus;
+    }
+    
+    public void ApplyAttackSpeed_RemoveR(float bonus)
+    {
+        bonus = 1 + bonus;
+        AttackSpeed *= bonus;
     }
 }

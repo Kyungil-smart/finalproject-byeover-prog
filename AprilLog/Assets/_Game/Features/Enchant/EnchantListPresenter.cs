@@ -47,28 +47,20 @@ public class EnchantListPresenter
     private void RefreshSkillView()
     {
         OwnedSkillList.Clear();
-        var spellRepo = DataManager.Instance.SpellRepo;
 
         if (_model.OwnedSkills.Count > 0)
         {
-            foreach (var group in spellRepo.GetAllSkillGroups().Values)
+            foreach (var data in _model.OwnedSkills.Values)
             {
-                foreach (var chain in group.SkillNameChainData.Values)
+                OwnedSkillList.Add(new EnchantDisplayData
                 {
-                    if (_model.HasSkill(chain.Name_ID))
-                    {
-                        int currentLv = _model.GetSkillLevel(chain.Name_ID);
-                        OwnedSkillList.Add(new EnchantDisplayData
-                        {
-                            EnchantId = chain.Name_ID, 
-                            Level = currentLv, 
-                            TypeLabel = "스킬",
-                            Name = $"NameID: {chain.Name_ID}",
-                            Description = $"Description ID: {chain.LevelDataMap[currentLv].Skill_Descrip}",
-                            ImageKey = $"{chain.LevelDataMap[currentLv].SkillIcon_ID}"
-                        });
-                    }
-                }
+                    EnchantId = data.Data.Skill_ID,
+                    Level = data.Data.Level,
+                    TypeLabel = "스킬",
+                    Name = $"Skill_ID: {data.Data.Name}",
+                    Description = $"Description_ID: {data.Data.Skill_Descrip}",
+                    ImageKey = $"{data.Data.SkillIcon_ID}"
+                });
             }
         }
         _view.SetOwnedSkillList(OwnedSkillList);
@@ -77,28 +69,20 @@ public class EnchantListPresenter
     private void RefreshStatView()
     {
         OwnedStatList.Clear();
-        var spellRepo = DataManager.Instance.SpellRepo;
         
         if (_model.OwnedStats.Count > 0)
         {
-            foreach (var group in spellRepo.GetAllStatGroups().Values)
+            foreach (var data in _model.OwnedStats.Values)
             {
-                foreach (var chain in group.StatNameChainData.Values)
+                OwnedStatList.Add(new EnchantDisplayData
                 {
-                    if (_model.HasStat(chain.Stat_Name_ID))
-                    {
-                        int currentLv = _model.GetStatLevel(chain.Stat_Name_ID);
-                        OwnedStatList.Add(new EnchantDisplayData
-                        {
-                            EnchantId = chain.Stat_Name_ID, 
-                            Level = currentLv, 
-                            TypeLabel = "스텟",
-                            Name = $"StatID: {chain.Stat_Name_ID}",
-                            Description = $"Description ID: {chain.LevelDataMap[currentLv].Stat_Descrip}",
-                            ImageKey = $"{chain.LevelDataMap[currentLv].Image_ID}"
-                        });
-                    }
-                }
+                    EnchantId = data.Data.StatEnchant_ID,
+                    Level = data.Data.StatLevel,
+                    TypeLabel = "스텟",
+                    Name = $"Skill_ID: {data.Data.Stat_Name}",
+                    Description = $"Description_ID: {data.Data.Stat_Descrip}",
+                    ImageKey = $"{data.Data.Image_ID}"
+                });
             }
         }
         _view.SetOwnedStatList(OwnedStatList);

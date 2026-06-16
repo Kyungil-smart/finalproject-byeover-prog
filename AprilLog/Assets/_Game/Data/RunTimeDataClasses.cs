@@ -139,10 +139,11 @@ public class StatGroupChainData
 
 #endregion
 
-#region 인첸트 선택 지원
+#region 인첸트 시스템 지원
 
 public enum EnchantType { Skill, Stat }
 
+[Serializable]
 public class EnchantCandidate
 {
     public EnchantType Type;
@@ -188,6 +189,22 @@ public class EnchantDisplayData
     public int Level;
     public string ImageKey;
     public string TypeLabel;   // 카드 타입 표시용 (Presenter가 stat-type 기반으로 채움)
+}
+
+[Serializable]
+public class AcquiredSkillData
+{
+    public int Level;
+    public int GroupID;
+    public SkillTableData Data;
+}
+
+[Serializable]
+public class AcquiredStatData
+{
+    public int Level;
+    public int GroupID;
+    public StatTableData Data;
 }
 
 #endregion
