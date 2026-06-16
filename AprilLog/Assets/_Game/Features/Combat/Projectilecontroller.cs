@@ -34,6 +34,24 @@ public class ProjectileController : MonoBehaviour, IPoolable
     private bool _isStraightActive;
     private bool _isFinished;
 
+    // VFX 스킨 (풀 공유 오브젝트라 인스턴스 단위로 입히고 디스폰 시 원복)
+    private GameObject _skin;
+    private SpriteRenderer _placeholderSprite;
+
+    private void Awake()
+    {
+        _placeholderSprite = GetComponent<SpriteRenderer>();
+    }
+
+    /// <summary>이 투사체에 VFX 스킨(예: 화염 작렬 Fireball_2_normal)을 입히고 기본 사각형 스프라이트를 숨긴다.
+    /// 풀로 돌아갈 때 OnDespawn에서 반드시 원복되므로 기본공격 등 다른 투사체엔 영향이 없다.</summary>
+    public void SetSkin(GameObject skinInstance)
+    {
+        if (_skin != null) Destroy(_skin);   // 이중 부착 방어: 직전 스킨이 남아있으면 정리 후 교체
+        _skin = skinInstance;
+        if (_placeholderSprite != null) _placeholderSprite.enabled = false;
+    }
+
     // ---------- 초기화 ----------
     /// <summary>
     /// 특수 탄 전용 초기화.
@@ -129,7 +147,12 @@ public class ProjectileController : MonoBehaviour, IPoolable
     }
 
     // ---------- IPoolable ----------
-    public void OnSpawn() { }
+    public void OnSpawn()
+    {
+        // 풀에서 꺼낼 때 기본 상태 보장 — 어떤 경로로 반납됐든 스킨 잔류 없이 깨끗하게 시작.
+        if (_skin != null) { Destroy(_skin); _skin = null; }
+        if (_placeholderSprite != null) _placeholderSprite.enabled = true;
+    }
 
     public void OnDespawn()
     {
@@ -139,6 +162,20 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _lifeTimer = 0f;
         _isStraightActive = false;
         _isFinished = false;
+
+        // VFX 스킨 정리 — 풀 재사용 시 다음 투사체(기본공격 등)가 화염탄으로 보이지 않도록 반드시 원복.
+        // Destroy는 프레임 끝에 처리되는데 풀은 같은 프레임에 이 오브젝트를 즉시 재사용할 수 있으므로,
+        // 루프 파티클을 멈추고 → 부모에서 떼고(SetParent null) → 끈(SetActive false) 뒤 파괴해 '유령 화염탄' 1프레임 잔상을 막는다.
+        if (_skin != null)
+        {
+            foreach (var ps in _skin.GetComponentsInChildren<ParticleSystem>(true))
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _skin.transform.SetParent(null, false);
+            _skin.SetActive(false);
+            Destroy(_skin);
+            _skin = null;
+        }
+        if (_placeholderSprite != null) _placeholderSprite.enabled = true;
     }
 
     private void DespawnSelf()

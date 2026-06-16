@@ -341,8 +341,9 @@ public class InGameBootstrap : MonoBehaviour
         }
 
         // -- 장판 설정 (테이블 px 좌표계: 화면 폭 = 1440px) --
-        // 파이어브레스 1011~13: 최단거리 타겟 위치 고정 장판, 3회 타격 (Lv3는 범위 확대)
-        var fireBreath = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 500, heightPx = 700, pulseInterval = 0.4f, flashColor = new Color(1f, 0.3f, 0.05f, 0.35f) };
+        // 파이어브레스 1011~13: 최단거리 타겟 위치 고정 장판, 3회 타격 (Lv3는 범위 확대).
+        // style=FireBreath라 HazardRoutine 펄스루프를 우회 → 발사 간격은 pulseInterval이 아니라 SO의 fireBreathFlameInterval(0.5s)을 사용한다(아래 pulseInterval은 FireBreath에선 미사용).
+        var fireBreath = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.FireBreath, widthPx = 500, heightPx = 700, pulseInterval = 0.4f, flashColor = new Color(1f, 0.3f, 0.05f, 0.35f) };
         skillSystem.RegisterHazardSkill(1011, fireBreath);
         skillSystem.RegisterHazardSkill(1012, fireBreath);
         fireBreath.widthPx = 600; fireBreath.heightPx = 770;
@@ -359,6 +360,51 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(1051, meteor);
         skillSystem.RegisterHazardSkill(1052, meteor);
         skillSystem.RegisterHazardSkill(1053, meteor);
+
+        // ===== 바람·번개 속성 장판 (골격 — placeholder VFX=SpawnHazardFlash 색 사각형) =====
+        // 데미지/판정/발동만 동작. 상태이상(슬로우/스턴/넉백)·체인·버프·관통은 미구현(별도 시스템 필요).
+        // 투사체형(바람칼날 3021·템페스트 3051·헤이스트 3011)은 기본 투사체 경로라 여기 등록 안 함. (사슬번개 4021은 아래 LightningChain 하자드로 등록 → 투사체 경로 안 탐)
+        // 돌풍 3031~33: 최단거리 장판, 3+1히트(PelletCount 4). 넉백 미구현.
+        var gust = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 350, heightPx = 350, pulseInterval = 0.15f, flashColor = new Color(0.4f, 1f, 0.7f, 0.35f) };
+        skillSystem.RegisterHazardSkill(3031, gust);
+        skillSystem.RegisterHazardSkill(3032, gust);
+        skillSystem.RegisterHazardSkill(3033, gust);
+
+        // 허리케인 3041~43: 지속 장판 4초·0.5초틱(PelletCount 8). 슬로우 미구현. (기획상 화면중앙이나 우선 최단거리)
+        var hurricane = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 500, heightPx = 500, pulseInterval = 0.5f, flashColor = new Color(0.3f, 0.9f, 0.9f, 0.3f) };
+        skillSystem.RegisterHazardSkill(3041, hurricane);
+        skillSystem.RegisterHazardSkill(3042, hurricane);
+        skillSystem.RegisterHazardSkill(3043, hurricane);
+
+        // 구형 번개 4011~13: 최단거리 정사각 장판 3초·0.25초틱(PelletCount 12). 실제 VFX(Projectile_Lightning_Ball)·피격 350×350 (기획 v2.02 4-1).
+        var orbLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningHeld, widthPx = 350, heightPx = 350, pulseInterval = 0.25f, flashColor = new Color(1f, 0.95f, 0.3f, 0.4f) };
+        skillSystem.RegisterHazardSkill(4011, orbLightning);
+        skillSystem.RegisterHazardSkill(4012, orbLightning);
+        skillSystem.RegisterHazardSkill(4013, orbLightning);
+
+        // 방전 4031~33: 최단거리 장판 5초·0.5초틱(PelletCount 10). 가운데 번개막 + 양옆 구슬 2개 지속(LightningDischarge)·피격 1440×200 (기획 v2.02 4-3). 슬로우 미구현.
+        var discharge = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningDischarge, widthPx = 1440, heightPx = 200, pulseInterval = 0.5f, flashColor = new Color(0.8f, 0.7f, 1f, 0.35f) };
+        skillSystem.RegisterHazardSkill(4031, discharge);
+        skillSystem.RegisterHazardSkill(4032, discharge);
+        skillSystem.RegisterHazardSkill(4033, discharge);
+
+        // 사슬 번개 4021~23 (조합): 에이프릴→타겟 전기선(몸체) + 몬스터 몸체 타격 이펙트(LightningChain)·4히트·피격 700×200 (기획 v2.02 4-2). 5타겟 체인·거리 신축 미구현 — 단일 타겟.
+        var chainLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningChain, widthPx = 700, heightPx = 200, pulseInterval = 0.375f, flashColor = new Color(0.9f, 0.85f, 1f, 0.4f) };
+        skillSystem.RegisterHazardSkill(4021, chainLightning);
+        skillSystem.RegisterHazardSkill(4022, chainLightning);
+        skillSystem.RegisterHazardSkill(4023, chainLightning);
+
+        // 벼락 4041~43: 최단거리 정사각 낙뢰 4히트(PelletCount 4). 실제 VFX(Lightning_Big) 단발·피격 675×675 (기획 450×450 +50% 요청). 스턴·엘리트우선 미구현.
+        var thunderbolt = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 675, heightPx = 675, pulseInterval = 0.1f, flashColor = new Color(1f, 0.9f, 0.4f, 0.45f) };
+        skillSystem.RegisterHazardSkill(4041, thunderbolt);
+        skillSystem.RegisterHazardSkill(4042, thunderbolt);
+        skillSystem.RegisterHazardSkill(4043, thunderbolt);
+
+        // 뇌격 4051~53: 랜덤 타겟 세로 직사각 1히트(PelletCount 1). 실제 VFX(Lazer_purple) 단발·피격 300×1600 (기획 v2.02 4-5). ⚠위치는 랜덤타겟(스펙은 고정-에이프릴 세로 레이저라 후속 조정 필요).
+        var thunderStrike = new HazardConfig { placement = HazardPlacement.RandomTarget, widthPx = 300, heightPx = 1600, pulseInterval = 0.15f, flashColor = new Color(0.9f, 0.8f, 1f, 0.4f) };
+        skillSystem.RegisterHazardSkill(4051, thunderStrike);
+        skillSystem.RegisterHazardSkill(4052, thunderStrike);
+        skillSystem.RegisterHazardSkill(4053, thunderStrike);
 
         // 화염 정령 1031~33: 정령 2마리가 같은 레벨의 화염 작렬을 1초마다 5초간 시전
         for (int lv = 1; lv <= 3; lv++)

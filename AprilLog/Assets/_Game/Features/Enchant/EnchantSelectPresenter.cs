@@ -29,6 +29,8 @@ public class EnchantSelectPresenter
     
     // 현재 화면에 떠 있는 3개의 카드 정보
     private List<EnchantCandidate> _currentChoices;
+    private int _rerollRemaining;  // 카드 새로고침 남은 횟수 (TEST 씬 99, 그 외 0)
+    private int _pickCount = 3;     // 리롤 시 같은 개수로 다시 뽑기 위해 보관
 
     public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model, SpellRepo repo, ScreenNavigator navigator, EnchantProbabilityConfig config, EnchantChangePresenter changePresenter)
     {
@@ -41,18 +43,39 @@ public class EnchantSelectPresenter
 
         _view.OnChoiceSelected += HandleChoice;
         _view.OnSkipSelected += HandleSkip;
+        _view.OnRerollSelected += HandleReroll;
     }
 
     public void Dispose()
     {
         _view.OnChoiceSelected -= HandleChoice;
         _view.OnSkipSelected -= HandleSkip;
+        _view.OnRerollSelected -= HandleReroll;
     }
 
     public void ShowSelection(int pickCount = 3)
     {
+        // 카드 새로고침(리롤): TEST 씬에서만 99회 허용, 그 외 0(버튼 숨김). 선택지가 새로 뜰 때마다 리셋.
+        _pickCount = pickCount;
+        _rerollRemaining = IsTestScene() ? 99 : 0;
         _currentChoices = _selector.GenerateChoices(_model, pickCount);
         DisplayChoicesToView();
+    }
+
+    // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 Develop EnchantSelector가 처리). TEST 씬 99회 한정.
+    private void HandleReroll()
+    {
+        if (_rerollRemaining <= 0) return;
+        _rerollRemaining--;
+        _currentChoices = _selector.GenerateChoices(_model, _pickCount);
+        DisplayChoicesToView();
+    }
+
+    // TEST 씬에서만 리롤 허용. 씬 이름에 "TEST" 포함 여부로 판별(Skill_TEST 등).
+    private static bool IsTestScene()
+    {
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        return !string.IsNullOrEmpty(sceneName) && sceneName.ToUpperInvariant().Contains("TEST");
     }
     
     // ---------- UI용 포멧으로 변환 후 전달 ----------
@@ -80,6 +103,7 @@ public class EnchantSelectPresenter
         }
         
         _view.SetChoices(displayData);
+        _view.SetRerollAvailable(IsTestScene(), _rerollRemaining);
     }
 
     // ---------- 유저 클릭 처리 ----------

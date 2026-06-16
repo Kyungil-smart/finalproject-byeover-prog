@@ -16,18 +16,28 @@ MonoBehaviour:
   meteorBall: {fileID: 6471748739544416966, guid: e6554feae77802d4da59e494a6b0935b, type: 3}
   meteorExplosion: {fileID: 6744752361442629276, guid: 841ed43f37cc5094baefce97ff85c969, type: 3}
   meteorMarkerScale: 0.5
-  meteorBallScale: 0.4
-  meteorExplosionScale: 0.5
+  meteorBallScale: 0.36
+  meteorExplosionScale: 0.35
   meteorTelegraph: 0.5
   meteorFallTime: 0.35
   meteorFallHeight: 3.5
   meteorFallOffsetX: 1.2
   meteorBallRotationTrimDeg: 0
   meteorExplosionDelay: 0.05
-  fireballProjectile: {fileID: 0}
-  fireBreathCrystal: {fileID: 0}
-  fireBreathFlame: {fileID: 0}
-  earthCrackExplosion: {fileID: 0}
+  meteorExplosionOffsetYPx: 130
+  debugShowHitArea: 0
+  fireballProjectile: {fileID: 3551597606300281390, guid: 01512958f5f0b344da66347feb3a5a23, type: 3}
+  fireballProjectileScale: 0.5
+  fireballRotationTrimDeg: 0
+  fireBreathCrystal: {fileID: 4305094256947007182, guid: 68c48dec2f8785e4c867a2aba5f1cf8e, type: 3}
+  fireBreathCrystalScale: 0.047
+  fireBreathFlame: {fileID: 292769683306214135, guid: 09a3a43743bb0514c95f21ed2800c93b, type: 3}
+  fireBreathFlameScale: 0.4
+  fireBreathFlameInterval: 0.5
+  fireBreathFlameYOffsetPx: 400
+  fireBreathFlameRotationTrimDeg: 0
+  earthCrackExplosion: {fileID: 5156201333536720014, guid: 5c19e78b91d8fd645b0265d5cc9b9541, type: 3}
+  earthCrackScale: 0.2
   earthCrackEmber: {fileID: 0}
   spiritAttack: {fileID: 0}
   hitEffects: []

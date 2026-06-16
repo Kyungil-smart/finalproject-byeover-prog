@@ -74,6 +74,39 @@ public class SkillSystem : MonoBehaviour
             return _vfx;
         }
     }
+    // 번개 속성 VFX 라이브러리 (기획 v2.02. 없어도 사각형 폴백)
+    private LightningSkillVfxLibrary _lightningVfx;
+    private bool _lightningVfxLoadTried;
+    private LightningSkillVfxLibrary LightningVfx
+    {
+        get
+        {
+            if (!_lightningVfxLoadTried)
+            {
+                _lightningVfxLoadTried = true;
+                _lightningVfx = Resources.Load<LightningSkillVfxLibrary>("LightningSkillVfxLibrary");
+            }
+            return _lightningVfx;
+        }
+    }
+
+    /// <summary>번개 스킬 StandardID로 VFX 프리팹+스케일 해결. 라이브러리/프리팹 없으면 false.</summary>
+    private bool TryGetLightningVfx(Legacy_SkillData data, out GameObject prefab, out float scale)
+    {
+        prefab = null; scale = 1f;
+        var lib = LightningVfx;
+        if (lib == null || data == null) return false;
+        switch (data.StandardID)
+        {
+            case 401: prefab = lib.orbPrefab; scale = lib.orbScale; break;                 // 구형 번개
+            case 404: prefab = lib.thunderboltPrefab; scale = lib.thunderboltScale; break;  // 벼락
+            case 405: prefab = lib.laserPrefab; scale = lib.laserScale; break;              // 뇌격
+            case 402: prefab = lib.chainBolt; scale = lib.chainScale; break;                // 사슬 번개 (연결 번개막)
+            case 403: prefab = lib.dischargeBarrier; scale = lib.dischargeScale; break;     // 방전 (가운데 번개막)
+        }
+        return prefab != null;
+    }
+
     private bool _hasLoggedMissingFirePoint;
     private bool _hasLoggedMissingSpawner;
     private bool _hasTriedResolveSpawner;
@@ -238,6 +271,39 @@ public class SkillSystem : MonoBehaviour
             fixedCenter = t.transform.position;
         }
 
+        // 랜덤 타겟: 한 발동(볼리) 안에서는 같은 몬스터를 두 번 안 뽑는다 (기획 3-2-3 '타겟 수만큼 랜덤 타겟').
+        // 같은 자리에 메테오 2발이 떨어져 '연속 2차 폭발'로 보이는 문제도 함께 방지.
+        HashSet<MonsterAI> volleyPicked = cfg.placement == HazardPlacement.RandomTarget
+            ? new HashSet<MonsterAI>() : null;
+
+        // 파이어브레스는 수정구 1개가 N발을 쏘는 시퀀스 — 펄스 루프를 우회하고 전용 루틴이 0.5초×N 타이밍을 소유한다.
+        if (cfg.style == HazardStyle.FireBreath)
+        {
+            StartCoroutine(FireBreathRoutine(data, fixedCenter, sizeWorld, pulses));
+            yield break;
+        }
+
+        // 구형 번개: 지속 VFX 1개를 깔고 펄스마다 데미지. 펄스 루프 우회(전용 루틴이 타이밍 소유).
+        if (cfg.style == HazardStyle.LightningHeld)
+        {
+            StartCoroutine(LightningHeldRoutine(data, fixedCenter, sizeWorld, pulses, cfg.pulseInterval));
+            yield break;
+        }
+
+        // 방전: 가운데 번개막 + 양옆 구슬 2개를 깔고 지속 데미지. 펄스 루프 우회.
+        if (cfg.style == HazardStyle.LightningDischarge)
+        {
+            StartCoroutine(LightningDischargeRoutine(data, fixedCenter, sizeWorld, pulses, cfg.pulseInterval));
+            yield break;
+        }
+
+        // 사슬 번개: 에이프릴→타겟 전기선 + 몬스터 타격 이펙트. 펄스 루프 우회.
+        if (cfg.style == HazardStyle.LightningChain)
+        {
+            StartCoroutine(LightningChainRoutine(data, fixedCenter, sizeWorld, pulses, cfg.pulseInterval));
+            yield break;
+        }
+
         for (int i = 0; i < pulses; i++)
         {
             Vector2 center;
@@ -251,8 +317,9 @@ public class SkillSystem : MonoBehaviour
                     break;
 
                 case HazardPlacement.RandomTarget:
-                    if (!TryPickRandomAliveMonster(out MonsterAI randomTarget))
+                    if (!TryPickRandomAliveMonster(out MonsterAI randomTarget, volleyPicked))
                         yield break;
+                    volleyPicked.Add(randomTarget);
                     center = randomTarget.transform.position;
                     break;
 
@@ -269,7 +336,23 @@ public class SkillSystem : MonoBehaviour
             else
             {
                 DealHazardDamage(data, center, sizeWorld);
-                SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+                // 대지 균열은 7열 크랙 행 / 번개 단발(벼락·뇌격)은 실제 VFX 단발 / 그 외는 기존 플래시.
+                if (cfg.placement == HazardPlacement.PlayerFront)
+                    SpawnEarthCrackRow(center, sizeWorld);
+                else if (TryGetLightningVfx(data, out GameObject lvfx, out float lscale))
+                {
+                    var v = SpawnVfx(lvfx, center, lscale, 52);
+                    if (v != null)
+                    {
+                        // 뇌격: Lazer_purple prefab의 startRotation이 0이라 위아래가 뒤집혀 보임 → 스펙 4-5-2 'Start Rotation 180' 적용해 세로 방향 정렬. (벼락 등 다른 번개는 회전 안 함)
+                        if (data.StandardID == 405 && LightningVfx != null)
+                            ApplyParticleRotation(v, LightningVfx.laserRotationDeg);
+                        StopLoopingOneShot(v); Destroy(v, ComputeOneShotLifetime(v));
+                    }
+                    else SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+                }
+                else
+                    SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
             }
 
             if (i < pulses - 1)
@@ -277,10 +360,11 @@ public class SkillSystem : MonoBehaviour
         }
     }
 
-    // 메테오 3단 시퀀스 (연출: 하늘에 생성 구역이 먼저 열리고, 그 자리에서 운석이 수직 낙하 → 착탄 폭발)
-    //   ① 착탄 지점 수직 위 '하늘'에 생성 구역(Flame_ellipse) 표시
-    //   ② 그 자리에서 몸체(Fireball_loop_2)가 수직으로 가속 낙하 (게이트는 잠시 후 닫힘)
-    //   ③ 착탄 폭발(explosion_5) + 고정 좌표에 데미지 판정 (기획 3-2-3)
+    // 메테오 시퀀스 (기획 4-4-3): 착탄 지점에 조준원이 먼저 깔리고, 하늘에서 운석이 그 위로 낙하 → 착탄 폭발
+    //   ① 착탄 지점(땅)에 조준원(Flame_ellipse) 생성 → 낙하 끝까지 루프 (0.5초 예고 = 땅 위 위험 표시)
+    //   ② 하늘에서 몸체(Fireball_loop_2)가 조준원 중심으로 사선 낙하
+    //   ③ 충돌 순간 조준원·몸체 동시 삭제 (기획 4-4-3 4번)
+    //   ④ 착탄 폭발(explosion_5) + 고정 좌표에 데미지 판정 (기획 3-2-3)
     private System.Collections.IEnumerator MeteorStrikeRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld)
     {
         var lib = Vfx;
@@ -289,14 +373,14 @@ public class SkillSystem : MonoBehaviour
         float fallHeight = lib != null ? lib.meteorFallHeight : 3.5f;
         float fallOffsetX = lib != null ? lib.meteorFallOffsetX : 1.2f;
 
-        // 착탄 지점의 오른쪽 위에 생성 → 왼쪽 사선으로 낙하 (기획 요청)
+        // 투사체는 착탄 지점의 오른쪽 위 '하늘'에서 출발 → 왼쪽 사선으로 낙하 (기획 4-4-1 Fireball_loop_2 스폰 좌표)
         Vector2 skyPos = center + new Vector2(fallOffsetX, fallHeight);
 
-        // ① 하늘에 생성 구역(게이트) 표시
-        GameObject marker = SpawnVfx(lib != null ? lib.meteorMarker : null, skyPos, lib != null ? lib.meteorMarkerScale : 1f, 54);
+        // ① 착탄 지점(땅)에 조준원(Flame_ellipse) 생성. 낙하 끝까지 살려두며 루프시켜 '위험 예고'로 쓴다 (기획 4-4-3)
+        GameObject marker = SpawnVfx(lib != null ? lib.meteorMarker : null, center, lib != null ? lib.meteorMarkerScale : 1f, 54);
         yield return new WaitForSeconds(telegraph);
 
-        // ② 생성 구역에서 몸체가 사선 낙하. 게이트는 운석이 나온 직후 닫힘.
+        // ② 하늘에서 몸체(Fireball_loop_2)가 조준원 중심점을 향해 사선 낙하
         GameObject ball = SpawnVfx(lib != null ? lib.meteorBall : null, skyPos, lib != null ? lib.meteorBallScale : 1f, 55);
         if (ball != null)
         {
@@ -307,11 +391,7 @@ public class SkillSystem : MonoBehaviour
             float autoDeg = Mathf.Atan2(dir.y, -dir.x) * Mathf.Rad2Deg;
             float trimDeg = lib != null ? lib.meteorBallRotationTrimDeg : 0f;
             ApplyParticleRotation(ball, autoDeg + trimDeg);
-        }
-        if (marker != null) Destroy(marker, 0.25f);
 
-        if (ball != null)
-        {
             Vector3 from = skyPos;
             Vector3 to = center;
             float t = 0f;
@@ -329,18 +409,256 @@ public class SkillSystem : MonoBehaviour
             yield return new WaitForSeconds(fallTime); // VFX 미연결이어도 타이밍은 유지
         }
 
-        // ③ 착탄: 몸체가 사라진 뒤 한 박자 쉬고 폭발 (폭발이 몸체를 가리는 것 방지) + 데미지 판정
+        // ③ 투사체가 조준원 중심에 충돌하는 순간 조준원·몸체 동시 삭제 (기획 4-4-3 4번)
+        if (marker != null) Destroy(marker);
+
+        // ④ 착탄: 몸체가 사라진 뒤 한 박자 쉬고 폭발 (폭발이 몸체를 가리는 것 방지) + 데미지 판정
         float explosionDelay = lib != null ? lib.meteorExplosionDelay : 0.05f;
         if (explosionDelay > 0f)
             yield return new WaitForSeconds(explosionDelay);
 
-        GameObject expl = SpawnVfx(lib != null ? lib.meteorExplosion : null, center, lib != null ? lib.meteorExplosionScale : 1f, 56);
+        // 폭발 비주얼 크기를 '실제 공격 범위'에 연동: 공격 범위가 (인챈트 등으로) 커지면 폭발도 비례 확대.
+        // meteorExplosionScale은 기준 범위(테이블 350px)에서 폭발이 공격 범위와 겹쳐 보이도록 보정하는 값.
+        float areaFactor = sizeWorld.x / Mathf.Max(0.01f, PxToWorld(MeteorRefAreaPx));
+        float explScale = (lib != null ? lib.meteorExplosionScale : 1f) * areaFactor;
+
+        // explosion_5는 착탄 지점에서 위로 Position y(기획 4-4-1: 130px)만큼 올려 생성한다.
+        // 범위가 커지면 이 오프셋도 폭발 크기와 같은 비율(areaFactor)로 커져 정렬이 유지된다(기획 4-4-2: 1.1배 → 130→143px).
+        float explOffsetY = PxToWorld(lib != null ? lib.meteorExplosionOffsetYPx : 130f) * areaFactor;
+        Vector2 explPos = center + new Vector2(0f, explOffsetY);
+
+        GameObject expl = SpawnVfx(lib != null ? lib.meteorExplosion : null, explPos, explScale, 56);
         if (expl != null)
-            Destroy(expl, 1.2f);
+        {
+            StopLoopingOneShot(expl);   // explosion_5는 루프 파티클 — 1회 재생으로 전환
+            // 제거 시점을 '파티클 수명 + 여유'로 계산해 2번째 사이클(duration 경과) 시작 전에 반드시 제거.
+            // (예전 고정 1.2초는 사이클 1.0초보다 길어서 2차 폭발이 잠깐 비치는 원인이 됐음)
+            Destroy(expl, ComputeOneShotLifetime(expl));
+        }
         else
+        {
             SpawnHazardFlash(center, sizeWorld, new Color(1f, 0.15f, 0.05f, 0.45f)); // VFX 미연결 폴백
+        }
+
+        // 보정용: 실제 공격 범위 표시 (폭발 크기를 범위에 맞춘 뒤 SO에서 끌 것)
+        if (lib != null && lib.debugShowHitArea)
+            SpawnHazardFlash(center, sizeWorld, new Color(1f, 1f, 1f, 0.18f));
 
         DealHazardDamage(data, center, sizeWorld);
+    }
+
+    // 파이어브레스 시퀀스 (기획 4-1): 타겟 발밑에 수정구를 깔아 루프 → 0.5초마다 최단 적 방향으로 화염 단발 분사 N발 → N발 후 수정구 삭제.
+    private System.Collections.IEnumerator FireBreathRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int flameCount)
+    {
+        var lib = Vfx;
+        float crystalScale = lib != null ? lib.fireBreathCrystalScale : 0.2f;  // 구체: 범위 스탯과 무관한 고정 크기
+        // 브레스(화염)만 '스킬 범위 스탯'에 연동: 실제 공격은 화염이 하므로, 피격 범위(sizeWorld)가 버프/인챈트로 커지면
+        // 화염 크기도 같은 비율(flameAreaFactor)로 확대된다(기획 4-1-3). 구체는 여기 안 곱해 고정.
+        float flameAreaFactor = sizeWorld.x / Mathf.Max(0.01f, PxToWorld(FireBreathRefAreaPx));
+        float flameScale = (lib != null ? lib.fireBreathFlameScale : 0.4f) * flameAreaFactor;
+        float flameInterval = lib != null ? lib.fireBreathFlameInterval : 0.5f;
+        float flameOffsetY = PxToWorld(lib != null ? lib.fireBreathFlameYOffsetPx : 400f);
+        float flameTrim = lib != null ? lib.fireBreathFlameRotationTrimDeg : 0f;
+
+        // ① 타겟 발밑에 수정구 생성 → 시퀀스 끝까지 루프 유지 (기획 4-1-4 #1)
+        GameObject crystal = SpawnVfx(lib != null ? lib.fireBreathCrystal : null, center, crystalScale, 53);
+
+        for (int n = 0; n < flameCount; n++)
+        {
+            // ② 발사 시점의 '현재' 최단 적을 수정구 중심 기준으로 재조회해 조준 (적 이동/사망 대응, 기획 4-1-2)
+            Vector2 aimNorm = Vector2.up; // 적 전멸 시 위쪽 폴백
+            if (_monsterSpawner != null && _monsterSpawner.TryFindAttackTarget(center, out MonsterAI tgt))
+            {
+                Vector2 d = (Vector2)tgt.transform.position - center;
+                if (d.sqrMagnitude > 0.0001f) aimNorm = d.normalized;
+            }
+
+            // ③ 화염 단발 분사 — 수정구에서 적 방향으로 flameOffsetY만큼 떨어진 곳에 적을 향해 회전 (피벗 공유, 기획 4-1-2/4-1-4)
+            Vector2 flamePos = center + aimNorm * flameOffsetY;
+            GameObject flame = SpawnVfx(lib != null ? lib.fireBreathFlame : null, flamePos, flameScale, 56);
+            if (flame != null)
+            {
+                StopLoopingOneShot(flame);   // 루프 프리팹 → 1회 재생
+                // Fire_Asset 화염은 오른쪽(+X) 제작 → -atan2(d.y,d.x)로 적 방향 정렬 (화염작렬과 동일). 뒤집히면 trim에 ±90/180.
+                float autoDeg = -Mathf.Atan2(aimNorm.y, aimNorm.x) * Mathf.Rad2Deg;
+                ApplyParticleRotation(flame, autoDeg + flameTrim);
+                Destroy(flame, ComputeOneShotLifetime(flame));
+            }
+            else
+            {
+                SpawnHazardFlash(center, sizeWorld, new Color(1f, 0.3f, 0.05f, 0.35f)); // VFX 미연결 폴백
+            }
+
+            // ④ 데미지 판정 (발사마다 1회 = 기획 '3회 대미지')
+            DealHazardDamage(data, center, sizeWorld);
+
+            if (n < flameCount - 1)
+                yield return new WaitForSeconds(flameInterval);
+        }
+
+        // ⑤ 정해진 횟수 후 수정구 삭제 (기획 4-1-4 #5)
+        if (crystal != null) Destroy(crystal);
+    }
+
+    // 지속형 번개 장판(구형 번개): VFX 1개를 center에 생성(루프 유지) → pulses회 데미지(간격 interval) → 한 박자 뒤 삭제.
+    private System.Collections.IEnumerator LightningHeldRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
+    {
+        GameObject vfx = null;
+        if (TryGetLightningVfx(data, out GameObject prefab, out float scale))
+            vfx = SpawnVfx(prefab, center, scale, 52);
+        else
+            SpawnHazardFlash(center, sizeWorld, new Color(1f, 0.95f, 0.3f, 0.4f)); // VFX 미연결 폴백
+
+        for (int i = 0; i < pulses; i++)
+        {
+            DealHazardDamage(data, center, sizeWorld);
+            if (i < pulses - 1)
+                yield return new WaitForSeconds(interval);
+        }
+
+        yield return new WaitForSeconds(0.3f); // 마지막 데미지 후 VFX 애니메이션 여유
+        if (vfx != null) Destroy(vfx);
+    }
+
+    // 방전 시퀀스 (기획 v2.02 4-3): 타겟 위치에 가운데 번개막 + 양옆(±offset) 구슬 2개를 깔고, 지속시간 동안 데미지 → 종료 후 전부 삭제.
+    private System.Collections.IEnumerator LightningDischargeRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
+    {
+        var lib = LightningVfx;
+        GameObject barrier = null, orbL = null, orbR = null, connector = null;
+        if (lib != null)
+        {
+            float side = PxToWorld(lib.dischargeOrbOffsetPx);
+            barrier = SpawnVfx(lib.dischargeBarrier, center, lib.dischargeScale, 52);
+            orbL = SpawnVfx(lib.dischargeOrb, center + new Vector2(-side, 0f), lib.dischargeOrbScale, 53);
+            orbR = SpawnVfx(lib.dischargeOrb, center + new Vector2(side, 0f), lib.dischargeOrbScale, 53);
+            if (lib.dischargeConnector != null) // 밑 전기선 연결점 (에디터에서 드래그하면 표시)
+                connector = SpawnVfx(lib.dischargeConnector, center + new Vector2(0f, PxToWorld(lib.dischargeConnectorYOffsetPx)), lib.dischargeConnectorScale, 51);
+        }
+        if (barrier == null && orbL == null)
+            SpawnHazardFlash(center, sizeWorld, new Color(0.8f, 0.7f, 1f, 0.35f)); // VFX 미연결 폴백
+
+        for (int i = 0; i < pulses; i++)
+        {
+            DealHazardDamage(data, center, sizeWorld);
+            if (i < pulses - 1)
+                yield return new WaitForSeconds(interval);
+        }
+
+        yield return new WaitForSeconds(0.3f);
+        if (barrier != null) Destroy(barrier);
+        if (orbL != null) Destroy(orbL);
+        if (orbR != null) Destroy(orbR);
+        if (connector != null) Destroy(connector);
+    }
+
+    // 사슬 번개 = 정통 체인 라이트닝 (기획 v2.02 4-2): 에이프릴→가장 가까운 적1→적2→… 로 전기줄이 1→2→3 순차로 '다다닥' 점프하며 각 타겟을 직격.
+    private System.Collections.IEnumerator LightningChainRoutine(Legacy_SkillData data, Vector2 firstTarget, Vector2 sizeWorld, int pulses, float interval)
+    {
+        var lib = LightningVfx;
+        int maxTargets = (lib != null && lib.chainMaxTargets > 0) ? lib.chainMaxTargets : 5;
+        float hopDelay = (lib != null && lib.chainHopDelay > 0f) ? lib.chainHopDelay : 0.07f;
+
+        // 체인 구성: 첫 타겟에서 시작해 가장 가까운 미방문 몬스터로 순차 연결
+        var visited = new HashSet<MonsterAI>();
+        var chainTargets = new List<MonsterAI>();
+        MonsterAI nextM = FindNearestAliveMonster(firstTarget, null);
+        while (nextM != null && chainTargets.Count < maxTargets)
+        {
+            visited.Add(nextM);
+            chainTargets.Add(nextM);
+            nextM = FindNearestAliveMonster(nextM.transform.position, visited);
+        }
+        if (chainTargets.Count == 0)
+        {
+            SpawnHazardFlash(firstTarget, sizeWorld, new Color(0.9f, 0.85f, 1f, 0.4f)); // 몬스터 없음 폴백
+            yield break;
+        }
+
+        int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
+        var spawned = new List<GameObject>();
+        Vector2 prev = _firePoint != null ? (Vector2)_firePoint.position : firstTarget;
+
+        // 에이프릴→1→2→3… 한 칸씩 전기줄이 이어지며 각 타겟 직격
+        for (int i = 0; i < chainTargets.Count; i++)
+        {
+            MonsterAI m = chainTargets[i];
+            if (m == null || !m.gameObject.activeInHierarchy) continue;
+            Vector2 pos = m.transform.position;
+            Vector2 dir = pos - prev;
+            float angleDeg = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+            if (lib != null && lib.chainBolt != null)
+            {
+                var bolt = SpawnVfx(lib.chainBolt, (prev + pos) * 0.5f, lib.chainScale, 52); // 직전 지점→타겟 전기줄 세그먼트
+                if (bolt != null) { ApplyParticleRotation(bolt, angleDeg + lib.chainBoltRotationTrimDeg); spawned.Add(bolt); }
+            }
+            if (lib != null && lib.chainHitEffect != null)
+            {
+                var hit = SpawnVfx(lib.chainHitEffect, pos, lib.chainHitScale, 53); // 몬스터 몸체 타격 이펙트
+                if (hit != null) spawned.Add(hit);
+            }
+            m.TakeDamage(damage);   // 타겟 직격 (테이블: 사슬 = 면적 없는 타겟 직격)
+            prev = pos;
+            yield return new WaitForSeconds(hopDelay);   // 다다닥
+        }
+
+        yield return new WaitForSeconds(0.25f);
+        for (int i = 0; i < spawned.Count; i++)
+            if (spawned[i] != null) Destroy(spawned[i]);
+    }
+
+    // 살아있는 몬스터 중 from에서 가장 가까운 1마리 (exclude 제외). 체인 라이트닝 연결용.
+    private MonsterAI FindNearestAliveMonster(Vector2 from, HashSet<MonsterAI> exclude)
+    {
+        if (_monsterSpawner == null) return null;
+        var alive = _monsterSpawner.AliveMonsters;
+        MonsterAI best = null; float bestSq = float.MaxValue;
+        for (int i = 0; i < alive.Count; i++)
+        {
+            MonsterAI m = alive[i];
+            if (m == null || !m.gameObject.activeInHierarchy) continue;
+            if (exclude != null && exclude.Contains(m)) continue;
+            float sq = ((Vector2)m.transform.position - from).sqrMagnitude;
+            if (sq < bestSq) { bestSq = sq; best = m; }
+        }
+        return best;
+    }
+
+    // 메테오 기준 공격 범위(px, 테이블 v1.03). 폭발 비주얼 스케일의 기준점으로 사용.
+    private const float MeteorRefAreaPx = 350f;
+    // 파이어브레스 기준 피격 범위 폭(px, 기획 4-1 Size 500). 화염 범위연동(flameAreaFactor)의 기준점.
+    private const float FireBreathRefAreaPx = 500f;
+
+    /// <summary>루프 파티클을 1회 재생으로 전환 (폭발처럼 단발이어야 하는 이펙트용).</summary>
+    private static void StopLoopingOneShot(GameObject go)
+    {
+        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            var main = ps.main;
+            main.loop = false;
+        }
+    }
+
+    /// <summary>
+    /// 단발 이펙트의 제거 시점(초) = 모든 자식 파티클의 (지연+수명) 최대값 + 여유.
+    /// 시스템 duration(사이클 길이)보다 짧게 잡혀 2번째 사이클이 시작될 틈을 주지 않는다.
+    /// </summary>
+    private static float ComputeOneShotLifetime(GameObject go)
+    {
+        float maxEnd = 0.3f; // 최소 보장
+        foreach (var ps in go.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            var main = ps.main;
+            float delay = main.startDelay.mode == ParticleSystemCurveMode.TwoConstants
+                ? main.startDelay.constantMax : main.startDelay.constant;
+            float life = main.startLifetime.mode == ParticleSystemCurveMode.TwoConstants
+                ? main.startLifetime.constantMax : main.startLifetime.constant;
+            // 마지막 입자/버스트는 방출 기간(duration)이 끝날 때 나올 수 있으므로 그 수명까지 더해야 폭발이 중간에 잘리지 않는다.
+            // (explosion_5는 duration=1s·버스트가 사이클 양 끝(t=0,1)에 있어, duration 무시 시 0.6초에 파괴돼 폭발이 거의 안 보였음.
+            //  loop는 StopLoopingOneShot로 이미 꺼져 있어 길게 잡아도 2번째 사이클=2차 폭발은 시작되지 않는다.)
+            maxEnd = Mathf.Max(maxEnd, delay + main.duration + life);
+        }
+        return maxEnd + 0.1f;
     }
 
     /// <summary>
@@ -367,6 +685,34 @@ public class SkillSystem : MonoBehaviour
                 // 커브 모드는 거의 안 쓰여서 생략 (필요 시 추가)
             }
         }
+    }
+
+    /// <summary>투사체(풀 공유 'Projectile_Basic')에 화염 작렬 등 VFX 스킨을 입히고 진행 방향으로 회전시킨다.
+    /// 스킨은 ProjectileController가 디스폰 시 정리하므로 기본공격/다른 탄엔 영향 없다.</summary>
+    private void AttachProjectileSkin(ProjectileController controller, GameObject projObj, GameObject skinPrefab,
+        float scale, Vector2 origin, Vector2 targetPos, float trimDeg)
+    {
+        if (controller == null || projObj == null || skinPrefab == null) return;
+
+        var skin = Instantiate(skinPrefab, projObj.transform);
+        skin.transform.localPosition = Vector3.zero;
+        skin.transform.localRotation = Quaternion.identity;
+        if (!Mathf.Approximately(scale, 1f))
+            skin.transform.localScale = skin.transform.localScale * scale;
+
+        foreach (var r in skin.GetComponentsInChildren<ParticleSystemRenderer>(true))
+            r.sortingOrder = 55;
+
+        // Fireball_2_normal은 오른쪽(+X)을 향하게 제작된 빌보드 파티클(기획 R177/R206: 에셋이 오른쪽을 봐 -90 보정)이라
+        // transform 회전이 안 먹는다. 진행 방향 d로 '오른쪽'을 보내는 시계방향 각도 = -atan2(d.y, d.x). startRotation을 돌려 정렬(메테오와 동일).
+        Vector2 dir = targetPos - origin;
+        if (dir.sqrMagnitude > 0.0001f)
+        {
+            float autoDeg = -Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            ApplyParticleRotation(skin, autoDeg + trimDeg);
+        }
+
+        controller.SetSkin(skin);
     }
 
     /// <summary>VFX 프리팹 소환 + 파티클 정렬 순서 지정(게임 스프라이트 위에 보이도록). prefab이 null이면 null 반환.</summary>
@@ -407,7 +753,8 @@ public class SkillSystem : MonoBehaviour
             _hazardHitBuffer[i].TakeDamage(damage);
     }
 
-    private bool TryPickRandomAliveMonster(out MonsterAI picked)
+    /// <summary>살아있는 몬스터 중 무작위 1마리. exclude에 든 몬스터는 피하되, 전부 제외되면(몬스터 부족) 중복 허용 폴백.</summary>
+    private bool TryPickRandomAliveMonster(out MonsterAI picked, HashSet<MonsterAI> exclude = null)
     {
         picked = null;
         var alive = _monsterSpawner.AliveMonsters;
@@ -416,8 +763,20 @@ public class SkillSystem : MonoBehaviour
         for (int i = 0; i < alive.Count; i++)
         {
             MonsterAI m = alive[i];
-            if (m != null && m.gameObject.activeInHierarchy)
-                _hazardHitBuffer.Add(m);
+            if (m == null || !m.gameObject.activeInHierarchy) continue;
+            if (exclude != null && exclude.Contains(m)) continue;
+            _hazardHitBuffer.Add(m);
+        }
+
+        // 제외하고 나니 후보가 없으면(타겟 수 > 몬스터 수) 제외 없이 다시 수집
+        if (_hazardHitBuffer.Count == 0 && exclude != null && exclude.Count > 0)
+        {
+            for (int i = 0; i < alive.Count; i++)
+            {
+                MonsterAI m = alive[i];
+                if (m != null && m.gameObject.activeInHierarchy)
+                    _hazardHitBuffer.Add(m);
+            }
         }
 
         if (_hazardHitBuffer.Count == 0) return false;
@@ -438,6 +797,36 @@ public class SkillSystem : MonoBehaviour
         sr.sortingOrder = 40;
 
         Destroy(go, 0.3f);
+    }
+
+    // 대지 균열 행 배치 (기획 4-3-1)
+    private const int EarthCrackColumns = 7;        // 한 줄 당 크랙 개수
+    private const float EarthCrackXStepPx = 200f;   // 크랙 간 가로 간격 px (하나당 x+200, 맨왼쪽 -600 ~ 맨오른쪽 +600)
+
+    /// <summary>대지 균열: 위험영역을 가로지르는 7개 크랙(Ground_explosion)을 단발 재생한다.
+    /// center.y는 HazardRoutine이 펄스마다 전진(+sizeWorld.y)시킨 값을 그대로 받아 행 전체가 함께 전진한다(기획 4-3-2).</summary>
+    private void SpawnEarthCrackRow(Vector2 center, Vector2 sizeWorld)
+    {
+        var lib = Vfx;
+        if (lib == null || lib.earthCrackExplosion == null)
+        {
+            SpawnHazardFlash(center, sizeWorld, new Color(1f, 0.55f, 0.1f, 0.35f)); // VFX 미연결 폴백
+            return;
+        }
+
+        float step = PxToWorld(EarthCrackXStepPx);   // 200px → world
+        float scale = lib.earthCrackScale;
+        for (int n = 0; n < EarthCrackColumns; n++)
+        {
+            // n=0..6 → (n-3)= -3..+3 → x -600..+600px (기획 4-3-1)
+            float cellX = center.x + (n - (EarthCrackColumns - 1) * 0.5f) * step;
+            var crack = SpawnVfx(lib.earthCrackExplosion, new Vector2(cellX, center.y), scale, 50);
+            if (crack != null)
+            {
+                StopLoopingOneShot(crack);   // 루프 파티클 → 1회 재생 (메테오 explosion_5와 동일)
+                Destroy(crack, ComputeOneShotLifetime(crack));
+            }
+        }
     }
 
     // ---------- 소환 (화염 정령) ----------
@@ -490,6 +879,15 @@ public class SkillSystem : MonoBehaviour
 
         float speed = data.Speed > 0 ? data.Speed : _basicProjectileSpeed;
         controller.SetupStraight(damage, origin, target.transform.position, speed);
+
+        // 정령이 시전하는 화염 작렬(StandardID 102)도 동일 스킨 적용 (기획 4-5: 정령 투사체는 화염 작렬 에셋 공유).
+        if (data.StandardID == 102)
+        {
+            var lib = Vfx;
+            if (lib != null && lib.fireballProjectile != null)
+                AttachProjectileSkin(controller, obj, lib.fireballProjectile, lib.fireballProjectileScale,
+                    origin, target.transform.position, lib.fireballRotationTrimDeg);
+        }
     }
 
     // ---------- px → world 변환 ----------
@@ -542,6 +940,15 @@ public class SkillSystem : MonoBehaviour
 
         // 현재 플레이어 공격은 전부 직선 탄이다. 유도/관통탄이 필요할 때만 ProjectileController.Setup을 사용한다.
         controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed);
+
+        // 화염 작렬 계열(StandardID 102)만 Fireball_2_normal VFX 스킨 + 진행방향 회전. 기본공격/타 투사체는 사각형 유지.
+        if (data.StandardID == 102)
+        {
+            var lib = Vfx;
+            if (lib != null && lib.fireballProjectile != null)
+                AttachProjectileSkin(controller, obj, lib.fireballProjectile, lib.fireballProjectileScale,
+                    _firePoint.position, targetPos, lib.fireballRotationTrimDeg);
+        }
     }
 
     /// <returns>실제로 발사했으면 true. 타겟 부재 등으로 스킵하면 false (자동공격 카운트는 발사 성공만 센다).</returns>
@@ -656,8 +1063,12 @@ public enum HazardPlacement
 /// <summary>장판 실행 스타일</summary>
 public enum HazardStyle
 {
-    InstantPulse,   // 즉시 판정 + 플래시 (파이어브레스/대지 균열)
+    InstantPulse,   // 즉시 판정 + 플래시 (대지 균열 등)
     MeteorStrike,   // 마커 → 낙하 → 폭발 3단 시퀀스 (메테오)
+    FireBreath,     // 수정구 소환 → 0.5초 간격 N발 화염 분사 → 수정구 삭제 (파이어브레스)
+    LightningHeld,  // VFX 1회 생성·지속 → 펄스마다 데미지 → 종료 후 삭제 (구형 번개)
+    LightningDischarge, // 가운데 번개막 + 양옆 구슬 2개 지속 → 펄스마다 데미지 (방전)
+    LightningChain, // 에이프릴→타겟 전기선 + 몬스터 몸체 타격 이펙트 (사슬 번개)
 }
 
 public struct HazardConfig
