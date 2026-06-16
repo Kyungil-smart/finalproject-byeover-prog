@@ -25,6 +25,9 @@ public class ArtifactListBinder : MonoBehaviour
     [Tooltip("기어 마스터 데이터 테이블 SO (Assets/_Project/Data/SO/GearMasterTable.asset)")]
     [SerializeField] private GearMasterTable _gearTable;
 
+    [Tooltip("보유 인벤토리 매니저(보유/미보유·게이지 산출용). 비우면 GameStateManager.Instance 의 것을 사용한다.")]
+    [SerializeField] private ArtifactManager _artifactManager;
+
     [Header("이름 표시 (선택)")]
     [Tooltip("연결하면 GearName 을 현지화 키로 조회. 비우면 'Grade #ID' 로 표시한다.")]
     [SerializeField] private LocalizationManager _localization;
@@ -36,6 +39,9 @@ public class ArtifactListBinder : MonoBehaviour
 
     // 보유 중인 Gear_ID 집합. null 이면 보유 정보가 아직 없어 전부 보유로 간주(딤 없음).
     private HashSet<int> _ownedGearIds;
+
+    // 인벤토리 갱신 이벤트를 구독 중인 매니저(중복 구독/해제 추적용).
+    private ArtifactManager _subscribedManager;
 
     private void OnEnable()
     {
@@ -52,6 +58,13 @@ public class ArtifactListBinder : MonoBehaviour
     private void Start()
     {
         Build();
+        TrySubscribeInventory();
+    }
+
+    private void OnDestroy()
+    {
+        if (_subscribedManager != null)
+            _subscribedManager.OnInventoryUpdated -= ApplyInventory;
     }
 
     // 데이터 로드 -> 정렬 -> 슬롯 재생성
@@ -138,27 +151,76 @@ public class ArtifactListBinder : MonoBehaviour
             GearMasterData gear = _gears[i];
             ArtifactListSlotView slot = Instantiate(_slotPrefab, _content);
             slot.SetData(gear, ToGrade(gear.GearGrade));
-            slot.SetOwned(IsOwned(gear.Gear_ID));
             slot.Clicked += HandleSlotClicked;
-            // 돌파 테두리/게이지(SetAscensionBorder·SetGauge)·아이콘은 인벤토리/아이콘 소스 준비 후 채운다.
+            // 아이콘은 아이콘 소스 준비 후 채운다. 보유/미보유·돌파 테두리·게이지는 ApplyInventory 에서 일괄 반영.
             _slots.Add(slot);
         }
+
+        ApplyInventory();
     }
 
-    // 인벤토리 데이터 연동 시 호출 : 보유 중인 Gear_ID 목록을 넘기면 미보유 슬롯에 딤을 적용한다.
-    public void SetOwnedGearIds(IEnumerable<int> ownedGearIds)
+    // 인벤토리 매니저의 OnInventoryUpdated 를 구독해 가챠/돌파/분해 시 자동 갱신한다.
+    private void TrySubscribeInventory()
     {
-        _ownedGearIds = ownedGearIds != null ? new HashSet<int>(ownedGearIds) : null;
+        ArtifactManager mgr = ResolveManager();
+        if (mgr == null || mgr == _subscribedManager)
+            return;
+
+        if (_subscribedManager != null)
+            _subscribedManager.OnInventoryUpdated -= ApplyInventory;
+
+        mgr.OnInventoryUpdated += ApplyInventory;
+        _subscribedManager = mgr;
+        ApplyInventory();
+    }
+
+    // 보유 인벤토리를 각 슬롯에 반영 : 보유/미보유 딤 + 돌파 테두리 + 보유개수 게이지(기획서 3-4-4).
+    // 매니저가 없으면 모두 미보유로 표시하고 게이지를 초기화한다(프리팹 placeholder 제거).
+    private void ApplyInventory()
+    {
+        ArtifactManager mgr = ResolveManager();
 
         for (int i = 0; i < _slots.Count; i++)
         {
-            if (_slots[i] != null)
-                _slots[i].SetOwned(IsOwned(_slots[i].GearId));
+            ArtifactListSlotView slot = _slots[i];
+            if (slot == null)
+                continue;
+
+            ArtifactInstance inst = mgr != null
+                ? mgr.MyArtifacts.Find(a => a != null && a.MasterId == slot.GearId)
+                : null;
+
+            if (inst != null)
+            {
+                slot.SetOwned(true);
+                slot.SetAscensionBorder(inst.AscensionCount);
+                slot.SetGaugeByOwnership(inst.CurrentCount, inst.AscensionCount);
+            }
+            else
+            {
+                // 미보유(또는 매니저 미연결) : 수동 보유목록이 있으면 그것을 따르고, 게이지/테두리는 초기화.
+                bool owned = mgr == null && _ownedGearIds != null && _ownedGearIds.Contains(slot.GearId);
+                slot.SetOwned(owned);
+                slot.SetAscensionBorder(0);
+                slot.SetGaugeByOwnership(0, 0);
+            }
         }
     }
 
-    // 보유 정보가 없으면(null) 전부 보유로 간주(딤 없음).
-    private bool IsOwned(int gearId) => _ownedGearIds == null || _ownedGearIds.Contains(gearId);
+    // 인벤토리 매니저 해석 : 인스펙터 지정값 우선, 없으면 GameStateManager 싱글톤.
+    private ArtifactManager ResolveManager()
+    {
+        if (_artifactManager != null)
+            return _artifactManager;
+        return GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+    }
+
+    // 인벤토리 매니저가 없을 때의 수동 보유 목록 연동(선택) : 보유 중인 Gear_ID 목록으로 딤만 갱신한다.
+    public void SetOwnedGearIds(IEnumerable<int> ownedGearIds)
+    {
+        _ownedGearIds = ownedGearIds != null ? new HashSet<int>(ownedGearIds) : null;
+        ApplyInventory();
+    }
 
     private string ResolveName(GearMasterData gear)
     {
