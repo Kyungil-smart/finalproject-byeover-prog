@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 /// <summary>
 /// 인게임에서 획득한 인챈트 목록과 레벨을 관리한다.
@@ -52,18 +53,6 @@ public class EnchantModel : MonoBehaviour
     // 스탯: Key = Stat_Name_ID, Value = 레벨과 그룹ID 보관
     private Dictionary<int, AcquiredStatData> _ownedStats = new ();
     public IReadOnlyDictionary<int, AcquiredStatData> OwnedStats => _ownedStats;
-
-    public struct AcquiredSkillData
-    {
-        public int Level;
-        public int GroupID;
-    }
-
-    public struct AcquiredStatData
-    {
-        public int Level;
-        public int GroupID;
-    }
 
     // ---------- 초기화 ----------
     public void Initialize()
@@ -138,6 +127,8 @@ public class EnchantModel : MonoBehaviour
         if (_ownedSkills.ContainsKey(nameId))
         {
             var data = _ownedSkills[nameId];
+            data.Data = DataManager.Instance.SpellRepo.GetSkillChainByName(groupId, nameId)
+                .GetNextLevelData(data.Level);
             data.Level++;
             _ownedSkills[nameId] = data;
             
@@ -145,7 +136,8 @@ public class EnchantModel : MonoBehaviour
         }
         else
         {
-            _ownedSkills[nameId] = new AcquiredSkillData { Level = 1, GroupID = groupId };
+            var data = DataManager.Instance.SpellRepo.GetSkillChainByName(groupId, nameId).GetNextLevelData(0);
+            _ownedSkills[nameId] = new AcquiredSkillData { Level = 1, GroupID = groupId, Data =  data };
             OnSkillAcquired?.Invoke(nameId, 1);
         }
     }
@@ -155,6 +147,8 @@ public class EnchantModel : MonoBehaviour
         if (_ownedStats.ContainsKey(statNameId))
         {
             var data = _ownedStats[statNameId];
+            data.Data = DataManager.Instance.SpellRepo.GetStatChainByName(groupId, statNameId)
+                .GetNextLevelData(data.Level);
             data.Level++;
             _ownedStats[statNameId] = data;
             
@@ -162,7 +156,8 @@ public class EnchantModel : MonoBehaviour
         }
         else
         {
-            _ownedStats[statNameId] = new AcquiredStatData { Level = 1, GroupID = groupId };
+            var data = DataManager.Instance.SpellRepo.GetStatChainByName(groupId, statNameId).GetNextLevelData(0);
+            _ownedStats[statNameId] = new AcquiredStatData { Level = 1, GroupID = groupId, Data = data };
             OnStatAcquired?.Invoke(statNameId, 1);
         }
     }

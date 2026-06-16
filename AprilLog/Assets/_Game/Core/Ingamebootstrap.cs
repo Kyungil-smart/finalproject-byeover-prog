@@ -94,8 +94,8 @@ public class InGameBootstrap : MonoBehaviour
         // 아웃게임 성장 보너스 적용 (홍정옥)
         int characterLevel = GetCharacterLevel();
         DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
-            out int hpBonus, out int attackBonus, out int stunBonus, out int slowBonus);
-        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, stunBonus, slowBonus);
+            out int hpBonus, out int attackBonus, out int effectPower, out int flatPierce);
+        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, effectPower, flatPierce);
 
         _combinationModel.Initialize();
 

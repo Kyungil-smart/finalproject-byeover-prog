@@ -162,6 +162,7 @@ public class GearMasterData
     public int Special_ID; // 특수 능력치
     public int OwnedSpecial_ID; // 보유 특수 능력치
     public string GearGrade; // Rare, Epic, Legendary
+    public string IconSprite;
     public int MaxHPBaseAmount;
     public int AttackBaseAmount;
     public int GearName; // 기어이름 : 번역 연결용
