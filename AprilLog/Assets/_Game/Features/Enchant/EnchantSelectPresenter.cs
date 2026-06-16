@@ -21,6 +21,7 @@ public class EnchantSelectPresenter
     private readonly ScreenNavigator _navigator;
     private EnchantSelectionLogic _selectionLogic;
     private List<Legacy_EnchantMasterData> _currentChoices;
+    private int _rerollRemaining;  // 카드 새로고침 남은 횟수 (TEST 씬 99, 그 외 0)
 
     public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model,
         Legacy_CharacterRepo repo, ScreenNavigator navigator)
@@ -33,17 +34,34 @@ public class EnchantSelectPresenter
 
         _view.OnChoiceSelected += HandleChoice;
         _view.OnSkipSelected += HandleSkip;
+        _view.OnRerollSelected += HandleReroll;
     }
 
     public void Dispose()
     {
         _view.OnChoiceSelected -= HandleChoice;
         _view.OnSkipSelected -= HandleSkip;
+        _view.OnRerollSelected -= HandleReroll;
     }
 
     public void ShowSelection()
     {
-        _currentChoices = _selectionLogic.GenerateChoices();
+        // 카드 새로고침(리롤): TEST 씬에서만 99회 허용, 그 외엔 0(버튼 숨김). 선택지가 새로 뜰 때마다 리셋.
+        _rerollRemaining = IsTestScene() ? 99 : 0;
+        GenerateAndDisplay(advanceRoute: true);
+    }
+
+    // 리롤: 같은 레벨업의 카드만 다시 뽑는다(루트 순번은 안 올림). TEST 씬 99회 한정.
+    private void HandleReroll()
+    {
+        if (_rerollRemaining <= 0) return;
+        _rerollRemaining--;
+        GenerateAndDisplay(advanceRoute: false);
+    }
+
+    private void GenerateAndDisplay(bool advanceRoute)
+    {
+        _currentChoices = _selectionLogic.GenerateChoices(advanceRoute);
         var displayData = new Legacy_EnchantDisplayData[_currentChoices.Count];
         for (int i = 0; i < _currentChoices.Count; i++)
         {
@@ -60,6 +78,14 @@ public class EnchantSelectPresenter
             };
         }
         _view.SetChoices(displayData);
+        _view.SetRerollAvailable(IsTestScene(), _rerollRemaining);
+    }
+
+    // TEST 씬에서만 리롤 허용. 씬 이름에 "TEST" 포함 여부로 판별(Skill_TEST 등).
+    private static bool IsTestScene()
+    {
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        return !string.IsNullOrEmpty(sceneName) && sceneName.ToUpperInvariant().Contains("TEST");
     }
 
     // INTERIM: stat-type 코드 → 카드 타입 라벨. (기획 enum 확정 시 교체)
@@ -115,6 +141,36 @@ public class EnchantSelectPresenter
             case 1051:
                 int meteors = 2 + level; // 3/4/5회
                 return $"콤보 9의 배수마다 무작위 적에게 메테오 {meteors}회 낙하";
+
+            // ===== 바람 속성 (v1.04 테이블) =====
+            case 3011:
+                int haste = level >= 3 ? 20 : (level == 2 ? 25 : 30);
+                string hasteExtra = level >= 3 ? " (보조 투사체 2개)" : "";
+                return $"자동공격 {haste}회마다 보조 투사체 발사 + 공격력·공격속도 상승{hasteExtra}";
+            case 3021:
+                int windPierce = level >= 3 ? 25 : (level == 2 ? 20 : 15);
+                return $"빨강+노랑+하양 정렬 조합 시 관통(최대 {windPierce}) 바람 칼날 발사";
+            case 3031:
+                return "파랑+초록+하양 정렬 조합 시 전방 범위에 4히트 돌풍";
+            case 3041:
+                return "콤보 10의 배수마다 소용돌이 생성 — 4초간 지속 피해 + 슬로우";
+            case 3051:
+                return "콤보 10의 배수마다 무작위 적에게 8히트 관통 투사체(템페스트)";
+
+            // ===== 번개 속성 (v1.04 테이블) =====
+            case 4011:
+                int orb = level >= 3 ? 20 : (level == 2 ? 25 : 30);
+                return $"자동공격 {orb}회마다 타겟에 구형 번개 장판 — 3초간 0.25초마다 감전";
+            case 4021:
+                return "노랑+초록+빨강 정렬 조합 시 무작위 적들을 사슬 번개로 연쇄 4히트";
+            case 4031:
+                return "파랑+빨강+하양 정렬 조합 시 5초간 감전 장판 + 첫 피격 적 슬로우";
+            case 4041:
+                string boltExtra = level >= 3 ? " + 스턴" : "";
+                return $"콤보 9의 배수마다 타겟에 낙뢰 4히트{boltExtra}";
+            case 4051:
+                return "콤보 10의 배수마다 무작위 적에게 세로 번개 장판(뇌격)";
+
             default:
                 return $"스킬 발동 (Lv{level})";
         }

@@ -52,10 +52,10 @@ public class FireSkillVfxLibrary : ScriptableObject
 
     [Header("파이어브레스 (연결됨) — Magic_Sphere_normal / Flame_normal")]
     public GameObject fireBreathCrystal;    // Magic_Sphere_normal (수정구)
-    [Tooltip("수정구 스케일 — Magic_Sphere native size ~10월드유닛이라 1이면 화면 덮음. 0.4 시작점")]
-    public float fireBreathCrystalScale = 0.4f;
+    [Tooltip("수정구(구체) 스케일 — 단순 소환 비주얼이라 '범위 스탯'과 무관한 고정 크기. 너무 크면 더 줄일 것 (실제 공격은 브레스 화염이 함)")]
+    public float fireBreathCrystalScale = 0.14f;
     public GameObject fireBreathFlame;      // Flame_normal (화염 분사)
-    [Tooltip("화염 스케일 — native size ~10. 0.4 시작점")]
+    [Tooltip("화염(브레스) 기준 스케일 — 실제 크기 = 이 값 × 범위배율(피격범위폭/500px). 범위 스탯↑ 시 화염도 비례 확대")]
     public float fireBreathFlameScale = 0.4f;
     [Tooltip("화염 분사 간격(초) — 기획 4-1-4 '0.5초 간격마다'")]
     public float fireBreathFlameInterval = 0.5f;

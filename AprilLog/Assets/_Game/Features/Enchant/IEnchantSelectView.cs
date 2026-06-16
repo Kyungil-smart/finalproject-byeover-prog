@@ -12,4 +12,6 @@ public interface IEnchantSelectView
     event Action<int> OnChoiceSelected;
     event Action OnSkipSelected;
     event Action<int> OnDeleteConfirmed;
+    event Action OnRerollSelected;
+    void SetRerollAvailable(bool available, int remaining);
 }

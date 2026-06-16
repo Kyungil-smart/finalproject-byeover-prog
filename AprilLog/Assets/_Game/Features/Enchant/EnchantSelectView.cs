@@ -27,6 +27,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public event Action<int> OnChoiceSelected;
     public event Action OnSkipSelected;
     public event Action<int> OnDeleteConfirmed;
+    public event Action OnRerollSelected;
 
     [Header("참조")]
     [SerializeField] private EnchantModel _enchantModel;
@@ -58,6 +59,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             _isInitialized = true;
             _presenter = new EnchantSelectPresenter(this, _enchantModel, Legacy_DataManager.Instance.CharacterRepo, _navigator);
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
+            if (_rerollButton != null)
+                _rerollButton.onClick.AddListener(() => OnRerollSelected?.Invoke());
         }
         
         // 팝업이 열릴 때 자동으로 프레젠터에게 선택지를 생성하라고 요청
@@ -126,6 +129,14 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     // View 버튼에서 호출
     public void SelectChoice(int index) => OnChoiceSelected?.Invoke(index);
     public void ConfirmDelete(int index) => OnDeleteConfirmed?.Invoke(index);
+
+    /// <summary>새로고침(리롤) 버튼 상태 갱신. available=false면 버튼을 숨김(일반 씬). remaining=남은 횟수(0이면 비활성).</summary>
+    public void SetRerollAvailable(bool available, int remaining)
+    {
+        if (_rerollButton == null) return;
+        _rerollButton.gameObject.SetActive(available);
+        _rerollButton.interactable = available && remaining > 0;
+    }
 
     // 멀티 터치 방지
     private void DisableAllCardButtons()
