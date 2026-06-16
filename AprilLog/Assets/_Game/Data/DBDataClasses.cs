@@ -18,6 +18,27 @@ public class DataArray<T>
 
 #endregion
 
+#region ----- B -----
+
+/// <summary>
+/// 전투 중 특정 행위에 대한 보상<br/>
+/// 생성일 : 26.06.16<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class BattleRewardData
+{
+    public int Target_ID;
+    public string RewardTrigger; // WaveClear, EliteKill, BossKill
+    public string RewardScope; // InGame, OutGame
+    public int FirstRewardItem;
+    public int FirstRewardAmount;
+    public int SecondRewardItem;
+    public int SecondRewardAmount;
+}
+
+#endregion
+
 #region ----- C -----
 
 /// <summary>
@@ -126,34 +147,68 @@ public class EffectTableData
 
 #endregion
 
+#region ----- F -----
+
+/// <summary>
+/// 무료 가챠 상자 상세<br/>
+/// 생성일 : 26.06.16<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class FreeGachaBoxData
+{
+    public int Gacha_ID;
+    public string FreeDrawType; // Cooldown, AdDaily
+    public int Count;
+    public int FreeCooldownHour;
+    public int DailyLimit;
+    public bool AdRequired;
+}
+
+#endregion
+
 #region ----- G -----
 
 /// <summary>
 /// 아티펙트 가챠 확률<br/>
 /// 생성일 : 26.06.11<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.16
 /// </summary>
 [Serializable]
 public class GachaBoxData
 {
     public int Gacha_ID;
-    public string GachaName; // RareBox, EpicBox, LegendaryBox
-    public string CostType; // Gold, Diamond
     public int CostAmount;
     public float RareRate;
     public float EpicRate;
     public float LegendaryRate;
-    public string FreeDrawType; // Cooldown, AdDaily, None
-    public int FreeCooldownHour;
-    public bool AdRequired;
-    public string PityType; // None, SelectPity
+    public string PityType; // None, RandomLegendary
     public int PityCount;
+    public int Name;
+    public int Explanation;
+}
+
+/// <summary>
+/// 아티펙트 가챠 누적 보상<br/>
+/// 생성일 : 26.06.16<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GachaRewardData
+{
+    public int Gacha_ID;
+    public int MileageCount;
+    public int FirstRewardItem;
+    public int FirstRewardAmount;
+    public int SecondRewardItem;
+    public int SecondRewardAmount;
+    public bool Reset;
 }
 
 /// <summary>
 /// 아티팩트 능력 및 효과 연결을 위한 연결 데이터<br/>
 /// 생성일 : 26.06.11<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.15
 /// </summary>
 [Serializable]
 public class GearMasterData
@@ -172,7 +227,7 @@ public class GearMasterData
 /// <summary>
 /// 기어 등급에 따른 공통 데이터<br/>
 /// 생성일 : 26.06.11<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.16
 /// </summary>
 [Serializable]
 public class GearGradeData
@@ -184,8 +239,6 @@ public class GearGradeData
     public int UpgradeStone; // 분해 시 나오는 강화석 개수
     public int BaseLevel; // 기본 레벨 상한
     public int LevelCapIncrease; // 돌파 당 레벨 상한 증가량
-    public string AscensionType; // 돌파 재료 타입 : SameGear, None -> 추후 변동 가능성 있음
-    public int AscensionAmount; // 돌파에 필요한 재료 수
 }
 
 /// <summary>
@@ -204,9 +257,23 @@ public class GearLevelData
 }
 
 /// <summary>
+/// 기어 등급 별 돌파에 필요한 재화 데이터<br/>
+/// 생성일 : 26.06.16<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GearAscensionCostData
+{
+    public string GearGrade;
+    public string MaterialType;
+    public int CostItem;
+    public int CostAmount;
+}
+
+/// <summary>
 /// 각 기어 별 레벨업에 필요한 재화 데이터<br/>
 /// 생성일 : 26.06.11<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.16
 /// </summary>
 [Serializable]
 public class GearUpgradeCostData
@@ -214,7 +281,7 @@ public class GearUpgradeCostData
     public int Gear_ID;
     public int StartLevel; // 최초 획득 시 시작 레벨
     public int EndLevel; // 모든 돌파 적용 후 최종 레벨
-    public string Type; // 업그레이드에 들어가는 재화 종류 : Gold, UpgradeStone
+    public int Type; // 업그레이드에 들어가는 재화 종류
     public int BaseAmount; // 업그레이드에 들어가는 재화의 기본 수치
     public float GrowthValue; // 업그레이드에 들어가는 재화의 성장 보정치 : 최종 필요 재화량 = BaseAmount × GrowthValue ^ (현재 레벨 - StartLevel), 소수점이 발생할 경우, 소수점 이하 올림.
 }
@@ -237,6 +304,19 @@ public class GearSpecialEffectData
     public float Value; // 1레벨 당 성장치, 65001(ATK), 65002(HP)는 %가 아닌 정수
     public string TriggerType; // 특수 능력치의 발동 조건
     public string LimitType; // 특수 능력치의 발동 조건의 제한(언제 발동되는지), 확인 필요
+}
+
+/// <summary>
+/// 각 기어 별 분해 시 지급하는 재화 데이터<br/>
+/// 생성일 : 26.06.16<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class GearDismantleData
+{
+    public string GearGrade; // Rare, Epic, Legendary
+    public int RewardItem;
+    public int RewardAmount;
 }
 
 #endregion
@@ -327,6 +407,28 @@ public class MonsterWavePoolData
 
 #endregion
 
+#region ----- L -----
+
+/// <summary>
+/// 레전더리 조각 교환 비율<br/>
+/// 생성일 : 26.06.16<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class LegendaryShardExchangeData
+{
+    public int Exchange_ID;
+    public int CostItem;
+    public int CostAmount;
+    public string MaterialType; // 교환 결과 - SelectGear, Item
+    public int RewardItem;
+    public int RewardAmount;
+    public int RewardGrade; // 교환 아이템 등급 - Legendary, None
+    public int RequirementType; // 교환 조건 - UnownedOnly, None
+}
+
+#endregion
+
 #region ----- O -----
 
 /// <summary>
@@ -347,6 +449,24 @@ public class OutLevelData
     public int NewEnchant;
 }
 
+
+#endregion
+
+#region ----- P -----
+
+/// <summary>
+/// 유료 가챠 상자 상세<br/>
+/// 생성일 : 26.06.16<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class PaidGachaBoxData
+{
+    public int Gacha_ID;
+    public int Count;
+    public int CostType;
+    public int CostAmount;
+}
 
 #endregion
 

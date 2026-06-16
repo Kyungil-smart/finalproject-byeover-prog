@@ -42,6 +42,8 @@ public static class DataTableSchemaRegistry
     public static readonly IReadOnlyList<DataTableSchema> Schemas = new List<DataTableSchema>
     {
         // Managing List <알파벳 순서로 정렬>
+        new DataTableSchema("BattleReward", "battle_reward", "BattleRewardData", "BattleRewardTable", true),
+        
         new DataTableSchema("ChangeReward", "change_reward", "ChangeRewardData", "ChangeRewardTable", true),
         new DataTableSchema("ChapterMaster", "chapter_master", "ChapterData", "ChapterTable", true),
         new DataTableSchema("CharacterMaster", "character_master", "CharacterMasterData", "CharacterMasterTable", true),
@@ -50,21 +52,30 @@ public static class DataTableSchemaRegistry
         
         new DataTableSchema("EffectTable", "effect_table", "EffectTableData", "EffectMasterTable", true),
         
+        new DataTableSchema("FreeGachaBox", "free_gacha_box", "FreeGachaBoxData", "FreeGachaBoxTable", true),
+        
         new DataTableSchema("GachaBox", "gacha_box", "GachaBoxData", "GachaBoxTable", true),
         new DataTableSchema("GearMaster", "gear_master", "GearMasterData", "GearMasterTable", true),
         new DataTableSchema("GearGrade", "gear_grade", "GearGradeData", "GearGradeTable", true),
         new DataTableSchema("GearLevel", "gear_level", "GearLevelData", "GearLevelTable", true),
         new DataTableSchema("GearUpgradeCost", "gear_upgrade_cost", "GearUpgradeCostData", "GearUpgradeCostTable", true),
         new DataTableSchema("GearSpecialEffect", "gear_special_effect", "GearSpecialEffectData", "GearSpecialEffectTable", true),
+        new DataTableSchema("GearDismantle", "gear_dismantle", "GearDismantleData", "GearDismantleTable", true),
+        new DataTableSchema("GearAscensionCost", "gear_ascension_cost", "GearAscensionCostData", "GearAscensionCostTable", true),
+        new DataTableSchema("GachaReward", "gacha_reward", "GachaRewardData", "GachaRewardTable", true),
         
         new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
+        
+        new DataTableSchema("LegendaryShardExchange", "legendary_shard_exchange", "LegendaryShardExchangeData", "LegendaryShardExchangeTable", true),
         
         new DataTableSchema("MonsterPool", "monster_pool", "MonsterPoolData", "MonsterPoolTable", true),
         new DataTableSchema("MonsterStageScaling", "monster_stage_scaling", "MonsterStageScalingData", "MonsterStageScalingTable", true),
         new DataTableSchema("MonsterStatus", "monster_status", "MonsterStatusData", "MonsterStatusTable", true),
         new DataTableSchema("MonsterWavePool", "monster_wave_pool", "MonsterWavePoolData", "MonsterPoolMasterTable", true),
-        
+
         new DataTableSchema("OutLevel", "out_level", "OutLevelData", "OutLevelTable", true),
+        
+        new DataTableSchema("PaidGachaBox", "paid_gacha_box", "PaidGachaBoxData", "PaidGachaBoxTable", true),
         
         new DataTableSchema("SkillTable", "skill_table", "SkillTableData", "SkillEnchantTable", true),
         new DataTableSchema("SpecialWaveRule", "special_wave_rule", "SpecialWaveRuleData", "SpecialWaveRuleTable", true),
