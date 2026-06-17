@@ -5,6 +5,7 @@
 // 설명 : 기획서 - v1.04_인게임 성장 시스템_이균호 > 인첸트 시트 반영 (스킬/스탯 분리, 그룹별 보유 한도 적용), 스킬 파트 연동 이벤트 추가
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -53,13 +54,17 @@ public class EnchantModel : MonoBehaviour
     // 스탯: Key = Stat_Name_ID, Value = 레벨과 그룹ID 보관
     private Dictionary<int, AcquiredStatData> _ownedStats = new ();
     public IReadOnlyDictionary<int, AcquiredStatData> OwnedStats => _ownedStats;
+    
+    // ---------- private  ----------
+    private WaitForEndOfFrame _endOfFrame;
 
     // ---------- 초기화 ----------
     public void Initialize()
     {
+        _endOfFrame = new WaitForEndOfFrame();
         _ownedSkills.Clear();
         _ownedStats.Clear();
-        _listView.InitializePresenter(this);
+        StartCoroutine(InitRoutine());
     }
 
     // ---------- 획득 한도 체크 ----------
@@ -228,6 +233,7 @@ public class EnchantModel : MonoBehaviour
         return list;
     }
     
+    // ---------- 보조 함수 ----------
     private int? FindSkillGroupId(int nameId)
     {
         foreach (var group in DataManager.Instance.SpellRepo.GetAllSkillGroups().Values)
@@ -250,5 +256,15 @@ public class EnchantModel : MonoBehaviour
             }
         }
         return null;
+    }
+    
+    private IEnumerator InitRoutine()
+    {
+        while (_listView != null)
+        {
+            yield return _endOfFrame;
+        }
+        
+        _listView.InitializePresenter(this);
     }
 }
