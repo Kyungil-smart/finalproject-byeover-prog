@@ -29,6 +29,9 @@ public class SpellRepo : MonoBehaviour
     [Header("스텟 인챈트")]
     [SerializeField] private StatEnchantTable _statTable;
 
+    [Header("런타임 스킬(Legacy) — GetSkill(int)용. Legacy_SkillDataTable.asset 배선 필수")]
+    [SerializeField] private Legacy_SkillDataTable _skillDataTable;
+
     // ---------- Dictionary 캐시 ----------
     private Dictionary<int, Legacy_SkillMasterData> _skillMaster;
     private Dictionary<int, Legacy_SkillData> _skills;
@@ -68,6 +71,10 @@ public class SpellRepo : MonoBehaviour
         BuildSkillData();
         BuildStatData();
         BuildEffectData();
+        // 런타임 콤보/소환/스킬인챈트가 쓰는 Legacy_SkillData 캐시(_skills). _skillDataTable SO를 배선하면 로컬 빌드,
+        // 안 했으면 GetSkill에서 Legacy_CharacterRepo(이미 배선됨)로 폴백한다(머지 후 빌드 누락 → 스킬 전부 무동작 복구).
+        if (_skillDataTable != null)
+            _skills = BuildDictionary(_skillDataTable, nameof(_skillDataTable), r => r.SkillID, false);
 
         _isInitialized = true;
         Debug.Log($"[SpellRepo] Initialized Complete. Skill Group Count: {_skillGroups.Count}, Stat Group Count: {_statGroups.Count}, Effect Count : {_effectDataByID.Count}");
@@ -190,7 +197,16 @@ public class SpellRepo : MonoBehaviour
 
     // ---------- 조회 API ----------
     public Legacy_SkillMasterData GetSkillMaster(int standardId) => GetData(_skillMaster, standardId, nameof(GetSkillMaster));
-    public Legacy_SkillData GetSkill(int skillId) => GetData(_skills, skillId, nameof(GetSkill));
+    public Legacy_SkillData GetSkill(int skillId)
+    {
+        // _skillDataTable 미배선으로 _skills가 비면, 이미 배선돼 동작 중인 Legacy_CharacterRepo의 동일 데이터로 폴백.
+        if (_skills == null || _skills.Count == 0)
+        {
+            var legacy = Legacy_DataManager.Instance != null ? Legacy_DataManager.Instance.CharacterRepo : null;
+            if (legacy != null) return legacy.GetSkill(skillId);
+        }
+        return GetData(_skills, skillId, nameof(GetSkill));
+    }
     public Legacy_EffectData GetEffect(int effectId) => GetData(_effects, effectId, nameof(GetEffect));
     public Legacy_EnchantMasterData GetEnchantMaster(int enchantId) => GetData(_enchantMaster, enchantId, nameof(GetEnchantMaster));
     public Legacy_EnchantLevelData GetEnchantLevel(int enchantId, int level) => GetData(_enchantLevels, $"{enchantId}_{level}", nameof(GetEnchantLevel));

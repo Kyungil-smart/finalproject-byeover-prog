@@ -64,12 +64,16 @@ public class EnchantModel : MonoBehaviour
         _endOfFrame = new WaitForEndOfFrame();
         _ownedSkills.Clear();
         _ownedStats.Clear();
+        // 머지 후 씬 미배선 방어: EnchantUIModel(_model)이 인스펙터에 안 꽂혀 있으면
+        // 같은 오브젝트에서 찾거나 새로 생성한다 (상호 참조 자동 복구). 없으면 여기서 NRE 나며 InitializeAll 전체가 중단됨.
+        if (_model == null)
+            _model = GetComponent<EnchantUIModel>() ?? gameObject.AddComponent<EnchantUIModel>();
         _model.InitUIModel();
     }
 
     public void OnDestroy()
     {
-        _model.Discard();
+        if (_model != null) _model.Discard();
     }
 
     // ---------- 획득 한도 체크 ----------
@@ -134,19 +138,22 @@ public class EnchantModel : MonoBehaviour
     // ---------- 조작 ----------
     public void AcquireSkill(int nameId, int groupId)
     {
+        // 신규 SpellRepo는 그룹/이름 인덱스 미존재 시 null 반환 → 옛 '항상 non-null' 전제로 짠 .GetNextLevelData가 NRE.
+        var chain = DataManager.Instance.SpellRepo.GetSkillChainByName(groupId, nameId);
+        if (chain == null) { Debug.LogError($"[EnchantModel] SkillChain 없음 group={groupId} name={nameId} — SpellRepo SO 배선/인덱스 확인. 획득 스킵."); return; }
+
         if (_ownedSkills.ContainsKey(nameId))
         {
             var data = _ownedSkills[nameId];
-            data.Data = DataManager.Instance.SpellRepo.GetSkillChainByName(groupId, nameId)
-                .GetNextLevelData(data.Level);
+            data.Data = chain.GetNextLevelData(data.Level);
             data.Level++;
             _ownedSkills[nameId] = data;
-            
+
             OnSkillLevelUp?.Invoke(nameId, data.Level);
         }
         else
         {
-            var data = DataManager.Instance.SpellRepo.GetSkillChainByName(groupId, nameId).GetNextLevelData(0);
+            var data = chain.GetNextLevelData(0);
             _ownedSkills[nameId] = new AcquiredSkillData { Level = 1, GroupID = groupId, Data =  data };
             OnSkillAcquired?.Invoke(nameId, 1);
         }
@@ -154,19 +161,21 @@ public class EnchantModel : MonoBehaviour
 
     public void AcquireStat(int statNameId, int groupId)
     {
+        var chain = DataManager.Instance.SpellRepo.GetStatChainByName(groupId, statNameId);
+        if (chain == null) { Debug.LogError($"[EnchantModel] StatChain 없음 group={groupId} name={statNameId} — SpellRepo SO 배선/인덱스 확인. 획득 스킵."); return; }
+
         if (_ownedStats.ContainsKey(statNameId))
         {
             var data = _ownedStats[statNameId];
-            data.Data = DataManager.Instance.SpellRepo.GetStatChainByName(groupId, statNameId)
-                .GetNextLevelData(data.Level);
+            data.Data = chain.GetNextLevelData(data.Level);
             data.Level++;
             _ownedStats[statNameId] = data;
-            
+
             OnStatLevelUp?.Invoke(statNameId, data.Level);
         }
         else
         {
-            var data = DataManager.Instance.SpellRepo.GetStatChainByName(groupId, statNameId).GetNextLevelData(0);
+            var data = chain.GetNextLevelData(0);
             _ownedStats[statNameId] = new AcquiredStatData { Level = 1, GroupID = groupId, Data = data };
             OnStatAcquired?.Invoke(statNameId, 1);
         }

@@ -368,8 +368,8 @@ MonoBehaviour:
   _moveArea: {fileID: 910000022}
   _moveSpeed: 160
   _arrivalDistance: 8
-  _minWaitTime: 0.4
-  _maxWaitTime: 1.2
+  _defaultInteractionSeconds: 1.2
+  _defaultWaitAfterInteractionSeconds: 0.8
   _edgePadding: {x: 80, y: 80}
 --- !u!1 &3000031
 GameObject:
@@ -470,6 +470,10 @@ MonoBehaviour:
   _interactionPoint: {fileID: 3000032}
   _interactionMessage: "\uC2DD\uD0C1\uC5D0\uC11C \uB530\uB73B\uD55C \uC2DD\uC0AC\uB97C
     \uC900\uBE44\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -572,6 +576,10 @@ MonoBehaviour:
   _interactionPoint: {fileID: 3000042}
   _interactionMessage: "\uD654\uBD84\uC758 \uC78E\uC744 \uC0B4\uD53C\uACE0 \uBB3C\uC744
     \uC90D\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -674,6 +682,10 @@ MonoBehaviour:
   _interactionPoint: {fileID: 3000052}
   _interactionMessage: "\uCC45\uC7A5\uC5D0\uC11C \uC624\uB298 \uC77D\uC744 \uCC45\uC744
     \uACE0\uB985\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -2008,6 +2020,8 @@ MonoBehaviour:
   _surfaceTabNormalColor: {r: 0.12, g: 0.13, b: 0.13, a: 1}
   _surfaceTabSelectedColor: {r: 0, g: 0.95, b: 0.45, a: 1}
   _progressModel: {fileID: 0}
+  _currencyModel: {fileID: 0}
+  _purchaseModel: {fileID: 0}
 --- !u!1 &3100101
 GameObject:
   m_ObjectHideFlags: 0
@@ -7453,6 +7467,10 @@ MonoBehaviour:
   _manualLayer: 2
   _interactionPoint: {fileID: 61746105}
   _interactionMessage: "\uCE68\uB300\uC5D0\uC11C \uD3B8\uC548\uD558\uAC8C \uD734\uC2DD\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -14090,6 +14108,10 @@ MonoBehaviour:
   _interactionPoint: {fileID: 910000002}
   _interactionMessage: "\uC804\uCCB4 \uBC30\uACBD\uC744 \uB458\uB7EC\uBCF4\uBA70
     \uD558\uC6B0\uC9D5 \uBD84\uC704\uAE30\uB97C \uD655\uC778\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -14191,6 +14213,10 @@ MonoBehaviour:
   _interactionPoint: {fileID: 910000012}
   _interactionMessage: "\uBCBD\uC9C0\uC758 \uC0C9\uAC10\uC774 \uBC29 \uBD84\uC704\uAE30\uC640
     \uC5B4\uC6B8\uB9AC\uB294\uC9C0 \uBCF4\uC544\uC694."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -14292,6 +14318,10 @@ MonoBehaviour:
   _interactionPoint: {fileID: 910000022}
   _interactionMessage: "\uBC14\uB2E5\uC758 \uC9C8\uAC10\uACFC \uBC30\uCE58 \uC0C1\uD0DC\uB97C
     \uD655\uC778\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -15081,7 +15111,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1169593833}
-  - component: {fileID: 1169593834}
   m_Layer: 0
   m_Name: OutGameGrowthSystem
   m_TagString: Untagged
@@ -15104,18 +15133,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1767865415}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1169593834
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1169593832}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa5e3070663d3214b9a2b57ae435e583, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OutGameGrowthSystem
 --- !u!1001 &1185186017
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18638,7 +18655,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1774596281}
-  - component: {fileID: 1774596282}
   m_Layer: 5
   m_Name: --- GrowthPanel ---
   m_TagString: Untagged
@@ -18665,18 +18681,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1774596282
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1774596280}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03d40aefbe2f2e64d98afb5f5280d154, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GrowthView
 --- !u!1 &1780559859
 GameObject:
   m_ObjectHideFlags: 0

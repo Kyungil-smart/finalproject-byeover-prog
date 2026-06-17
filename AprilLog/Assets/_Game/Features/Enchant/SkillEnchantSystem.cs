@@ -38,7 +38,7 @@ public class SkillEnchantSystem : MonoBehaviour
     {
         if (_enchantModel == null) return;
         _enchantModel.OnSkillAcquired += HandleChanged;
-        _enchantModel.OnSkillAcquired += HandleChanged;
+        _enchantModel.OnSkillLevelUp += HandleChanged;
     }
 
     private void Unsubscribe()

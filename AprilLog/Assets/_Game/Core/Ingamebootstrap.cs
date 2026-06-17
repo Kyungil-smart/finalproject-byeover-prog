@@ -89,6 +89,13 @@ public class InGameBootstrap : MonoBehaviour
         // [3] Model 초기화
         var commonStatus = DataManager.Instance.CharacterRepo.GetCommonStatus(1);
         var characterStatus = DataManager.Instance.CharacterRepo.GetCharacterStatus(1);
+        // 신규 CharacterRepo는 데이터 없으면 예외 대신 null 반환 → PlayerModel.Initialize가 null 역참조로 NRE,
+        // try/catch 없는 InitializeAll 전체가 중단되어 소트·웨이브까지 안 뜸. 한 단계 실패를 명시 로그+중단으로 격리.
+        if (commonStatus == null || characterStatus == null)
+        {
+            Debug.LogError("[InGameBootstrap] 캐릭터(ID=1) 스탯 데이터 없음 — CharacterRepo SO 배선/시트(Character_ID=1) 확인. 초기화 중단.");
+            return;
+        }
         _playerModel.Initialize(commonStatus, characterStatus);
 
         // 아웃게임 성장 보너스 적용 (홍정옥)

@@ -88,6 +88,11 @@ public class DataManager : MonoBehaviour
     // ---------- 초기화 ----------
     public void InitRepo()
     {
+        // 중복/파괴된 인스턴스에서 호출 방지: 씬(예: Boot)에 또 있던 DataManager는 Awake에서 Destroy되는데,
+        // Bootstrap이 그 '파괴된' 인스턴스 참조로 InitRepo를 호출하면 필드/컴포넌트 접근이 터진다(MissingReferenceException).
+        // 진짜 싱글톤(_instance)만 초기화하고, 중복은 조용히 무시한다. (데이터는 진짜 인스턴스가 이미 로드함)
+        if (_instance != null && _instance != this) return;
+
         // 이중 호출 방지
         if (_isInitialized)
         {
