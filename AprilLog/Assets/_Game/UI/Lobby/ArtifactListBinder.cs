@@ -215,6 +215,9 @@ public class ArtifactListBinder : MonoBehaviour
         return GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
     }
 
+    // 외부에서 인벤토리 반영을 강제로 다시 호출한다(예: 조각 돌파처럼 OnInventoryUpdated 가 발행되지 않는 경우).
+    public void RefreshInventory() => ApplyInventory();
+
     // 인벤토리 매니저가 없을 때의 수동 보유 목록 연동(선택) : 보유 중인 Gear_ID 목록으로 딤만 갱신한다.
     public void SetOwnedGearIds(IEnumerable<int> ownedGearIds)
     {
