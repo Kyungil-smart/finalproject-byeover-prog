@@ -29,31 +29,35 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
     [Header("참조")] 
     [Tooltip("옵션 버튼의 활성화를 위함 : 스킬 선택창에서 넘어오면 이 UI가 활성화 > 정지 버튼을 눌러서 진입한것이 아니게 됨")]
     [SerializeField] GameObject _skillSelectUI;
+    [SerializeField] EnchantUIModel _model;
     
     private EnchantListPresenter _presenter;
     public EnchantListPresenter Presenter => _presenter;
     
     private bool _isInitialized;
     public bool IsInitialized => _isInitialized;
+    
+    public event Action<bool> OnEnabled;
+
+    private void Awake()
+    {
+        if (!_isInitialized)
+        {
+            _presenter = new EnchantListPresenter(_model, this);
+            _isInitialized = true;
+        }
+    }
 
     private void OnEnable()
     {
         ToggleOptionButtonSet();
         OnSkillSelectButtonClick();
+        OnEnabled?.Invoke(true);
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
-        _presenter.Discard();
-    }
-
-    public void InitializePresenter(EnchantModel model)
-    {
-        if (!_isInitialized)
-        {
-            _presenter = new EnchantListPresenter(model, this);
-            _isInitialized = true;
-        }
+        OnEnabled?.Invoke(false);
     }
     
     private void ToggleOptionButtonSet()
