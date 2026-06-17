@@ -10,6 +10,9 @@
 // 수정자 : 김영찬
 // 수정내용 : 기획서 - v1.04_인게임 성장 시스템_이균호 > 인첸트 시트 반영 (확률 직렬화 Config 연동, 스킬/스탯 통합 출력, 한도 초과 시 교체 진입점 구성)
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인게임 인챈트 선택 팝업에서 Inspector 설정 횟수만큼 리롤할 수 있도록 씬 이름 기반 테스트 제한 제거
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,19 +29,21 @@ public class EnchantSelectPresenter
     
     // 확률 생성기
     private readonly EnchantSelector _selector; 
+    private readonly int _baseRerollCount;
     
     // 현재 화면에 떠 있는 3개의 카드 정보
     private List<EnchantCandidate> _currentChoices;
-    private int _rerollRemaining;  // 카드 새로고침 남은 횟수 (TEST 씬 99, 그 외 0)
+    private int _rerollRemaining;
     private int _pickCount = 3;     // 리롤 시 같은 개수로 다시 뽑기 위해 보관
 
-    public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model, SpellRepo repo, ScreenNavigator navigator, EnchantProbabilityConfig config, EnchantChangePresenter changePresenter)
+    public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model, SpellRepo repo, ScreenNavigator navigator, EnchantProbabilityConfig config, EnchantChangePresenter changePresenter, int rerollCount)
     {
         _view = view;
         _model = model;
         _repo = repo;
         _navigator = navigator;
         _changePresenter = changePresenter;
+        _baseRerollCount = Mathf.Max(0, rerollCount);
         _selector = new EnchantSelector(_repo, config);
 
         _view.OnChoiceSelected += HandleChoice;
@@ -55,27 +60,19 @@ public class EnchantSelectPresenter
 
     public void ShowSelection(int pickCount = 3)
     {
-        // 카드 새로고침(리롤): TEST 씬에서만 99회 허용, 그 외 0(버튼 숨김). 선택지가 새로 뜰 때마다 리셋.
         _pickCount = pickCount;
-        _rerollRemaining = IsTestScene() ? 99 : 0;
+        _rerollRemaining = _baseRerollCount;
         _currentChoices = _selector.GenerateChoices(_model, pickCount);
         DisplayChoicesToView();
     }
 
-    // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 Develop EnchantSelector가 처리). TEST 씬 99회 한정.
+    // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 EnchantSelector가 처리).
     private void HandleReroll()
     {
         if (_rerollRemaining <= 0) return;
         _rerollRemaining--;
         _currentChoices = _selector.GenerateChoices(_model, _pickCount);
         DisplayChoicesToView();
-    }
-
-    // TEST 씬에서만 리롤 허용. 씬 이름에 "TEST" 포함 여부로 판별(Skill_TEST 등).
-    private static bool IsTestScene()
-    {
-        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        return !string.IsNullOrEmpty(sceneName) && sceneName.ToUpperInvariant().Contains("TEST");
     }
     
     // ---------- UI용 포멧으로 변환 후 전달 ----------
@@ -103,7 +100,7 @@ public class EnchantSelectPresenter
         }
         
         _view.SetChoices(displayData);
-        _view.SetRerollAvailable(IsTestScene(), _rerollRemaining);
+        _view.SetRerollAvailable(_baseRerollCount > 0, _rerollRemaining);
     }
 
     // ---------- 유저 클릭 처리 ----------

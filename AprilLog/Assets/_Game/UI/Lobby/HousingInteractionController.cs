@@ -63,6 +63,7 @@ public class HousingInteractionController : MonoBehaviour
         ApplyHousingLayerOrder();
         BuildPopup();
         ApplyEquippedFurnitureViews();
+        RefreshWanderRoute();
     }
 
     private void OnEnable()
@@ -85,6 +86,7 @@ public class HousingInteractionController : MonoBehaviour
         if (_housingModel != null)
             _housingModel.SlotEquippedChanged += OnSlotEquippedChanged;
 
+        RefreshWanderRoute();
         HidePopup();
     }
 
@@ -127,7 +129,7 @@ public class HousingInteractionController : MonoBehaviour
 
         if (_definition.FurnitureType == HousingFurnitureType.Interaction)
         {
-            MoveToFurniture(_furniture, _definition);
+            MoveToFurniture(_furniture, _definition, true);
             return;
         }
 
@@ -161,16 +163,17 @@ public class HousingInteractionController : MonoBehaviour
         _interactionView.ShowEmote(EMOTES[UnityEngine.Random.Range(0, EMOTES.Length)]);
     }
 
-    private void MoveToFurniture(HousingFurnitureView _furniture, HousingFurnitureDefinition _definition)
+    private void MoveToFurniture(HousingFurnitureView _furniture, HousingFurnitureDefinition _definition, bool _canImmediateMove)
     {
         // 기능: 캐릭터를 가구 상호작용 위치로 이동시키고 도착 문구를 표시한다.
         if (_playerMover == null || _interactionView == null || _furniture == null || _definition == null)
             return;
 
         _interactionView.Hide();
-        _playerMover.MoveImmediatelyToInteractionTarget(
-            _furniture.GetInteractionPosition(),
-            () => _interactionView.ShowMessage(_definition.InteractionMessage));
+        _playerMover.MoveToFurniture(
+            _furniture,
+            () => _interactionView.ShowMessage(_definition.InteractionMessage),
+            _canImmediateMove);
     }
 
     private void SelectFurniture(HousingFurnitureDefinition _definition)
@@ -196,7 +199,7 @@ public class HousingInteractionController : MonoBehaviour
         ApplyFurnitureDefinitionToView(_slotId, _definition);
 
         if (_definition.FurnitureType == HousingFurnitureType.Interaction)
-            MoveToFurniture(_selectedFurniture, _definition);
+            MoveToFurniture(_selectedFurniture, _definition, false);
     }
 
     private void OpenFurnitureFunction(HousingFurnitureDefinition _definition)
@@ -459,6 +462,7 @@ public class HousingInteractionController : MonoBehaviour
 
         ApplyFurnitureDefinitionToView(_slotId, _definition);
         ApplyHousingLayerOrder();
+        RefreshWanderRoute();
     }
 
     private void ApplyFurnitureDefinitionToView(int _slotId, HousingFurnitureDefinition _definition)
@@ -483,6 +487,15 @@ public class HousingInteractionController : MonoBehaviour
         }
 
         return null;
+    }
+
+    private void RefreshWanderRoute()
+    {
+        // 추가: 조규민 - 캐릭터 자동 이동 경로를 현재 배치된 가구 기준으로 다시 전달한다.
+        if (_playerMover == null)
+            return;
+
+        _playerMover.SetRouteFurnitures(_furnitures);
     }
 
     private void BuildPopup()

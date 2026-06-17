@@ -66,7 +66,15 @@ public class HousingCategoryPopupPresenter : MonoBehaviour
                 new Color(0.46f, 0.38f, 0.30f, 1f),
                 new Color(0.34f, 0.40f, 0.44f, 1f),
                 new Color(0.66f, 0.60f, 0.50f, 1f),
-                new Color(0.12f, 0.13f, 0.14f, 1f)
+                new Color(0.12f, 0.13f, 0.14f, 1f),
+                new Color(0.82f, 0.70f, 0.58f, 1f),
+                new Color(0.50f, 0.58f, 0.64f, 1f),
+                new Color(0.68f, 0.76f, 0.68f, 1f),
+                new Color(0.38f, 0.30f, 0.42f, 1f),
+                new Color(0.92f, 0.82f, 0.72f, 1f),
+                new Color(0.28f, 0.34f, 0.40f, 1f),
+                new Color(0.74f, 0.58f, 0.64f, 1f),
+                new Color(0.20f, 0.24f, 0.22f, 1f)
             }
         },
         new CategoryPopupData
@@ -154,7 +162,15 @@ public class HousingCategoryPopupPresenter : MonoBehaviour
                 new Color(0.58f, 0.42f, 0.26f, 1f),
                 new Color(0.42f, 0.46f, 0.48f, 1f),
                 new Color(0.66f, 0.56f, 0.44f, 1f),
-                new Color(0.14f, 0.14f, 0.16f, 1f)
+                new Color(0.14f, 0.14f, 0.16f, 1f),
+                new Color(0.70f, 0.54f, 0.38f, 1f),
+                new Color(0.48f, 0.52f, 0.54f, 1f),
+                new Color(0.36f, 0.44f, 0.36f, 1f),
+                new Color(0.64f, 0.58f, 0.50f, 1f),
+                new Color(0.82f, 0.72f, 0.58f, 1f),
+                new Color(0.30f, 0.32f, 0.36f, 1f),
+                new Color(0.58f, 0.36f, 0.28f, 1f),
+                new Color(0.18f, 0.20f, 0.18f, 1f)
             }
         },
         new SurfacePopupData
@@ -175,7 +191,15 @@ public class HousingCategoryPopupPresenter : MonoBehaviour
                 new Color(0.46f, 0.38f, 0.30f, 1f),
                 new Color(0.34f, 0.40f, 0.44f, 1f),
                 new Color(0.66f, 0.60f, 0.50f, 1f),
-                new Color(0.12f, 0.13f, 0.14f, 1f)
+                new Color(0.12f, 0.13f, 0.14f, 1f),
+                new Color(0.82f, 0.70f, 0.58f, 1f),
+                new Color(0.50f, 0.58f, 0.64f, 1f),
+                new Color(0.68f, 0.76f, 0.68f, 1f),
+                new Color(0.38f, 0.30f, 0.42f, 1f),
+                new Color(0.92f, 0.82f, 0.72f, 1f),
+                new Color(0.28f, 0.34f, 0.40f, 1f),
+                new Color(0.74f, 0.58f, 0.64f, 1f),
+                new Color(0.20f, 0.24f, 0.22f, 1f)
             }
         }
     };

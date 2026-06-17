@@ -4,9 +4,13 @@
 // 수정자 : 김영찬
 // 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 로비 복귀 확인 팝업의 예 버튼에서 GameManager가 없는 직접 실행 환경도 _Lobby 씬으로 복귀하도록 보강
+
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 인게임 팝업의 Show/Hide를 관리한다.
@@ -47,11 +51,14 @@ public class ScreenNavigator : MonoBehaviour
     [SerializeField][Range(0,10f)] private float _specialWavePopupTime = 3f;
 
     // ---------- private ----------
+    private const string _lobbySceneName = "_Lobby";
+
     private float _comboPopupTimer;
     private float _wavePopupTimer;
     
     private bool _comboTimerActive;
     private bool _waveTimerActive;
+    private bool _isLoadingLobby;
     
     // ---------- Event ----------
     public event Action OnLobbyClicked;
@@ -246,10 +253,24 @@ public class ScreenNavigator : MonoBehaviour
     // 로비로 돌아가기 경고창 > '예' 버튼 누를 때 동작 -> 로비로 이동
     public void ToLobbyAction()
     {
-        Debug.Log("로비로 이동");
+        if (_isLoadingLobby) return;
+
+        _isLoadingLobby = true;
+        CloseMenu();
+        HideToLobby();
+        HideOption();
+
+        Debug.Log("[ScreenNavigator] 로비로 이동");
         OnLobbyClicked?.Invoke();
+
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.LoadLobby();
+            return;
+        }
+
+        Debug.LogWarning("[ScreenNavigator] GameManager.Instance가 없어 _Lobby 씬을 직접 로드합니다.", this);
+        SceneManager.LoadScene(_lobbySceneName);
     }
     
     // ---------- 특수 웨이브 ----------

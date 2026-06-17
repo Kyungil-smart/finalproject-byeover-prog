@@ -60,6 +60,8 @@ public class HousingWallpaperSlotView : MonoBehaviour
     public void SetData(int _index, Color _color, bool _isSelected)
     {
         // 기능: 슬롯 색상과 선택 표시를 현재 카테고리 데이터 기준으로 갱신한다.
+        ResolveReferences();
+
         _slotIndex = _index;
 
         if (_colorImage != null)
@@ -77,6 +79,8 @@ public class HousingWallpaperSlotView : MonoBehaviour
     public void SetUnlockState(bool _isUnlocked, string _unlockCondition, bool _showUnlockCondition)
     {
         // 기능: 잠금 상태일 때 상태 문구와 클릭 시 노출할 해금 조건 박스를 제어한다.
+        ResolveReferences();
+
         if (_button != null)
             _button.interactable = true;
 
@@ -87,6 +91,29 @@ public class HousingWallpaperSlotView : MonoBehaviour
             _statusText.text = "잠금";
 
         SetUnlockConditionVisible(!_isUnlocked && _showUnlockCondition, _unlockCondition);
+    }
+
+    public void SetPurchaseState(bool _isPurchased, bool _canPurchase, string _priceText)
+    {
+        // 추가: 조규민 - 구매형 벽지 슬롯은 구매 전 비용을 표시하고 재화 부족 시 클릭을 막는다.
+        ResolveReferences();
+
+        if (_button != null)
+            _button.interactable = _isPurchased || _canPurchase;
+
+        if (_isPurchased)
+        {
+            SetUnlockConditionVisible(false, string.Empty);
+            return;
+        }
+
+        if (_statusBackground != null)
+            _statusBackground.color = _lockedStatusColor;
+
+        if (_statusText != null)
+            _statusText.text = _canPurchase ? "구매" : "잠금";
+
+        SetUnlockConditionVisible(true, _priceText);
     }
 
     private void NotifyClicked()
@@ -154,6 +181,9 @@ public class HousingWallpaperSlotView : MonoBehaviour
                 _unlockConditionRoot = _root.gameObject;
         }
 
+        if (_unlockConditionRoot == null)
+            _unlockConditionRoot = CreateUnlockConditionRoot();
+
         if (_unlockConditionText == null && _unlockConditionRoot != null)
         {
             Transform _text = _unlockConditionRoot.transform.Find("Text_UnlockCondition");
@@ -161,8 +191,22 @@ public class HousingWallpaperSlotView : MonoBehaviour
                 _unlockConditionText = _text.GetComponent<TMP_Text>();
         }
 
+        if (_unlockConditionText == null && _unlockConditionRoot != null)
+        {
+            GameObject _textObject = CreateTextObject("Text_UnlockCondition", _unlockConditionRoot.transform, _unlockConditionFontSize);
+            _unlockConditionText = _textObject.GetComponent<TMP_Text>();
+        }
+
         ApplyUnlockConditionLayout();
         SetUnlockConditionVisible(false, string.Empty);
+    }
+
+    private GameObject CreateUnlockConditionRoot()
+    {
+        // 추가: 조규민 - 슬롯 프리팹에 가격 표시 박스가 없을 때 런타임에서 보강한다.
+        GameObject _rootObject = new GameObject("UnlockConditionBox", typeof(RectTransform), typeof(Image));
+        _rootObject.transform.SetParent(transform, false);
+        return _rootObject;
     }
 
     private void ApplyUnlockConditionLayout()
