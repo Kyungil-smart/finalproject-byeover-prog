@@ -35,7 +35,7 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
     
     private bool _isInitialized;
     public bool IsInitialized => _isInitialized;
-    
+
     private void OnEnable()
     {
         ToggleOptionButtonSet();
