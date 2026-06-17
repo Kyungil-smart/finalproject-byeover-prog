@@ -69,6 +69,7 @@ public class EnchantSelectPresenter
     // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 EnchantSelector가 처리).
     private void HandleReroll()
     {
+        Debug.Log($"[Reroll] HandleReroll 진입 remaining={_rerollRemaining}");
         if (_rerollRemaining <= 0) return;
         _rerollRemaining--;
         _currentChoices = _selector.GenerateChoices(_model, _pickCount);

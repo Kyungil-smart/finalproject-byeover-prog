@@ -402,8 +402,8 @@ MonoBehaviour:
   _moveArea: {fileID: 3000012}
   _moveSpeed: 160
   _arrivalDistance: 8
-  _minWaitTime: 0.4
-  _maxWaitTime: 1.2
+  _defaultInteractionSeconds: 1.2
+  _defaultWaitAfterInteractionSeconds: 0.8
   _edgePadding: {x: 80, y: 80}
 --- !u!1 &3000031
 GameObject:
@@ -495,8 +495,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HousingFurnitureView
   _slotId: -1
   _furnitureName: "\uC784\uC2DC \uC18C\uD30C"
+  _furnitureType: 2
+  _category: 3
+  _uiFunctionType: 0
+  _useCategoryLayer: 1
+  _manualLayer: 2
   _interactionPoint: {fileID: 3000032}
   _interactionMessage: "\uC18C\uD30C\uC5D0 \uC549\uC544 \uC7A0\uC2DC \uD734\uC2DD\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -590,8 +599,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HousingFurnitureView
   _slotId: -1
   _furnitureName: "\uC784\uC2DC \uD14C\uC774\uBE14"
+  _furnitureType: 2
+  _category: 3
+  _uiFunctionType: 0
+  _useCategoryLayer: 1
+  _manualLayer: 2
   _interactionPoint: {fileID: 3000042}
   _interactionMessage: "\uD14C\uC774\uBE14\uC5D0\uC11C \uC791\uC5C5\uC744 \uC900\uBE44\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -685,8 +703,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HousingFurnitureView
   _slotId: -1
   _furnitureName: "\uC784\uC2DC \uC120\uBC18"
+  _furnitureType: 2
+  _category: 3
+  _uiFunctionType: 0
+  _useCategoryLayer: 1
+  _manualLayer: 2
   _interactionPoint: {fileID: 3000052}
   _interactionMessage: "\uC120\uBC18\uC5D0\uC11C \uBB3C\uAC74\uC744 \uD655\uC778\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -702,6 +729,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3fd767582344c828cb6020e973a8c2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HousingInteractionController
+  _housingModel: {fileID: 0}
   _playerMover: {fileID: 3000025}
   _interactionView: {fileID: 3000066}
   _furnitures:
@@ -709,11 +737,11 @@ MonoBehaviour:
   - {fileID: 3000045}
   - {fileID: 3000055}
   - {fileID: 61746108}
-  _ownedFurnitureSkins: []
   _zoomRoot: {fileID: 0}
   _minZoom: 0.85
   _maxZoom: 1.45
   _zoomSpeed: 0.006
+  _replayStoryPopup: {fileID: 0}
 --- !u!114 &3000066
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1978,7 +2006,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HousingCategoryPopupPresenter
   _popupView: {fileID: 3100094}
-  _housingMoveAreaImage: {fileID: 3000013}
+  _wallpaperImage: {fileID: 3000013}
+  _floorImage: {fileID: 0}
 --- !u!114 &3100094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2004,6 +2033,16 @@ MonoBehaviour:
   - {fileID: 3100706}
   - {fileID: 3100806}
   - {fileID: 3100906}
+  _surfaceTabRoot: {fileID: 0}
+  _floorTabButton: {fileID: 0}
+  _wallpaperTabButton: {fileID: 0}
+  _floorTabBackground: {fileID: 0}
+  _wallpaperTabBackground: {fileID: 0}
+  _surfaceTabNormalColor: {r: 0.12, g: 0.13, b: 0.13, a: 1}
+  _surfaceTabSelectedColor: {r: 0, g: 0.95, b: 0.45, a: 1}
+  _progressModel: {fileID: 0}
+  _currencyModel: {fileID: 0}
+  _purchaseModel: {fileID: 0}
 --- !u!1 &3100101
 GameObject:
   m_ObjectHideFlags: 0
@@ -2683,8 +2722,18 @@ MonoBehaviour:
   _button: {fileID: 3100205}
   _colorImage: {fileID: 3100214}
   _statusBackground: {fileID: 3100224}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100211
 GameObject:
   m_ObjectHideFlags: 0
@@ -2973,8 +3022,18 @@ MonoBehaviour:
   _button: {fileID: 3100305}
   _colorImage: {fileID: 3100314}
   _statusBackground: {fileID: 3100324}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100311
 GameObject:
   m_ObjectHideFlags: 0
@@ -3263,8 +3322,18 @@ MonoBehaviour:
   _button: {fileID: 3100405}
   _colorImage: {fileID: 3100414}
   _statusBackground: {fileID: 3100424}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100411
 GameObject:
   m_ObjectHideFlags: 0
@@ -3553,8 +3622,18 @@ MonoBehaviour:
   _button: {fileID: 3100505}
   _colorImage: {fileID: 3100514}
   _statusBackground: {fileID: 3100524}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100511
 GameObject:
   m_ObjectHideFlags: 0
@@ -3843,8 +3922,18 @@ MonoBehaviour:
   _button: {fileID: 3100605}
   _colorImage: {fileID: 3100614}
   _statusBackground: {fileID: 3100624}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100611
 GameObject:
   m_ObjectHideFlags: 0
@@ -4133,8 +4222,18 @@ MonoBehaviour:
   _button: {fileID: 3100705}
   _colorImage: {fileID: 3100714}
   _statusBackground: {fileID: 3100724}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100711
 GameObject:
   m_ObjectHideFlags: 0
@@ -4423,8 +4522,18 @@ MonoBehaviour:
   _button: {fileID: 3100805}
   _colorImage: {fileID: 3100814}
   _statusBackground: {fileID: 3100824}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100811
 GameObject:
   m_ObjectHideFlags: 0
@@ -4713,8 +4822,18 @@ MonoBehaviour:
   _button: {fileID: 3100905}
   _colorImage: {fileID: 3100914}
   _statusBackground: {fileID: 3100924}
+  _statusText: {fileID: 0}
+  _unlockConditionRoot: {fileID: 0}
+  _unlockConditionText: {fileID: 0}
   _normalStatusColor: {r: 1, g: 1, b: 1, a: 1}
   _selectedStatusColor: {r: 0, g: 0.85, b: 0.32, a: 1}
+  _lockedStatusColor: {r: 0.18, g: 0.18, b: 0.18, a: 0.92}
+  _unlockConditionBoxColor: {r: 0, g: 0, b: 0, a: 0.72}
+  _unlockConditionPosition: {x: 0, y: -8}
+  _unlockConditionSize: {x: 0, y: 42}
+  _unlockConditionTextPaddingMin: {x: 6, y: 3}
+  _unlockConditionTextPaddingMax: {x: -6, y: -3}
+  _unlockConditionFontSize: 20
 --- !u!1 &3100911
 GameObject:
   m_ObjectHideFlags: 0
@@ -5760,8 +5879,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HousingFurnitureView
   _slotId: -1
   _furnitureName: "\uC784\uC2DC \uCE68\uB300"
+  _furnitureType: 2
+  _category: 3
+  _uiFunctionType: 0
+  _useCategoryLayer: 1
+  _manualLayer: 2
   _interactionPoint: {fileID: 61746105}
   _interactionMessage: "\uCE68\uB300\uC5D0\uC11C \uD734\uC2DD\uD569\uB2C8\uB2E4."
+  _isAutoMoveTarget: 1
+  _hasMotionInteraction: 0
+  _interactionSeconds: 1.2
+  _waitAfterInteractionSeconds: 0.8
   _skinImage: {fileID: 0}
   _nameText: {fileID: 0}
   _longPressSeconds: 0.45
@@ -7244,6 +7372,8 @@ MonoBehaviour:
   content: {fileID: 435983590}
   slotPrefab: {fileID: 6293735038578818623, guid: 9dd8867422bda8a4da00dcc4d8ce38f3, type: 3}
   storySceneName: _Story
+  returnSceneName: _Lobby
+  chapterTestData: {fileID: 0}
 --- !u!223 &188554949
 Canvas:
   m_ObjectHideFlags: 0
@@ -21112,7 +21242,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1169593833}
-  - component: {fileID: 1169593834}
   m_Layer: 0
   m_Name: OutGameGrowthSystem
   m_TagString: Untagged
@@ -21135,18 +21264,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1767865415}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1169593834
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1169593832}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa5e3070663d3214b9a2b57ae435e583, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OutGameGrowthSystem
 --- !u!1 &1174670614
 GameObject:
   m_ObjectHideFlags: 0
@@ -28107,7 +28224,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1774596281}
-  - component: {fileID: 1774596282}
   m_Layer: 5
   m_Name: --- GrowthPanel ---
   m_TagString: Untagged
@@ -28134,18 +28250,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1774596282
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1774596280}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03d40aefbe2f2e64d98afb5f5280d154, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GrowthView
 --- !u!1 &1777286337
 GameObject:
   m_ObjectHideFlags: 0

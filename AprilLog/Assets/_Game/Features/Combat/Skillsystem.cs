@@ -90,6 +90,21 @@ public class SkillSystem : MonoBehaviour
         }
     }
 
+    private WindSkillVfxLibrary _windVfx;
+    private bool _windVfxLoadTried;
+    private WindSkillVfxLibrary WindVfx
+    {
+        get
+        {
+            if (!_windVfxLoadTried)
+            {
+                _windVfxLoadTried = true;
+                _windVfx = Resources.Load<WindSkillVfxLibrary>("WindSkillVfxLibrary");
+            }
+            return _windVfx;
+        }
+    }
+
     /// <summary>번개 스킬 StandardID로 VFX 프리팹+스케일 해결. 라이브러리/프리팹 없으면 false.</summary>
     private bool TryGetLightningVfx(Legacy_SkillData data, out GameObject prefab, out float scale)
     {
@@ -103,6 +118,21 @@ public class SkillSystem : MonoBehaviour
             case 405: prefab = lib.laserPrefab; scale = lib.laserScale; break;              // 뇌격
             case 402: prefab = lib.chainBolt; scale = lib.chainScale; break;                // 사슬 번개 (연결 번개막)
             case 403: prefab = lib.dischargeBarrier; scale = lib.dischargeScale; break;     // 방전 (가운데 번개막)
+        }
+        return prefab != null;
+    }
+
+    /// <summary>바람 하자드 StandardID로 VFX 프리팹+스케일 해결 (장판형: 돌풍 303·허리케인 304·부메랑 306). 투사체형(301/302/305)은 스킨 게이트에서 직접 처리.</summary>
+    private bool TryGetWindVfx(Legacy_SkillData data, out GameObject prefab, out float scale)
+    {
+        prefab = null; scale = 1f;
+        var lib = WindVfx;
+        if (lib == null || data == null) return false;
+        switch (data.StandardID)
+        {
+            case 303: prefab = lib.gustHazard; scale = lib.gustHazardScale; break;            // 돌풍 (전방 단발)
+            case 304: prefab = lib.hurricaneHazard; scale = lib.hurricaneHazardScale; break;  // 허리케인 (지속 소용돌이)
+            case 306: prefab = lib.boomerangHazard; scale = lib.boomerangHazardScale; break;  // 부메랑 (백업 — skill_data에 306 행 없어 현재 미발동)
         }
         return prefab != null;
     }
@@ -304,6 +334,13 @@ public class SkillSystem : MonoBehaviour
             yield break;
         }
 
+        // 허리케인: center에 소용돌이 VFX를 지속 생성하고 펄스마다 데미지. 펄스 루프 우회.
+        if (cfg.style == HazardStyle.WindVortex)
+        {
+            StartCoroutine(WindHeldRoutine(data, fixedCenter, sizeWorld, pulses, cfg.pulseInterval));
+            yield break;
+        }
+
         for (int i = 0; i < pulses; i++)
         {
             Vector2 center;
@@ -355,6 +392,17 @@ public class SkillSystem : MonoBehaviour
                         if (data.StandardID == 405 && LightningVfx != null)
                             ApplyParticleRotation(v, LightningVfx.laserRotationDeg);
                         StopLoopingOneShot(v); Destroy(v, ComputeOneShotLifetime(v));
+                    }
+                    else SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+                }
+                else if (TryGetWindVfx(data, out GameObject wvfx, out float wscale))
+                {
+                    // 바람 단발 하자드(돌풍): 펄스마다 center에 VFX 1개 소환.
+                    var wv = SpawnVfx(wvfx, center, wscale, 52);
+                    if (wv != null)
+                    {
+                        if (WindVfx != null) ApplyParticleRotation(wv, WindVfx.gustRotationDeg);
+                        StopLoopingOneShot(wv); Destroy(wv, ComputeOneShotLifetime(wv));
                     }
                     else SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
                 }
@@ -524,6 +572,26 @@ public class SkillSystem : MonoBehaviour
         }
 
         yield return new WaitForSeconds(0.3f); // 마지막 데미지 후 VFX 애니메이션 여유
+        if (vfx != null) Destroy(vfx);
+    }
+
+    // 지속형 바람 장판(허리케인 소용돌이): VFX 1개를 center에 생성·유지 → pulses회 데미지(간격 interval) → 한 박자 뒤 삭제.
+    private System.Collections.IEnumerator WindHeldRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
+    {
+        GameObject vfx = null;
+        if (TryGetWindVfx(data, out GameObject prefab, out float scale))
+            vfx = SpawnVfx(prefab, center, scale, 52);
+        else
+            SpawnHazardFlash(center, sizeWorld, new Color(0.3f, 0.9f, 0.9f, 0.3f)); // VFX 미연결 폴백(청록)
+
+        for (int i = 0; i < pulses; i++)
+        {
+            DealHazardDamage(data, center, sizeWorld);
+            if (i < pulses - 1)
+                yield return new WaitForSeconds(interval);
+        }
+
+        yield return new WaitForSeconds(0.3f);
         if (vfx != null) Destroy(vfx);
     }
 
@@ -956,6 +1024,28 @@ public class SkillSystem : MonoBehaviour
                 AttachProjectileSkin(controller, obj, lib.fireballProjectile, lib.fireballProjectileScale,
                     _firePoint.position, targetPos, lib.fireballRotationTrimDeg);
         }
+        // 바람 투사체 스킨: 헤이스트(301)·바람칼날(302)·템페스트(305). 동일 AttachProjectileSkin 경로.
+        else if (data.StandardID == 301)
+        {
+            var wlib = WindVfx;
+            if (wlib != null && wlib.hasteProjectile != null)
+                AttachProjectileSkin(controller, obj, wlib.hasteProjectile, wlib.hasteProjectileScale,
+                    _firePoint.position, targetPos, wlib.hasteRotationTrimDeg);
+        }
+        else if (data.StandardID == 302)
+        {
+            var wlib = WindVfx;
+            if (wlib != null && wlib.windBladeProjectile != null)
+                AttachProjectileSkin(controller, obj, wlib.windBladeProjectile, wlib.windBladeProjectileScale,
+                    _firePoint.position, targetPos, wlib.windBladeRotationTrimDeg);
+        }
+        else if (data.StandardID == 305)
+        {
+            var wlib = WindVfx;
+            if (wlib != null && wlib.tempestProjectile != null)
+                AttachProjectileSkin(controller, obj, wlib.tempestProjectile, wlib.tempestProjectileScale,
+                    _firePoint.position, targetPos, wlib.tempestRotationTrimDeg);
+        }
     }
 
     /// <returns>실제로 발사했으면 true. 타겟 부재 등으로 스킵하면 false (자동공격 카운트는 발사 성공만 센다).</returns>
@@ -1077,6 +1167,7 @@ public enum HazardStyle
     LightningHeld,  // VFX 1회 생성·지속 → 펄스마다 데미지 → 종료 후 삭제 (구형 번개)
     LightningDischarge, // 가운데 번개막 + 양옆 구슬 2개 지속 → 펄스마다 데미지 (방전)
     LightningChain, // 에이프릴→타겟 전기선 + 몬스터 몸체 타격 이펙트 (사슬 번개)
+    WindVortex,     // VFX 1개를 center에 지속 생성 → 펄스마다 데미지 (허리케인 소용돌이)
 }
 
 public struct HazardConfig

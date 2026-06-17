@@ -89,7 +89,11 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
             if (_rerollButton != null)
             {
-                _rerollButton.onClick.AddListener(() => OnRerollSelected?.Invoke());
+                _rerollButton.onClick.AddListener(() =>
+                {
+                    Debug.Log("[Reroll] 버튼 클릭 도달 → OnRerollSelected.Invoke");
+                    OnRerollSelected?.Invoke();
+                });
                 ConfigureRerollHitArea();
             }
             
@@ -204,7 +208,10 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         GameObject rerollRoot = GetRerollRoot();
         if (rerollRoot == null) return;
 
-        Graphic buttonGraphic = _rerollButton.targetGraphic;
+        // 방어: targetGraphic이 비어 있으면 버튼 자신의 Graphic을 기준으로. 그래도 없으면 raycast를 안 꺼 버튼을 살린다.
+        Graphic buttonGraphic = _rerollButton.targetGraphic != null ? _rerollButton.targetGraphic : _rerollButton.GetComponent<Graphic>();
+        if (buttonGraphic == null) return;
+
         Graphic[] graphics = rerollRoot.GetComponentsInChildren<Graphic>(true);
         foreach (Graphic graphic in graphics)
         {

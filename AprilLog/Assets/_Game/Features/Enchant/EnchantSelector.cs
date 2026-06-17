@@ -8,6 +8,11 @@ public class EnchantSelector
     private readonly SpellRepo _repo;
     private readonly EnchantProbabilityConfig _config; // 인스펙터에서 받아올 설정값
 
+    // 구현 완료된 원소만 인챈트 카드로 노출한다. Skill_ID 첫자리 = 원소(1=불 2=물 3=바람 4=번개 5=얼음).
+    // 물(2xxxx)·얼음(5xxxx)은 실행 스킬·VFX가 아직 없어 뽑아도 발동이 안 되므로 풀에서 제외.
+    // → 물/얼음을 구현하면 여기에 원소 숫자(2, 5)만 추가하면 카드가 다시 등장한다.
+    private static readonly HashSet<int> ImplementedSkillElements = new HashSet<int> { 1, 3, 4 };
+
     // 생성자에서 Config를 받도록 수정
     public EnchantSelector(SpellRepo repo, EnchantProbabilityConfig config)
     {
@@ -30,6 +35,9 @@ public class EnchantSelector
                 int currentLv = playerModel.GetSkillLevel(chain.Name_ID);
                 var nextData = chain.GetNextLevelData(currentLv);
                 if (nextData == null) continue;
+
+                // 미구현 원소(물 2xxxx·얼음 5xxxx)와 자동공격 베이스(60005/60010 → 첫자리 6)는 카드 후보에서 제외.
+                if (!ImplementedSkillElements.Contains(nextData.Skill_ID / 10000)) continue;
 
                 var candidate = new EnchantCandidate
                 {

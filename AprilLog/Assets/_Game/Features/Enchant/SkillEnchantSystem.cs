@@ -23,6 +23,17 @@ public class SkillEnchantSystem : MonoBehaviour
     private static readonly int[] HasteCadence = { 30, 25, 20 };        // 헤이스트 (바람 일반) — v1.04 테이블
     private static readonly int[] OrbLightningCadence = { 30, 25, 20 }; // 구형 번개 (번개 일반) — v1.04 테이블
 
+    // 인챈트 선택은 새 SkillEnchantTable(카드 Name_ID)을 쓰는데, 이 시스템은 구 Legacy_EnchantMasterTable
+    // (EnchantID 101~/301~/401~)을 역조회한다. 연결은 ResolveLegacyEnchantId()가 보유 스킬의 Skill_ID에서 산술 변환하는 걸 1순위로 한다.
+    // 아래 표는 보유 데이터가 없을 때(세이브 복구 등)만 쓰는 2순위 폴백. (공식 v1.04 Name ↔ Legacy EnchantMaster 대조)
+    // ※ 벼락(Skill_ID 40041)은 공식 테이블에서 방전과 Name 82가 중복이라, SkillEnchantTable.asset의 40041~43 Name을 84로 분리해둠.
+    private static readonly Dictionary<int, int> NameIdToLegacyEnchantId = new Dictionary<int, int>
+    {
+        { 50, 101 }, { 51, 102 }, { 52, 103 }, { 53, 104 }, { 54, 105 }, // 불: 파이어브레스/화염작렬/화염정령/대지균열/메테오
+        { 70, 301 }, { 71, 302 }, { 72, 303 }, { 73, 304 }, { 74, 305 }, // 바람: 헤이스트/바람칼날/돌풍/허리케인/템페스트
+        { 80, 401 }, { 81, 402 }, { 82, 403 }, { 83, 405 }, { 84, 404 }, // 번개: 구형/사슬/방전/뇌격/벼락
+    };
+
     public void Initialize(EnchantModel enchantModel, SkillSystem skillSystem,
         CombinationModel combinationModel, CombatSystem combatSystem)
     {
@@ -66,11 +77,41 @@ public class SkillEnchantSystem : MonoBehaviour
             Apply(saved[i].EnchantId, saved[i].Level);
     }
 
+    // 카드 Name_ID → 우리 Legacy EnchantID(101~105/301~305/401~405) 변환.
+    // 1순위: 보유 스킬의 고유 Skill_ID(5자리)에서 산술 변환 → Name 충돌(공식 v1.04 방전·벼락 둘 다 82)에도 정확, asset 재export에도 안 깨짐.
+    //   base=Skill_ID/10(레벨 자리 제거), element=base/1000, idx=base%1000, Legacy=element*100+idx.
+    //   예) 40041/10=4004→404(벼락), 40031/10=4003→403(방전), 10011/10=1001→101(파브), 30021/10=3002→302(바람칼날).
+    //   물(2xxxx)→201~, 얼음(5xxxx)→501~ 은 Legacy에 스킬이 없어 GetEnchantMaster=null로 자연 스킵된다.
+    // 2순위: 보유 데이터가 없을 때(세이브 복구 등) Name→Legacy 고정 매핑표 폴백.
+    private int ResolveLegacyEnchantId(int nameId)
+    {
+        if (_enchantModel != null && _enchantModel.OwnedSkills.TryGetValue(nameId, out var owned) && owned.Data != null)
+        {
+            int baseId = owned.Data.Skill_ID / 10;
+            int element = baseId / 1000;
+            int idx = baseId % 1000;
+            if (element >= 1 && element <= 9 && idx >= 1 && idx <= 9)
+                return element * 100 + idx;
+        }
+        if (NameIdToLegacyEnchantId.TryGetValue(nameId, out int mapped))
+            return mapped;
+        return nameId; // 이미 Legacy ID이거나 미지정 — 아래 GetEnchantMaster에서 걸러짐
+    }
+
     private void Apply(int enchantId, int level)
     {
+        // enchantId == Name_ID(카드 'Name'). Skill_ID 기준으로 우리 Legacy EnchantID를 구한다.
+        int originalName = enchantId;
+        int legacyEnchantId = ResolveLegacyEnchantId(enchantId);
+
         var repo = Legacy_DataManager.Instance != null ? Legacy_DataManager.Instance.CharacterRepo : null;
-        var master = repo != null ? repo.GetEnchantMaster(enchantId) : null;
-        if (master == null || master.LinkedSkillID <= 0) return; // 스탯 인챈트는 EnchantApplicationSystem 담당
+        var master = repo != null ? repo.GetEnchantMaster(legacyEnchantId) : null;
+        if (master == null)
+        {
+            Debug.Log($"[스킬인챈트] Name {originalName}(→Legacy {legacyEnchantId}) 대응 EnchantMaster 없음 — 물·얼음 등 미구현 원소이거나 미배선. 등록 스킵(불/바람/번개만 구현).");
+            return;
+        }
+        if (master.LinkedSkillID <= 0) return; // 스탯 인챈트는 EnchantApplicationSystem 담당
 
         var spellRepo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
         if (spellRepo == null || _skillSystem == null)

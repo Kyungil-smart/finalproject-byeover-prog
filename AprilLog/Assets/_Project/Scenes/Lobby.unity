@@ -173,7 +173,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 239289335}
-  - component: {fileID: 239289336}
   m_Layer: 0
   m_Name: --- GrowthPanel ---
   m_TagString: Untagged
@@ -200,26 +199,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &239289336
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 239289334}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03d40aefbe2f2e64d98afb5f5280d154, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GrowthView
-  _growthSystem: {fileID: 0}
-  _currency: {fileID: 0}
-  _progress: {fileID: 0}
-  _levelText: {fileID: 0}
-  _costGoldText: {fileID: 0}
-  _costParchmentText: {fileID: 0}
-  _levelUpButton: {fileID: 0}
-  _closeButton: {fileID: 0}
 --- !u!1 &283983539
 GameObject:
   m_ObjectHideFlags: 0
@@ -268,6 +247,9 @@ MonoBehaviour:
   _outLevelTable: {fileID: 11400000, guid: c5fd848ea3763d9419afbe341734a8e5, type: 2}
   _achievementTable: {fileID: 11400000, guid: 7ff563ba66de41bfa11a27b592354c1d, type: 2}
   _changeRewardTable: {fileID: 11400000, guid: 0f79afb42e5249e44996d689df8599ac, type: 2}
+  _battleRewardTable: {fileID: 0}
+  _staminaTable: {fileID: 0}
+  _itemTable: {fileID: 0}
 --- !u!1 &421085142
 GameObject:
   m_ObjectHideFlags: 0
@@ -389,7 +371,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 616570846}
-  - component: {fileID: 616570847}
   m_Layer: 0
   m_Name: OutGameGrowthSystem
   m_TagString: Untagged
@@ -412,21 +393,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1917282335}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &616570847
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 616570845}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa5e3070663d3214b9a2b57ae435e583, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OutGameGrowthSystem
-  _configRepo: {fileID: 0}
-  _currency: {fileID: 0}
-  _progress: {fileID: 0}
 --- !u!1 &656804717
 GameObject:
   m_ObjectHideFlags: 0
@@ -475,7 +441,8 @@ MonoBehaviour:
   _stageTable: {fileID: 11400000, guid: 4f0b99107964cd743a520c1115b0a5b2, type: 2}
   _poolMasterTable: {fileID: 11400000, guid: 5e589096dd9044c47a43d33e73ffcb41, type: 2}
   _poolTable: {fileID: 11400000, guid: cdabc6a5e18f50e4ba5f7973a12063d5, type: 2}
-  _spawnRuleTable: {fileID: 11400000, guid: 4bdf428f8e099da46b0df54b200ffd62, type: 2}
+  _waveRuleTable: {fileID: 0}
+  _specialRuleTable: {fileID: 0}
   _scalingTable: {fileID: 11400000, guid: ce80a3dce09ac43498f3479e14c03406, type: 2}
 --- !u!1 &695040656
 GameObject:
@@ -614,15 +581,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterRepo
   _characterMasterTable: {fileID: 11400000, guid: e6a5323f6decfa4458753462521c5f6d, type: 2}
-  _commonStatusTable: {fileID: 11400000, guid: 690bda1b322869343a7b963a11dbace5, type: 2}
   _characterStatusTable: {fileID: 11400000, guid: b4f8c15678dbe39448d57aa888f52d40, type: 2}
+  _unitMasterTable: {fileID: 0}
   _monsterStatusTable: {fileID: 11400000, guid: 31290486419cda74788e6b35ce3eebf2, type: 2}
-  _skillMasterTable: {fileID: 11400000, guid: 7bc26558ea984c73a03fe9b38abc2733, type: 2}
-  _skillDataTable: {fileID: 11400000, guid: 2f618cddfed54384a947672ed4812a1b, type: 2}
-  _effectTable: {fileID: 11400000, guid: 63bf2a0b310f4653a1e0dafccd4dd83f, type: 2}
-  _enchantMasterTable: {fileID: 11400000, guid: 6c45431e6d114e3b9a1381ddbc71d76d, type: 2}
-  _enchantLevelTable: {fileID: 11400000, guid: 67516167bf2c41dd9af13d23051391ca, type: 2}
-  _enchantWeightTable: {fileID: 11400000, guid: cfc6fd881ace42b2923e7b37dc4509a9, type: 2}
+  _commonStatusTable: {fileID: 11400000, guid: 690bda1b322869343a7b963a11dbace5, type: 2}
 --- !u!1 &1183765497
 GameObject:
   m_ObjectHideFlags: 0
@@ -968,6 +930,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81a78ceb399f83f4985483d2bc756757, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CurrencyModel
+  initializeWithTestValues: 1
+  testStartGold: 99900
+  testStartParchment: 99900
 --- !u!1 &1917282334
 GameObject:
   m_ObjectHideFlags: 0
@@ -1051,11 +1016,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e62eb62db1dda54dbfcbe4ae4b57173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OptionView
-  _navigator: {fileID: 0}
   _localization: {fileID: 0}
+  _masterSlider: {fileID: 0}
   _bgmSlider: {fileID: 0}
   _sfxSlider: {fileID: 0}
-  _langButton: {fileID: 0}
+  _korButton: {fileID: 0}
+  _engButton: {fileID: 0}
+  _selectedLangColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  _deselectedLangColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+  _logoutButton: {fileID: 0}
+  _deleteAccountButton: {fileID: 0}
+  _confirmDeletePanel: {fileID: 0}
+  _confirmDeleteYesButton: {fileID: 0}
+  _confirmDeleteNoButton: {fileID: 0}
   _closeButton: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

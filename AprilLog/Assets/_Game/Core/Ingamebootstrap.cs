@@ -378,7 +378,7 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(3033, gust);
 
         // 허리케인 3041~43: 지속 장판 4초·0.5초틱(PelletCount 8). 슬로우 미구현. (기획상 화면중앙이나 우선 최단거리)
-        var hurricane = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 500, heightPx = 500, pulseInterval = 0.5f, flashColor = new Color(0.3f, 0.9f, 0.9f, 0.3f) };
+        var hurricane = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.WindVortex, widthPx = 500, heightPx = 500, pulseInterval = 0.5f, flashColor = new Color(0.3f, 0.9f, 0.9f, 0.3f) };
         skillSystem.RegisterHazardSkill(3041, hurricane);
         skillSystem.RegisterHazardSkill(3042, hurricane);
         skillSystem.RegisterHazardSkill(3043, hurricane);
