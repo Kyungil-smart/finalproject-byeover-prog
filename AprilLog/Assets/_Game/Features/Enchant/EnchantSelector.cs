@@ -8,7 +8,7 @@ public class EnchantSelector
     private readonly SpellRepo _repo;
     private readonly EnchantProbabilityConfig _config; // 인스펙터에서 받아올 설정값
 
-    // 💡 생성자에서 Config를 받도록 수정
+    // 생성자에서 Config를 받도록 수정
     public EnchantSelector(SpellRepo repo, EnchantProbabilityConfig config)
     {
         _repo = repo;
