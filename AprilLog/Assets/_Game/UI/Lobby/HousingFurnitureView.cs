@@ -31,6 +31,14 @@ public class HousingFurnitureView : MonoBehaviour, IPointerDownHandler, IPointer
     [SerializeField] private RectTransform _interactionPoint;
     [Tooltip("가구 상호작용 시 Housing_InteractionTexture 위치에 표시할 문구")]
     [SerializeField] private string _interactionMessage = "가구와 상호작용했습니다.";
+    [Tooltip("자동 배회 경로에서 우선 방문할 가구인지 여부입니다.")]
+    [SerializeField] private bool _isAutoMoveTarget = true;
+    [Tooltip("애니메이션이나 연출이 있는 상호작용 가구인지 여부입니다.")]
+    [SerializeField] private bool _hasMotionInteraction;
+    [Tooltip("가구 상호작용 연출이 지속되는 시간입니다.")]
+    [SerializeField] private float _interactionSeconds = 1.2f;
+    [Tooltip("상호작용 종료 후 해당 자리에서 머무르는 시간입니다.")]
+    [SerializeField] private float _waitAfterInteractionSeconds = 0.8f;
 
     [Header("임시 스킨 표시")]
     [Tooltip("임시 가구 색상을 표시할 Image입니다. 비어 있으면 같은 오브젝트의 Image를 사용합니다.")]
@@ -57,6 +65,10 @@ public class HousingFurnitureView : MonoBehaviour, IPointerDownHandler, IPointer
     public HousingLayerType LayerType => GetLayerType();
     public int LayerOrder => (int)GetLayerType();
     public string InteractionMessage => _interactionMessage;
+    public bool IsAutoMoveTarget => _isAutoMoveTarget;
+    public bool HasMotionInteraction => _hasMotionInteraction;
+    public float InteractionSeconds => Mathf.Max(0f, _interactionSeconds);
+    public float WaitAfterInteractionSeconds => Mathf.Max(0f, _waitAfterInteractionSeconds);
     public bool IsCharacterInteraction => _furnitureType == HousingFurnitureType.Interaction;
     public bool IsUiFunction => _furnitureType == HousingFurnitureType.UiFunction;
     public bool IsNonInteractive => _furnitureType == HousingFurnitureType.Background

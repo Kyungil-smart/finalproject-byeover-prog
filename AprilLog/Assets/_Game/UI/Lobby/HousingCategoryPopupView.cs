@@ -9,8 +9,10 @@ using UnityEngine.UI;
 /// </summary>
 public class HousingCategoryPopupView : MonoBehaviour
 {
-    private const int RequiredSlotCount = 12;
+    private const int DefaultSlotCount = 12;
+    private const int SurfaceSlotCount = 20;
     private const int LockedSlotStartIndex = 8;
+    private const int PurchaseSlotStartIndex = 12;
     private const int UnlockConditionStartChapter = 2;
     private const int NoFocusedLockedSlotIndex = -1;
 
@@ -35,6 +37,10 @@ public class HousingCategoryPopupView : MonoBehaviour
     [Header("해금 진행도")]
     [SerializeField] private PlayerProgressModel _progressModel;
 
+    [Header("구매 재화")]
+    [SerializeField] private CurrencyModel _currencyModel;
+    [SerializeField] private HousingWallpaperPurchaseModel _purchaseModel;
+
     public event Action<int, Color> ColorSelected;
     public event Action FloorTabClicked;
     public event Action WallpaperTabClicked;
@@ -42,6 +48,7 @@ public class HousingCategoryPopupView : MonoBehaviour
     private Color[] _currentColors;
     private int _selectedIndex;
     private int _focusedLockedSlotIndex = NoFocusedLockedSlotIndex;
+    private int _currentSlotCount = DefaultSlotCount;
 
     private void Awake()
     {
@@ -49,6 +56,8 @@ public class HousingCategoryPopupView : MonoBehaviour
         ResolveColorSlots();
         ResolveSurfaceTabs();
         ResolveProgressModel();
+        ResolveCurrencyModel();
+        ResolvePurchaseModel();
         ValidateReferences();
 
         if (_closeButton != null)
@@ -61,7 +70,11 @@ public class HousingCategoryPopupView : MonoBehaviour
         ResolveColorSlots(true);
         ResolveSurfaceTabs();
         ResolveProgressModel();
+        ResolveCurrencyModel();
+        ResolvePurchaseModel();
         BindProgressModel();
+        BindCurrencyModel();
+        BindPurchaseModel();
         BindSurfaceTabs();
         BindColorSlots();
         Hide();
@@ -71,6 +84,8 @@ public class HousingCategoryPopupView : MonoBehaviour
     {
         // 기능: 팝업 비활성화 시 진행도와 슬롯 클릭 이벤트 연결을 해제한다.
         UnbindProgressModel();
+        UnbindCurrencyModel();
+        UnbindPurchaseModel();
         UnbindSurfaceTabs();
         UnbindColorSlots();
     }
@@ -90,11 +105,13 @@ public class HousingCategoryPopupView : MonoBehaviour
         SetColorContentActive(true);
 
         _currentColors = _colors;
+        _currentSlotCount = Mathf.Min(DefaultSlotCount, GetColorCount());
         _selectedIndex = Mathf.Clamp(_selectedColorIndex, 0, GetColorCount() - 1);
         _focusedLockedSlotIndex = NoFocusedLockedSlotIndex;
 
         RefreshColorSlots();
         ShowRoot();
+        Canvas.ForceUpdateCanvases();
     }
 
     public void ShowSurfaceOptions(string _title, Color[] _colors, int _selectedColorIndex, bool _isFloorSelected)
@@ -106,11 +123,13 @@ public class HousingCategoryPopupView : MonoBehaviour
         SetColorContentActive(true);
 
         _currentColors = _colors;
+        _currentSlotCount = Mathf.Min(SurfaceSlotCount, GetColorCount());
         _selectedIndex = Mathf.Clamp(_selectedColorIndex, 0, GetColorCount() - 1);
         _focusedLockedSlotIndex = NoFocusedLockedSlotIndex;
 
         RefreshColorSlots();
         ShowRoot();
+        Canvas.ForceUpdateCanvases();
     }
 
     public void ShowWallpaper(string _title, Color[] _wallpaperColors, int _selectedIndex)
@@ -138,13 +157,33 @@ public class HousingCategoryPopupView : MonoBehaviour
     private void ResolveColorSlots(bool _forceRefresh = false)
     {
         // 기능: Hierarchy에 배치된 슬롯 View 배열을 Content 하위에서 수집한다.
-        if (!_forceRefresh && _wallpaperSlots != null && _wallpaperSlots.Length > 0)
+        if (!_forceRefresh && _wallpaperSlots != null && _wallpaperSlots.Length >= SurfaceSlotCount)
             return;
 
         if (_wallpaperContentRoot == null)
             return;
 
         _wallpaperSlots = _wallpaperContentRoot.GetComponentsInChildren<HousingWallpaperSlotView>(true);
+        EnsureSurfaceSlotObjects();
+        _wallpaperSlots = _wallpaperContentRoot.GetComponentsInChildren<HousingWallpaperSlotView>(true);
+    }
+
+    private void EnsureSurfaceSlotObjects()
+    {
+        // 추가: 조규민 - 씬에 12개만 배치되어 있어도 벽지/바닥 추가 슬롯 13~20을 런타임에 보강한다.
+        if (_wallpaperSlots == null || _wallpaperSlots.Length == 0)
+            return;
+
+        if (_wallpaperSlots.Length >= SurfaceSlotCount)
+            return;
+
+        Transform _parent = _wallpaperContentRoot.transform;
+        HousingWallpaperSlotView _template = _wallpaperSlots[_wallpaperSlots.Length - 1];
+        for (int _index = _wallpaperSlots.Length; _index < SurfaceSlotCount; _index++)
+        {
+            HousingWallpaperSlotView _createdSlot = Instantiate(_template, _parent);
+            _createdSlot.name = "Slot_Wallpaper_" + (_index + 1);
+        }
     }
 
     private void ResolveSurfaceTabs()
@@ -196,6 +235,27 @@ public class HousingCategoryPopupView : MonoBehaviour
         _progressModel = FindFirstObjectByType<PlayerProgressModel>(FindObjectsInactive.Include);
     }
 
+    private void ResolveCurrencyModel()
+    {
+        // 추가: 조규민 - Inspector 미연결 시 씬의 재화 모델을 찾아 구매 가능 여부에 사용한다.
+        if (_currencyModel != null)
+            return;
+
+        _currencyModel = FindFirstObjectByType<CurrencyModel>(FindObjectsInactive.Include);
+    }
+
+    private void ResolvePurchaseModel()
+    {
+        // 추가: 조규민 - 구매 상태 모델이 없으면 팝업 오브젝트에 붙여 현재 세션 구매 상태를 관리한다.
+        if (_purchaseModel == null)
+            _purchaseModel = GetComponent<HousingWallpaperPurchaseModel>();
+
+        if (_purchaseModel == null)
+            _purchaseModel = gameObject.AddComponent<HousingWallpaperPurchaseModel>();
+
+        _purchaseModel.Initialize();
+    }
+
     private void BindProgressModel()
     {
         // 기능: 스테이지 진행도 변경 이벤트를 슬롯 해금 갱신에 연결한다.
@@ -213,6 +273,42 @@ public class HousingCategoryPopupView : MonoBehaviour
             return;
 
         _progressModel.OnProgressUpdated -= HandleProgressUpdated;
+    }
+
+    private void BindCurrencyModel()
+    {
+        // 추가: 조규민 - 재화 변화에 따라 구매 가능/불가 표시를 즉시 갱신한다.
+        if (_currencyModel == null)
+            return;
+
+        _currencyModel.OnCurrencyChanged -= HandleCurrencyChanged;
+        _currencyModel.OnCurrencyChanged += HandleCurrencyChanged;
+    }
+
+    private void UnbindCurrencyModel()
+    {
+        if (_currencyModel == null)
+            return;
+
+        _currencyModel.OnCurrencyChanged -= HandleCurrencyChanged;
+    }
+
+    private void BindPurchaseModel()
+    {
+        // 추가: 조규민 - 구매 완료 시 슬롯 잠금 상태를 즉시 갱신한다.
+        if (_purchaseModel == null)
+            return;
+
+        _purchaseModel.PurchaseStateChanged -= HandlePurchaseStateChanged;
+        _purchaseModel.PurchaseStateChanged += HandlePurchaseStateChanged;
+    }
+
+    private void UnbindPurchaseModel()
+    {
+        if (_purchaseModel == null)
+            return;
+
+        _purchaseModel.PurchaseStateChanged -= HandlePurchaseStateChanged;
     }
 
     private void BindColorSlots()
@@ -292,7 +388,7 @@ public class HousingCategoryPopupView : MonoBehaviour
             if (_slot == null)
                 continue;
 
-            bool _isDisplaySlot = _index < RequiredSlotCount;
+            bool _isDisplaySlot = _index < _currentSlotCount;
             _slot.gameObject.SetActive(_isDisplaySlot);
 
             if (!_isDisplaySlot)
@@ -303,14 +399,22 @@ public class HousingCategoryPopupView : MonoBehaviour
             Color _slotColor = GetSlotColor(_index);
             _slot.SetData(_index, _slotColor, _index == _selectedIndex);
             _slot.SetUnlockState(_isUnlocked, GetUnlockConditionText(_index), _showUnlockCondition);
+            ApplyPurchaseState(_slot, _index);
         }
     }
 
     private void HandleColorSlotClicked(int _slotIndex)
     {
         // 기능: 잠금 슬롯은 조건 표시만 열고, 해금 슬롯은 선택 이벤트를 전달한다.
-        if (_slotIndex < 0 || _slotIndex >= RequiredSlotCount)
+        if (_slotIndex < 0 || _slotIndex >= _currentSlotCount)
             return;
+
+        if (!TryPurchaseSlotIfNeeded(_slotIndex))
+        {
+            _focusedLockedSlotIndex = _slotIndex;
+            RefreshColorSlots();
+            return;
+        }
 
         if (!IsSlotUnlocked(_slotIndex))
         {
@@ -349,6 +453,18 @@ public class HousingCategoryPopupView : MonoBehaviour
         RefreshColorSlots();
     }
 
+    private void HandleCurrencyChanged(int _gold, int _parchment)
+    {
+        // 추가: 조규민 - 재화 수량 변경 시 구매 가능 표시를 다시 계산한다.
+        RefreshColorSlots();
+    }
+
+    private void HandlePurchaseStateChanged()
+    {
+        // 추가: 조규민 - 구매 상태 변경 시 잠금 표시를 다시 계산한다.
+        RefreshColorSlots();
+    }
+
     private int GetColorCount()
     {
         // 기능: 현재 카테고리에서 사용할 수 있는 색상 개수를 반환한다.
@@ -367,11 +483,65 @@ public class HousingCategoryPopupView : MonoBehaviour
         return new Color(0.16f, 0.17f, 0.16f, 1f);
     }
 
+    private void ApplyPurchaseState(HousingWallpaperSlotView _slot, int _slotIndex)
+    {
+        // 추가: 조규민 - 구매형 슬롯의 비용과 버튼 가능 상태를 슬롯 View에 반영한다.
+        if (_slot == null || !IsPurchaseSlot(_slotIndex))
+            return;
+
+        bool _isPurchased = IsSlotUnlocked(_slotIndex);
+        bool _canPurchase = CanPurchaseSlot(_slotIndex);
+        string _priceText = GetPurchasePriceText(_slotIndex);
+        _slot.SetPurchaseState(_isPurchased, _canPurchase, _priceText);
+    }
+
+    private bool TryPurchaseSlotIfNeeded(int _slotIndex)
+    {
+        // 추가: 조규민 - 구매형 슬롯은 재화 차감과 구매 저장이 성공해야 선택할 수 있다.
+        if (!IsPurchaseSlot(_slotIndex))
+            return true;
+
+        if (_purchaseModel == null)
+            return false;
+
+        if (_purchaseModel.IsPurchased(_slotIndex))
+            return true;
+
+        return _purchaseModel.TryPurchase(_slotIndex, _currencyModel);
+    }
+
+    private bool CanPurchaseSlot(int _slotIndex)
+    {
+        if (_purchaseModel == null)
+            return false;
+
+        return _purchaseModel.CanPurchase(_slotIndex, _currencyModel);
+    }
+
+    private bool IsPurchaseSlot(int _slotIndex)
+    {
+        if (_purchaseModel == null)
+            return _slotIndex >= PurchaseSlotStartIndex;
+
+        return _purchaseModel.IsPurchaseSlot(_slotIndex);
+    }
+
+    private string GetPurchasePriceText(int _slotIndex)
+    {
+        if (_purchaseModel == null)
+            return string.Empty;
+
+        return _purchaseModel.GetPriceText(_slotIndex);
+    }
+
     private bool IsSlotUnlocked(int _slotIndex)
     {
         // 기능: 1~8번 슬롯은 기본 해금, 9~12번 슬롯은 챕터 클리어 여부로 해금한다.
         if (_slotIndex < LockedSlotStartIndex)
             return true;
+
+        if (IsPurchaseSlot(_slotIndex))
+            return _purchaseModel != null && _purchaseModel.IsPurchased(_slotIndex);
 
         return HousingUnlockUtility.IsChapterCleared(_progressModel, GetRequiredChapter(_slotIndex));
     }
@@ -381,6 +551,9 @@ public class HousingCategoryPopupView : MonoBehaviour
         // 기능: 잠긴 슬롯에 표시할 챕터 클리어 조건 문구를 만든다.
         if (IsSlotUnlocked(_slotIndex))
             return string.Empty;
+
+        if (IsPurchaseSlot(_slotIndex))
+            return GetPurchasePriceText(_slotIndex);
 
         int _chapter = GetRequiredChapter(_slotIndex);
         return "챕터 " + _chapter + " 클리어 시 해금";
@@ -447,6 +620,12 @@ public class HousingCategoryPopupView : MonoBehaviour
 
         if (_wallpaperSlots == null || _wallpaperSlots.Length == 0)
             Debug.LogWarning("[HousingCategoryPopupView] 색상 슬롯이 연결되지 않았습니다.", this);
+
+        if (_currencyModel == null)
+            Debug.LogWarning("[HousingCategoryPopupView] 재화 모델이 연결되지 않아 구매형 벽지 슬롯 구매가 제한됩니다.", this);
+
+        if (_purchaseModel == null)
+            Debug.LogWarning("[HousingCategoryPopupView] 벽지 구매 모델이 연결되지 않아 런타임에 자동 생성됩니다.", this);
     }
 
     private static Transform FindChildByName(Transform _root, string _name)

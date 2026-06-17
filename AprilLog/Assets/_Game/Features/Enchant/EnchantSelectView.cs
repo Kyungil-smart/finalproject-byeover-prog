@@ -13,8 +13,12 @@
 // 수정자 : 김영찬
 // 인챈트 선택 팝업 View -- 선택지 표시 + 유저 입력
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인게임 인챈트 선택 팝업 리롤 횟수 설정, 남은 횟수 표시 갱신, 리롤 아이콘/텍스트 터치 가로막음 방지 추가
+
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -43,6 +47,11 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [SerializeField] private Transform _choiceContainer;
     [SerializeField] private Button _skipButton;
     [SerializeField] private Button _rerollButton;
+    [SerializeField] private TMP_Text _rerollCountText;
+    
+    [Header("리롤 설정")]
+    [Tooltip("인챈트 선택 팝업이 열릴 때 제공할 새로고침 횟수")]
+    [SerializeField] private int _rerollCount = 1;
     
     [Header("UI 프리팹 세팅")]
     [Tooltip("EnchantCard 프리팹")]
@@ -55,6 +64,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     
     // 런타임에 생성된 카드들을 추적하기 위한 캐시 리스트
     private List<GameObject> _spawnedCards = new List<GameObject>();
+    private TMP_Text _resolvedRerollCountText;
 
     private void OnEnable()
     {
@@ -72,12 +82,16 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 DataManager.Instance.SpellRepo,
                 _navigator, 
                 _probabilityConfig,
-                _changePresenter
+                _changePresenter,
+                _rerollCount
             );
             
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
             if (_rerollButton != null)
+            {
                 _rerollButton.onClick.AddListener(() => OnRerollSelected?.Invoke());
+                ConfigureRerollHitArea();
+            }
         }
         
         // 팝업이 열릴 때 자동으로 프레젠터에게 선택지를 생성하라고 요청
@@ -152,8 +166,15 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public void SetRerollAvailable(bool available, int remaining)
     {
         if (_rerollButton == null) return;
-        _rerollButton.gameObject.SetActive(available);
+
+        GameObject rerollRoot = GetRerollRoot();
+        if (rerollRoot != null)
+            rerollRoot.SetActive(available);
+        else
+            _rerollButton.gameObject.SetActive(available);
+
         _rerollButton.interactable = available && remaining > 0;
+        UpdateRerollCountText(remaining);
     }
 
     // 멀티 터치 방지
@@ -166,6 +187,65 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 btn.interactable = false;
             }
         }
+    }
+
+    private GameObject GetRerollRoot()
+    {
+        if (_rerollButton == null || _rerollButton.transform.parent == null)
+            return null;
+
+        return _rerollButton.transform.parent.gameObject;
+    }
+
+    private void ConfigureRerollHitArea()
+    {
+        GameObject rerollRoot = GetRerollRoot();
+        if (rerollRoot == null) return;
+
+        Graphic buttonGraphic = _rerollButton.targetGraphic;
+        Graphic[] graphics = rerollRoot.GetComponentsInChildren<Graphic>(true);
+        foreach (Graphic graphic in graphics)
+        {
+            if (graphic == null) continue;
+
+            graphic.raycastTarget = graphic == buttonGraphic;
+        }
+    }
+
+    private void UpdateRerollCountText(int remaining)
+    {
+        TMP_Text countText = ResolveRerollCountText();
+        if (countText == null) return;
+
+        countText.text = Mathf.Max(0, remaining).ToString();
+    }
+
+    private TMP_Text ResolveRerollCountText()
+    {
+        if (_rerollCountText != null)
+            return _rerollCountText;
+
+        if (_resolvedRerollCountText != null)
+            return _resolvedRerollCountText;
+
+        GameObject rerollRoot = GetRerollRoot();
+        if (rerollRoot == null)
+            return null;
+
+        TMP_Text[] texts = rerollRoot.GetComponentsInChildren<TMP_Text>(true);
+        foreach (TMP_Text text in texts)
+        {
+            if (text != null && text.name.Contains("RerollCountText"))
+            {
+                _resolvedRerollCountText = text;
+                return _resolvedRerollCountText;
+            }
+        }
+
+        if (texts.Length > 0)
+            _resolvedRerollCountText = texts[0];
+
+        return _resolvedRerollCountText;
     }
 
     private bool HasRequiredReferences()
