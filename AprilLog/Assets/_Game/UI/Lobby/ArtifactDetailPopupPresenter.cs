@@ -32,6 +32,9 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     // 팝업이 열릴 때 발행 (인자 = Gear_ID). 데이터 담당이 구독해 팝업 내용을 채운다.
     public event Action<int> OnPopupOpened;
 
+    // 장착 버튼 클릭 시 발행 (인자 = Gear_ID). 장착 컨트롤러가 구독해 실제 장착/해제를 처리한다.
+    public event Action<int> OnEquipRequested;
+
     public int CurrentGearId { get; private set; }
 
     private void OnEnable()
@@ -39,6 +42,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_listBinder != null) _listBinder.OnSlotClicked += HandleSlotClicked;
         if (_equipBinder != null) _equipBinder.OnSlotClicked += HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.AddListener(Close);
+        if (_equipButton != null) _equipButton.onClick.AddListener(HandleEquipClicked);
     }
 
     private void OnDisable()
@@ -46,6 +50,13 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_listBinder != null) _listBinder.OnSlotClicked -= HandleSlotClicked;
         if (_equipBinder != null) _equipBinder.OnSlotClicked -= HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.RemoveListener(Close);
+        if (_equipButton != null) _equipButton.onClick.RemoveListener(HandleEquipClicked);
+    }
+
+    // 장착 버튼 클릭 → 현재 표시 중인 아티팩트의 장착/해제를 컨트롤러에 요청.
+    private void HandleEquipClicked()
+    {
+        OnEquipRequested?.Invoke(CurrentGearId);
     }
 
     private void Start()

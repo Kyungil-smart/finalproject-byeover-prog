@@ -24,13 +24,23 @@ public class ArtifactEquipBinder : MonoBehaviour
     [SerializeField] private ArtifactEquipSlotView _equipPrefab;
 
     private ArtifactEquipSlotView[] _spawned;
+    private Action<int>[] _slotHandlers;
 
     // 슬롯 단일 클릭 → 상세 정보 팝업용 (인자 = Gear_ID)
     public event Action<int> OnSlotClicked;
 
+    // 슬롯 단일 클릭 → 슬롯 인덱스 선택용 (교체 대상 선택 등). SlotSelectionMode 가 true 일 때만 발행.
+    public event Action<int> OnSlotIndexClicked;
+
+    // true 이면 슬롯 클릭이 '인덱스 선택'(OnSlotIndexClicked)으로 동작한다. (가득 찼을 때 교체 슬롯 선택용)
+    public bool SlotSelectionMode { get; set; }
+
+    public int SlotCount => _slots != null ? _slots.Length : 0;
+
     private void Awake()
     {
         _spawned = new ArtifactEquipSlotView[_slots.Length];
+        _slotHandlers = new Action<int>[_slots.Length];
     }
 
     private void Start()
@@ -57,10 +67,16 @@ public class ArtifactEquipBinder : MonoBehaviour
         DestroySpawned(index);
 
         EquipSlot slot = _slots[index];
-        ArtifactEquipSlotView view = Instantiate(_equipPrefab, slot.container);
+        // worldPositionStays=false 로 부모(container) 로컬 기준 생성 후, 위치/스케일을 컨테이너에 맞춰 초기화.
+        ArtifactEquipSlotView view = Instantiate(_equipPrefab, slot.container, false);
+        ResetRect(view.transform);
         view.SetData(data, grade);
         view.SetOwnedState(level, ascensionStage, isMaxLevel);
-        view.Clicked += HandleSlotClicked;
+
+        int captured = index; // 클릭 시 슬롯 인덱스를 알 수 있도록 캡처
+        Action<int> handler = gearId => OnSlotClickedInternal(captured, gearId);
+        view.Clicked += handler;
+        _slotHandlers[index] = handler;
         _spawned[index] = view;
 
         if (slot.emptySlot != null)
@@ -84,16 +100,42 @@ public class ArtifactEquipBinder : MonoBehaviour
         if (_spawned == null || _spawned[index] == null)
             return;
 
-        _spawned[index].Clicked -= HandleSlotClicked;
+        if (_slotHandlers != null && _slotHandlers[index] != null)
+        {
+            _spawned[index].Clicked -= _slotHandlers[index];
+            _slotHandlers[index] = null;
+        }
         Destroy(_spawned[index].gameObject);
         _spawned[index] = null;
     }
 
-    private void HandleSlotClicked(int gearId)
+    private void OnSlotClickedInternal(int index, int gearId)
     {
+        // 교체 슬롯 선택 모드일 때는 인덱스만 알려주고 상세 팝업은 열지 않는다.
+        if (SlotSelectionMode)
+        {
+            Debug.Log($"[ArtifactEquipBinder] 교체 슬롯 선택 → index {index}");
+            OnSlotIndexClicked?.Invoke(index);
+            return;
+        }
+
         Debug.Log($"[ArtifactEquipBinder] 장착 슬롯 클릭 → Gear {gearId} 상세 정보 요청");
         OnSlotClicked?.Invoke(gearId);
     }
 
+    // 비어 있는(장착 안 된) 슬롯인지. 컨트롤러가 빈 슬롯 탐색에 사용.
+    public bool IsSlotEmpty(int index) => IsValid(index) && (_spawned == null || _spawned[index] == null);
+
     private bool IsValid(int index) => _slots != null && index >= 0 && index < _slots.Length && _slots[index] != null;
+
+    // 생성된 장착 카드를 슬롯(container) 기준으로 정렬(위치/회전/스케일 초기화).
+    private static void ResetRect(Transform t)
+    {
+        t.localRotation = Quaternion.identity;
+        t.localScale = Vector3.one;
+
+        // 위치만 컨테이너 기준 0 으로(크기/앵커는 프리팹 설정 유지 → 고정 크기 카드가 찌그러지지 않음).
+        if (t is RectTransform rt)
+            rt.anchoredPosition3D = Vector3.zero;
+    }
 }

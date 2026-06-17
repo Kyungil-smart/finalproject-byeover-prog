@@ -59,11 +59,9 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
     [SerializeField] private string _craftLabelNormal = "제작";
     [SerializeField] private string _craftLabelShort = "조각 부족";
 
-    [Header("테스트용 버튼 (기획 확인용)")]
-    [Tooltip("클릭 시 레전더리 조각 100개를 지급한다.")]
-    [SerializeField] private Button _testGiveShardButton;
-    [Tooltip("클릭 시 레전더리 조각을 0개로 초기화한다.")]
-    [SerializeField] private Button _testResetShardButton;
+    [Header("테스트용 (기획 확인용)")]
+    //        테스트 버튼은 버튼 인스펙터의 OnClick() 이벤트에 아래 public 메서드를 직접 등록할 것
+    
     [Tooltip("테스트 버튼 1회 지급량")]
     [SerializeField] private int _testGiveAmount = 100;
 
@@ -88,8 +86,7 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
     {
         if (_closeButton != null) _closeButton.onClick.AddListener(Close);
         if (_craftButton != null) _craftButton.onClick.AddListener(OnClickCraft);
-        if (_testGiveShardButton != null) _testGiveShardButton.onClick.AddListener(Test_GiveShards);
-        if (_testResetShardButton != null) _testResetShardButton.onClick.AddListener(Test_ResetShards);
+        // 테스트 버튼은 팝업이 비활성일 때도 눌러야 하므로 코드 바인딩하지 않고 인스펙터 OnClick 으로 연결한다.
     }
 
     private void OnEnable()
@@ -110,7 +107,9 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
 
     private void Start()
     {
-        Root.SetActive(false);
+        // 비활성으로 시작했다가 OpenForGear 로 켜지는 순간 Start 가 늦게 실행될 수 있으므로,
+        // '열려는 중'(currentGearId 지정됨)이 아닐 때만 초기 숨김 처리한다.
+        if (_currentGearId < 0) Root.SetActive(false);
     }
     
     // 외부(상세 프레젠터 등)에서 사용하는 진입점
@@ -212,7 +211,15 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         if (_confirmPopup.IsOpen) return;
 
         int gearId = _currentGearId; // 빠른 슬롯 전환 대비 캡처
-        _confirmPopup.Open(ArtifactConfirmType.Craft, Service.CraftCost, () => ConfirmCraft(gearId));
+
+        // 제작 팝업을 숨기고(선택 정보는 유지) 확인 팝업만 띄운다 → 두 팝업이 겹치지 않음.
+        Root.SetActive(false);
+
+        _confirmPopup.Open(
+            ArtifactConfirmType.Craft,
+            Service.CraftCost,
+            onConfirm: () => ConfirmCraft(gearId),
+            onCancel: () => OpenForGear(gearId)); // 취소 시 제작 팝업 다시 표시
     }
 
     private void ConfirmCraft(int gearId)
@@ -225,9 +232,9 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         _isProcessing = false;
 
         if (ok)
-            Close(); // 제작 완료 → 팝업 닫기 (리스트/조각 UI 는 이벤트로 갱신됨)
+            Close(); // 제작 완료 → 제작 팝업도 닫기 (리스트/조각 UI 는 이벤트로 갱신됨)
         else
-            Refresh();
+            OpenForGear(gearId); // 만약 제작에 실패하면 제작 팝업을 다시 표시
     }
 
     
@@ -343,10 +350,10 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         return System.Enum.TryParse(gradeName, out ArtifactGrade grade) ? grade : ArtifactGrade.Rare;
     }
 
-    // ==================================================================
-    // 테스트용 버튼 (기획 확인용) — 버튼 클릭으로 조각 지급/초기화
-    // ==================================================================
-    // 버튼 클릭 시 레전더리 조각 100개(_testGiveAmount) 지급.
+    
+    // 테스트용 버튼 — 버튼 클릭으로 조각 지급/초기화
+    
+    // 버튼 클릭 시 레전더리 조각 100개 지급
     public void Test_GiveShards()
     {
         ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
