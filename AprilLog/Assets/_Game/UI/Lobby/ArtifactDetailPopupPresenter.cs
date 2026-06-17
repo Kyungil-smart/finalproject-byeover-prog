@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +21,27 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     [SerializeField] private Button _equipButton;
     [Tooltip("레벨업 버튼. 미보유 아티팩트면 interactable=false")]
     [SerializeField] private Button _levelUpButton;
+
+    [Header("장착 버튼 라벨 (선택)")]
+    [Tooltip("장착/해제 상태에 따라 텍스트를 바꿀 장착 버튼 내부 TMP. 비우면 라벨은 바뀌지 않는다.")]
+    [SerializeField] private TMP_Text _equipButtonLabel;
+    [SerializeField] private string _equipLabel = "장착";
+    [SerializeField] private string _unequipLabel = "해제";
+
+    [Header("상세 정보 표시")]
+    [SerializeField] private Image _gradeBg;            // 등급 배경
+    [SerializeField] private Image _artifactIcon;       // 아티팩트 아이콘
+    [SerializeField] private TMP_Text _nameText;        // 이름
+    [SerializeField] private TMP_Text _gradeText;       // 등급
+    [SerializeField] private TMP_Text _equipAttackText; // 장착 시 공격력
+    [SerializeField] private TMP_Text _ownedAttackText; // 보유 시 공격력
+    [SerializeField] private TMP_Text _specialDescText; // 특수능력 설명
+
+    [Header("이름 / 설명 현지화 (선택)")]
+    [Tooltip("연결하면 GearName / Explanation 을 현지화 키로 조회. 비우면 임시 문구로 표시한다.")]
+    [SerializeField] private LocalizationManager _localization;
+    [SerializeField] private string _nameKeyPrefix = "GEAR_NAME_";
+    [SerializeField] private string _specialKeyPrefix = "GEAR_SPECIAL_";
 
     [Header("보유 판정 소스")]
     [Tooltip("비우면 GameStateManager.Instance 의 ArtifactManager 를 사용한다.")]
@@ -79,10 +101,17 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_popup != null)
             _popup.SetActive(true);
 
+        // 이름/등급/장착·보유 능력/특수능력 등 상세 정보를 채운다.
+        Populate(gearId);
+
         // 미보유(비활성) 아티팩트는 상세 정보는 보되 장착/레벨업은 할 수 없다.
         bool owned = IsOwned(gearId);
         if (_equipButton != null) _equipButton.interactable = owned;
         if (_levelUpButton != null) _levelUpButton.interactable = owned;
+
+        // 장착 버튼 라벨 : 이미 장착된 아티팩트면 '해제', 아니면 '장착'.
+        if (_equipButtonLabel != null)
+            _equipButtonLabel.text = (owned && IsEquipped(gearId)) ? _unequipLabel : _equipLabel;
 
         OnPopupOpened?.Invoke(gearId);
     }
@@ -95,6 +124,82 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
             : (GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null);
 
         return mgr != null && mgr.MyArtifacts.Exists(a => a != null && a.MasterId == gearId);
+    }
+
+    // 이름/등급/장착·보유 공격력/특수능력 설명을 채운다. (제작·분해 팝업과 동일한 방식)
+    private void Populate(int gearId)
+    {
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        GearMasterData master = repo != null ? repo.GetGearData(gearId) : null;
+        if (master == null)
+        {
+            Debug.LogWarning($"[ArtifactDetail] 아티팩트 데이터를 찾을 수 없습니다. ID: {gearId}");
+            return;
+        }
+
+        ArtifactGrade grade = ToGrade(master.GearGrade);
+
+        if (_gradeBg != null) _gradeBg.color = ArtifactGradeInfo.SlotColor(grade);
+        if (_artifactIcon != null)
+        {
+            Sprite icon = LoadIcon(master.IconSprite);
+            if (icon != null)
+            {
+                _artifactIcon.sprite = icon;
+                _artifactIcon.enabled = true;
+            }
+        }
+
+        if (_nameText != null) _nameText.text = ResolveName(master);
+        if (_gradeText != null) _gradeText.text = ArtifactGradeInfo.DisplayName(grade);
+        if (_equipAttackText != null) _equipAttackText.text = $"장착 시 공격력 +{master.AttackBaseAmount}";
+        if (_ownedAttackText != null) _ownedAttackText.text = $"보유 시 공격력 +{ResolveOwnedAttack(master)}";
+        if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
+    }
+
+    private string ResolveName(GearMasterData gear)
+    {
+        if (_localization != null)
+            return _localization.Get(_nameKeyPrefix + gear.Gear_ID);
+        return $"{gear.GearGrade} #{gear.Gear_ID}";
+    }
+
+    private string ResolveSpecialDesc(GearMasterData gear)
+    {
+        if (_localization != null)
+        {
+            string desc = _localization.Get(_specialKeyPrefix + gear.Special_ID);
+            if (!string.IsNullOrEmpty(desc)) return desc;
+        }
+
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        GearSpecialEffectData eff = repo != null ? repo.GetGearSpecialEffect(gear.Special_ID) : null;
+        return eff != null ? eff.Special : "특수능력 정보 없음";
+    }
+
+    // 보유 시 공격력 : 보유 특수효과(OwnedSpecial_ID)의 기본 값(베스트 에포트).
+    private int ResolveOwnedAttack(GearMasterData gear)
+    {
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        if (repo == null) return 0;
+        GearSpecialEffectData eff = repo.GetGearSpecialEffect(gear.OwnedSpecial_ID);
+        return eff != null ? Mathf.RoundToInt(eff.BaseAmount) : 0;
+    }
+
+    private static Sprite LoadIcon(string iconPath)
+        => string.IsNullOrEmpty(iconPath) ? null : Resources.Load<Sprite>(iconPath);
+
+    private static ArtifactGrade ToGrade(string gradeName)
+        => Enum.TryParse(gradeName, out ArtifactGrade grade) ? grade : ArtifactGrade.Rare;
+
+    // 해당 Gear_ID 가 현재 장착 중인지 판정.
+    private bool IsEquipped(int gearId)
+    {
+        ArtifactManager mgr = _artifactManager != null
+            ? _artifactManager
+            : (GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null);
+
+        return mgr != null && mgr.MyArtifacts.Exists(a => a != null && a.MasterId == gearId && a.IsEquipped);
     }
 
     public void Close()
