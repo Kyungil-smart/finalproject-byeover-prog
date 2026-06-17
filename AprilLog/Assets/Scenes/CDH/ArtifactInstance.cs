@@ -11,19 +11,31 @@ public class ArtifactInstance
     public int AscensionCount = 0;
     public bool IsAscended => AscensionCount >= 1;
 
-    public GearMasterData MasterData => DataManager.Instance.GearRepo.GetGearData(MasterId);
+    private GearRepo Repo => DataManager.Instance.GearRepo;
+    public GearMasterData MasterData => Repo.GetGearData(MasterId);
 
-    public int GetMaxLevel()
+    public int GetMaxAscensionLimit()
     {
-        return 5 + (AscensionCount * 5);
+        var gradeData = Repo.GetGearGrade(MasterData.GearGrade);
+        return gradeData != null ? gradeData.MaxAscension : 0;
+    }
+
+    public int GetMaxLevelLimit()
+    {
+        var gradeData = Repo.GetGearGrade(MasterData.GearGrade);
+        if (gradeData == null) return 1;
+
+        return gradeData.BaseLevel + (AscensionCount * gradeData.LevelCapIncrease);
     }
 
     public bool CanLevelUp()
     {
-        var levelData = DataManager.Instance.GearRepo.GetGearLevel(MasterId);
+        return CurrentLevel < GetMaxLevelLimit();
+    }
 
-        if (levelData == null) return false;
-
-        return CurrentLevel < levelData.EndLevel;
+    public bool CanAscend()
+    {
+        int maxAscension = 5;
+        return AscensionCount < maxAscension;
     }
 }
