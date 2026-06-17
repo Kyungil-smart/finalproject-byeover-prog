@@ -1513,11 +1513,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9150d9e410a6ac748ac8215e14ed60a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantSelectView
-  _enchantModel: {fileID: 673703853}
+  _probabilityConfig:
+    SkillPoolBaseWeight: 100
+    StatPoolBaseWeight: 100
+    SkillStage1_HeldWeight: 30
+    SkillStage1_UnheldWeight: 70
+    SkillStage2_HeldWeight: 50
+    SkillStage2_UnheldWeight: 50
+    SkillStage3_HeldWeight: 80
+    SkillStage3_UnheldWeight: 20
+    Stat_HeldWeight: 60
+    Stat_UnheldWeight: 40
+  _model: {fileID: 0}
   _navigator: {fileID: 1980292180}
+  _changeView: {fileID: 0}
   _choiceContainer: {fileID: 1181439378}
   _skipButton: {fileID: 1674580069}
   _rerollButton: {fileID: 338214905}
+  _rerollCountText: {fileID: 0}
+  _rerollCount: 1
   _cardPrefab: {fileID: 2425400630862511974, guid: 5e22153ce8504ea4d9d3d8726e3d5d98, type: 3}
 --- !u!114 &111999934
 MonoBehaviour:
@@ -4446,20 +4460,6 @@ MonoBehaviour:
   _fallbackCharacterY: -0.8
   _projectilePoolSize: 20
   _defaultChapterId: 1
---- !u!114 &341681048
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 341681045}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3f8a1c2d9b7e4f60a4d5c6b7a8190e23, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SkillTestStageTuning
-  _spawnIntervalMultiplier: 0.5
-  _spawnAmountMultiplier: 1
 --- !u!4 &341681047
 Transform:
   m_ObjectHideFlags: 0
@@ -4475,6 +4475,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &341681048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 341681045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f8a1c2d9b7e4f60a4d5c6b7a8190e23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkillTestStageTuning
+  _spawnIntervalMultiplier: 0.5
+  _spawnAmountMultiplier: 1
 --- !u!1 &355035346
 GameObject:
   m_ObjectHideFlags: 0
@@ -7534,7 +7548,9 @@ MonoBehaviour:
   _middleBarHeight: 80
   _defenseArea: {fileID: 776535668}
   _puzzleArea: {fileID: 834509325}
+  _puzzleOverscanBackground: {fileID: 0}
   _middleBar: {fileID: 1628563998}
+  _puzzleBottomOverscan: 120
 --- !u!114 &650796075
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8050,6 +8066,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5b66d35492f5e04abff8773b7ae2f57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantModel
+  _listView: {fileID: 951242438}
 --- !u!4 &673703854
 Transform:
   m_ObjectHideFlags: 0
@@ -17158,11 +17175,12 @@ MonoBehaviour:
   - {fileID: 1273865716}
   - {fileID: 1384413551}
   _afterEnchantChangeInfoTable: {fileID: 1856112191}
-  _changeExecuteButton: {fileID: 272648903}
+  _confirmButton: {fileID: 0}
   _cancelButton: {fileID: 1136372635}
   _headerText: {fileID: 1349802590}
   _changeExecuteButtonText: {fileID: 1082178137}
   _cancelButtonText: {fileID: 151535659}
+  _listView: {fileID: 0}
 --- !u!114 &1446440524
 MonoBehaviour:
   m_ObjectHideFlags: 0
