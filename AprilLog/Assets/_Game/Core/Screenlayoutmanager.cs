@@ -80,8 +80,8 @@ public class ScreenLayoutManager : MonoBehaviour
         // 추가: 조규민 - 하단 SafeArea 바깥으로 퍼즐 영역을 확장해 MainCanvas 배경 노출을 막는다.
         float puzzleBottomOverscanRatio = GetPuzzleBottomOverscanRatio(totalHeight);
 
-        // 수정자: 조규민 - 조작 UI(TableCanvas)는 SafeArea 안에 고정하고, 하단 확장은 배경 전용 RectTransform에만 적용한다.
-        _puzzleArea.anchorMin = Vector2.zero;
+        // 수정자: 조규민 - 소트 구역(PuzzleArea)을 하단 SafeArea 바깥까지 확장해 빈 하단 노출을 줄인다.
+        _puzzleArea.anchorMin = new Vector2(0f, -puzzleBottomOverscanRatio);
         _puzzleArea.anchorMax = new Vector2(1f, puzzleH / totalHeight);
         _puzzleArea.offsetMin = Vector2.zero;
         _puzzleArea.offsetMax = Vector2.zero;

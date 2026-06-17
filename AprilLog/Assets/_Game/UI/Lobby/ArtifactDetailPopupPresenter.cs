@@ -25,6 +25,10 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     [Tooltip("비우면 GameStateManager.Instance 의 ArtifactManager 를 사용한다.")]
     [SerializeField] private ArtifactManager _artifactManager;
 
+    [Header("제작 팝업 연동 (선택)")]
+    [Tooltip("연결하면 미보유 레전더리 슬롯 클릭은 상세 팝업 대신 제작 팝업(POPUP_ArtifactCraft)을 연다.")]
+    [SerializeField] private ArtifactCraftPopupPresenter _craftPopup;
+
     // 팝업이 열릴 때 발행 (인자 = Gear_ID). 데이터 담당이 구독해 팝업 내용을 채운다.
     public event Action<int> OnPopupOpened;
 
@@ -52,6 +56,13 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     private void HandleSlotClicked(int gearId)
     {
+        // 미보유 레전더리 아티팩트는 상세 팝업이 아니라 제작 팝업(POPUP_ArtifactCraft)으로 위임한다.
+        if (_craftPopup != null && _craftPopup.IsCraftTarget(gearId))
+        {
+            _craftPopup.OpenForGear(gearId);
+            return;
+        }
+
         CurrentGearId = gearId;
 
         if (_popup != null)

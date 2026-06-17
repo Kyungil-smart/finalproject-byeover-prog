@@ -268,6 +268,22 @@ public class AcquiredStatData
     public StatTableData Data;
 }
 
+public class EffectSpec
+{
+    public int Id;
+    public float CalValue;
+    public float CalDuration;
+    public float CalInterval;
+
+    public EffectSpec(int id, float calValue, float calDuration, float calInterval)
+    {
+        Id = id;
+        CalValue = calValue;
+        CalDuration = calDuration;
+        CalInterval = calInterval;
+    }
+}
+
 #endregion
 
 #region 인첸트 도감 지원
