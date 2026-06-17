@@ -400,8 +400,8 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(4042, thunderbolt);
         skillSystem.RegisterHazardSkill(4043, thunderbolt);
 
-        // 뇌격 4051~53: 랜덤 타겟 세로 직사각 1히트(PelletCount 1). 실제 VFX(Lazer_purple) 단발·피격 300×1600 (기획 v2.02 4-5). ⚠위치는 랜덤타겟(스펙은 고정-에이프릴 세로 레이저라 후속 조정 필요).
-        var thunderStrike = new HazardConfig { placement = HazardPlacement.RandomTarget, widthPx = 300, heightPx = 1600, pulseInterval = 0.15f, flashColor = new Color(0.9f, 0.8f, 1f, 0.4f) };
+        // 뇌격 4051~53: 플레이어 기준 세로 레이저 빔 — 플레이어 X에서 위(몬스터 스폰 방향)로 쭉 뻗음(PlayerColumn). 피격 300×1600 (기획 v2.02 4-5).
+        var thunderStrike = new HazardConfig { placement = HazardPlacement.PlayerColumn, widthPx = 300, heightPx = 1600, pulseInterval = 0.15f, flashColor = new Color(0.9f, 0.8f, 1f, 0.4f) };
         skillSystem.RegisterHazardSkill(4051, thunderStrike);
         skillSystem.RegisterHazardSkill(4052, thunderStrike);
         skillSystem.RegisterHazardSkill(4053, thunderStrike);

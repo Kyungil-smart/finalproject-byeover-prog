@@ -19,8 +19,8 @@ public class LightningSkillVfxLibrary : ScriptableObject
 
     [Header("뇌격 (StandardID 405) — Lazer_purple / 세로 레이저")]
     public GameObject laserPrefab;
-    [Tooltip("뇌격 VFX 스케일 — ⚠ Lazer_purple prefab에 m_MaxParticleSize:10(기본0.5)이 박혀 있어 1이면 화면 도배. 0.08~ 강하게 축소. 근본은 prefab의 MaxParticleSize·SizeOverLifetime 정상화")]
-    public float laserScale = 0.08f;
+    [Tooltip("뇌격 VFX 스케일 — Lazer_purple prefab의 m_MaxParticleSize를 0.5(정상)로 고쳐서 키워도 안 터짐. 플레이어 세로 레이저로 크게(0.5~, 더 키워도 됨). 인스펙터 튜닝")]
+    public float laserScale = 0.5f;
     [Tooltip("뇌격 레이저 회전(도) — Lazer_purple prefab의 startRotation이 0이라 위아래가 뒤집혀 보임. 스펙 4-5-2 'Start Rotation 180' 기본. 방향 안 맞으면 0/90 등으로 조정")]
     public float laserRotationDeg = 180f;
 
