@@ -323,6 +323,13 @@ public class SkillSystem : MonoBehaviour
                     center = randomTarget.transform.position;
                     break;
 
+                case HazardPlacement.PlayerColumn:
+                    // 뇌격: 플레이어 X 고정, 위(몬스터 스폰 방향)로 세로 컬럼이 뻗음. 박스 하단이 플레이어, 위로 sizeWorld.y.
+                    center = new Vector2(
+                        _firePoint != null ? _firePoint.position.x : CamCenterX(),
+                        (_firePoint != null ? _firePoint.position.y : 0f) + sizeWorld.y * 0.5f);
+                    break;
+
                 default: // NearestTarget
                     center = fixedCenter;
                     break;
@@ -1058,6 +1065,7 @@ public enum HazardPlacement
     NearestTarget,  // 최단거리 타겟 위치에 고정 (파이어브레스)
     PlayerFront,    // 플레이어 전방 전체 폭 (대지 균열)
     RandomTarget,   // 매 펄스 랜덤 타겟 (메테오)
+    PlayerColumn,   // 플레이어 X 고정, 위(몬스터 스폰 방향)로 세로 컬럼 (뇌격 레이저)
 }
 
 /// <summary>장판 실행 스타일</summary>
