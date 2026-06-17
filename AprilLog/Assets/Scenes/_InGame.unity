@@ -1525,6 +1525,7 @@ MonoBehaviour:
     Stat_HeldWeight: 60
     Stat_UnheldWeight: 40
   _model: {fileID: 673703853}
+  _modelUI: {fileID: 832098345}
   _navigator: {fileID: 1980292180}
   _changeView: {fileID: 1446440523}
   _choiceContainer: {fileID: 1181439378}
@@ -8149,7 +8150,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5b66d35492f5e04abff8773b7ae2f57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantModel
-  _listView: {fileID: 951242438}
+  _model: {fileID: 832098345}
 --- !u!4 &673703854
 Transform:
   m_ObjectHideFlags: 0
@@ -9829,6 +9830,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a9642825eb9e4241a3515dc1b8d3114, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombinationModel
+--- !u!1 &832098344
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 832098346}
+  - component: {fileID: 832098345}
+  m_Layer: 0
+  m_Name: EnchantUIModel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &832098345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 832098344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9177b48fac9f60428f45711dac211fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnchantUIModel
+  _model: {fileID: 673703853}
+--- !u!4 &832098346
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 832098344}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1711602647}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &833655791
 GameObject:
   m_ObjectHideFlags: 0
@@ -11352,6 +11398,7 @@ MonoBehaviour:
   - {fileID: 1496915889}
   - {fileID: 579301098}
   _skillSelectUI: {fileID: 111999932}
+  _model: {fileID: 832098345}
 --- !u!114 &951242439
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20013,6 +20060,7 @@ Transform:
   - {fileID: 550814359}
   - {fileID: 830662635}
   - {fileID: 673703854}
+  - {fileID: 832098346}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1732387890

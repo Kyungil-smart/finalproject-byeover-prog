@@ -8,16 +8,18 @@ public class EnchantChangePresenter
 {
     private readonly IEnchantChangeView _view;
     private readonly EnchantModel _model;
+    private readonly EnchantUIModel _uiModel;
     private readonly ScreenNavigator _navigator;
     private  EnchantListPresenter _listPresenter;
 
     // 대기 중인(방금 뽑아서 얻으려고 하는) 인챈트 데이터
     private EnchantCandidate _pendingEnchant; 
 
-    public EnchantChangePresenter(IEnchantChangeView view, EnchantModel model, ScreenNavigator navigator)
+    public EnchantChangePresenter(IEnchantChangeView view, EnchantModel model, EnchantUIModel uiModel, ScreenNavigator navigator)
     {
         _view = view;
         _model = model;
+        _uiModel = uiModel;
         _navigator = navigator;
 
         // View의 클릭 이벤트 구독
@@ -72,10 +74,10 @@ public class EnchantChangePresenter
         switch (_pendingEnchant.Type)
         {
             case EnchantType.Skill:
-                ownedList = _listPresenter.OwnedSkillList;
+                ownedList = _uiModel.OwnedSkillList;
                 break;
             case EnchantType.Stat:
-                ownedList = _listPresenter.OwnedStatList;
+                ownedList = _uiModel.OwnedStatList;
                 break;
         }
 

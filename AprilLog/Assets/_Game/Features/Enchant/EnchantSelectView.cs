@@ -39,6 +39,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     
     [Header("참조")]
     [SerializeField] private EnchantModel _model;
+    [SerializeField] private EnchantUIModel _modelUI;
     [SerializeField] private ScreenNavigator _navigator;
     [SerializeField] private EnchantChangeView _changeView;
 
@@ -72,9 +73,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         {
             if (!HasRequiredReferences())
                 return;
-
-            _isInitialized = true;
-            _changePresenter = new EnchantChangePresenter(_changeView, _model, _navigator);
+            
+            _changePresenter = new EnchantChangePresenter(_changeView, _model, _modelUI, _navigator);
             
             _selectPresenter = new EnchantSelectPresenter(
                 this, 
@@ -92,6 +92,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 _rerollButton.onClick.AddListener(() => OnRerollSelected?.Invoke());
                 ConfigureRerollHitArea();
             }
+            
+            _isInitialized = true;
         }
         
         // 팝업이 열릴 때 자동으로 프레젠터에게 선택지를 생성하라고 요청
