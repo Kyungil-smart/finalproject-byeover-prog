@@ -8,8 +8,6 @@ public class ArtifactManager : MonoBehaviour
 {
     public int UpgradeStone;
     public int LegendaryShard;
-    private const int N = 10;
-    private const int M = 20;
     public event Action OnInventoryUpdated;
 
     public List<ArtifactInstance> MyArtifacts = new List<ArtifactInstance>();
@@ -17,17 +15,6 @@ public class ArtifactManager : MonoBehaviour
     public void Initialize()
     {
         Debug.Log("[ArtifactManager] 초기화 완료. 데이터를 로드할 준비가 되었습니다.");
-    }
-
-    private int GetMaxAscensionLimit(string grade)
-    {
-        switch (grade)
-        {
-            case "Rare": return 1;    
-            case "Epic": return 3;      
-            case "Legendary": return 5;
-            default: return 0;
-        }
     }
 
     public void AddArtifact(int masterId)
@@ -63,12 +50,11 @@ public class ArtifactManager : MonoBehaviour
         if (master == null) return;
 
         string grade = master.GearGrade;
-        int baseMax = 0;
 
-        if (master.GearGrade == "Rare") baseMax = 2;
-        else if (master.GearGrade == "Epic") baseMax = 4;
-        else if (master.GearGrade == "Legendary") baseMax = 6;
+        var dismantleData = DataManager.Instance.GearRepo.GetGearDismantleData(grade);
+        if (dismantleData == null) return;
 
+        int baseMax = DataManager.Instance.GearRepo.GetGearGrade(grade).MaxOwned;
         int currentLimit = CalculateDynamicLimit(item, baseMax);
 
         if (item.CurrentCount > currentLimit)
@@ -76,23 +62,19 @@ public class ArtifactManager : MonoBehaviour
             int excessCount = item.CurrentCount - currentLimit;
             item.CurrentCount = currentLimit;
 
-            if (grade == "Rare")
-            {
-                int reward = excessCount * N;
-                this.UpgradeStone += reward;
-                Debug.Log($"[자동 분해] 레어 초과분 {excessCount}개 → 레어 강화석 지급");
-            }
-            else if (grade == "Epic")
-            {
-                int reward = excessCount * M;
-                this.UpgradeStone += reward;
-                Debug.Log($"[자동 분해] 에픽 초과분 {excessCount}개 → 에픽 강화석 지급");
-            }
-            else if (grade == "Legendary")
+            if (grade == "Legendary")
             {
                 this.LegendaryShard += excessCount;
                 Debug.Log($"[자동 분해] 레전더리 초과분 {excessCount}개 → 레전더리 조각 지급");
             }
+
+            else
+            {
+                int reward = excessCount * dismantleData.RewardAmount;
+                this.UpgradeStone += reward;
+                Debug.Log($"[자동 분해] {grade} 초과분 {excessCount}개 → 에픽 강화석 지급");
+            }
+           
         }
     }
 
@@ -126,12 +108,16 @@ public class ArtifactManager : MonoBehaviour
         var item = MyArtifacts.Find(a => a.UniqueId == uniqueId);
         if (item == null) return;
 
-        int maxAscension = GetMaxAscensionLimit(item.MasterData.GearGrade);
-        if (item.AscensionCount >= maxAscension) return;
+        var gradeData = DataManager.Instance.GearRepo.GetGearGrade(item.MasterData.GearGrade);
+        if (gradeData == null) return;
+
+        if (item.AscensionCount >= gradeData.MaxAscension) return;
 
         if (useShard && item.MasterData.GearGrade == "Legendary")
         {
-            if (this.LegendaryShard >= 3)
+            int shardCost = 3;
+
+            if (this.LegendaryShard >= shardCost)
             {
                 this.LegendaryShard -= 3;
                 item.AscensionCount++;
@@ -163,21 +149,36 @@ public class ArtifactManager : MonoBehaviour
 
     private void GiveReward(string grade, int amount)
     {
-        if (grade == "Rare")
+        var dismantleData = DataManager.Instance.GearRepo.GetGearDismantleData(grade);
+
+        if (dismantleData != null)
         {
-            this.UpgradeStone += (amount * N);
-            Debug.Log($"[자동 분해] 레어 {amount}개 분해 → 강화석 {amount * N}개 획득");
+            int rewardAmount = amount * dismantleData.RewardAmount;
+
+            if (grade == "Legendary")
+            {
+                this.LegendaryShard += rewardAmount;
+            }
+            else
+            {
+                this.UpgradeStone += rewardAmount;
+            }
+            Debug.Log($"[분해 완료] {grade} {amount}개 분해 → {rewardAmount}개 획득");
         }
-        else if (grade == "Epic")
-        {
-            this.UpgradeStone += (amount * M);
-            Debug.Log($"[자동 분해] 에픽 {amount}개 분해 → 강화석 {amount * M}개 획득");
-        }
-        else if (grade == "Legendary")
-        {
-            this.LegendaryShard += amount;
-            Debug.Log($"[자동 분해] 레전더리 {amount}개 분해 → 조각 {amount}개 획득");
-        }
+    }
+
+    public void LevelUpArtifact(ArtifactInstance data)
+    {
+        RequestUpgrade(data.UniqueId);
+
+        OnInventoryUpdated?.Invoke();
+    }
+
+    public void AscendArtifact(ArtifactInstance data)
+    {
+        AttemptAscension(data.UniqueId, false);
+
+        OnInventoryUpdated?.Invoke();
     }
 }
 
