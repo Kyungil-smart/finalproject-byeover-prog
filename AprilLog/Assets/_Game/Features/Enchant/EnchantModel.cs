@@ -16,7 +16,7 @@ using UnityEngine.Rendering;
 /// </summary>
 public class EnchantModel : MonoBehaviour
 {
-    [SerializeField] private EnchantListView _listView;
+    [SerializeField] private EnchantUIModel _model;
     
     // ---------- 이벤트 ----------
     // 스킬 인첸트
@@ -64,7 +64,12 @@ public class EnchantModel : MonoBehaviour
         _endOfFrame = new WaitForEndOfFrame();
         _ownedSkills.Clear();
         _ownedStats.Clear();
-        StartCoroutine(InitRoutine());
+        _model.InitUIModel();
+    }
+
+    public void OnDestroy()
+    {
+        _model.Discard();
     }
 
     // ---------- 획득 한도 체크 ----------
@@ -256,15 +261,5 @@ public class EnchantModel : MonoBehaviour
             }
         }
         return null;
-    }
-    
-    private IEnumerator InitRoutine()
-    {
-        while (_listView != null)
-        {
-            yield return _endOfFrame;
-        }
-        
-        _listView.InitializePresenter(this);
     }
 }
