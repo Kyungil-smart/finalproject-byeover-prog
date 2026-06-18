@@ -93,11 +93,24 @@ public class ArtifactManager : MonoBehaviour
     public void RequestUpgrade(int uniqueId)
     {
         var artifact = MyArtifacts.Find(a => a.UniqueId == uniqueId);
+        if (artifact == null) return;
 
-        if (artifact != null && artifact.CanLevelUp())
+        int upgradeStoneId = 70001;
+        int cost = DataManager.Instance.GearRepo.GetGearUpgradeCost(artifact.MasterId, artifact.CurrentLevel, upgradeStoneId);
+        Debug.Log($"[디버그] ID:{artifact.MasterId} 레벨:{artifact.CurrentLevel} 비용:{cost}");
+
+        if (cost <= 0)
         {
+            Debug.LogWarning($"강화 비용이 0입니다! 데이터 테이블(GearUpgradeCostTable)을 확인하세요.");
+            return;
+        }
+
+        if (artifact.CanLevelUp() && this.UpgradeStone >= cost)
+        {
+            this.UpgradeStone -= cost;
             artifact.CurrentLevel++;
-            Debug.Log($"[인벤토리] {artifact.UniqueId} 강화 성공! 레벨: {artifact.CurrentLevel}");
+            Debug.Log($"[중요] 매니저 내부 레벨업 결과: ID {artifact.MasterId}, 레벨 {artifact.CurrentLevel}");
+            OnInventoryUpdated?.Invoke();
         }
     }
 
@@ -109,25 +122,27 @@ public class ArtifactManager : MonoBehaviour
         if (item == null) return;
 
         var gradeData = DataManager.Instance.GearRepo.GetGearGrade(item.MasterData.GearGrade);
-        if (gradeData == null) return;
+        if (gradeData == null || item.AscensionCount >= gradeData.MaxAscension) return;
 
-        if (item.AscensionCount >= gradeData.MaxAscension) return;
+        string materialType = useShard ? "Shard" : "SameGear";
+        var costData = DataManager.Instance.GearRepo.GetAscensionCosts(item.MasterData.GearGrade, materialType);
 
-        if (useShard && item.MasterData.GearGrade == "Legendary")
+        if (useShard)
         {
-            int shardCost = 3;
-
-            if (this.LegendaryShard >= shardCost)
+            if (this.LegendaryShard >= costData.CostAmount)
             {
-                this.LegendaryShard -= 3;
+                this.LegendaryShard -= costData.CostAmount;
                 item.AscensionCount++;
             }
         }
-        else if (item.CurrentCount > 1)
-        {
-            item.CurrentCount--;
+
+        else if (item.CurrentCount > costData.CostAmount)
+        { 
+            item.CurrentCount -= costData.CostAmount;
             item.AscensionCount++;
         }
+
+        OnInventoryUpdated?.Invoke();
     }
 
     public void ManualDisassemble(int uniqueId, int count)

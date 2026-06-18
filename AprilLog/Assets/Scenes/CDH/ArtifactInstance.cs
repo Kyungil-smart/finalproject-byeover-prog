@@ -14,6 +14,15 @@ public class ArtifactInstance
     private GearRepo Repo => DataManager.Instance.GearRepo;
     public GearMasterData MasterData => Repo.GetGearData(MasterId);
 
+    public bool CanAffordLevelUp
+    {
+        get
+        {
+            int cost = DataManager.Instance.GearRepo.GetGearUpgradeCost(MasterId, CurrentLevel, 70001);
+            return GameStateManager.Instance.ArtifactManager.UpgradeStone >= cost;
+        }
+    }
+
     public int GetMaxAscensionLimit()
     {
         var gradeData = Repo.GetGearGrade(MasterData.GearGrade);
@@ -35,7 +44,6 @@ public class ArtifactInstance
 
     public bool CanAscend()
     {
-        int maxAscension = 5;
-        return AscensionCount < maxAscension;
+        return AscensionCount < GetMaxAscensionLimit();
     }
 }
