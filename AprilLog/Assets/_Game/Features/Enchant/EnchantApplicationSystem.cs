@@ -162,23 +162,23 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
         {
             case StatType_Attack:
                 // 공격력 배율(%) 증가. base가 int라 Add(+0.1)는 반올림으로 묻히므로 Rate.
-                _playerModel.ApplyAttackBonus_Rate(amount);
+                _playerModel.Legacy_ApplyAttackBonus_Rate(amount);
                 break;
             case StatType_Pierce:
                 // PercentagePierce(관통)에 가산. (데모에선 관통 비활성이라 효과 안 보임)
-                _playerModel.ApplyPierceBonus_Add(amount);
+                _playerModel.Legacy_ApplyPierceBonus_Add(amount);
                 break;
             case StatType_MaxHP:
                 // 최대 체력 정수 가산 (Value=100/200/300 등).
-                _playerModel.ApplyHpBonus_Add(Mathf.RoundToInt(amount));
+                _playerModel.Legacy_ApplyHpBonus_Add(Mathf.RoundToInt(amount));
                 break;
             case StatType_CritRate:
                 // 치명타 확률(0~1)에 소수 가산.
-                _playerModel.ApplyCriRateBonus_AddF(amount);
+                _playerModel.Legacy_ApplyCriRateBonus_AddF(amount);
                 break;
             case StatType_CritDmg:
                 // 치명타 피해 보너스에 소수 가산.
-                _playerModel.ApplyCriDmgBonus_AddF(amount);
+                _playerModel.Legacy_ApplyCriDmgBonus_AddF(amount);
                 break;
             default:
                 Debug.LogWarning($"[EnchantApplication] 미정의 LinkedStatType={statType} (enchant {enchantId}). " +
