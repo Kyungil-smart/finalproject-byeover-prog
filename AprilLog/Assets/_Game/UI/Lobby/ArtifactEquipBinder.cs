@@ -15,6 +15,8 @@ public class ArtifactEquipBinder : MonoBehaviour
         public Transform container;
         [Tooltip("비었을 때 켜는 EmptySlot 오브젝트")]
         public GameObject emptySlot;
+        [Tooltip("교체 슬롯 선택 모드일 때 켜는 강조 오브젝트(글로우/테두리 등). 선택")]
+        public GameObject selectHighlight;
     }
 
     [Header("장착 슬롯 (FittedArtifacts 하위, 3개)")]
@@ -35,6 +37,18 @@ public class ArtifactEquipBinder : MonoBehaviour
     // true 이면 슬롯 클릭이 '인덱스 선택'(OnSlotIndexClicked)으로 동작한다. (가득 찼을 때 교체 슬롯 선택용)
     public bool SlotSelectionMode { get; set; }
 
+    // 교체 슬롯 선택 모드 강조 표시 : 모든 슬롯의 selectHighlight 를 일괄 토글한다.
+    // (어떤 칸이든 눌러서 교체할 수 있음을 시각적으로 알린다)
+    public void SetSelectionHighlight(bool on)
+    {
+        if (_slots == null) return;
+        for (int i = 0; i < _slots.Length; i++)
+        {
+            if (_slots[i] != null && _slots[i].selectHighlight != null)
+                _slots[i].selectHighlight.SetActive(on);
+        }
+    }
+
     public int SlotCount => _slots != null ? _slots.Length : 0;
 
     private void Awake()
@@ -47,6 +61,7 @@ public class ArtifactEquipBinder : MonoBehaviour
     {
         // 기본 : 전부 비어 있는 상태(EmptySlot 켜짐)로 시작.
         ClearAll();
+        SetSelectionHighlight(false);
     }
 
     public void ClearAll()
