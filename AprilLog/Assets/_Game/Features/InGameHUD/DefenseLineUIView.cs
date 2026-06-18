@@ -7,7 +7,7 @@ using UnityEngine.UI;
 /// </summary>
 public class DefenseLineUIView : MonoBehaviour
 {
-    [Header("대상")]
+    [Header("참조")]
     [SerializeField] private Transform _defenseLine;
     [SerializeField] private SpriteRenderer _lineRenderer;
     [SerializeField] private Sprite _lineSprite;
@@ -87,7 +87,7 @@ public class DefenseLineUIView : MonoBehaviour
 
     private SpriteRenderer CreateLineRenderer()
     {
-        var line = transform.Find("Line");
+        Transform line = transform.Find("Line");
         if (line == null)
         {
             line = new GameObject("Line").transform;
@@ -115,8 +115,8 @@ public class DefenseLineUIView : MonoBehaviour
 
     private void DisableLegacyGraphics()
     {
-        var graphics = GetComponentsInChildren<Graphic>(true);
-        foreach (var graphic in graphics)
+        Graphic[] graphics = GetComponentsInChildren<Graphic>(true);
+        foreach (Graphic graphic in graphics)
         {
             graphic.enabled = false;
         }
