@@ -113,7 +113,11 @@ public class ArtifactEquipController : MonoBehaviour
     private void BeginReplaceSelection(ArtifactInstance inst)
     {
         _pending = inst;
-        if (_equipBinder != null) _equipBinder.SlotSelectionMode = true;
+        if (_equipBinder != null)
+        {
+            _equipBinder.SlotSelectionMode = true;
+            _equipBinder.SetSelectionHighlight(true);   // 3칸 강조 ON → 어디든 눌러 교체 가능함을 알림
+        }
         if (_replaceHint != null) _replaceHint.SetActive(true);
         CloseDetail(); // 상세 팝업을 닫아 장착 슬롯이 보이도록 한다.
         Debug.Log("[ArtifactEquip] 장착칸이 가득 찼습니다. 교체할 슬롯을 선택하세요.");
@@ -141,7 +145,11 @@ public class ArtifactEquipController : MonoBehaviour
 
     private void EndReplaceSelection()
     {
-        if (_equipBinder != null) _equipBinder.SlotSelectionMode = false;
+        if (_equipBinder != null)
+        {
+            _equipBinder.SlotSelectionMode = false;
+            _equipBinder.SetSelectionHighlight(false);  // 강조 OFF
+        }
         if (_replaceHint != null) _replaceHint.SetActive(false);
     }
 
