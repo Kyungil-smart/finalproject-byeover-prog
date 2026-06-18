@@ -1,6 +1,7 @@
 // 담당자 : 정승우
 // 설명   : 투사체 이동 + 충돌 판정
 
+using System.Collections.Generic;
 using UnityEngine;
 
 // 수정자 : 정승우
@@ -33,6 +34,14 @@ public class ProjectileController : MonoBehaviour, IPoolable
     private float _lifeTimer;
     private bool _isStraightActive;
     private bool _isFinished;
+
+    // 관통 직선 탄(바람 칼날·템페스트): 적을 뚫고 진행. _piercedTargets=같은 적 중복 방지,
+    // _maxPierceCount=관통 횟수 캡(소진 시 종료), _hitMultiplier=피격당 N회 대미지(템페스트 8회).
+    private bool _pierce;
+    private int _maxPierceCount = int.MaxValue;
+    private int _piercedCount;
+    private int _hitMultiplier = 1;
+    private readonly HashSet<IDamageable> _piercedTargets = new HashSet<IDamageable>();
 
     // VFX 스킨 (풀 공유 오브젝트라 인스턴스 단위로 입히고 디스폰 시 원복)
     private GameObject _skin;
@@ -80,13 +89,18 @@ public class ProjectileController : MonoBehaviour, IPoolable
     /// 타겟 위치는 발사 순간 한 번만 보고 방향을 고정한다.
     /// 현재 기본 공격과 플레이어 스킬은 모두 이 메서드를 사용한다.
     /// </summary>
-    public void SetupStraight(int damage, Vector2 origin, Vector2 target, float speed)
+    public void SetupStraight(int damage, Vector2 origin, Vector2 target, float speed, bool pierce = false, int maxPierceCount = int.MaxValue, int hitMultiplier = 1)
     {
         _behavior = null;
         _damage = damage;
         _lifeTimer = 0f;
         _isFinished = false;
         _isStraightActive = true;
+        _pierce = pierce;
+        _maxPierceCount = maxPierceCount > 0 ? maxPierceCount : int.MaxValue;
+        _hitMultiplier = hitMultiplier > 0 ? hitMultiplier : 1;
+        _piercedCount = 0;
+        _piercedTargets.Clear();
 
         Vector2 delta = target - origin;
         Vector2 direction = delta.sqrMagnitude > MinDirectionSqr
@@ -135,6 +149,21 @@ public class ProjectileController : MonoBehaviour, IPoolable
         var target = other.GetComponent<IDamageable>();
         if (target == null) return;
 
+        // 관통 직선 탄(바람 칼날·템페스트): 같은 적 1회만, 피격당 _hitMultiplier회 대미지, 관통 횟수 소진 시 종료.
+        if (_isStraightActive && _pierce)
+        {
+            if (!_piercedTargets.Add(target)) return;       // 이미 맞힌 적이면 무시(중복 방지)
+            for (int h = 0; h < _hitMultiplier; h++)        // 템페스트: 피격 시 8회 대미지
+                target.TakeDamage(_damage);
+            _piercedCount++;
+            if (_piercedCount >= _maxPierceCount)           // 관통 횟수 소진 → 종료
+            {
+                _isFinished = true;
+                DespawnSelf();
+            }
+            return;
+        }
+
         target.TakeDamage(_damage);
         if (_isStraightActive)
         {
@@ -152,6 +181,11 @@ public class ProjectileController : MonoBehaviour, IPoolable
         // 풀에서 꺼낼 때 기본 상태 보장 — 어떤 경로로 반납됐든 스킨 잔류 없이 깨끗하게 시작.
         if (_skin != null) { Destroy(_skin); _skin = null; }
         if (_placeholderSprite != null) _placeholderSprite.enabled = true;
+        _pierce = false;
+        _maxPierceCount = int.MaxValue;
+        _piercedCount = 0;
+        _hitMultiplier = 1;
+        _piercedTargets.Clear();
     }
 
     public void OnDespawn()
@@ -162,6 +196,11 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _lifeTimer = 0f;
         _isStraightActive = false;
         _isFinished = false;
+        _pierce = false;
+        _maxPierceCount = int.MaxValue;
+        _piercedCount = 0;
+        _hitMultiplier = 1;
+        _piercedTargets.Clear();
 
         // VFX 스킨 정리 — 풀 재사용 시 다음 투사체(기본공격 등)가 화염탄으로 보이지 않도록 반드시 원복.
         // Destroy는 프레임 끝에 처리되는데 풀은 같은 프레임에 이 오브젝트를 즉시 재사용할 수 있으므로,

@@ -70,6 +70,16 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private Rect _moveBounds;
     private bool _isBoss;
 
+    // ---------- CC 상태 (바람: 허리케인=슬로우 / 돌풍=넉백) ----------
+    private float _slowFactor = 1f;                 // 1=정상, <1=이동 감속 배율
+    private float _slowEndTime = 0f;
+    private Vector2 _knockbackVel = Vector2.zero;   // 넉백 중 월드 속도(units/s)
+    private float _knockbackEndTime = 0f;
+    private float _stunEndTime = 0f;                // 스턴(번개 벼락): 이동+공격 완전 정지
+
+    /// <summary>이 몬스터가 보스인지 (번개 벼락의 엘리트/보스 우선 타겟용). Elite도 현재 isBoss=true로 스폰됨.</summary>
+    public bool IsBoss => _isBoss;
+
     // 플레이어 참조 (공격할 때 TakeDamage 호출용)
     private PlayerModel _playerModel;
 
@@ -163,9 +173,40 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _playerModel = player;
     }
 
+    // ---------- CC 적용 (스킬에서 호출) ----------
+    /// <summary>이동 속도를 factor배(0~1)로 duration초 동안 감속. 재적용 시 갱신. (바람 허리케인 슬로우)</summary>
+    public void ApplySlow(float factor, float duration)
+    {
+        if (_state == State.Dead) return;
+        _slowFactor = Mathf.Clamp01(factor);
+        _slowEndTime = Time.time + duration;
+    }
+
+    /// <summary>displacement(월드)만큼 duration초에 걸쳐 밀어낸다. (바람 돌풍 넉백)</summary>
+    public void ApplyKnockback(Vector2 displacement, float duration)
+    {
+        if (_state == State.Dead || duration <= 0f) return;
+        _knockbackVel = displacement / duration;
+        _knockbackEndTime = Time.time + duration;
+    }
+
+    /// <summary>duration초 동안 이동+공격 완전 정지. (번개 벼락 Lv3 스턴)</summary>
+    public void ApplyStun(float duration)
+    {
+        if (_state == State.Dead || duration <= 0f) return;
+        _stunEndTime = Time.time + duration;
+    }
+
     // ---------- FSM ----------
     private void Update()
     {
+        // 스턴(번개 벼락) 중이면 이동·공격 모두 정지
+        if (Time.time < _stunEndTime)
+        {
+            if (_animator != null) _animator.SetBool("Move", false);
+            return;
+        }
+
         switch (_state)
         {
             case State.Moving:
@@ -185,8 +226,19 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     private void UpdateMoving()
     {
+        // 넉백(돌풍) 중이면 이동 패턴 무시하고 넉백 속도로 밀린다. 끝나면 일반 이동 복귀.
+        if (Time.time < _knockbackEndTime)
+        {
+            Vector2 kb = (Vector2)transform.position + _knockbackVel * Time.deltaTime;
+            kb.x = Mathf.Clamp(kb.x, _moveBounds.xMin, _moveBounds.xMax);
+            transform.position = kb;
+            return;
+        }
+
+        // 슬로우(허리케인): 지속시간 내면 이동 dt에 배율, 만료되면 1로 복귀.
+        float slow = (Time.time < _slowEndTime) ? _slowFactor : 1f;
         Vector2 newPos = _movement.CalculateNextPosition(
-            transform.position, Time.deltaTime, _moveBounds);
+            transform.position, Time.deltaTime * slow, _moveBounds);
         transform.position = newPos;
 
         // 방어선 도달
@@ -295,6 +347,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     public void OnSpawn()
     {
         _state = State.Moving;
+        _slowFactor = 1f; _slowEndTime = 0f;
+        _knockbackVel = Vector2.zero; _knockbackEndTime = 0f;
+        _stunEndTime = 0f;
     }
 
     public void OnDespawn()
@@ -305,6 +360,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         OnDeath = null;
         OnHPChanged = null;
         _playerModel = null;
+        _slowFactor = 1f; _slowEndTime = 0f;
+        _knockbackVel = Vector2.zero; _knockbackEndTime = 0f;
+        _stunEndTime = 0f;
     }
     
     // ---------- Stat Scaling ----------

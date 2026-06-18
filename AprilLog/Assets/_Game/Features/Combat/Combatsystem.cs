@@ -107,8 +107,10 @@ public class CombatSystem : MonoBehaviour
     {
         if (!_autoAttackEnabled || _skillSystem == null) return;
 
+        ExpireHasteIfDue();
+
         _autoAttackTimer += Time.deltaTime;
-        if (_autoAttackTimer >= _autoAttackInterval)
+        if (_autoAttackTimer >= _autoAttackInterval * _hasteIntervalMul) // 헤이스트 시 간격 단축
         {
             _autoAttackTimer = 0f;
 
@@ -120,7 +122,12 @@ public class CombatSystem : MonoBehaviour
                 _autoAttackCount++;
                 var autoSkills = _skillSystem.GetTriggeredAutoAttackSkills(_autoAttackCount);
                 for (int i = 0; i < autoSkills.Count; i++)
+                {
                     _skillSystem.FireSkill(autoSkills[i], AttackType.Auto);
+                    // 헤이스트(301) 발동 → 공격력·공속 버프 활성 (해당 발동 레벨 기준)
+                    if (autoSkills[i] != null && autoSkills[i].StandardID == 301)
+                        ActivateHaste(autoSkills[i].Level);
+                }
             }
         }
     }
@@ -203,6 +210,39 @@ public class CombatSystem : MonoBehaviour
     public void EnableAutoAttack()
     {
         _autoAttackEnabled = true;
+    }
+
+    // ---------- 헤이스트 버프 (바람 일반 301): 발동 시 일정시간 공격력↑ + 자동공격 간격↓ ----------
+    // ⚠ 수치는 placeholder (기획 effect 13005=공격력 / 13004=공속 기준 추정). 기획 확정 시 조정.
+    private float _hasteEndTime;
+    private int _hasteAtkBonus;          // 적용 중 공격력 보너스(해제용)
+    private float _hasteIntervalMul = 1f; // 자동공격 간격 배율(작을수록 빠름)
+
+    private void ActivateHaste(int level)
+    {
+        int lv = Mathf.Clamp(level, 1, 3);
+        int[] atk = { 8, 10, 12 };            // 공격력 보너스
+        float[] mul = { 0.8f, 0.75f, 0.7f };  // 자동공격 간격 배율
+        float[] dur = { 5f, 5f, 6f };         // 지속(초)
+
+        if (_hasteAtkBonus > 0 && _playerModel != null)   // 갱신: 기존 보너스 먼저 해제
+            _playerModel.ApplyAttackBonus_RemoveA(_hasteAtkBonus);
+
+        _hasteAtkBonus = atk[lv - 1];
+        _hasteIntervalMul = mul[lv - 1];
+        _hasteEndTime = Time.time + dur[lv - 1];
+        if (_playerModel != null) _playerModel.ApplyAttackBonus_Add(_hasteAtkBonus);
+    }
+
+    private void ExpireHasteIfDue()
+    {
+        if (_hasteAtkBonus == 0) return;
+        if (Time.time >= _hasteEndTime)
+        {
+            if (_playerModel != null) _playerModel.ApplyAttackBonus_RemoveA(_hasteAtkBonus);
+            _hasteAtkBonus = 0;
+            _hasteIntervalMul = 1f;
+        }
     }
 
     private void ResolveCharacterRepository()

@@ -76,14 +76,18 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             
             _changePresenter = new EnchantChangePresenter(_changeView, _model, _modelUI, _navigator);
             
+            // 테스트2(Skill_TEST2) 씬에서만 새로고침 무한 — 스킬 뽑기 테스트용. (-1 = 무한 약속) 일반 씬은 Inspector _rerollCount 그대로.
+            string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            bool unlimitedReroll = activeScene.Contains("TEST2") || activeScene.Contains("테스트2");
+
             _selectPresenter = new EnchantSelectPresenter(
-                this, 
-                _model, 
+                this,
+                _model,
                 DataManager.Instance.SpellRepo,
-                _navigator, 
+                _navigator,
                 _probabilityConfig,
                 _changePresenter,
-                _rerollCount
+                unlimitedReroll ? -1 : _rerollCount
             );
             
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
@@ -179,7 +183,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         else
             _rerollButton.gameObject.SetActive(available);
 
-        _rerollButton.interactable = available && remaining > 0;
+        // remaining < 0 = 무한(테스트2 씬): 항상 활성. 그 외엔 남은 횟수가 있어야 활성.
+        _rerollButton.interactable = available && remaining != 0;
         UpdateRerollCountText(remaining);
     }
 
@@ -226,7 +231,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         TMP_Text countText = ResolveRerollCountText();
         if (countText == null) return;
 
-        countText.text = Mathf.Max(0, remaining).ToString();
+        countText.text = remaining < 0 ? "∞" : Mathf.Max(0, remaining).ToString(); // 음수 = 무한(테스트2 씬) → ∞
     }
 
     private TMP_Text ResolveRerollCountText()
