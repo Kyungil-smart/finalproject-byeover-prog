@@ -17,6 +17,7 @@ using UnityEngine.Rendering;
 public class EnchantModel : MonoBehaviour
 {
     [SerializeField] private EnchantUIModel _model;
+    [SerializeField] private EnchantCalculator _calculator;
     
     // ---------- 이벤트 ----------
     // 스킬 인첸트
@@ -28,23 +29,23 @@ public class EnchantModel : MonoBehaviour
     // 스텟 인첸트
     public event Action<int, int> OnStatAcquired;    // Stat_Name, StatLevel
     public event Action<int, int> OnStatLevelUp;     // Stat_Name, StatLevel
-    public event Action<int> OnStatRemoved;          // Stat_Name
+    public event Action<int> OnStatRemoved;     // Stat_Name
     
     // ---------- Const ----------
     // 스킬 그룹 ID
-    private const int GROUP_NORMAL_SKILL = 100000000;
-    private const int GROUP_COMBINATION_SKILL = 200000000;
-    private const int GROUP_COMBO_SKILL = 300000000;
+    public const int GROUP_NORMAL_SKILL = 100000000;
+    public const int GROUP_COMBINATION_SKILL = 200000000;
+    public const int GROUP_COMBO_SKILL = 300000000;
 
     // 스텟 그룹 ID
-    private const int GROUP_PROJECTILE_STAT = 100000;
-    private const int GROUP_HP_STAT = 200000;
-    private const int GROUP_CRIT_INTENSIFY_STAT = 300000;
-    private const int GROUP_CRIT_CHANCE_STAT = 400000;
-    private const int GROUP_CRIT_DAMAGE_STAT = 500000;
-    private const int GROUP_SKILL_DAMAGE_STAT = 600000;
-    private const int GROUP_EFFECT_INTENSIFY_STAT = 700000;
-    private const int GROUP_AREA_EXTENSION_STAT = 800000;
+    public const int GROUP_PROJECTILE_STAT = 100000;
+    public const int GROUP_MODEL_STAT = 200000;
+    public const int GROUP_CRIT_INTENSIFY_STAT = 300000;
+    public const int GROUP_CRIT_CHANCE_STAT = 400000;
+    public const int GROUP_CRIT_DAMAGE_STAT = 500000;
+    public const int GROUP_SKILL_DAMAGE_STAT = 600000;
+    public const int GROUP_EFFECT_INTENSIFY_STAT = 700000;
+    public const int GROUP_AREA_EXTENSION_STAT = 800000;
     
     // ---------- 데이터 ----------
     // 스킬: Key = Name_ID, Value = 레벨과 그룹ID 보관
@@ -69,6 +70,7 @@ public class EnchantModel : MonoBehaviour
         if (_model == null)
             _model = GetComponent<EnchantUIModel>() ?? gameObject.AddComponent<EnchantUIModel>();
         _model.InitUIModel();
+        _calculator.InitCalculator();
     }
 
     public void OnDestroy()

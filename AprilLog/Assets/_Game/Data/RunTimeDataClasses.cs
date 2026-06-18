@@ -300,3 +300,29 @@ public class EnchantBookDisplayData
 }
 
 #endregion
+
+#region PlayerModel 지원
+
+public enum PlayerStatus
+{
+    Hp,
+    Attack,
+    CriticalRate,
+    CriticalDamage,
+    FlatPierce,
+    PercentagePierce,
+    EffectPower,
+    HicCount,
+    AoE,
+    MaxTargets,
+    AttackSpeed
+}
+
+public enum CalFormula
+{
+    Add,
+    Rate,
+    None
+}
+
+#endregion

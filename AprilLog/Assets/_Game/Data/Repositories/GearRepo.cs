@@ -26,8 +26,8 @@ public class GearRepo : MonoBehaviour
     
     // ---------- Dictionary ----------
     private Dictionary<int, GachaBoxData> _gachas;
-    private Dictionary<int, FreeGachaBoxData> _freeGachas;
-    private Dictionary<int, PaidGachaBoxData> _paidGachas;
+    private Dictionary<(int, string), FreeGachaBoxData> _freeGachas;
+    private Dictionary<(int, int), PaidGachaBoxData> _paidGachas;
     private Dictionary<int, GachaRewardData> _rewards;
     
     private Dictionary<int, GearMasterData> _gears;
@@ -63,8 +63,8 @@ public class GearRepo : MonoBehaviour
     private void GachaDataInit()
     {
         _gachas = BuildDictionary(_gachaBoxTable, nameof(_gachaBoxTable), r => r.Gacha_ID);
-        _freeGachas = BuildDictionary(_freeGachaBoxTable, nameof(_freeGachaBoxTable), r => r.Gacha_ID);
-        _paidGachas = BuildDictionary(_paidGachaBoxTable, nameof(_paidGachaBoxTable), r => r.Gacha_ID);
+        _freeGachas = BuildDictionary(_freeGachaBoxTable, nameof(_freeGachaBoxTable), r => (r.Gacha_ID,r.FreeDrawType));
+        _paidGachas = BuildDictionary(_paidGachaBoxTable, nameof(_paidGachaBoxTable), r => (r.Gacha_ID,r.Count));
         _rewards = BuildDictionary(_gachaRewardTable, nameof(_gachaRewardTable), r => r.Gacha_ID);
     }
 
@@ -86,8 +86,8 @@ public class GearRepo : MonoBehaviour
     
     // ---------- 조회 API ----------
     public GachaBoxData GetGachaBox(int id) => GetData(_gachas, id, nameof(GetGachaBox));
-    public FreeGachaBoxData GetFreeGachaBox(int id) => GetData(_freeGachas, id, nameof(GetFreeGachaBox));
-    public PaidGachaBoxData GetPaidGachaBox(int id) => GetData(_paidGachas, id, nameof(GetPaidGachaBox));
+    public FreeGachaBoxData GetFreeGachaBox(int id, string freeDrawType) => GetData(_freeGachas, (id , freeDrawType), nameof(GetFreeGachaBox));
+    public PaidGachaBoxData GetPaidGachaBox(int id, int count) => GetData(_paidGachas, (id, count), nameof(GetPaidGachaBox));
     public GachaRewardData GetGachaReward(int id) => GetData(_rewards, id, nameof(GetGachaReward));
     
     public GearMasterData GetGearData(int id) => GetData(_gears, id, nameof(GetGearData));

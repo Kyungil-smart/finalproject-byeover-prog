@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -11,9 +12,50 @@ public class EnchantCalculator : MonoBehaviour
     
     // ---------- private ----------
     private SpellRepo _repo;
-
+    private Dictionary<int, int> _enableStatList; // name, Level;
+    private bool isInitialized;
+    
     // ---------- 이벤트 ----------
     
+    // ---------- Const ----------
+    // DamageCalculate
+    private const string DAMAGE = "Dmg";
+    private const string CRITCAL_RATE = "CriticalRate";
+    private const string CRITCAL_DAMAGE = "CriticalDamage";
+    
+    // ProjectileAddCalculate
+    private const string ADD_PROJECTILE = "ActivePlusCount";
+    private const string PROJECTILE_GAP  = "PelletGap";
+    private const string PROJECTILE_DAMAGE_REDUCE = "subPelletDmg";
+    
+    // SkillAreaExtenstionCalculate
+    private const string X_LENGTH_EXTENSION_RATE = "HitSize_X";
+    private const string Y_LENGTH_EXTENSION_RATE = "HitSize_Y";
+    
+    // EffectCalculate
+    private const string VALUE = "Main_Value";
+    private const string INTERVAL = "Interval";
+    private const string DURATION = "Duration";
+    private const string KNOCK_BACK = "KnockBack";
+    private const string STATUS_UP = "StatusUP";
+    
+    // 스텟 계산
+    private const string HP = "MaxHP";
+    private const string ATTACK = "Attack";
+    private const string ATTACK_SPEED = "BaseAttackSpeed";
+    
+    // ---------- 초기화 ----------
+    public void InitCalculator()
+    {
+        _repo = DataManager.Instance.SpellRepo;
+        _enableStatList = new ();
+
+        _enchantModel.OnStatAcquired += HandleStatAcquired;
+        _enchantModel.OnSkillLevelUp += HandleStatLevelUp;
+        _enchantModel.OnStatRemoved += HandleStatRemoved;
+        
+        isInitialized = true;
+    }
     
     // ---------- 스킬 계산 ----------
     /// <summary>
@@ -23,15 +65,16 @@ public class EnchantCalculator : MonoBehaviour
     /// <returns>BaseDamage</returns>
     public int DamageCalculate(int skillId)
     {
-        if (_repo == null)
+        if (!isInitialized)
         {
-            _repo = DataManager.Instance.SpellRepo;
+            Debug.LogWarning($"[EnchantCalculator] Not Initialized. All DamageCalculate result set 0.");
+            return 0;
         }
-
+        
         var data = _repo.GetSkillData(skillId);
         if (data == null)
         {
-            Debug.LogWarning($"[EnchantCalculator] Can't find the skill data : {skillId}. All Data set is 0.");
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Skill data : {skillId}. All DamageCalculate result set 0.");
             return 0;
         }
         
@@ -71,15 +114,18 @@ public class EnchantCalculator : MonoBehaviour
     /// <returns>이 스킬에 적용해야 될 추가 투사체 개수</returns>
     public int ProjectileAddCalculate(int skillId, out float pelletGap, out float supPelletDmgReduce)
     {
-        if (_repo == null)
+        if (!isInitialized)
         {
-            _repo = DataManager.Instance.SpellRepo;
+            Debug.LogWarning($"[EnchantCalculator] Not Initialized. All ProjectileAddCalculate result set 0.");
+            pelletGap = 0;
+            supPelletDmgReduce = 0;
+            return 0;
         }
         
         var data = _repo.GetSkillData(skillId);
         if (data == null)
         {
-            Debug.LogWarning($"[EnchantCalculator] Can't find the skill data : {skillId}. All Data set 0.");
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Skill data : {skillId}. All ProjectileAddCalculate result set 0.");
             pelletGap = 0;
             supPelletDmgReduce = 0;
             return 0;
@@ -94,29 +140,123 @@ public class EnchantCalculator : MonoBehaviour
     /// 투사체 범위 증가 계산
     /// </summary>
     /// <param name="skillId">계산을 실행할 스킬의 ID</param>
-    /// <param name="hitSizeX">기본 히트박스의 X값을 이 값과 곱해야됨</param>
-    /// <param name="hitSizeY">기본 히트박스의 Y값을 이 값과 곱해야됨</param>
-    public void SkillAreaExtenstionCalculate(int skillId, out float hitSizeX, out float hitSizeY)
+    /// <param name="xLengthExtensionRate">기본 히트박스의 X값을 이 값과 곱해야됨</param>
+    /// <param name="yLengthExtensionRate">기본 히트박스의 Y값을 이 값과 곱해야됨</param>
+    public void SkillAreaExtenstionCalculate(int skillId, out float xLengthExtensionRate, out float yLengthExtensionRate)
     {
-        if (_repo == null)
+        if (!isInitialized)
         {
-            _repo = DataManager.Instance.SpellRepo;
+            Debug.LogWarning($"[EnchantCalculator] Not Initialized. All SkillAreaExtenstionCalculate result set Default.");
+            xLengthExtensionRate = 1f;
+            yLengthExtensionRate = 1f;
+            return;
         }
         
         var data = _repo.GetSkillData(skillId);
         if (data == null)
         {
-            Debug.LogWarning($"[EnchantCalculator] Can't find the skill data : {skillId}. All Data set Default.");
-            hitSizeX = 1f;
-            hitSizeY = 1f;
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Skill data : {skillId}. All SkillAreaExtenstionCalculate result set Default.");
+            xLengthExtensionRate = 1f;
+            yLengthExtensionRate = 1f;
             return;
         }
         
-        GetSkillAreaExtension(data, out hitSizeX, out hitSizeY);
+        GetSkillAreaExtension(data, out xLengthExtensionRate, out yLengthExtensionRate);
     }
     
     // ---------- 스텟 계산 ----------
-    
+    private void StatAcquire(int nameId, int level)
+    {
+        if (!isInitialized)
+        {
+            Debug.LogWarning($"[EnchantCalculator] Not Initialized. All StatAcquire result set Default.");
+            return;
+        }
+
+        var temp = _repo.GetStatChainByName(EnchantModel.GROUP_MODEL_STAT, nameId);
+        if (temp == null)
+        {
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Stat Enchant data, ID : {nameId}. All StatAcquire result set Default.");
+            return;
+        }
+
+        if(!temp.LevelDataMap.TryGetValue(level, out var data))
+        {
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Stat Enchant data, Level : {level}. All StatAcquire result set Default.");
+            return;
+        }
+        
+        GetStatEnhance(data, out PlayerStatus? status, out CalFormula? formula, out float amount);
+        if (status == null || formula == null) return;
+        _playerModel.StatusEnhance(status.Value, formula.Value, amount, false);
+        
+        _enableStatList[nameId] = level;
+    }
+
+    private void StatLevelUp(int nameId, int level)
+    {
+        if (!isInitialized)
+        {
+            Debug.LogWarning($"[EnchantCalculator] Not Initialized. All StatAcquire result set Default.");
+            return;
+        }
+
+        var temp = _repo.GetStatChainByName(EnchantModel.GROUP_MODEL_STAT, nameId);
+        if (temp == null)
+        {
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Stat Enchant data, ID : {nameId}. All StatLevelUp result set Default.");
+            return;
+        }
+        
+        if (!temp.LevelDataMap.ContainsKey(level))
+        {
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Stat Enchant data, Level : {level}. All StatLevelUp result set Default.");
+            return;
+        }
+        
+        if (!_enableStatList.TryGetValue(nameId, out var preLevel))
+        {
+            StatAcquire(nameId, level);
+            return;
+        }
+
+        // 과거 데이터 삭제
+        var preData = temp.LevelDataMap[preLevel];
+        GetStatEnhance(preData, out PlayerStatus? preStatus, out CalFormula? preFormula, out float preAmount);
+        if (preStatus == null || preFormula == null) return;
+        _playerModel.StatusEnhance(preStatus.Value, preFormula.Value, preAmount, true);
+
+        // 현재 데이터 적용
+        var curData = temp.LevelDataMap[level];
+        GetStatEnhance(curData, out PlayerStatus? curStatus, out CalFormula? culFormula, out float curAmount);
+        if (curStatus == null || culFormula == null) return;
+        _playerModel.StatusEnhance(curStatus.Value, culFormula.Value, curAmount, false);
+
+        _enableStatList[nameId] = level;
+    }
+
+    private void StatRemoved(int nameId)
+    {
+        if (!isInitialized)
+        {
+            Debug.LogWarning($"[EnchantCalculator] Not Initialized. All StatAcquire result set Default.");
+            return;
+        }
+
+        var temp = _repo.GetStatChainByName(EnchantModel.GROUP_MODEL_STAT, nameId);
+        if (temp == null || !_enableStatList.TryGetValue(nameId, out var level))
+        {
+            Debug.LogWarning($"[EnchantCalculator] Can't find the Stat Enchant data, ID : {nameId}. All StatRemoved result set Default.");
+            return;
+        }
+
+        var data = temp.LevelDataMap[level];
+        GetStatEnhance(data, out PlayerStatus? status, out CalFormula? formula, out float amount);
+        if (status == null || formula == null) return;
+        _playerModel.StatusEnhance(status.Value, formula.Value, amount, true);
+
+        _enableStatList.Remove(nameId);
+    }
     
     // ---------- 효과 계산 ----------
     /// <summary>
@@ -158,6 +298,22 @@ public class EnchantCalculator : MonoBehaviour
             GetEffectEnhance(skillData, effect2Data, out var temp);
             effect2Spec = temp;
         }
+    }
+    
+    // ---------- 이벤트 핸들러 ----------
+    private void HandleStatAcquired(int nameId, int level)
+    {
+        StatAcquire(nameId, level);
+    }
+
+    private void HandleStatLevelUp(int nameId, int level)
+    {
+        StatLevelUp(nameId, level);
+    }
+
+    private void HandleStatRemoved(int nameId)
+    {
+        StatRemoved(nameId);
     }
     
     // ---------- 보조 함수 ----------
@@ -220,13 +376,9 @@ public class EnchantCalculator : MonoBehaviour
                 data.Target_2 != skillData.Tag_ID_3 && data.Target_2 != skillData.Tag_ID_4) 
                 continue;
 
-            string dmg = "Dmg";
-            string crit = "CriticalRate";
-            string critDmg = "CriticalDamage";
-
-            if(TryGetStatVariation(data, dmg, out var temp1)) dmgResult += temp1;
-            if(TryGetStatVariation(data, crit, out var temp2)) critResult += temp2;
-            if(TryGetStatVariation(data, critDmg, out var temp3)) critDmgResult += temp3;
+            if(TryGetStatVariation(data, DAMAGE, out var temp1)) dmgResult += temp1;
+            if(TryGetStatVariation(data, CRITCAL_RATE, out var temp2)) critResult += temp2;
+            if(TryGetStatVariation(data, CRITCAL_DAMAGE, out var temp3)) critDmgResult += temp3;
         }
         
         groupDmgBonus = 1 + (dmgResult / 100f);
@@ -245,13 +397,11 @@ public class EnchantCalculator : MonoBehaviour
                 if (skillData.Tag_ID_1 == data.Target_1 || skillData.Tag_ID_2 == data.Target_1 || 
                     skillData.Tag_ID_3 == data.Target_1 || skillData.Tag_ID_4 == data.Target_1)
                 {
-                    string activePlusCount = "ActivePlusCount";
-                    string pelletGap  = "PelletGap";
-                    string supPelletDmg = "SuppPelletDmg";
+                    
 
-                    TryGetStatVariation(data, activePlusCount, out var temp);
-                    TryGetStatVariation(data, pelletGap, out projectileGap);
-                    TryGetStatVariation(data, supPelletDmg, out projectileDmgReduce);
+                    TryGetStatVariation(data, ADD_PROJECTILE, out var temp);
+                    TryGetStatVariation(data, PROJECTILE_GAP, out projectileGap);
+                    TryGetStatVariation(data, PROJECTILE_DAMAGE_REDUCE, out projectileDmgReduce);
 
                     addProjectile = Mathf.RoundToInt(temp);
                     
@@ -277,12 +427,11 @@ public class EnchantCalculator : MonoBehaviour
                 data.Target_2 != skillData.Tag_ID_3 && data.Target_2 != skillData.Tag_ID_4) 
                 continue;
             
-            string xAreaExtension = "HitSize_X";
-            string yAreaExtension = "HitSize_Y";
+            
             
             // DB에 표기된 수치는 2.4(%)이므로, 0.024가 아니어서 100으로 추가로 나눔
-            if(TryGetStatVariation(data, xAreaExtension, out var tempX)) x += (tempX / 100f);
-            if(TryGetStatVariation(data, yAreaExtension, out var tempY)) y += (tempY / 100f);
+            if(TryGetStatVariation(data, X_LENGTH_EXTENSION_RATE, out var tempX)) x += (tempX / 100f);
+            if(TryGetStatVariation(data, Y_LENGTH_EXTENSION_RATE, out var tempY)) y += (tempY / 100f);
         }
     }
 
@@ -300,27 +449,50 @@ public class EnchantCalculator : MonoBehaviour
             if (data.Target_2 != skillData.SkillGroup_ID) continue;
             if (data.Target_1 != effectData.Effect_ID) continue;
             
-            string value = "Main_Value";
-            string interval = "Interval";
-            string duration = "Duration";
+            if(TryGetStatVariation(data, VALUE, out var temp)) enchantValue += temp;
+            if(TryGetStatVariation(data, INTERVAL, out var temp2)) enchantInterval += temp2;
+            if(TryGetStatVariation(data, DURATION, out var temp3)) enchantDuration += temp3;
             
-            if(TryGetStatVariation(data, value, out var temp)) enchantValue += temp;
-            if(TryGetStatVariation(data, interval, out var temp2)) enchantInterval += temp2;
-            if(TryGetStatVariation(data, duration, out var temp3)) enchantDuration += temp3;
-            
-            if(TryGetSkillEffectValue(skillData, effectData.Effect_ID, value, out var temp4)) enchantValue += temp4;
-            if(TryGetSkillEffectValue(skillData, effectData.Effect_ID, interval, out var temp5)) enchantInterval += temp5;
-            if(TryGetSkillEffectValue(skillData, effectData.Effect_ID, duration, out var temp6)) enchantDuration += temp6;
+            if(TryGetSkillEffectValue(skillData, effectData.Effect_ID, VALUE, out var temp4)) enchantValue += temp4;
+            if(TryGetSkillEffectValue(skillData, effectData.Effect_ID, INTERVAL, out var temp5)) enchantInterval += temp5;
+            if(TryGetSkillEffectValue(skillData, effectData.Effect_ID, DURATION, out var temp6)) enchantDuration += temp6;
         }
-
-        string knockBack = "KnockBack";
-        string statusUp = "StatusUP";
-
-        if (effectData.EffectType != knockBack && effectData.EffectType != statusUp)
+        
+        if (!string.Equals(effectData.EffectType, KNOCK_BACK, StringComparison.Ordinal) && 
+            !string.Equals(effectData.EffectType, STATUS_UP, StringComparison.Ordinal))
         {
             enchantDuration = enchantDuration + (effectPower * 0.01f);
         }
         
         specData = new EffectSpec(effectData.Effect_ID, enchantValue, enchantDuration, enchantInterval);
+    }
+
+    private void GetStatEnhance(StatTableData data, out PlayerStatus? status, out CalFormula? formula, out float amount)
+    {
+        if (TryGetStatVariation(data, HP, out var tempHp))
+        {
+            status = PlayerStatus.Hp;
+            formula = CalFormula.Rate;
+            amount = tempHp;
+        }
+
+        if (TryGetStatVariation(data, ATTACK, out var tempAttack))
+        {
+            status = PlayerStatus.Attack;
+            formula = CalFormula.Rate;
+            amount = tempAttack;
+        }
+
+        if (TryGetStatVariation(data, ATTACK_SPEED, out var tempAttackSpeed))
+        {
+            status = PlayerStatus.AttackSpeed;
+            formula = CalFormula.Rate;
+            amount = tempAttackSpeed;
+        }
+        
+        Debug.LogWarning($"[EnchantCalculator] The {data.ValueType_2} increase type hasn't been set. Please define a new type.");
+        status = null;
+        formula = null;
+        amount = 0;
     }
 }

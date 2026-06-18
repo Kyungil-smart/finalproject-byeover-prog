@@ -101,126 +101,175 @@ public class PlayerModel : MonoBehaviour, IDamageable
     }
 
     // ---------- 스텟 증가 ----------
-    public void ApplyHpBonus_Add(int bonus)
+    
+    /// <summary>
+    /// 스테이터스의 증감을 구현하기 위한 키 함수
+    /// </summary>
+    /// <param name="status">증감하기 위한 스텟의 종류</param>
+    /// <param name="formula">스텟의 증감식 - Add : 합연산 / Rate : 곱연산</param>
+    /// <param name="amount">스텟의 증감량</param>
+    /// <param name="isRemoved">스텟 효과를 제거해야 될 때 True</param>
+    public void StatusEnhance(PlayerStatus status, CalFormula formula, float amount, bool isRemoved)
+    {
+        switch (status)
+        {
+            case PlayerStatus.Hp:
+                ApplyHp(formula, amount, isRemoved);
+                break;
+            case PlayerStatus.Attack:
+                ApplyAttack(formula, amount, isRemoved);
+                break;
+            case PlayerStatus.AttackSpeed:
+                ApplyAttackSpeed(formula, amount, isRemoved);
+                break;
+        }
+    }
+
+    private void ApplyHp(CalFormula formula, float amount, bool isRemoved)
+    {
+        switch (formula)
+        {
+            case CalFormula.Add:
+                if (isRemoved)
+                {
+                    MaxHP -= Mathf.RoundToInt(amount);
+                    if(MaxHP < 1) MaxHP = 1;
+        
+                    CurrentHP -= Mathf.RoundToInt(amount);
+                    if(CurrentHP < 1) CurrentHP = 1;
+        
+                    OnHPChanged?.Invoke(CurrentHP, MaxHP);
+                    break;
+                }
+                MaxHP += Mathf.RoundToInt(amount);
+                CurrentHP += Mathf.RoundToInt(amount);
+                OnHPChanged?.Invoke(CurrentHP, MaxHP);
+                break;
+            case CalFormula.Rate:
+                if (isRemoved)
+                {
+                    amount = 1 - amount;
+                    MaxHP = Mathf.FloorToInt(MaxHP * amount);
+                    if(MaxHP < 1) MaxHP = 1;
+        
+                    CurrentHP = Mathf.FloorToInt(CurrentHP * amount);
+                    if(CurrentHP < 1) CurrentHP = 1;
+        
+                    OnHPChanged?.Invoke(CurrentHP, MaxHP);
+                    break;
+                }
+                amount = 1 + amount;
+                MaxHP = Mathf.FloorToInt(MaxHP * amount);
+                CurrentHP = Mathf.FloorToInt(CurrentHP * amount);
+                OnHPChanged?.Invoke(CurrentHP, MaxHP);
+                break;
+        }
+    }
+
+    private void ApplyAttack(CalFormula formula, float amount, bool isRemoved)
+    {
+        switch (formula)
+        {
+            case CalFormula.Add:
+                if (isRemoved)
+                {
+                    Attack -= Mathf.RoundToInt(amount);
+                    if(Attack < _baseAttack) Attack = _baseAttack;
+                    break;
+                }
+                Attack += Mathf.RoundToInt(amount);
+                break;
+            case CalFormula.Rate:
+                if (isRemoved)
+                {
+                    amount = 1 - amount;
+                    Attack = Mathf.FloorToInt(Attack * amount);
+                    if(Attack < _baseAttack) Attack = _baseAttack;
+                    break;
+                }
+                amount = 1 + amount;
+                Attack = Mathf.FloorToInt(Attack * amount);
+                break;
+        }
+    }
+
+    private void ApplyAttackSpeed(CalFormula formula, float amount, bool isRemoved)
+    {
+        // 공격속도는 공격간 간격임으로, 공격속도가 증가한다 > 공격 간격이 감소함
+        switch (formula)
+        {
+            case CalFormula.Add:
+                if (isRemoved)
+                {
+                    AttackSpeed += amount;
+                    break;
+                }
+                AttackSpeed -= amount;
+                if(AttackSpeed < 0) AttackSpeed = 0;
+                break;
+            case CalFormula.Rate:
+                if (isRemoved)
+                {
+                    amount = 1 + amount;
+                    AttackSpeed *= amount;
+                    
+                    break;
+                }
+                amount = 1 - amount;
+                AttackSpeed *= amount;
+                if(AttackSpeed < 0) AttackSpeed = 0;
+                break;
+        }
+    }
+    
+    
+    /// <summary>
+    /// 레거시 계산 함수 : StatusEnhance 사용할 것. 차후 삭제함
+    /// </summary>
+    /// <param name="bonus"></param>
+    public void Legacy_ApplyHpBonus_Add(int bonus)
     {
         MaxHP += bonus;
         CurrentHP += bonus;
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
     }
     
-    public void ApplyHpBonus_Rate(float bonus)
-    {
-        bonus = 1 + bonus;
-        MaxHP = Mathf.FloorToInt(MaxHP * bonus);
-        CurrentHP = Mathf.FloorToInt(CurrentHP * bonus);
-        OnHPChanged?.Invoke(CurrentHP, MaxHP);
-    }
-
-    public void ApplyHpBonus_Remove(int bonus)
-    {
-        MaxHP -= bonus;
-        if(MaxHP < 1) MaxHP = 1;
-        
-        CurrentHP -= bonus;
-        if(CurrentHP < 1) CurrentHP = 1;
-        
-        OnHPChanged?.Invoke(CurrentHP, MaxHP);
-    }
-
-    public void ApplyHpBonus_RemoveF(float bonus)
-    {
-        if(bonus > 1) bonus = 1 - bonus;
-        MaxHP = Mathf.FloorToInt(MaxHP * bonus);
-        if(MaxHP < 1) MaxHP = 1;
-        
-        CurrentHP = Mathf.FloorToInt(CurrentHP * bonus);
-        if(CurrentHP < 1) CurrentHP = 1;
-        
-        OnHPChanged?.Invoke(CurrentHP, MaxHP);
-    }
-
-    public void ApplyAttackBonus_Add(int bonus)
-    {
-        Attack += bonus;
-    }
-
-    public void ApplyAttackBonus_Rate(float bonus)
+    /// <summary>
+    /// 레거시 계산 함수 : StatusEnhance 사용할 것. 차후 삭제함
+    /// </summary>
+    /// <param name="bonus"></param>
+    public void Legacy_ApplyAttackBonus_Rate(float bonus)
     {
         if (bonus < 1) bonus = 1 + bonus;
         Attack = Mathf.FloorToInt(Attack * bonus);
     }
 
-    public void ApplyAttackBonus_RemoveA(int bonus)
-    {
-        Attack -= bonus;
-        if (Attack < 0) Attack = 0;
-    }
-
-    public void ApplyAttackBonus_RemoveR(float bonus)
-    {
-        if(bonus > 1) bonus = 1 - bonus;
-        Attack = Mathf.FloorToInt(Attack * bonus);
-        if (Attack < 0) Attack = 0;
-    }
-
+    /// <summary>
+    /// 레거시 계산 함수 : StatusEnhance 사용할 것. 차후 삭제함
+    /// </summary>
+    /// <param name="bonus"></param>
     // 관통(PercentagePierce) 가산. 인챈트 효과 적용용.
-    public void ApplyPierceBonus_Add(float bonus)
+    public void Legacy_ApplyPierceBonus_Add(float bonus)
     {
         PercentagePierce += bonus;
     }
 
-    public void ApplyCriRateBonus_Add(int bonus)
-    {
-        CriticalRate += bonus;
-    }
-
-    public void ApplyCriRateBonus_Rate(float bonus)
-    {
-        if (bonus < 1) bonus = 1 + bonus;
-        CriticalRate *= bonus;
-    }
-
-    public void ApplyCriDmgBonus_Add(int bonus)
-    {
-        CriticalDamage += bonus;
-    }
-
-    public void ApplyCriDmgBonus_Rate(float bonus)
-    {
-        if (bonus < 1) bonus = 1 + bonus;
-        CriticalDamage *= bonus;
-    }
-
+    /// <summary>
+    /// 레거시 계산 함수 : StatusEnhance 사용할 것. 차후 삭제함
+    /// </summary>
+    /// <param name="bonus"></param>
     // 인챈트 효과 적용용 (float 가산). 기존 _Add는 int라 소수(예: +0.05)가 0으로 묻힘.
-    public void ApplyCriRateBonus_AddF(float bonus)
+    public void Legacy_ApplyCriRateBonus_AddF(float bonus)
     {
         CriticalRate += bonus;
     }
 
-    public void ApplyCriDmgBonus_AddF(float bonus)
+    /// <summary>
+    /// 레거시 계산 함수 : StatusEnhance 사용할 것. 차후 삭제함
+    /// </summary>
+    /// <param name="bonus"></param>
+    public void Legacy_ApplyCriDmgBonus_AddF(float bonus)
     {
         CriticalDamage += bonus;
-    }
-
-    public void ApplyAttackSpeed_Add(float bonus)
-    {
-        AttackSpeed -= bonus;
-    }
-
-    public void ApplyAttackSpeed_Rate(float bonus)
-    {
-        bonus = 1 - bonus;
-        AttackSpeed *= bonus;
-    }
-
-    public void ApplyAttackSpeed_RemoveA(float bonus)
-    {
-        AttackSpeed += bonus;
-    }
-    
-    public void ApplyAttackSpeed_RemoveR(float bonus)
-    {
-        bonus = 1 + bonus;
-        AttackSpeed *= bonus;
     }
 }

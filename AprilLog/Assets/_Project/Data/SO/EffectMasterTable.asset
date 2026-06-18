@@ -26,26 +26,34 @@ MonoBehaviour:
     EffectType: Slow
     OverLap: 
     GrowthType: None
-    Value: 0.5
+    Value: 0.3
     Duration: 3
     Interval: 0
   - Effect_ID: 13003
-    EffectName: 0
-    EffectType: Stun
-    OverLap: 
-    GrowthType: None
-    Value: 0
-    Duration: 3
-    Interval: 0
-  - Effect_ID: 13004
     EffectName: 0
     EffectType: DotDamage
     OverLap: 
     GrowthType: Add
     Value: 10
     Duration: 5
-    Interval: 0.25
+    Interval: 0.5
+  - Effect_ID: 13004
+    EffectName: 0
+    EffectType: StatusUP
+    OverLap: 
+    GrowthType: Add
+    Value: 10
+    Duration: 5
+    Interval: 0
   - Effect_ID: 13005
+    EffectName: 0
+    EffectType: StatusUP
+    OverLap: 
+    GrowthType: Add
+    Value: 12
+    Duration: 5
+    Interval: 0
+  - Effect_ID: 13006
     EffectName: 0
     EffectType: DotDamage
     OverLap: 
@@ -53,19 +61,11 @@ MonoBehaviour:
     Value: 10
     Duration: 4
     Interval: 0.5
-  - Effect_ID: 13006
-    EffectName: 0
-    EffectType: StatusUP
-    OverLap: 
-    GrowthType: Add
-    Value: 10
-    Duration: 5
-    Interval: 0
   - Effect_ID: 13007
     EffectName: 0
-    EffectType: StatusUP
+    EffectType: Stun
     OverLap: 
-    GrowthType: Add
-    Value: 12
-    Duration: 5
+    GrowthType: None
+    Value: 0
+    Duration: 3
     Interval: 0
