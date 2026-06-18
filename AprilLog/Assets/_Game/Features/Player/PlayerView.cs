@@ -2,6 +2,9 @@
 // 설명   : 플레이어 인게임 비주얼(플레이스홀더 사각형) + 발사 기준점 + 방벽 HP 바.
 //          방벽 HP = 플레이어 HP(PlayerModel)이며, 유저에게는 방벽 체력이 깎이는 것으로 보인다.
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 플레이어 월드 HP 바 기본 생성을 끄고 플레이어 표시 이미지를 Inspector에서 지정할 수 있도록 Sprite 옵션 추가
+
 using UnityEngine;
 
 /// <summary>
@@ -11,6 +14,8 @@ using UnityEngine;
 public class PlayerView : MonoBehaviour
 {
     [Header("플레이스홀더 비주얼")]
+    [Tooltip("플레이어에 표시할 이미지입니다. 비어 있으면 기본 사각형을 사용합니다.")]
+    [SerializeField] private Sprite _bodySprite;
     [SerializeField] private Color _color = new Color(0.3f, 0.6f, 1f, 1f);
     [SerializeField] private Vector2 _size = new Vector2(0.8f, 0.8f);
     [SerializeField] private int _sortingOrder = 30;
@@ -20,7 +25,7 @@ public class PlayerView : MonoBehaviour
     [SerializeField] private Transform _firePoint;
 
     [Header("방벽 HP 바")]
-    [SerializeField] private bool _showHpBar = true;
+    [SerializeField] private bool _showHpBar;
     [SerializeField] private Vector2 _hpBarSize = new Vector2(2.0f, 0.2f);
     [SerializeField] private float _hpBarYOffset = 0.7f;
     [SerializeField] private Color _hpBarBgColor = new Color(0.1f, 0.1f, 0.1f, 0.85f);
@@ -63,7 +68,7 @@ public class PlayerView : MonoBehaviour
         body.transform.localScale = new Vector3(_size.x, _size.y, 1f);
 
         var sr = body.AddComponent<SpriteRenderer>();
-        sr.sprite = SpriteFactory.Square();
+        sr.sprite = _bodySprite != null ? _bodySprite : SpriteFactory.Square();
         sr.color = _color;
         sr.sortingOrder = _sortingOrder;
     }
