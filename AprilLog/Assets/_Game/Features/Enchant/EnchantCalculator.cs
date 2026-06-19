@@ -27,6 +27,7 @@ public class EnchantCalculator : MonoBehaviour
     private const string ADD_PROJECTILE = "ActivePlusCount";
     private const string PROJECTILE_GAP  = "PelletGap";
     private const string PROJECTILE_DAMAGE_REDUCE = "subPelletDmg";
+    private const int PROJECTILE_TAG = 20;
     
     // SkillAreaExtenstionCalculate
     private const string X_LENGTH_EXTENSION_RATE = "HitSize_X";
@@ -110,15 +111,16 @@ public class EnchantCalculator : MonoBehaviour
     /// </summary>
     /// <param name="skillId">계산을 실행할 스킬의 ID</param>
     /// <param name="pelletGap">추가 투사체의 간격 (interval)</param>
+    /// <param name="subPelletDmgReduce"></param>
     /// <param name="supPelletDmgReduce">추가 투사체가 원본 투사체에 비해 데미지가 감소하는 정도 (%)</param>
     /// <returns>이 스킬에 적용해야 될 추가 투사체 개수</returns>
-    public int ProjectileAddCalculate(int skillId, out float pelletGap, out float supPelletDmgReduce)
+    public int ProjectileAddCalculate(int skillId, out float pelletGap, out float subPelletDmgReduce)
     {
         if (!isInitialized)
         {
             Debug.LogWarning($"[EnchantCalculator] Not Initialized. All ProjectileAddCalculate result set 0.");
             pelletGap = 0;
-            supPelletDmgReduce = 0;
+            subPelletDmgReduce = 0;
             return 0;
         }
         
@@ -127,11 +129,11 @@ public class EnchantCalculator : MonoBehaviour
         {
             Debug.LogWarning($"[EnchantCalculator] Can't find the Skill data : {skillId}. All ProjectileAddCalculate result set 0.");
             pelletGap = 0;
-            supPelletDmgReduce = 0;
+            subPelletDmgReduce = 0;
             return 0;
         }
 
-        GetProjectileAdd(data, out int addProjectile, out pelletGap, out supPelletDmgReduce);
+        GetProjectileAdd(data, out int addProjectile, out pelletGap, out subPelletDmgReduce);
         
         return addProjectile;
     }
@@ -142,7 +144,7 @@ public class EnchantCalculator : MonoBehaviour
     /// <param name="skillId">계산을 실행할 스킬의 ID</param>
     /// <param name="xLengthExtensionRate">기본 히트박스의 X값을 이 값과 곱해야됨</param>
     /// <param name="yLengthExtensionRate">기본 히트박스의 Y값을 이 값과 곱해야됨</param>
-    public void SkillAreaExtenstionCalculate(int skillId, out float xLengthExtensionRate, out float yLengthExtensionRate)
+    public void SkillAreaExtensionCalculate(int skillId, out float xLengthExtensionRate, out float yLengthExtensionRate)
     {
         if (!isInitialized)
         {
@@ -392,7 +394,7 @@ public class EnchantCalculator : MonoBehaviour
         foreach (var ownedStat in _enchantModel.OwnedStats.Values)
         {
             var data = ownedStat.Data;
-            if (data.Target_2 == skillData.SkillGroup_ID && data.Target_1 == 20)
+            if (data.Target_2 == skillData.SkillGroup_ID && data.Target_1 == PROJECTILE_TAG)
             {
                 if (skillData.Tag_ID_1 == data.Target_1 || skillData.Tag_ID_2 == data.Target_1 || 
                     skillData.Tag_ID_3 == data.Target_1 || skillData.Tag_ID_4 == data.Target_1)

@@ -268,7 +268,7 @@ public class AcquiredStatData
     public StatTableData Data;
 }
 
-public class EffectSpec
+public struct EffectSpec
 {
     public int Id;
     public float CalValue;
