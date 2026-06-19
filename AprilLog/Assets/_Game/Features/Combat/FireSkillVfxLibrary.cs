@@ -1,14 +1,14 @@
 // 담당자 : 정승우
 // 설명   : 불 속성 스킬 VFX 프리팹 모음 (Fire_Asset 패키지 연결용 ScriptableObject)
 //          Resources/FireSkillVfxLibrary.asset 으로 두고 SkillSystem이 Resources.Load로 읽는다.
-//          → 씬마다 손으로 연결할 필요 없음. 스케일/타이밍은 인스펙터에서 조정.
+//          -> 씬마다 손으로 연결할 필요 없음. 스케일/타이밍은 인스펙터에서 조정.
 
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "FireSkillVfxLibrary", menuName = "AprilLog/Fire Skill VFX Library")]
 public class FireSkillVfxLibrary : ScriptableObject
 {
-    [Header("메테오 (3단: 생성 구역 → 몸체 낙하 → 착탄 폭발)")]
+    [Header("메테오 (3단: 생성 구역 -> 몸체 낙하 -> 착탄 폭발)")]
     [Tooltip("생성 구역 마커 (Flame_ellipse)")]
     public GameObject meteorMarker;
     [Tooltip("낙하하는 몸체 (Fireball_loop_2)")]

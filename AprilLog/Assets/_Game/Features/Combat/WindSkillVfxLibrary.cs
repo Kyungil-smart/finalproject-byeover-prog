@@ -1,7 +1,7 @@
 // 설명   : 바람(풍) 속성 스킬 VFX 프리팹 모음 (Imports/WindSkill 패키지 연결용 ScriptableObject)
 //          Resources/WindSkillVfxLibrary.asset 으로 두고 SkillSystem이 Resources.Load로 읽는다.
 //          기획 v2.02 바람 속성. 투사체(헤이스트/바람칼날/템페스트)는 투사체 스킨, 하자드(돌풍/허리케인/부메랑)는 장판 VFX.
-//          ⚠ 원본 프리팹 m_MaxParticleSize가 8이라 화면을 덮어서, 와이어링 전에 0.5로 정상화했음(번개 Lazer 전례).
+//          원본 프리팹 m_MaxParticleSize가 8이라 화면을 덮어서, 와이어링 전에 0.5로 정상화했음(번개 Lazer 전례).
 
 using UnityEngine;
 
@@ -36,7 +36,7 @@ public class WindSkillVfxLibrary : ScriptableObject
     public float hurricaneHazardScale = 1f;
     public float hurricaneRotationDeg = 0f;
 
-    [Header("부메랑 (백업, StandardID 306) — Boomerang / 허리케인형. ⚠ skill_data에 306 행 없어 미발동, VFX만 준비")]
+    [Header("부메랑 (백업, StandardID 306) — Boomerang / 허리케인형. skill_data에 306 행 없어 미발동, VFX만 준비")]
     public GameObject boomerangHazard;
     public float boomerangHazardScale = 1f;
     public float boomerangRotationDeg = 0f;
