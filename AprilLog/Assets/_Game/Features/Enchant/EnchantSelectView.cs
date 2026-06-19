@@ -15,6 +15,8 @@
 
 // 2차 수정자 : 조규민
 // 수정 내용 : 인게임 인챈트 선택 팝업 리롤 횟수 설정, 남은 횟수 표시 갱신, 리롤 아이콘/텍스트 터치 가로막음 방지 추가
+//            카드별 리롤 버튼과 특정 카드만 리롤하는 이벤트 연결, Viewport Mask 외부 오버레이 배치 추가
+//            씬 RerollBoundary를 남은 리롤 횟수 표시 전용으로 변경
 
 using System;
 using System.Collections.Generic;
@@ -33,6 +35,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public event Action OnSkipSelected;
     public event Action<int> OnDeleteConfirmed;
     public event Action OnRerollSelected;
+    public event Action<int> OnCardRerollSelected;
 
     [Header("인챈트 등장 확률 설정")]
     [SerializeField] private EnchantProbabilityConfig _probabilityConfig;
@@ -49,6 +52,10 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [SerializeField] private Button _skipButton;
     [SerializeField] private Button _rerollButton;
     [SerializeField] private TMP_Text _rerollCountText;
+
+    [Header("리롤 오버레이")]
+    [Tooltip("비워두면 EnchantSelectCanvas 아래에 Viewport Mask 영향을 받지 않는 오버레이를 자동 생성합니다.")]
+    [SerializeField] private RectTransform _rerollOverlay;
     
     [Header("리롤 설정")]
     [Tooltip("인챈트 선택 팝업이 열릴 때 제공할 새로고침 횟수")]
@@ -66,6 +73,9 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     // 런타임에 생성된 카드들을 추적하기 위한 캐시 리스트
     private List<GameObject> _spawnedCards = new List<GameObject>();
     private TMP_Text _resolvedRerollCountText;
+    private bool _currentRerollAvailable;
+    private int _currentRerollRemaining;
+    private ScrollRect _choiceScrollRect;
 
     private void OnEnable()
     {
@@ -93,16 +103,15 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
             if (_rerollButton != null)
             {
-                _rerollButton.onClick.AddListener(() =>
-                {
-                    Debug.Log("[Reroll] 버튼 클릭 도달 → OnRerollSelected.Invoke");
-                    OnRerollSelected?.Invoke();
-                });
-                ConfigureRerollHitArea();
+                ConfigureRerollCountDisplay();
+                SetLegacyRerollVisible(true);
             }
             
             _isInitialized = true;
         }
+
+        EnsureRerollOverlay();
+        SubscribeScrollPosition();
         
         // 팝업이 열릴 때 자동으로 프레젠터에게 선택지를 생성하라고 요청
         _selectPresenter?.ShowSelection();
@@ -110,6 +119,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
     private void OnDestroy()
     {
+        UnsubscribeScrollPosition();
         _selectPresenter?.Dispose();
         _changePresenter?.Dispose();
     }
@@ -156,6 +166,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
                 // 기존 이벤트 싹 지우기 (중복 클릭 방지)
                 cardUI.OnCardClicked = null; 
+                cardUI.OnRerollClicked = null;
 
                 // 새로운 인덱스로 이벤트 연결
                 cardUI.OnCardClicked += () =>
@@ -164,8 +175,14 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                     SelectChoice(index); 
                     Hide();              
                 };
+
+                cardUI.OnRerollClicked += () => OnCardRerollSelected?.Invoke(index);
+                cardUI.AttachRerollOverlay(_rerollOverlay);
+                cardUI.SetRerollState(_currentRerollAvailable, _currentRerollRemaining);
             }
         }
+
+        RefreshRerollPositions();
     }
 
     // View 버튼에서 호출
@@ -175,17 +192,19 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     /// <summary>새로고침(리롤) 버튼 상태 갱신. available=false면 버튼을 숨김(일반 씬). remaining=남은 횟수(0이면 비활성).</summary>
     public void SetRerollAvailable(bool available, int remaining)
     {
-        if (_rerollButton == null) return;
+        _currentRerollAvailable = available;
+        _currentRerollRemaining = remaining;
 
-        GameObject rerollRoot = GetRerollRoot();
-        if (rerollRoot != null)
-            rerollRoot.SetActive(available);
-        else
-            _rerollButton.gameObject.SetActive(available);
-
-        // remaining < 0 = 무한(테스트2 씬): 항상 활성. 그 외엔 남은 횟수가 있어야 활성.
-        _rerollButton.interactable = available && remaining != 0;
+        SetLegacyRerollVisible(true);
         UpdateRerollCountText(remaining);
+
+        foreach (GameObject card in _spawnedCards)
+        {
+            if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
+            {
+                cardUI.SetRerollState(available, remaining);
+            }
+        }
     }
 
     // 멀티 터치 방지
@@ -193,11 +212,106 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     {
         foreach (var card in _spawnedCards)
         {
-            if (card != null && card.TryGetComponent<Button>(out var btn))
+            if (card == null) continue;
+
+            if (card.TryGetComponent<Button>(out var btn))
             {
                 btn.interactable = false;
             }
+
+            if (card.TryGetComponent<EnchantCardUI>(out var cardUI))
+            {
+                cardUI.SetSelectInteractable(false);
+                cardUI.SetRerollState(false, _currentRerollRemaining);
+            }
         }
+    }
+
+    private void EnsureRerollOverlay()
+    {
+        if (_rerollOverlay != null)
+        {
+            _rerollOverlay.SetAsLastSibling();
+            return;
+        }
+
+        Transform existing = transform.Find("RerollOverlay");
+        if (existing != null && existing.TryGetComponent(out RectTransform existingRect))
+        {
+            _rerollOverlay = existingRect;
+            _rerollOverlay.SetAsLastSibling();
+            return;
+        }
+
+        GameObject overlayObject = new GameObject("RerollOverlay", typeof(RectTransform));
+        overlayObject.layer = gameObject.layer;
+        _rerollOverlay = overlayObject.GetComponent<RectTransform>();
+        _rerollOverlay.SetParent(transform, false);
+        _rerollOverlay.anchorMin = Vector2.zero;
+        _rerollOverlay.anchorMax = Vector2.one;
+        _rerollOverlay.pivot = new Vector2(0.5f, 0.5f);
+        _rerollOverlay.anchoredPosition = Vector2.zero;
+        _rerollOverlay.sizeDelta = Vector2.zero;
+        _rerollOverlay.SetAsLastSibling();
+    }
+
+    private void SubscribeScrollPosition()
+    {
+        if (_choiceScrollRect != null || _choiceContainer == null) return;
+
+        _choiceScrollRect = _choiceContainer.GetComponentInParent<ScrollRect>();
+        if (_choiceScrollRect != null)
+        {
+            _choiceScrollRect.onValueChanged.AddListener(HandleScrollPositionChanged);
+        }
+    }
+
+    private void UnsubscribeScrollPosition()
+    {
+        if (_choiceScrollRect == null) return;
+
+        _choiceScrollRect.onValueChanged.RemoveListener(HandleScrollPositionChanged);
+        _choiceScrollRect = null;
+    }
+
+    private void HandleScrollPositionChanged(Vector2 _)
+    {
+        RefreshRerollPositions();
+    }
+
+    private void RefreshRerollPositions()
+    {
+        if (_choiceContainer is RectTransform contentRect)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
+        }
+
+        Canvas.ForceUpdateCanvases();
+        foreach (GameObject card in _spawnedCards)
+        {
+            if (card != null && card.TryGetComponent(out EnchantCardUI cardUI))
+            {
+                cardUI.RefreshRerollPosition();
+            }
+        }
+    }
+
+    private void OnRectTransformDimensionsChange()
+    {
+        if (!isActiveAndEnabled || _rerollOverlay == null) return;
+
+        RefreshRerollPositions();
+    }
+
+    private void SetLegacyRerollVisible(bool visible)
+    {
+        if (_rerollButton == null) return;
+
+        GameObject rerollRoot = GetRerollRoot();
+        if (rerollRoot != null)
+            rerollRoot.SetActive(visible);
+        else
+            _rerollButton.gameObject.SetActive(visible);
     }
 
     private GameObject GetRerollRoot()
@@ -208,21 +322,19 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         return _rerollButton.transform.parent.gameObject;
     }
 
-    private void ConfigureRerollHitArea()
+    private void ConfigureRerollCountDisplay()
     {
         GameObject rerollRoot = GetRerollRoot();
         if (rerollRoot == null) return;
 
-        // 방어: targetGraphic이 비어 있으면 버튼 자신의 Graphic을 기준으로. 그래도 없으면 raycast를 안 꺼 버튼을 살린다.
-        Graphic buttonGraphic = _rerollButton.targetGraphic != null ? _rerollButton.targetGraphic : _rerollButton.GetComponent<Graphic>();
-        if (buttonGraphic == null) return;
+        _rerollButton.enabled = false;
 
         Graphic[] graphics = rerollRoot.GetComponentsInChildren<Graphic>(true);
         foreach (Graphic graphic in graphics)
         {
             if (graphic == null) continue;
 
-            graphic.raycastTarget = graphic == buttonGraphic;
+            graphic.raycastTarget = false;
         }
     }
 
@@ -231,7 +343,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         TMP_Text countText = ResolveRerollCountText();
         if (countText == null) return;
 
-        countText.text = remaining < 0 ? "∞" : Mathf.Max(0, remaining).ToString(); // 음수 = 무한(테스트2 씬) → ∞
+        string remainingText = remaining < 0 ? "INF" : Mathf.Max(0, remaining).ToString();
+        countText.text = $"X {remainingText}";
     }
 
     private TMP_Text ResolveRerollCountText()
