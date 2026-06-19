@@ -42,6 +42,12 @@ public class ShopGachaPresenter : MonoBehaviour
     [Header("재화 부족 팝업")]
     [SerializeField] private GameObject _insufficientPopup;
 
+    [Header("뽑기 후처리 / 결과 팝업")]
+    [Tooltip("획득 반영·등급별 한도·자동 분해·누적 보상 처리를 담당. 비우면 폴백으로 단순 보유 추가만 한다.")]
+    [SerializeField] private ArtifactGachaPostProcessor _postProcessor;
+    [Tooltip("메인 복귀 시 자동분해/누적보상 팝업을 순차 출력하는 큐(선택).")]
+    [SerializeField] private ArtifactGachaPopupQueue _popupQueue;
+
     private const int TenDrawCount = 10;
 
     private void Awake()
@@ -65,6 +71,10 @@ public class ShopGachaPresenter : MonoBehaviour
     {
         if (_singleResultPopup != null) _singleResultPopup.SetActive(false);
         if (_tenResultPopup != null) _tenResultPopup.SetActive(false);
+
+        // 결과 확인 → 메인 화면 복귀 시점 : 대기 중인 자동 분해/누적 보상 팝업을 순차 출력한다.
+        // (뽑기 연출 도중에는 출력하지 않고, 여기서만 Flush)
+        if (_popupQueue != null) _popupQueue.Flush();
     }
 
     // 재화 부족 팝업 확인 버튼 OnClick 에 연결
@@ -114,19 +124,28 @@ public class ShopGachaPresenter : MonoBehaviour
             return result;
         }
 
-        ArtifactManager artifactMgr = GameStateManager.Instance != null
-            ? GameStateManager.Instance.ArtifactManager
-            : null;
-
         for (int i = 0; i < count; i++)
         {
             string grade = DetermineGrade(box);
             int gearId = SelectRandomGearByGrade(grade);
             if (gearId == 0) continue;
 
-            artifactMgr?.AddArtifact(gearId);
             result.Add(gearId);
             Debug.Log($"[ShopGachaPresenter] 가챠 성공! {grade} 등급 (ID: {gearId}) 획득");
+        }
+
+        // 획득 반영(등급별 최대 보유 한도 / 초과분 자동 분해 / 누적 보상)은 후처리기에 위임한다.
+        // 다중 뽑기의 각 획득 건을 순차적으로 정확히 계산하고, 결과를 큐에 누적해 둔다.
+        if (_postProcessor != null)
+        {
+            ArtifactGachaResult post = _postProcessor.Process(gachaId, result);
+            if (_popupQueue != null) _popupQueue.Enqueue(post);
+        }
+        else
+        {
+            // 폴백 : 후처리기 미연결 시 기존처럼 단순 보유 추가만 한다(자동분해/누적보상 미동작).
+            ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+            foreach (int id in result) mgr?.AddArtifact(id);
         }
 
         return result;
@@ -212,7 +231,7 @@ public class ShopGachaPresenter : MonoBehaviour
             if (drawn != null && i < drawn.Count)
                 slots[i].SetData(drawn[i]);
             else
-                slots[i].Clear();// 결과보다 슬롯이 많으면 나머지는 비움
+                slots[i].Clear(); // 결과보다 슬롯이 많으면 나머지는 비움
         }
     }
 }
