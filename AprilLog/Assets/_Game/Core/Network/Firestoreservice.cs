@@ -587,7 +587,7 @@ public class FirestoreService : MonoBehaviour
     }
 #endif
 
-    private void SaveLocalBackup(UserCloudData data)
+    public void SaveLocalBackup(UserCloudData data)   // 단계④: GameManager가 오프라인 즉시저장에 쓰도록 공개
     {
         // 추가: 조규민 - 로컬 백업 실패가 로그인 흐름 전체를 중단하지 않도록 예외를 이벤트로 전달한다.
         try

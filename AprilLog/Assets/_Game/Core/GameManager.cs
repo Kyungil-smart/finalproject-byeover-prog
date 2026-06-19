@@ -606,12 +606,15 @@ public class GameManager : MonoBehaviour
 
     public void SyncToCloud(UserCloudData data)
     {
-        if (!IsLoggedIn) return;
         if (_firestoreService == null) return;
 
         EnsureCloudIdentity(data);
         CloudData = data;
-        StartCoroutine(_firestoreService.SaveCoroutine(data));
+
+        if (IsLoggedIn)
+            StartCoroutine(_firestoreService.SaveCoroutine(data));   // 클라우드(+내부에서 로컬백업도)
+        else
+            _firestoreService.SaveLocalBackup(data);                 // 단계④: 오프라인/비로그인도 로컬 즉시저장(재화 유실 방지)
     }
 
     public void ApplyCloudDataToOutGameModels(PlayerProgressModel progressModel, CurrencyModel currencyModel)
@@ -656,11 +659,8 @@ public class GameManager : MonoBehaviour
             data.unlockedStages = CloneUnlockedStages(progressModel.UnlockedStages);
         }
 
-        if (currencyModel != null)
-        {
-            data.gold = currencyModel.Gold;
-            data.parchment = currencyModel.Parchment;
-        }
+        // 단계③: 재화는 GameManager 단일 API(AddCurrency/TrySpendCurrency/SetCurrency)가 CloudData에 직접 반영·저장한다.
+        // 여기서 currencyModel(사본) 값으로 덮어쓰지 않는다 — stale 사본 덮어쓰기로 인한 재화 유실 버그 제거.
 
         SyncToCloud(data);
     }
@@ -689,6 +689,79 @@ public class GameManager : MonoBehaviour
         }
 
         SyncToCloud(data);
+        RaiseCurrencyChanged();   // 단계②: 전투 보상이 View(로비 등)에 전파되도록 단일 이벤트 발행
+    }
+
+    // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) — 영속 원본 = CloudData.gold/parchment =====
+    // 단계 a(재화 관리 통일): 전투 보상·업적·로그인 보상·상점/레벨업 소비를 전부 이 API로 모은다.
+    // 새 싱글톤 안 만들고 영속 GameManager를 권위로 사용. CurrencyModel 등 씬 모델은 OnCurrencyChanged 구독하는 View로 이관 예정(단계 ②③).
+    public event Action<int, int> OnCurrencyChanged;   // (gold, parchment) — 변경 시 전역 발행
+
+    public int Gold => CloudData != null ? CloudData.gold : 0;
+    public int Parchment => CloudData != null ? CloudData.parchment : 0;
+
+    public bool CanAffordCurrency(int gold, int parchment)
+    {
+        return CloudData != null
+            && CloudData.gold >= Mathf.Max(0, gold)
+            && CloudData.parchment >= Mathf.Max(0, parchment);
+    }
+
+    /// <summary>재화 가산 — 전투 보상/업적/로그인 보상 공통 진입점. reason은 로그·추적용.</summary>
+    public void AddCurrency(int gold, int parchment, string reason = null)
+    {
+        gold = Mathf.Max(0, gold);
+        parchment = Mathf.Max(0, parchment);
+        if (gold == 0 && parchment == 0) return;
+
+        EnsureCurrencyData();
+        CloudData.gold = Mathf.Max(0, CloudData.gold + gold);
+        CloudData.parchment = Mathf.Max(0, CloudData.parchment + parchment);
+        Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {CloudData.gold} / 양피지 {CloudData.parchment}");
+
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    /// <summary>재화 차감 시도 — 상점/레벨업 등 소비 공통 진입점. 부족하면 false(변경 없음).</summary>
+    public bool TrySpendCurrency(int gold, int parchment)
+    {
+        gold = Mathf.Max(0, gold);
+        parchment = Mathf.Max(0, parchment);
+        if (!CanAffordCurrency(gold, parchment)) return false;
+
+        CloudData.gold -= gold;
+        CloudData.parchment -= parchment;
+        RaiseCurrencyChanged();
+        PersistCurrency();
+        return true;
+    }
+
+    /// <summary>재화를 지정 값으로 설정 — 하이드레이션/리셋·테스트용(가산 아님). 값 동일하면 무시.</summary>
+    public void SetCurrency(int gold, int parchment)
+    {
+        gold = Mathf.Max(0, gold);
+        parchment = Mathf.Max(0, parchment);
+        EnsureCurrencyData();
+        if (CloudData.gold == gold && CloudData.parchment == parchment) return;
+        CloudData.gold = gold;
+        CloudData.parchment = parchment;
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    private void EnsureCurrencyData()
+    {
+        if (CloudData == null) CloudData = UserCloudData.CreateDefault();
+        EnsureCloudIdentity(CloudData);
+    }
+
+    private void RaiseCurrencyChanged() => OnCurrencyChanged?.Invoke(Gold, Parchment);
+
+    // 재화 변경 영속화. SyncToCloud가 로그인=클라우드+로컬 / 오프라인=로컬백업을 알아서 처리(단계④).
+    private void PersistCurrency()
+    {
+        if (CloudData != null) SyncToCloud(CloudData);
     }
 
     private void EnsureCloudIdentity(UserCloudData data)

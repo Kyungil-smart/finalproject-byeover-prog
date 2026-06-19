@@ -26,8 +26,8 @@ public class LightningSkillVfxLibrary : ScriptableObject
 
     [Header("사슬 번개 (StandardID 402) — Clone(전기선 몸체) + CFXR Electrified 2(몬스터 타격 이펙트)")]
     public GameObject chainBolt;   // CFXR Electric Barrier (HDR, Purple)(Clone) = 전기선 몸체
-    [Tooltip("전기선 몸체 스케일 — CFXR Barrier는 내부 100배 자식이 있어 화면 중앙(April↔타겟 중점)을 덮기 쉬움. 0.04~ 작게. 인스펙터 튜닝")]
-    public float chainScale = 0.04f;
+    [Tooltip("전기선 몸체 스케일 — ⚠ CFXR Barrier는 prefab 루트가 100배 스케일이고 SpawnVfx가 곱셈(localScale*scale)이라 실제크기 = 100×이 값. 0.0075면 실제 ~0.75배. 0.04(=4배)는 짧은 체인 구간에 과대. 인스펙터 튜닝")]
+    public float chainScale = 0.0075f;
     [Tooltip("전기선 회전 보정(도) — April→타겟 방향 정렬. 전기선이 비스듬하면 조정")]
     public float chainBoltRotationTrimDeg = 0f;
     [Tooltip("⚠ 에디터에서 드래그: 사슬 적 타격 이펙트 = CFXR Electrified 2 (Purple) — 몬스터 몸체에 재생")]
@@ -41,8 +41,8 @@ public class LightningSkillVfxLibrary : ScriptableObject
 
     [Header("방전 (StandardID 403) — Clone(전기선) + Charge_Lightning(양옆 구슬) + CFXR Electric Barrier(밑 연결점)")]
     public GameObject dischargeBarrier;
-    [Tooltip("방전 가운데 번개막 스케일 — 가로로 길게(피격 1440px). CFXR Barrier 100배 자식이라 0.15~ 시작. 인스펙터 튜닝")]
-    public float dischargeScale = 0.15f;
+    [Tooltip("방전 가운데 번개막 스케일 — ⚠ CFXR Barrier는 루트 100배라 0.04여도 실제 4배. 화면 덮음 방지로 프리팹 m_MaxParticleSize도 0.15로 캡함. 더 작게=0.02, 더 넓게=0.06. 인스펙터 튜닝")]
+    public float dischargeScale = 0.04f;
     public GameObject dischargeOrb;   // Charge_Lightning (양옆 구슬)
     [Tooltip("양옆 구슬 스케일 — ⚠ Charge_Lightning은 내부 200배 자식이라 아주 작게(0.005 이하). 인스펙터에서 직접 보며 튜닝")]
     public float dischargeOrbScale = 0.005f;

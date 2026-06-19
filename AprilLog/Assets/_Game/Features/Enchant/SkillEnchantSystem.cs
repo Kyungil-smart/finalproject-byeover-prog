@@ -22,6 +22,8 @@ public class SkillEnchantSystem : MonoBehaviour
     private static readonly int[] FireBreathCadence = { 15, 13, 10 };
     private static readonly int[] HasteCadence = { 30, 25, 20 };        // 헤이스트 (바람 일반) — v1.04 테이블
     private static readonly int[] OrbLightningCadence = { 30, 25, 20 }; // 구형 번개 (번개 일반) — v1.04 테이블
+    private static readonly int[] WaterBombCadence = { 25, 20, 15 };    // 물 폭탄 (물 일반) — v1.04 테이블(20011~13 자동공격 25/20/15회)
+    private static readonly int[] MarchingIceCadence = { 30, 25, 20 };  // 마칭 아이스 (얼음 일반) — v1.04 테이블(50011~13 자동공격 30/25/20회)
 
     // 인챈트 선택은 새 SkillEnchantTable(카드 Name_ID)을 쓰는데, 이 시스템은 구 Legacy_EnchantMasterTable
     // (EnchantID 101~/301~/401~)을 역조회한다. 연결은 ResolveLegacyEnchantId()가 보유 스킬의 Skill_ID에서 산술 변환하는 걸 1순위로 한다.
@@ -160,22 +162,22 @@ public class SkillEnchantSystem : MonoBehaviour
                 break;
 
             // ===== 바람 속성 (placeholder — VFX·버프·관통·CC 미구현, 데미지/발동만) =====
-            case 3011: // 헤이스트 (일반): 자동공격 N회 — 버프 미구현, 현재 보조 투사체만 발사
+            case 3011: // 헤이스트 (일반): 자동공격 N회 발동. 발동 시 CombatSystem이 공격력↑+자동공격 간격↓ 버프 활성(StandardID 301 감지). 보조 투사체=PelletCount.
                 _skillSystem.ReplaceAutoAttackSkill(HasteCadence[clampedLevel - 1], data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
             // ⚠ 조합 슬롯은 MAX_RECIPES=3개뿐이고 불이 slot 0,1을 점유 → 바람/번개 조합은 빈 slot 2를 공유한다.
             //    즉 바람칼날/돌풍/사슬번개/방전 중 '마지막에 획득한 1종'만 활성. 동시 활성하려면 MAX_RECIPES+UI 슬롯 확장 필요.
-            case 3021: // 바람 칼날 (조합): 빨강·노랑·하양 (v1.04) — 관통 미구현, 현재 단발 투사체
+            case 3021: // 바람 칼날 (조합): 빨강·노랑·하양 (v1.04) — 느린 관통 투사체(관통 15/20/25, 이즈궁식). 발사/관통은 SkillSystem.FireOneProjectile.
                 _combinationModel?.SetRecipe(2, new int[] { 0, 3, 4 }, skillId);
                 break;
-            case 3031: // 돌풍 (조합): 파랑·초록·하양 (v1.04) — 넉백 미구현, 현재 장판 데미지만
+            case 3031: // 돌풍 (조합): 파랑·초록·하양 (v1.04) — 3타 후 마지막 펄스=폭발+넉백(위로), Lv3 범위↑. CC는 SkillSystem.DealHazardDamage.
                 _combinationModel?.SetRecipe(2, new int[] { 1, 2, 4 }, skillId);
                 break;
-            case 3041: // 허리케인 (콤보): 콤보 10의 배수 (v1.04) — 슬로우 미구현, 현재 지속 장판 데미지만
+            case 3041: // 허리케인 (콤보): 콤보 10의 배수 (v1.04) — 지속 장판 + 매 타격 슬로우(50%). 슬로우는 SkillSystem.DealHazardDamage→MonsterAI.ApplySlow.
                 _skillSystem.ReplaceComboSkill(10, data);
                 break;
-            case 3051: // 템페스트 (콤보): 콤보 10의 배수 (v1.04) — 관통·8히트 미구현, 현재 단발 투사체
+            case 3051: // 템페스트 (콤보): 콤보 10의 배수 (v1.04) — 랜덤 타겟 + 관통(8/10/12) + 피격당 8히트(NumberOfCycle). SkillSystem.FireOneProjectile.
                 _skillSystem.ReplaceComboSkill(10, data);
                 break;
 
@@ -184,16 +186,53 @@ public class SkillEnchantSystem : MonoBehaviour
                 _skillSystem.ReplaceAutoAttackSkill(OrbLightningCadence[clampedLevel - 1], data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
-            case 4021: // 사슬 번개 (조합): 노랑·초록·빨강 (v1.04, slot 2 공유) — 체인 미구현, 현재 단발
+            case 4021: // 사슬 번개 (조합): 노랑·초록·빨강 (v1.04, slot 2 공유) — 랜덤 시작→5마리 체인×4히트(LineRenderer). LightningChainRoutine.
                 _combinationModel?.SetRecipe(2, new int[] { 3, 2, 0 }, skillId);
                 break;
-            case 4031: // 방전 (조합): 파랑·빨강·하양 (v1.04, slot 2 공유) — 슬로우 미구현, 현재 지속 장판 데미지만
+            case 4031: // 방전 (조합): 파랑·빨강·하양 (v1.04, slot 2 공유) — 지속 장판 + 첫 피격 몬스터 슬로우(Lv3 지속↑). LightningDischargeRoutine.
                 _combinationModel?.SetRecipe(2, new int[] { 1, 0, 4 }, skillId);
                 break;
-            case 4041: // 벼락 (콤보): 콤보 9의 배수 (v1.04) — 스턴·엘리트우선 미구현, 현재 정사각 4히트 장판
+            case 4041: // 벼락 (콤보): 콤보 9의 배수 (v1.04) — 엘리트/보스 우선 타겟 + 정사각 4히트 + Lv3 스턴(1.5초). DealHazardDamage/HazardRoutine.
                 _skillSystem.ReplaceComboSkill(9, data);
                 break;
             case 4051: // 뇌격 (콤보): 콤보 10의 배수 (v1.04) — 세로 직사각 장판
+                _skillSystem.ReplaceComboSkill(10, data);
+                break;
+
+            // ===== 물 속성 (골격 — placeholder VFX=색 사각형, 상태이상(슬로우)·이동장판은 폴리싱) =====
+            case 2011: // 물 폭탄 (일반): 자동공격 N회 — 착탄 장판(파이어브레스식). 슬로우(13002) 미구현.
+                _skillSystem.ReplaceAutoAttackSkill(WaterBombCadence[clampedLevel - 1], data);
+                if (_combatSystem != null) _combatSystem.EnableAutoAttack();
+                break;
+            // ⚠ 조합 슬롯 MAX_RECIPES=3, 불이 slot 0,1 점유 → 물/얼음/바람/번개 조합 8종이 slot 2 공유(마지막 획득 1종만 활성). 슬롯 확장은 폴리싱.
+            case 2021: // 탄환 세례 (조합): 하양·초록·노랑 (v1.04) — 도트·슬로우 미구현, 현재 장판 데미지만
+                _combinationModel?.SetRecipe(2, new int[] { 4, 2, 3 }, skillId);
+                break;
+            case 2031: // 급류 (조합): 하양·노랑·파랑 (v1.04) — 전체 폭 띠 장판 4히트
+                _combinationModel?.SetRecipe(2, new int[] { 4, 3, 1 }, skillId);
+                break;
+            case 2041: // 파도 소환 (콤보): 콤보 8의 배수 (v1.04) — 이동장판 미구현, 현재 전방 단발 장판
+                _skillSystem.ReplaceComboSkill(8, data);
+                break;
+            case 2051: // 하이드로 펌프 (콤보): 콤보 10의 배수 (v1.04) — 세로 직사각 장판
+                _skillSystem.ReplaceComboSkill(10, data);
+                break;
+
+            // ===== 얼음 속성 (골격 — placeholder VFX=색 사각형, 빙결/슬로우 CC·이동장판은 폴리싱) =====
+            case 5011: // 마칭 아이스 (일반): 자동공격 N회 — 전방 전진 장판 6/7/8펄스
+                _skillSystem.ReplaceAutoAttackSkill(MarchingIceCadence[clampedLevel - 1], data);
+                if (_combatSystem != null) _combatSystem.EnableAutoAttack();
+                break;
+            case 5021: // 글레이셜 피어스 (조합): 빨강·노랑·파랑 (v1.04) — 관통 미구현, 현재 단발 투사체
+                _combinationModel?.SetRecipe(2, new int[] { 0, 3, 1 }, skillId);
+                break;
+            case 5031: // 빙결 지대 (조합): 초록·하양·빨강 (v1.04) — 빙결 CC 미구현, 현재 장판 데미지만
+                _combinationModel?.SetRecipe(2, new int[] { 2, 4, 0 }, skillId);
+                break;
+            case 5041: // 얼음 결정 (콤보): 콤보 7의 배수 (v1.04) — 이동장판·슬로우 미구현, 현재 랜덤타겟 단발 장판
+                _skillSystem.ReplaceComboSkill(7, data);
+                break;
+            case 5051: // 절대영도 (콤보): 콤보 10의 배수 (v1.04 설명) — ⚠ 테이블 RequiredValue_1=5와 충돌(설명=10 채택). 빙결 CC 미구현.
                 _skillSystem.ReplaceComboSkill(10, data);
                 break;
 

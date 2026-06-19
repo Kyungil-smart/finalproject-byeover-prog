@@ -28,8 +28,9 @@ public class EnchantSelectPresenter
     private readonly EnchantChangePresenter _changePresenter;
     
     // 확률 생성기
-    private readonly EnchantSelector _selector; 
+    private readonly EnchantSelector _selector;
     private readonly int _baseRerollCount;
+    private readonly bool _unlimitedReroll;   // rerollCount < 0(테스트2 씬) → 새로고침 무한. 차감 안 하고 ∞ 표시.
     
     // 현재 화면에 떠 있는 3개의 카드 정보
     private List<EnchantCandidate> _currentChoices;
@@ -43,7 +44,8 @@ public class EnchantSelectPresenter
         _repo = repo;
         _navigator = navigator;
         _changePresenter = changePresenter;
-        _baseRerollCount = Mathf.Max(0, rerollCount);
+        _unlimitedReroll = rerollCount < 0;                                 // -1 = 무한(EnchantSelectView가 테스트2 씬 보고 결정)
+        _baseRerollCount = _unlimitedReroll ? 0 : Mathf.Max(0, rerollCount);
         _selector = new EnchantSelector(_repo, config);
 
         _view.OnChoiceSelected += HandleChoice;
@@ -69,9 +71,12 @@ public class EnchantSelectPresenter
     // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 EnchantSelector가 처리).
     private void HandleReroll()
     {
-        Debug.Log($"[Reroll] HandleReroll 진입 remaining={_rerollRemaining}");
-        if (_rerollRemaining <= 0) return;
-        _rerollRemaining--;
+        Debug.Log($"[Reroll] HandleReroll 진입 remaining={(_unlimitedReroll ? "무한" : _rerollRemaining.ToString())}");
+        if (!_unlimitedReroll)
+        {
+            if (_rerollRemaining <= 0) return;
+            _rerollRemaining--;
+        }
         _currentChoices = _selector.GenerateChoices(_model, _pickCount);
         DisplayChoicesToView();
     }
@@ -101,7 +106,8 @@ public class EnchantSelectPresenter
         }
         
         _view.SetChoices(displayData);
-        _view.SetRerollAvailable(_baseRerollCount > 0, _rerollRemaining);
+        // 무한(테스트2 씬)이면 항상 사용 가능 + 남은 횟수 -1(View에서 ∞ 표시).
+        _view.SetRerollAvailable(_unlimitedReroll || _baseRerollCount > 0, _unlimitedReroll ? -1 : _rerollRemaining);
     }
 
     // ---------- 유저 클릭 처리 ----------

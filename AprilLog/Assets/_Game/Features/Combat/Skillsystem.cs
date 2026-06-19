@@ -296,7 +296,12 @@ public class SkillSystem : MonoBehaviour
         Vector2 fixedCenter = default;
         if (cfg.placement == HazardPlacement.NearestTarget)
         {
-            if (!_monsterSpawner.TryFindAttackTarget(_firePoint.position, out MonsterAI t))
+            // 벼락(404)은 엘리트/보스 우선 타겟, 그 외는 최단거리 (기획 4-4)
+            MonsterAI t;
+            bool found = data.StandardID == 404
+                ? _monsterSpawner.TryFindPriorityTarget(_firePoint.position, out t)
+                : _monsterSpawner.TryFindAttackTarget(_firePoint.position, out t);
+            if (!found)
                 yield break;
             fixedCenter = t.transform.position;
         }
@@ -379,9 +384,10 @@ public class SkillSystem : MonoBehaviour
             }
             else
             {
-                DealHazardDamage(data, center, sizeWorld);
-                // 대지 균열은 7열 크랙 행 / 번개 단발(벼락·뇌격)은 실제 VFX 단발 / 그 외는 기존 플래시.
-                if (cfg.placement == HazardPlacement.PlayerFront)
+                DealHazardDamage(data, center, sizeWorld, i == pulses - 1); // 돌풍(303): 마지막 펄스=폭발+넉백
+                // 대지 균열(StandardID 104)만 7열 크랙 행 / 번개 단발(벼락·뇌격)은 실제 VFX 단발 / 그 외는 기존 플래시.
+                // (PlayerFront를 쓰는 물·얼음 골격 스킬 — 급류 203·파도소환 204·마칭아이스 501 — 은 불 크랙 대신 자기 색 플래시로 폴백)
+                if (cfg.placement == HazardPlacement.PlayerFront && data.StandardID == 104)
                     SpawnEarthCrackRow(center, sizeWorld);
                 else if (TryGetLightningVfx(data, out GameObject lvfx, out float lscale))
                 {
@@ -595,7 +601,8 @@ public class SkillSystem : MonoBehaviour
         if (vfx != null) Destroy(vfx);
     }
 
-    // 방전 시퀀스 (기획 v2.02 4-3): 타겟 위치에 가운데 번개막 + 양옆(±offset) 구슬 2개를 깔고, 지속시간 동안 데미지 → 종료 후 전부 삭제.
+    // 방전 (기획 v2.02 4-3): 타겟 위치에 가로로 넓은 전기 장판(피격 1440×200).
+    // 방전 (기획 4-3): 타겟 위치에 CFXR 번개막(가운데) + 양옆 구슬 2개를 깔고 지속 → 0.5초마다 데미지, 첫 피격 몬스터 슬로우.
     private System.Collections.IEnumerator LightningDischargeRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
     {
         var lib = LightningVfx;
@@ -606,15 +613,28 @@ public class SkillSystem : MonoBehaviour
             barrier = SpawnVfx(lib.dischargeBarrier, center, lib.dischargeScale, 52);
             orbL = SpawnVfx(lib.dischargeOrb, center + new Vector2(-side, 0f), lib.dischargeOrbScale, 53);
             orbR = SpawnVfx(lib.dischargeOrb, center + new Vector2(side, 0f), lib.dischargeOrbScale, 53);
-            if (lib.dischargeConnector != null) // 밑 전기선 연결점 (에디터에서 드래그하면 표시)
+            if (lib.dischargeConnector != null)
                 connector = SpawnVfx(lib.dischargeConnector, center + new Vector2(0f, PxToWorld(lib.dischargeConnectorYOffsetPx)), lib.dischargeConnectorScale, 51);
         }
         if (barrier == null && orbL == null)
             SpawnHazardFlash(center, sizeWorld, new Color(0.8f, 0.7f, 1f, 0.35f)); // VFX 미연결 폴백
 
+        // 기획 2-2: 이 스킬에 '처음 피해를 입은' 몬스터만 슬로우(Lv3일수록 길게). slowed로 첫 피격 추적.
+        var slowed = new HashSet<MonsterAI>();
+        float slowDur = 1.0f + 0.5f * Mathf.Clamp(data.Level, 1, 3); // Lv1 1.5 / Lv2 2.0 / Lv3 2.5초
+
         for (int i = 0; i < pulses; i++)
         {
             DealHazardDamage(data, center, sizeWorld);
+
+            // 이번 펄스에 맞은 몬스터(_hazardHitBuffer) 중 첫 피격자만 슬로우 (50%)
+            for (int b = 0; b < _hazardHitBuffer.Count; b++)
+            {
+                MonsterAI hm = _hazardHitBuffer[b];
+                if (hm != null && slowed.Add(hm))
+                    hm.ApplySlow(0.5f, slowDur);
+            }
+
             if (i < pulses - 1)
                 yield return new WaitForSeconds(interval);
         }
@@ -631,55 +651,144 @@ public class SkillSystem : MonoBehaviour
     {
         var lib = LightningVfx;
         int maxTargets = (lib != null && lib.chainMaxTargets > 0) ? lib.chainMaxTargets : 5;
-        float hopDelay = (lib != null && lib.chainHopDelay > 0f) ? lib.chainHopDelay : 0.07f;
 
-        // 체인 구성: 첫 타겟에서 시작해 가장 가까운 미방문 몬스터로 순차 연결
+        // 기획 2-1: 랜덤 타겟에서 시작해 가장 가까운 미방문 몬스터로 순차 연결 (최대 5마리)
         var visited = new HashSet<MonsterAI>();
         var chainTargets = new List<MonsterAI>();
-        MonsterAI nextM = FindNearestAliveMonster(firstTarget, null);
+        if (!TryPickRandomAliveMonster(out MonsterAI startM)) yield break;
+        MonsterAI nextM = startM;
         while (nextM != null && chainTargets.Count < maxTargets)
         {
             visited.Add(nextM);
             chainTargets.Add(nextM);
             nextM = FindNearestAliveMonster(nextM.transform.position, visited);
         }
-        if (chainTargets.Count == 0)
-        {
-            SpawnHazardFlash(firstTarget, sizeWorld, new Color(0.9f, 0.85f, 1f, 0.4f)); // 몬스터 없음 폴백
-            yield break;
-        }
 
-        int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
+        int hits = Mathf.Max(1, pulses);   // 기획: 5마리에게 4회 대미지 (pulses=PelletCount=4)
         var spawned = new List<GameObject>();
-        Vector2 prev = _firePoint != null ? (Vector2)_firePoint.position : firstTarget;
 
-        // 에이프릴→1→2→3… 한 칸씩 전기줄이 이어지며 각 타겟 직격
-        for (int i = 0; i < chainTargets.Count; i++)
+        // pulses회(4) 반복: 매 펄스마다 에이프릴→체인 구간을 CFXR 번개막(chainBolt)으로 잇고(구간별 회전) 살아있는 타겟에 데미지.
+        for (int p = 0; p < hits; p++)
         {
-            MonsterAI m = chainTargets[i];
-            if (m == null || !m.gameObject.activeInHierarchy) continue;
-            Vector2 pos = m.transform.position;
-            Vector2 dir = pos - prev;
-            float angleDeg = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
 
-            if (lib != null && lib.chainBolt != null)
+            // 이전 펄스 VFX 정리 후 이번 펄스 새로 (펄스마다 다시 그어짐 = 지직)
+            for (int s = 0; s < spawned.Count; s++) if (spawned[s] != null) Destroy(spawned[s]);
+            spawned.Clear();
+
+            Vector2 prev = _firePoint != null ? (Vector2)_firePoint.position : firstTarget;
+            for (int i = 0; i < chainTargets.Count; i++)
             {
-                var bolt = SpawnVfx(lib.chainBolt, (prev + pos) * 0.5f, lib.chainScale, 52); // 직전 지점→타겟 전기줄 세그먼트
-                if (bolt != null) { ApplyParticleRotation(bolt, angleDeg + lib.chainBoltRotationTrimDeg); spawned.Add(bolt); }
+                MonsterAI m = chainTargets[i];
+                if (m == null || !m.gameObject.activeInHierarchy) continue;
+                Vector2 pos = m.transform.position;
+                Vector2 dir = pos - prev;
+                float angleDeg = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+                if (lib != null && lib.chainBolt != null)
+                {
+                    var bolt = SpawnVfx(lib.chainBolt, (prev + pos) * 0.5f, lib.chainScale, 52); // 직전 지점→타겟 전기줄 세그먼트
+                    if (bolt != null) { ApplyParticleRotation(bolt, angleDeg + lib.chainBoltRotationTrimDeg); spawned.Add(bolt); }
+                }
+                if (lib != null && lib.chainHitEffect != null)
+                {
+                    var hit = SpawnVfx(lib.chainHitEffect, pos, lib.chainHitScale, 53); // 몬스터 몸체 타격 이펙트
+                    if (hit != null) spawned.Add(hit);
+                }
+                m.TakeDamage(damage, data.StandardID);   // 타겟 직격 + 정산 인챈트별 최고뎀 기록
+                prev = pos;
             }
-            if (lib != null && lib.chainHitEffect != null)
-            {
-                var hit = SpawnVfx(lib.chainHitEffect, pos, lib.chainHitScale, 53); // 몬스터 몸체 타격 이펙트
-                if (hit != null) spawned.Add(hit);
-            }
-            m.TakeDamage(damage);   // 타겟 직격 (테이블: 사슬 = 면적 없는 타겟 직격)
-            prev = pos;
-            yield return new WaitForSeconds(hopDelay);   // 다다닥
+
+            if (p < hits - 1)
+                yield return new WaitForSeconds(interval);
         }
 
         yield return new WaitForSeconds(0.25f);
-        for (int i = 0; i < spawned.Count; i++)
-            if (spawned[i] != null) Destroy(spawned[i]);
+        for (int s = 0; s < spawned.Count; s++)
+            if (spawned[s] != null) Destroy(spawned[s]);
+    }
+
+    // ===== 번개 줄(LineRenderer) VFX — CFXR 프리팹 의존 없이 코드로 100% 제어 (사슬·방전 공용) =====
+    private Material _lightningMat;
+    private Material GetLightningMaterial()
+    {
+        if (_lightningMat == null)
+        {
+            Shader sh = Shader.Find("Sprites/Default");           // URP·기본 둘 다 존재, 정점색(LineRenderer 색) 지원
+            if (sh == null) sh = Shader.Find("Universal Render Pipeline/Unlit");
+            if (sh == null) sh = Shader.Find("Unlit/Color");
+            _lightningMat = new Material(sh);
+        }
+        return _lightningMat;
+    }
+
+    /// <summary>점들을 지그재그(번개)로 잇는 LineRenderer 1개 생성. 크기/위치는 인자 그대로 — 프리팹 스케일 함정 없음. 자동 삭제 안 함(호출부가 FadeOutAndDestroy 등으로 관리).</summary>
+    private GameObject SpawnLightningLine(IReadOnlyList<Vector2> points, Color color, float width, int sortingOrder, int subdivPerSegment, float jaggedAmplitude)
+    {
+        if (points == null || points.Count < 2) return null;
+
+        var go = new GameObject("LightningBolt");
+        var lr = go.AddComponent<LineRenderer>();
+        lr.useWorldSpace = true;
+        lr.sharedMaterial = GetLightningMaterial();   // material(인스턴스화) 대신 공유 — 누수 방지
+        lr.textureMode = LineTextureMode.Stretch;
+        lr.numCapVertices = 2;
+        lr.numCornerVertices = 2;
+        lr.startWidth = width;
+        lr.endWidth = width;
+        lr.startColor = color;
+        lr.endColor = color;
+        lr.sortingOrder = sortingOrder;
+        lr.alignment = LineAlignment.View;
+
+        var verts = BuildJaggedPath(points, subdivPerSegment, jaggedAmplitude);
+        lr.positionCount = verts.Count;
+        for (int i = 0; i < verts.Count; i++) lr.SetPosition(i, verts[i]);
+        return go;
+    }
+
+    // 각 구간을 subdiv 등분하고 중간점을 진행축 수직으로 흔들어 번개 모양. 끝점 근처(taper)는 안 흔들어 타겟/끝에 정확히 닿게 한다.
+    private static List<Vector3> BuildJaggedPath(IReadOnlyList<Vector2> pts, int subdiv, float amp)
+    {
+        var outv = new List<Vector3>();
+        if (subdiv < 1) subdiv = 1;
+        for (int i = 0; i < pts.Count - 1; i++)
+        {
+            Vector2 a = pts[i], b = pts[i + 1];
+            Vector2 d = b - a;
+            float len = d.magnitude;
+            Vector2 n = len > 0.0001f ? new Vector2(-d.y, d.x) / len : Vector2.up; // 진행축 수직
+            outv.Add(a);
+            for (int k = 1; k < subdiv; k++)
+            {
+                float t = k / (float)subdiv;
+                float taper = Mathf.Sin(t * Mathf.PI); // 양 끝 0, 가운데 1
+                Vector2 mid = Vector2.Lerp(a, b, t) + n * (Random.Range(-amp, amp) * taper);
+                outv.Add(mid);
+            }
+        }
+        outv.Add(pts[pts.Count - 1]);
+        return outv;
+    }
+
+    // 번개줄을 hold초 유지 후 fade초 동안 알파 0으로 페이드 → 삭제.
+    private System.Collections.IEnumerator FadeOutAndDestroy(GameObject go, float hold, float fade)
+    {
+        if (go == null) yield break;
+        if (hold > 0f) yield return new WaitForSeconds(hold);
+
+        var lr = go != null ? go.GetComponent<LineRenderer>() : null;
+        Color baseColor = lr != null ? lr.startColor : Color.white;
+        float t = 0f;
+        while (t < fade && go != null && lr != null)
+        {
+            t += Time.deltaTime;
+            float a = Mathf.Lerp(baseColor.a, 0f, t / fade);
+            Color c = baseColor; c.a = a;
+            lr.startColor = c; lr.endColor = c;
+            yield return null;
+        }
+        if (go != null) Destroy(go);
     }
 
     // 살아있는 몬스터 중 from에서 가장 가까운 1마리 (exclude 제외). 체인 라이트닝 연결용.
@@ -805,7 +914,7 @@ public class SkillSystem : MonoBehaviour
         return go;
     }
 
-    private void DealHazardDamage(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld)
+    private void DealHazardDamage(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, bool finalPulse = false)
     {
         float temp = _combatSystem.CalculateDamage(data.DmgRate);
         int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
@@ -825,7 +934,19 @@ public class SkillSystem : MonoBehaviour
         }
 
         for (int i = 0; i < _hazardHitBuffer.Count; i++)
-            _hazardHitBuffer[i].TakeDamage(damage);
+        {
+            MonsterAI m = _hazardHitBuffer[i];
+            m.TakeDamage(damage, data.StandardID);   // 데미지 + 정산 인챈트별 최고뎀 기록
+
+            // 바람 CC: 허리케인(304)=매 타격 슬로우(50%) / 돌풍(303)=마지막(폭발) 펄스에만 넉백(위로).
+            // 번개 CC: 벼락(404) Lv3=스턴(1.5초). 방전(403) 첫피격 슬로우는 LightningDischargeRoutine에서 처리.
+            if (data.StandardID == 304)
+                m.ApplySlow(0.5f, 1.0f);
+            else if (data.StandardID == 303 && finalPulse)
+                m.ApplyKnockback(Vector2.up * PxToWorld(600f), 0.2f);
+            else if (data.StandardID == 404 && data.Level >= 3)
+                m.ApplyStun(1.5f);
+        }
     }
 
     /// <summary>살아있는 몬스터 중 무작위 1마리. exclude에 든 몬스터는 피하되, 전부 제외되면(몬스터 부족) 중복 허용 폴백.</summary>
@@ -953,7 +1074,7 @@ public class SkillSystem : MonoBehaviour
         if (controller == null) return;
 
         float speed = data.Speed > 0 ? data.Speed : _basicProjectileSpeed;
-        controller.SetupStraight(damage, origin, target.transform.position, speed);
+        controller.SetupStraight(damage, origin, target.transform.position, speed, skillId: data.StandardID);
 
         // 정령이 시전하는 화염 작렬(StandardID 102)도 동일 스킨 적용 (기획 4-5: 정령 투사체는 화염 작렬 에셋 공유).
         if (data.StandardID == 102)
@@ -1002,8 +1123,19 @@ public class SkillSystem : MonoBehaviour
         float temp = _combatSystem.CalculateDamage(data.DmgRate);
         int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
 
-        if (!TryFindAttackTargetPosition(out Vector2 targetPos))
+        ResolveReferences();
+
+        // 템페스트(305)는 랜덤 타겟, 그 외는 최단거리 타겟 (기획: 템페스트=랜덤/관통/8히트)
+        Vector2 targetPos;
+        if (data.StandardID == 305)
+        {
+            if (_monsterSpawner == null || !TryPickRandomAliveMonster(out MonsterAI rt)) return;
+            targetPos = rt.transform.position;
+        }
+        else if (!TryFindAttackTargetPosition(out targetPos))
+        {
             return;
+        }
 
         var obj = PoolManager.Instance.Spawn("Projectile_Basic", _firePoint.position, Quaternion.identity);
         if (obj == null) return;
@@ -1013,8 +1145,19 @@ public class SkillSystem : MonoBehaviour
 
         float projectileSpeed = data.Speed > 0 ? data.Speed : _basicProjectileSpeed;
 
-        // 현재 플레이어 공격은 전부 직선 탄이다. 유도/관통탄이 필요할 때만 ProjectileController.Setup을 사용한다.
-        controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed);
+        // 관통 투사체: 바람 칼날(302, 이즈 궁식 느린 관통)·템페스트(305, 랜덤+관통+멀티히트).
+        // 관통 횟수=레벨별, 멀티히트(피격당 N회 대미지)=템페스트의 NumberOfCycle(8). data.Speed로 속도 제어.
+        bool pierce = data.StandardID == 302 || data.StandardID == 305;
+        int maxPierce = int.MaxValue;
+        int hitMul = 1;
+        int lv = Mathf.Clamp(data.Level, 1, 3);
+        if (data.StandardID == 302) maxPierce = 10 + 5 * lv;              // 바람칼날 관통 15/20/25
+        else if (data.StandardID == 305)
+        {
+            maxPierce = 6 + 2 * lv;                                       // 템페스트 관통 8/10/12
+            hitMul = data.NumberOfCycle > 0 ? data.NumberOfCycle : 1;     // 피격 시 8회 대미지
+        }
+        controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed, pierce, maxPierce, hitMul, data.StandardID);
 
         // 화염 작렬 계열(StandardID 102)만 Fireball_2_normal VFX 스킨 + 진행방향 회전. 기본공격/타 투사체는 사각형 유지.
         if (data.StandardID == 102)

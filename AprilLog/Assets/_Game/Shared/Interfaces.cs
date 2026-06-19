@@ -22,6 +22,7 @@ public interface IDamageable
     int CurrentHP { get; }
     int MaxHP { get; }
     void TakeDamage(int amount);
+    void TakeDamage(int amount, int skillId);   // skillId(StandardID): 정산 '인챈트별 최고뎀' 기록용. 0=미지정(기본공격 등)
     event Action<int, int> OnHPChanged;     // current, max
 }
 

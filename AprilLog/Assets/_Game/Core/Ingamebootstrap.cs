@@ -62,6 +62,7 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private int _defaultChapterId = 1;
 
     private GameObject _projectileTemplate;
+    private bool _settlementRewardGranted;   // 단계④: 정산 보상 중복 지급(재정산 중복가산) 방지 가드
 
     private void Start()
     {
@@ -276,9 +277,12 @@ public class InGameBootstrap : MonoBehaviour
         int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
         int maxDamage = RunStats.HighestDamage;
         
-        int enchantDamage1 = RunStats.HighestEnchantDamage1;
-        int enchantDamage2 = RunStats.HighestEnchantDamage2;
-        int enchantDamage3 = RunStats.HighestEnchantDamage1;
+        // 스킬(인챈트)별 단일타격 최고뎀 상위 3개. RunStats가 MonsterAI.TakeDamage(dmg, skillId)로 스킬ID별 기록.
+        // (.Key=StandardID로 어떤 인챈트인지도 알 수 있음 — 정산창에 이름 표시하려면 ResultPopup.Show에 ID 추가)
+        var topEnchants = RunStats.TopSkillsByDamage(3);
+        int enchantDamage1 = topEnchants.Count > 0 ? topEnchants[0].Value : 0;
+        int enchantDamage2 = topEnchants.Count > 1 ? topEnchants[1].Value : 0;
+        int enchantDamage3 = topEnchants.Count > 2 ? topEnchants[2].Value : 0;
 
         // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
         int gold = isVictory ? 100 : 0;
@@ -288,11 +292,13 @@ public class InGameBootstrap : MonoBehaviour
         int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
         int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
 
-        if (GameManager.Instance != null)
+        // 단계④: 같은 정산이 중복 발동돼도 보상은 한 번만 지급(재정산 중복가산 방지).
+        if (GameManager.Instance != null && !_settlementRewardGranted)
         {
             GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment);
+            _settlementRewardGranted = true;
         }
-        
+
         view.Show(isVictory, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, gold, parchment);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
@@ -375,6 +381,7 @@ public class InGameBootstrap : MonoBehaviour
         var gust = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 350, heightPx = 350, pulseInterval = 0.15f, flashColor = new Color(0.4f, 1f, 0.7f, 0.35f) };
         skillSystem.RegisterHazardSkill(3031, gust);
         skillSystem.RegisterHazardSkill(3032, gust);
+        gust.widthPx = 550; gust.heightPx = 550;   // 돌풍 Lv3 범위 증가 (기획 3-1-5-3)
         skillSystem.RegisterHazardSkill(3033, gust);
 
         // 허리케인 3041~43: 지속 장판 4초·0.5초틱(PelletCount 8). 슬로우 미구현. (기획상 화면중앙이나 우선 최단거리)
@@ -387,21 +394,22 @@ public class InGameBootstrap : MonoBehaviour
         var orbLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningHeld, widthPx = 350, heightPx = 350, pulseInterval = 0.25f, flashColor = new Color(1f, 0.95f, 0.3f, 0.4f) };
         skillSystem.RegisterHazardSkill(4011, orbLightning);
         skillSystem.RegisterHazardSkill(4012, orbLightning);
+        orbLightning.widthPx = 450; orbLightning.heightPx = 450;   // 구형번개 Lv3 범위 증가 (기획 1-1-5-3)
         skillSystem.RegisterHazardSkill(4013, orbLightning);
 
-        // 방전 4031~33: 최단거리 장판 5초·0.5초틱(PelletCount 10). 가운데 번개막 + 양옆 구슬 2개 지속(LightningDischarge)·피격 1440×200 (기획 v2.02 4-3). 슬로우 미구현.
+        // 방전 4031~33: 최단거리 장판 5초·0.5초틱(PelletCount 10)·피격 1440×200 (기획 4-3). LineRenderer 번개줄. 첫 피격 몬스터 슬로우(Lv3 지속↑) 구현.
         var discharge = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningDischarge, widthPx = 1440, heightPx = 200, pulseInterval = 0.5f, flashColor = new Color(0.8f, 0.7f, 1f, 0.35f) };
         skillSystem.RegisterHazardSkill(4031, discharge);
         skillSystem.RegisterHazardSkill(4032, discharge);
         skillSystem.RegisterHazardSkill(4033, discharge);
 
-        // 사슬 번개 4021~23 (조합): 에이프릴→타겟 전기선(몸체) + 몬스터 몸체 타격 이펙트(LightningChain)·4히트·피격 700×200 (기획 v2.02 4-2). 5타겟 체인·거리 신축 미구현 — 단일 타겟.
+        // 사슬 번개 4021~23 (조합): 랜덤 시작→가까운 적 순차 연결 최대 5마리, 4회 반복 타격(PelletCount 4)·LineRenderer 번개줄 (기획 4-2). 5마리×4회 구현.
         var chainLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningChain, widthPx = 700, heightPx = 200, pulseInterval = 0.375f, flashColor = new Color(0.9f, 0.85f, 1f, 0.4f) };
         skillSystem.RegisterHazardSkill(4021, chainLightning);
         skillSystem.RegisterHazardSkill(4022, chainLightning);
         skillSystem.RegisterHazardSkill(4023, chainLightning);
 
-        // 벼락 4041~43: 최단거리 정사각 낙뢰 4히트(PelletCount 4). 실제 VFX(Lightning_Big) 단발·피격 675×675 (기획 450×450 +50% 요청). 스턴·엘리트우선 미구현.
+        // 벼락 4041~43: 엘리트/보스 우선 타겟(없으면 최단거리) 정사각 낙뢰 4히트(PelletCount 4). 실제 VFX(Lightning_Big)·피격 675×675 (기획 450×450 +50% 요청). Lv3 스턴(1.5초) 구현.
         var thunderbolt = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 675, heightPx = 675, pulseInterval = 0.1f, flashColor = new Color(1f, 0.9f, 0.4f, 0.45f) };
         skillSystem.RegisterHazardSkill(4041, thunderbolt);
         skillSystem.RegisterHazardSkill(4042, thunderbolt);
@@ -412,6 +420,70 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(4051, thunderStrike);
         skillSystem.RegisterHazardSkill(4052, thunderStrike);
         skillSystem.RegisterHazardSkill(4053, thunderStrike);
+
+        // ===== 물 속성 장판 (골격 — placeholder VFX=색 사각형(파랑). 데미지/판정/발동만. 슬로우(13002)·착탄 투사체·이동장판은 폴리싱) =====
+        Color waterFlash = new Color(0.2f, 0.5f, 1f, 0.4f);
+        // 물 폭탄 2011~13 (일반): 최단거리 착탄 장판 250×250, 1히트. 슬로우 미구현. (착탄 투사체 연출은 폴리싱)
+        var waterBomb = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 250, heightPx = 250, pulseInterval = 0.2f, flashColor = waterFlash };
+        skillSystem.RegisterHazardSkill(2011, waterBomb);
+        skillSystem.RegisterHazardSkill(2012, waterBomb);
+        skillSystem.RegisterHazardSkill(2013, waterBomb);
+
+        // 탄환 세례 2021~23 (조합): 최단거리 광역 장판 600×700, 1/1/2히트(PelletCount). 도트·슬로우 미구현.
+        var bulletShower = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 600, heightPx = 700, pulseInterval = 0.15f, flashColor = waterFlash };
+        skillSystem.RegisterHazardSkill(2021, bulletShower);
+        skillSystem.RegisterHazardSkill(2022, bulletShower);
+        skillSystem.RegisterHazardSkill(2023, bulletShower);
+
+        // 급류 2031~33 (조합): 전방 전체 폭 띠 장판 1440×250, 4히트 순차 전진(PlayerFront).
+        var torrent = new HazardConfig { placement = HazardPlacement.PlayerFront, widthPx = 1440, heightPx = 250, pulseInterval = 0.4f, flashColor = waterFlash };
+        skillSystem.RegisterHazardSkill(2031, torrent);
+        skillSystem.RegisterHazardSkill(2032, torrent);
+        skillSystem.RegisterHazardSkill(2033, torrent);
+
+        // 파도 소환 2041~43 (콤보): 전방 단발 장판 400×250. 이동장판(Speed 600)은 폴리싱 — 현재 정적 전방 배치.
+        var waveSummon = new HazardConfig { placement = HazardPlacement.PlayerFront, widthPx = 400, heightPx = 250, pulseInterval = 0.2f, flashColor = waterFlash };
+        skillSystem.RegisterHazardSkill(2041, waveSummon);
+        skillSystem.RegisterHazardSkill(2042, waveSummon);
+        skillSystem.RegisterHazardSkill(2043, waveSummon);
+
+        // 하이드로 펌프 2051~53 (콤보): 플레이어 세로 직사각 장판 300×1600(PlayerColumn). 지속(Hit_Duration 2s)은 폴리싱 — 현재 단발.
+        var hydroPump = new HazardConfig { placement = HazardPlacement.PlayerColumn, widthPx = 300, heightPx = 1600, pulseInterval = 0.2f, flashColor = waterFlash };
+        skillSystem.RegisterHazardSkill(2051, hydroPump);
+        skillSystem.RegisterHazardSkill(2052, hydroPump);
+        skillSystem.RegisterHazardSkill(2053, hydroPump);
+
+        // ===== 얼음 속성 장판 (골격 — placeholder VFX=색 사각형(하늘). 데미지/판정/발동만. 빙결/슬로우 CC·이동장판은 폴리싱) =====
+        // 글레이셜 피어스 5021~23(조합)은 투사체(piercing)라 기본 투사체 경로 — 여기 등록 안 함.
+        Color iceFlash = new Color(0.6f, 0.9f, 1f, 0.4f);
+        // 마칭 아이스 5011~13 (일반): 전방 전진 장판 100×100, 6/7/8펄스(PelletCount)로 한 칸씩 전진(PlayerFront).
+        var marchingIce = new HazardConfig { placement = HazardPlacement.PlayerFront, widthPx = 100, heightPx = 100, pulseInterval = 0.2f, flashColor = iceFlash };
+        skillSystem.RegisterHazardSkill(5011, marchingIce);
+        skillSystem.RegisterHazardSkill(5012, marchingIce);
+        skillSystem.RegisterHazardSkill(5013, marchingIce);
+
+        // 빙결 지대 5031~33 (조합): 최단거리 장판 400×400(Lv3 550×550), 1히트. 빙결 CC 미구현.
+        var freezeZone = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 400, heightPx = 400, pulseInterval = 0.2f, flashColor = iceFlash };
+        skillSystem.RegisterHazardSkill(5031, freezeZone);
+        skillSystem.RegisterHazardSkill(5032, freezeZone);
+        freezeZone.widthPx = 550; freezeZone.heightPx = 550;
+        skillSystem.RegisterHazardSkill(5033, freezeZone);
+
+        // 얼음 결정 5041~43 (콤보): 랜덤 타겟 단발 장판 350/400/450. 이동장판(Speed 300)·슬로우는 폴리싱.
+        var iceCrystal = new HazardConfig { placement = HazardPlacement.RandomTarget, widthPx = 350, heightPx = 350, pulseInterval = 0.2f, flashColor = iceFlash };
+        skillSystem.RegisterHazardSkill(5041, iceCrystal);
+        iceCrystal.widthPx = 400; iceCrystal.heightPx = 400;
+        skillSystem.RegisterHazardSkill(5042, iceCrystal);
+        iceCrystal.widthPx = 450; iceCrystal.heightPx = 450;
+        skillSystem.RegisterHazardSkill(5043, iceCrystal);
+
+        // 절대영도 5051~53 (콤보): 최단거리 대형 장판 650×450 / 750×500 / 850×550, 1히트. 빙결 CC 미구현.
+        var absoluteZero = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 650, heightPx = 450, pulseInterval = 0.2f, flashColor = iceFlash };
+        skillSystem.RegisterHazardSkill(5051, absoluteZero);
+        absoluteZero.widthPx = 750; absoluteZero.heightPx = 500;
+        skillSystem.RegisterHazardSkill(5052, absoluteZero);
+        absoluteZero.widthPx = 850; absoluteZero.heightPx = 550;
+        skillSystem.RegisterHazardSkill(5053, absoluteZero);
 
         // 화염 정령 1031~33: 정령 2마리가 같은 레벨의 화염 작렬을 1초마다 5초간 시전
         for (int lv = 1; lv <= 3; lv++)

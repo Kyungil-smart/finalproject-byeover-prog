@@ -289,6 +289,23 @@ public class MonsterSpawner : MonoBehaviour
         return target != null;
     }
 
+    /// <summary>엘리트/보스 우선 타겟팅 (번개 벼락 404). 살아있는 보스가 있으면 그 중 최단거리, 없으면 일반 최단거리.
+    /// (현재 Elite/Boss 모두 isBoss=true로 스폰되므로 사실상 '엘리트·보스 우선'.)</summary>
+    public bool TryFindPriorityTarget(Vector2 from, out MonsterAI target)
+    {
+        target = null;
+        float bestSq = float.MaxValue;
+        for (int i = 0; i < _aliveMonsters.Count; i++)
+        {
+            MonsterAI m = _aliveMonsters[i];
+            if (m == null || !m.gameObject.activeInHierarchy || !m.IsBoss) continue;
+            float sq = ((Vector2)m.transform.position - from).sqrMagnitude;
+            if (sq < bestSq) { bestSq = sq; target = m; }
+        }
+        if (target != null) return true;
+        return TryFindAttackTarget(from, out target);   // 보스 없으면 최단거리
+    }
+
     /// <summary>
     /// 살아있는 몬스터 읽기 전용 목록 (장판/광역 스킬 판정용).
     /// 항목이 null이거나 비활성일 수 있으므로 호출 측에서 거를 것.
