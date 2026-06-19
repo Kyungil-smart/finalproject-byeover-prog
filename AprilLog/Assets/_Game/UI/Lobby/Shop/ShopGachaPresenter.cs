@@ -33,11 +33,15 @@ public class ShopGachaPresenter : MonoBehaviour
     [SerializeField] private GameObject _singleResultPopup;
     [Tooltip("미리 배치해 둔 1회 결과 슬롯(1칸)")]
     [SerializeField] private GachaResultSlotView[] _singleSlots;
+    [Tooltip("POPUP_OnceGacha 의 자동 분해 보상 표시(RewardPreviewSlot). 선택.")]
+    [SerializeField] private GachaDecomposeRewardView _singleDecomposeView;
 
     [Header("10회 결과창")]
     [SerializeField] private GameObject _tenResultPopup;
     [Tooltip("미리 배치해 둔 10회 결과 슬롯(10칸)")]
     [SerializeField] private GachaResultSlotView[] _tenSlots;
+    [Tooltip("POPUP_TenGacha 의 자동 분해 보상 표시(RewardPreviewSlot 2개). 선택.")]
+    [SerializeField] private GachaDecomposeRewardView _tenDecomposeView;
 
     [Header("재화 부족 팝업")]
     [SerializeField] private GameObject _insufficientPopup;
@@ -45,8 +49,10 @@ public class ShopGachaPresenter : MonoBehaviour
     [Header("뽑기 후처리 / 결과 팝업")]
     [Tooltip("획득 반영·등급별 한도·자동 분해·누적 보상 처리를 담당. 비우면 폴백으로 단순 보유 추가만 한다.")]
     [SerializeField] private ArtifactGachaPostProcessor _postProcessor;
-    [Tooltip("메인 복귀 시 자동분해/누적보상 팝업을 순차 출력하는 큐(선택).")]
+    [Tooltip("메인 복귀 시 누적 보상 팝업을 순차 출력하는 큐(선택).")]
     [SerializeField] private ArtifactGachaPopupQueue _popupQueue;
+    [Tooltip("레전더리 확정(천장) 안내 표시(Confirmed Gacha Information). 선택.")]
+    [SerializeField] private GachaPityInfoView _pityInfoView;
 
     private const int TenDrawCount = 10;
 
@@ -61,10 +67,32 @@ public class ShopGachaPresenter : MonoBehaviour
     // ---------- 버튼 진입점 ----------
 
     // 메인 상점의 1회 뽑기 버튼 OnClick 에 연결
-    public void OnClickSingleDraw() => TryDraw(1, _singleResultPopup, _singleSlots);
+    public void OnClickSingleDraw() => TryDraw(1, _singleResultPopup, _singleSlots, _singleDecomposeView);
 
     // 메인 상점의 10회 뽑기 버튼 OnClick 에 연결
-    public void OnClickTenDraw() => TryDraw(TenDrawCount, _tenResultPopup, _tenSlots);
+    public void OnClickTenDraw() => TryDraw(TenDrawCount, _tenResultPopup, _tenSlots, _tenDecomposeView);
+
+    // 가챠 종류 전환(탭/선택 버튼 OnClick 에 가챠 ID 를 정적 인자로 연결).
+    // 전환 후 천장 안내를 해당 가챠 기준으로 갱신한다.
+    public void SetActiveGacha(int gachaId)
+    {
+        _gachaId = gachaId;
+        if (_pityInfoView != null) _pityInfoView.Refresh(_gachaId);
+    }
+
+    // [프리젠터 1개 공유 방식용] 버튼 OnClick 에 가챠 ID(1/2/3)를 정적 인자로 넘겨 그 가챠를 1회/10회 뽑는다.
+    // (가챠별 프리젠터를 따로 두는 방식이면 이 두 메서드는 안 써도 된다.)
+    public void DrawSingle(int gachaId)
+    {
+        SetActiveGacha(gachaId);
+        OnClickSingleDraw();
+    }
+
+    public void DrawTen(int gachaId)
+    {
+        SetActiveGacha(gachaId);
+        OnClickTenDraw();
+    }
 
     // 결과창 확인 버튼 OnClick 에 연결 (두 결과창 모두 닫음)
     public void OnClickConfirm()
@@ -72,8 +100,8 @@ public class ShopGachaPresenter : MonoBehaviour
         if (_singleResultPopup != null) _singleResultPopup.SetActive(false);
         if (_tenResultPopup != null) _tenResultPopup.SetActive(false);
 
-        // 결과 확인 → 메인 화면 복귀 시점 : 대기 중인 자동 분해/누적 보상 팝업을 순차 출력한다.
-        // (뽑기 연출 도중에는 출력하지 않고, 여기서만 Flush)
+        // 결과 확인 → 메인 화면 복귀 시점 : 대기 중인 누적 보상 팝업을 순차 출력한다.
+        // (뽑기 연출/결과 확인 도중에는 출력하지 않고, 여기서만 Flush. 자동 분해 보상은 결과 팝업에 이미 표시됨)
         if (_popupQueue != null) _popupQueue.Flush();
     }
 
@@ -85,7 +113,7 @@ public class ShopGachaPresenter : MonoBehaviour
 
     // ---------- 핵심 로직 ----------
 
-    private void TryDraw(int count, GameObject resultPopup, GachaResultSlotView[] slots)
+    private void TryDraw(int count, GameObject resultPopup, GachaResultSlotView[] slots, GachaDecomposeRewardView decomposeView)
     {
         int cost = GetCost(count);
 
@@ -101,11 +129,40 @@ public class ShopGachaPresenter : MonoBehaviour
 
         FillSlots(slots, drawn);
 
+        // 획득 반영(한도/자동분해/누적보상). 다중 뽑기의 각 획득 건을 순차적으로 정확히 계산.
+        ArtifactGachaResult post = ProcessDraw(_gachaId, drawn);
+
+        // 자동 분해 보상 → 이 결과 팝업의 RewardPreviewSlot 에 표시(없으면 슬롯 전부 끔).
+        if (decomposeView != null)
+            decomposeView.Show(post.TotalStone, post.TotalShard);
+
+        // 누적 보상 → 결과 확인 후 메인 복귀 시점에 별도 팝업으로 출력하도록 큐에 적재.
+        if (_popupQueue != null)
+            _popupQueue.Enqueue(post);
+
+        // 천장 안내 갱신(레전더리 가챠에서만 표시됨).
+        if (_pityInfoView != null)
+            _pityInfoView.Refresh(_gachaId);
+
         if (resultPopup != null)
             resultPopup.SetActive(true);
     }
 
-    // 뽑기 실행 후 뽑힌 Gear_ID 목록을 반환한다.
+    // 뽑힌 Gear_ID 목록을 유저 데이터에 반영하고 자동분해/누적보상 결과를 돌려준다.
+    private ArtifactGachaResult ProcessDraw(int gachaId, List<int> drawn)
+    {
+        if (_postProcessor != null)
+            return _postProcessor.Process(gachaId, drawn);
+
+        // 폴백 : 후처리기 미연결 시 기존처럼 단순 보유 추가만 한다(자동분해/누적보상 미동작).
+        ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+        if (mgr != null && drawn != null)
+            foreach (int id in drawn) mgr.AddArtifact(id);
+
+        return new ArtifactGachaResult();
+    }
+
+    // 뽑기 실행 후 뽑힌 Gear_ID 목록을 반환한다(획득 반영은 ProcessDraw 에서 처리).
     //
     // [임시] GachaManager.ExecuteGacha 가 List<int> 를 반환하도록 바뀌면,
     // 아래 전체를 다음 한 줄로 교체
@@ -124,28 +181,21 @@ public class ShopGachaPresenter : MonoBehaviour
             return result;
         }
 
+        // 천장(레전더리 확정) : 레전더리 박스에서 누적 N번째 뽑기마다 레전더리 확정.
+        bool pityBox = box.PityType == "RandomLegendary" && box.PityCount > 0;
+        int preTotal = (pityBox && _postProcessor != null) ? _postProcessor.GetDrawTotal(gachaId) : 0;
+
         for (int i = 0; i < count; i++)
         {
-            string grade = DetermineGrade(box);
+            // 이번 뽑기의 누적 절대 횟수가 천장 배수면 레전더리 확정, 아니면 확률 추첨.
+            bool pityHit = pityBox && ((preTotal + i + 1) % box.PityCount == 0);
+            string grade = pityHit ? "Legendary" : DetermineGrade(box);
+
             int gearId = SelectRandomGearByGrade(grade);
             if (gearId == 0) continue;
 
             result.Add(gearId);
-            Debug.Log($"[ShopGachaPresenter] 가챠 성공! {grade} 등급 (ID: {gearId}) 획득");
-        }
-
-        // 획득 반영(등급별 최대 보유 한도 / 초과분 자동 분해 / 누적 보상)은 후처리기에 위임한다.
-        // 다중 뽑기의 각 획득 건을 순차적으로 정확히 계산하고, 결과를 큐에 누적해 둔다.
-        if (_postProcessor != null)
-        {
-            ArtifactGachaResult post = _postProcessor.Process(gachaId, result);
-            if (_popupQueue != null) _popupQueue.Enqueue(post);
-        }
-        else
-        {
-            // 폴백 : 후처리기 미연결 시 기존처럼 단순 보유 추가만 한다(자동분해/누적보상 미동작).
-            ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
-            foreach (int id in result) mgr?.AddArtifact(id);
+            Debug.Log($"[ShopGachaPresenter] 가챠 성공! {grade} 등급 (ID: {gearId}){(pityHit ? " [천장 확정]" : "")} 획득");
         }
 
         return result;
@@ -176,10 +226,10 @@ public class ShopGachaPresenter : MonoBehaviour
     }
 
     // 결과창 안의 '1회 더' 버튼 OnClick 에 연결 (같은 박스 재추첨)
-    public void OnClickRedrawSingle() => TryDraw(1, _singleResultPopup, _singleSlots);
+    public void OnClickRedrawSingle() => TryDraw(1, _singleResultPopup, _singleSlots, _singleDecomposeView);
 
     // 결과창 안의 '10회 더' 버튼 OnClick 에 연결
-    public void OnClickRedrawTen() => TryDraw(TenDrawCount, _tenResultPopup, _tenSlots);
+    public void OnClickRedrawTen() => TryDraw(TenDrawCount, _tenResultPopup, _tenSlots, _tenDecomposeView);
 
     private int GetCost(int count)
     {
