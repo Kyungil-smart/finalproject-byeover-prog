@@ -246,12 +246,19 @@ public class StageModel
             _currentSpecialRule = DataManager.Instance.StageRepo.GetSpecialWaveRuleForStage(_currentRule.SpecialWave_ID); 
 
             // 특수 웨이브 상태 초기화
-            float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? _currentSpecialRule.SpecialSpawnInterval : 3.0f; 
+            if (_currentSpecialRule != null)
+            {
+                float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? _currentSpecialRule.SpecialSpawnInterval : 3.0f; 
+                _specialSpawnTimer = spawnInterval;
+            }
+            else
+            {
+                _specialSpawnTimer = 0f;
+            }
             
             _isSpecialWaveTriggered = false;
             _isSpecialWaveFinished = false;
             _specialWaveActiveTimer = 0f;
-            _specialSpawnTimer = spawnInterval;
             _isBossKilled = false;
 
             // 웨이브 상태 변경 및 전파
