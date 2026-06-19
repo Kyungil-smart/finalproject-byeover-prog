@@ -16168,6 +16168,7 @@ GameObject:
   - component: {fileID: 3544994868143140203}
   - component: {fileID: 6127166714289819846}
   - component: {fileID: 9193627406476444550}
+  - component: {fileID: 6622571763060193611}
   m_Layer: 5
   m_Name: POPUP_ArtifactInfo
   m_TagString: Untagged
@@ -16256,6 +16257,19 @@ MonoBehaviour:
   _dim: {fileID: 8565200976944567810}
   _closeOnDimClick: 1
   _dimColor: {r: 0, g: 0, b: 0, a: 0.78}
+--- !u!114 &6622571763060193611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7678644333587232148}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da7c24ad740ae2941b1bcf8a1f6e369b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArtifactDetailPopup
+  _btnAction: {fileID: 6989405967932040562}
 --- !u!1 &7693506563145410504
 GameObject:
   m_ObjectHideFlags: 0
