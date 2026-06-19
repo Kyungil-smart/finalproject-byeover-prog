@@ -20,6 +20,12 @@ public class FireSkillVfxLibrary : ScriptableObject
     public float meteorBallScale = 1f;
     public float meteorExplosionScale = 1f;
 
+    [Header("기본공격 VFX (자동/소트 투사체 — NomalSkill 폴더)")]
+    [Tooltip("자동공격 투사체 VFX (AutoSkill Variant)")]
+    public GameObject autoAttackVfx;
+    [Tooltip("소트(정렬) 공격 투사체 VFX (SortSkill Variant)")]
+    public GameObject sortAttackVfx;
+
     [Tooltip("생성 구역(ellipse) 표시 후 낙하 시작까지 (예고 시간)")]
     public float meteorTelegraph = 0.5f;
     [Tooltip("몸체 낙하 시간")]
