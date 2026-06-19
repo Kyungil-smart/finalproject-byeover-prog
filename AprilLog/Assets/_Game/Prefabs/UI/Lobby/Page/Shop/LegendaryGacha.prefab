@@ -86,6 +86,7 @@ GameObject:
   - component: {fileID: 951590700034829645}
   - component: {fileID: 7516637303247174308}
   - component: {fileID: 6588812781332287191}
+  - component: {fileID: 3234652227512448342}
   m_Layer: 5
   m_Name: Confirmed Gacha Information
   m_TagString: Untagged
@@ -110,7 +111,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -35.5, y: -21.049805}
-  m_SizeDelta: {x: 527.2644, y: 80}
+  m_SizeDelta: {x: 718, y: 80}
   m_Pivot: {x: 1, y: 1}
 --- !u!222 &7516637303247174308
 CanvasRenderer:
@@ -212,6 +213,23 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &3234652227512448342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408587344164802092}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a76f1af7cf6e9340a259e6bf6b1d028, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GachaPityInfoView
+  _text: {fileID: 6588812781332287191}
+  _root: {fileID: 408587344164802092}
+  _postProcessor: {fileID: 0}
+  _gachaId: 3
+  _format: "{0}\uD68C \uBF51\uAE30 \uC2DC\uB3C4 \uC2DC \uB808\uC804\uB354\uB9AC \uD655\uC815!"
 --- !u!1 &657707639463187915
 GameObject:
   m_ObjectHideFlags: 0
@@ -484,7 +502,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 5581496602042186764}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 880318622473066334}
+        m_TargetAssemblyTypeName: ShopGachaPresenter, Assembly-CSharp
+        m_MethodName: DrawTen
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 3
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1889384866178099035
 GameObject:
   m_ObjectHideFlags: 0
@@ -1405,7 +1435,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1709189829955158765}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 880318622473066334}
+        m_TargetAssemblyTypeName: ShopGachaPresenter, Assembly-CSharp
+        m_MethodName: DrawSingle
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 3
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &3845737872023388073
 GameObject:
   m_ObjectHideFlags: 0
@@ -1808,6 +1850,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4968724540983124546}
+  - component: {fileID: 880318622473066334}
   m_Layer: 5
   m_Name: LegendaryGacha
   m_TagString: Untagged
@@ -1822,7 +1865,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7334485995277690282}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1836,6 +1879,46 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1248, y: 763}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &880318622473066334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7334485995277690282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad725525ae4284748b1f9541ff1bb130, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShopGachaPresenter
+  _gachaManager: {fileID: 0}
+  _currencyModel: {fileID: 0}
+  _gearTable: {fileID: 11400000, guid: 20a30195c23f49c4a9883b65fe9b55c4, type: 2}
+  _gachaId: 3
+  _costCurrency: 0
+  _singleCostFallback: 500
+  _tenCostFallback: 0
+  _singleResultPopup: {fileID: 0}
+  _singleSlots:
+  - {fileID: 0}
+  _singleDecomposeView: {fileID: 0}
+  _tenResultPopup: {fileID: 0}
+  _tenSlots:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  _tenDecomposeView: {fileID: 0}
+  _insufficientPopup: {fileID: 0}
+  _postProcessor: {fileID: 0}
+  _popupQueue: {fileID: 0}
+  _pityInfoView: {fileID: 3234652227512448342}
 --- !u!1 &8332136149206186252
 GameObject:
   m_ObjectHideFlags: 0

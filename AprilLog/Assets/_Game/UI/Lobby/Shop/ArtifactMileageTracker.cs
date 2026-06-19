@@ -11,6 +11,9 @@ public class ArtifactMileageTracker : MonoBehaviour
     [Tooltip("누적 보상 1회를 지급하는 뽑기 간격(기획 : 20회)")]
     [SerializeField] private int _stepSize = 20;
 
+    // 누적 보상 구간 간격(데이터 MileageCount 키 산출에 사용).
+    public int StepSize => _stepSize;
+
     private const string TotalKeyPrefix = "Artifact_Mileage_Total_";
     private const string RewardedStepKeyPrefix = "Artifact_Mileage_RewardedStep_";
 

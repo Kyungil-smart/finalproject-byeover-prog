@@ -19,18 +19,6 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
     [Tooltip("누적(마일리지) 보상 진행도 추적기")]
     [SerializeField] private ArtifactMileageTracker _mileageTracker;
 
-    [Header("누적 보상 화폐 매핑 (선택, 데이터 ItemMaster 의 아이템 ID)")]
-    [Tooltip("이 ID 와 같으면 누적 보상을 강화석으로 지급. 0 이면 미매핑.")]
-    [SerializeField] private int _upgradeStoneItemId = 0;
-    [Tooltip("이 ID 와 같으면 누적 보상을 레전더리 조각으로 지급. 0 이면 미매핑.")]
-    [SerializeField] private int _legendaryShardItemId = 0;
-    [Tooltip("CurrencyModel(골드/양피지). 누적 보상이 골드/양피지일 때 지급에 사용(선택).")]
-    [SerializeField] private CurrencyModel _currencyModel;
-    [Tooltip("이 ID 와 같으면 누적 보상을 골드로 지급. 0 이면 미매핑.")]
-    [SerializeField] private int _goldItemId = 0;
-    [Tooltip("이 ID 와 같으면 누적 보상을 양피지로 지급. 0 이면 미매핑.")]
-    [SerializeField] private int _parchmentItemId = 0;
-
     private ArtifactManager Manager =>
         _artifactManager != null
             ? _artifactManager
@@ -124,9 +112,35 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         return gradeData != null ? Mathf.Max(1, gradeData.MaxOwned) : 1;
     }
 
+    // 해당 가챠가 '레전더리 확정(천장)' 박스인지. 누적보상/천장 표시는 이 박스에서만 동작한다.
+    private bool IsLegendaryGacha(int gachaId)
+    {
+        GachaBoxData box = Repo != null ? Repo.GetGachaBox(gachaId) : null;
+        return box != null && box.PityType == "RandomLegendary" && box.PityCount > 0;
+    }
+
+    // 해당 가챠의 전체 누적 뽑기 횟수(레전더리 박스만 추적됨).
+    public int GetDrawTotal(int gachaId) =>
+        _mileageTracker != null ? _mileageTracker.GetTotalDrawCount(gachaId) : 0;
+
+    // 천장까지 남은 뽑기 횟수. 레전더리(천장) 가챠가 아니면 -1.
+    public int RemainingToPity(int gachaId)
+    {
+        GachaBoxData box = Repo != null ? Repo.GetGachaBox(gachaId) : null;
+        if (box == null || box.PityType != "RandomLegendary" || box.PityCount <= 0)
+            return -1;
+
+        int total = GetDrawTotal(gachaId);
+        return box.PityCount - (total % box.PityCount);
+    }
+
     private void ApplyMileage(int gachaId, int drawCount, ArtifactGachaResult result)
     {
         if (_mileageTracker == null || drawCount <= 0)
+            return;
+
+        // 누적(마일리지) 보상은 '레전더리(천장) 가챠'에서만 지급한다. 일반 가챠(1·2번)는 제외.
+        if (!IsLegendaryGacha(gachaId))
             return;
 
         int earned = _mileageTracker.RegisterDraws(gachaId, drawCount);
@@ -136,34 +150,69 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         result.MileageRewardCount = earned;
 
         GearRepo repo = Repo;
-        GachaRewardData reward = repo != null ? repo.GetGachaReward(gachaId) : null;
+        if (repo == null)
+            return;
+
+        // 보상 데이터(GachaReward)는 (Gacha_ID, MileageCount) 로 구간별로 분리되어 있고,
+        // 마지막 구간(Reset=true)을 지나면 다시 첫 구간부터 순환한다.
+        // 이번 뽑기로 도달한 '가장 최근 구간'의 MileageCount 키를 산출해 그 보상을 조회한다.
+        int milestone = ResolveMileageMilestone(repo, gachaId);
+        if (milestone <= 0)
+            return;
+
+        GachaRewardData reward = repo.GetGachaReward(gachaId, milestone);
         if (reward == null)
             return;
 
         result.MileageRewardItem = reward.FirstRewardItem;
         result.MileageRewardAmount = reward.FirstRewardAmount;
 
-        // 재화 지급(상태 저장)은 실제 뽑기 처리 시점에 즉시 수행한다(팝업과 분리)
-        GrantMileageCurrency(reward.FirstRewardItem, reward.FirstRewardAmount * earned);
+        // 누적 보상 아이템(데이터의 FirstRewardItem)은 뽑기권/랜덤기어보상/재료 등 아이템 타입이라,
+        // 현재 프로젝트엔 이를 지급할 공용 아이템/인벤토리 시스템이 없다. 지금은 결과 팝업에 '표시만' 한다.
+        // [지급 연결 지점] 아이템 지급 API 가 생기면 여기서 한 번만 호출한다. 예:
+        //   ItemInventory.Grant(reward.FirstRewardItem, reward.FirstRewardAmount * earned);
     }
 
-    // 누적 보상 화폐 지급. 인스펙터에 매핑된 아이템 ID 에 한해 실제 재화로 지급한다(미매핑이면 표시만)
-    private void GrantMileageCurrency(int itemId, int amount)
+    // 가챠별 마일리지 1사이클 누적 한도(데이터의 마지막 구간 = Reset 지점). 최초 1회만 데이터에서 산출해 캐시.
+    private readonly Dictionary<int, int> _mileageCycleCache = new Dictionary<int, int>();
+
+    // 현재 누적 뽑기 횟수로부터 이번에 도달한 마일리지 구간(데이터 MileageCount 키)을 계산한다.
+    // 마지막 구간을 지나면 다시 첫 구간부터 순환하므로, 누적 횟수를 1사이클 내 위치로 환산해 구간을 구한다.
+    private int ResolveMileageMilestone(GearRepo repo, int gachaId)
     {
-        if (itemId == 0 || amount <= 0)
-            return;
+        int stepSize = _mileageTracker.StepSize;
+        if (stepSize <= 0)
+            return 0;
 
-        ArtifactManager mgr = Manager;
+        int cycle = GetMileageCycle(repo, gachaId, stepSize);
+        if (cycle <= 0)
+            return 0;
 
-        if (_upgradeStoneItemId != 0 && itemId == _upgradeStoneItemId && mgr != null)
-            mgr.UpgradeStone += amount;
-        else if (_legendaryShardItemId != 0 && itemId == _legendaryShardItemId && mgr != null)
-            mgr.LegendaryShard += amount;
-        else if (_goldItemId != 0 && itemId == _goldItemId && _currencyModel != null)
-            _currencyModel.AddGold(amount);
-        else if (_parchmentItemId != 0 && itemId == _parchmentItemId && _currencyModel != null)
-            _currencyModel.AddParchment(amount);
-        else
-            Debug.LogWarning($"[ArtifactGachaPostProcessor] 누적 보상 아이템 ID {itemId} 매핑 미설정 → 표시만 하고 재화 미지급.");
+        // RegisterDraws 직후이므로 이번 뽑기가 반영된 누적 횟수다.
+        int totalAfter = _mileageTracker.GetTotalDrawCount(gachaId);
+        if (totalAfter <= 0)
+            return 0;
+
+        int within = ((totalAfter - 1) % cycle) + 1;                  // 1..cycle (사이클 내 위치)
+        return ((within - 1) / stepSize + 1) * stepSize;              // stepSize 단위 올림 → MileageCount 키
+    }
+
+    // 데이터에 정의된 마일리지 구간(stepSize 간격)을 훑어 1사이클 누적 한도(마지막 구간 = Reset 지점)를 구한다.
+    private int GetMileageCycle(GearRepo repo, int gachaId, int stepSize)
+    {
+        if (_mileageCycleCache.TryGetValue(gachaId, out int cached))
+            return cached;
+
+        int cycle = 0;
+        // 안전장치: 최대 100구간까지만 탐색(미정의 구간 1회 조회 시 GearRepo 경고 로그가 1번 남는다).
+        for (int m = stepSize; m <= stepSize * 100; m += stepSize)
+        {
+            if (repo.GetGachaReward(gachaId, m) == null)
+                break;
+            cycle = m;
+        }
+
+        _mileageCycleCache[gachaId] = cycle;
+        return cycle;
     }
 }
