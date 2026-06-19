@@ -28,7 +28,7 @@ public class GearRepo : MonoBehaviour
     private Dictionary<int, GachaBoxData> _gachas;
     private Dictionary<(int, string), FreeGachaBoxData> _freeGachas;
     private Dictionary<(int, int), PaidGachaBoxData> _paidGachas;
-    private Dictionary<int, GachaRewardData> _rewards;
+    private Dictionary<(int, int), GachaRewardData> _rewards;
     
     private Dictionary<int, GearMasterData> _gears;
     private Dictionary<int, GearLevelData> _levels;
@@ -65,7 +65,7 @@ public class GearRepo : MonoBehaviour
         _gachas = BuildDictionary(_gachaBoxTable, nameof(_gachaBoxTable), r => r.Gacha_ID);
         _freeGachas = BuildDictionary(_freeGachaBoxTable, nameof(_freeGachaBoxTable), r => (r.Gacha_ID,r.FreeDrawType));
         _paidGachas = BuildDictionary(_paidGachaBoxTable, nameof(_paidGachaBoxTable), r => (r.Gacha_ID,r.Count));
-        _rewards = BuildDictionary(_gachaRewardTable, nameof(_gachaRewardTable), r => r.Gacha_ID);
+        _rewards = BuildDictionary(_gachaRewardTable, nameof(_gachaRewardTable), r => (r.Gacha_ID, r.MileageCount));
     }
 
     private void GearDataInit()
@@ -88,7 +88,7 @@ public class GearRepo : MonoBehaviour
     public GachaBoxData GetGachaBox(int id) => GetData(_gachas, id, nameof(GetGachaBox));
     public FreeGachaBoxData GetFreeGachaBox(int id, string freeDrawType) => GetData(_freeGachas, (id , freeDrawType), nameof(GetFreeGachaBox));
     public PaidGachaBoxData GetPaidGachaBox(int id, int count) => GetData(_paidGachas, (id, count), nameof(GetPaidGachaBox));
-    public GachaRewardData GetGachaReward(int id) => GetData(_rewards, id, nameof(GetGachaReward));
+    public GachaRewardData GetGachaReward(int id, int mileageCount) => GetData(_rewards, (id, mileageCount), nameof(GetGachaReward));
     
     public GearMasterData GetGearData(int id) => GetData(_gears, id, nameof(GetGearData));
     public GearLevelData GetGearLevel(int id) => GetData(_levels, id, nameof(GetGearLevel));
