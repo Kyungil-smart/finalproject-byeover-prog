@@ -46,7 +46,7 @@ public class GachaResultSlotView : MonoBehaviour
         // 아이콘 (소스가 준비된 경우에만)
         if (_iconImage != null)
         {
-            Sprite icon = LoadIcon(gear.IconSprite);
+            Sprite icon = LoadIcon(gear.IconSpriteKey);
             _iconImage.sprite = icon;
             _iconImage.enabled = icon != null;
         }

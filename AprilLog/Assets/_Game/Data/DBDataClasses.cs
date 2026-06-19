@@ -63,7 +63,7 @@ public class ChangeRewardData
 /// <summary>
 /// 쳅터 ID와 설정 매칭<br/>
 /// Legacy에서 이관<br/>
-/// 최종 수정일 : 
+/// 최종 수정일 : 26.06.19
 /// </summary>
 [Serializable]
 public class ChapterData
@@ -72,8 +72,7 @@ public class ChapterData
     public int ChapterOrder;
     public int UnlockOutLevel;
     public int StageCount;
-    public int StoryStart;
-    public int StoryEnd;
+    public int StaminaCost;
     public int Name;            // FK -> MapLanguageData
     public int Explanation;     // FK -> MapLanguageData
 }
@@ -218,11 +217,11 @@ public class GearMasterData
     public int Special_ID; // 특수 능력치
     public int OwnedSpecial_ID; // 보유 특수 능력치
     public string GearGrade; // Rare, Epic, Legendary
-    public string IconSprite;
     public int MaxHPBaseAmount;
     public int AttackBaseAmount;
     public int GearName; // 기어이름 : 번역 연결용
     public int Explanation; // 기어 설명 : 번역 연결용
+    public string IconSpriteKey;
 }
 
 /// <summary>
