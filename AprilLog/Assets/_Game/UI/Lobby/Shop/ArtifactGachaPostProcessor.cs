@@ -150,7 +150,17 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         result.MileageRewardCount = earned;
 
         GearRepo repo = Repo;
-        GachaRewardData reward = repo != null ? repo.GetGachaReward(gachaId) : null;
+        if (repo == null)
+            return;
+
+        // 보상 데이터(GachaReward)는 (Gacha_ID, MileageCount) 로 구간별로 분리되어 있고,
+        // 마지막 구간(Reset=true)을 지나면 다시 첫 구간부터 순환한다.
+        // 이번 뽑기로 도달한 '가장 최근 구간'의 MileageCount 키를 산출해 그 보상을 조회한다.
+        int milestone = ResolveMileageMilestone(repo, gachaId);
+        if (milestone <= 0)
+            return;
+
+        GachaRewardData reward = repo.GetGachaReward(gachaId, milestone);
         if (reward == null)
             return;
 
@@ -161,5 +171,48 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         // 현재 프로젝트엔 이를 지급할 공용 아이템/인벤토리 시스템이 없다. 지금은 결과 팝업에 '표시만' 한다.
         // [지급 연결 지점] 아이템 지급 API 가 생기면 여기서 한 번만 호출한다. 예:
         //   ItemInventory.Grant(reward.FirstRewardItem, reward.FirstRewardAmount * earned);
+    }
+
+    // 가챠별 마일리지 1사이클 누적 한도(데이터의 마지막 구간 = Reset 지점). 최초 1회만 데이터에서 산출해 캐시.
+    private readonly Dictionary<int, int> _mileageCycleCache = new Dictionary<int, int>();
+
+    // 현재 누적 뽑기 횟수로부터 이번에 도달한 마일리지 구간(데이터 MileageCount 키)을 계산한다.
+    // 마지막 구간을 지나면 다시 첫 구간부터 순환하므로, 누적 횟수를 1사이클 내 위치로 환산해 구간을 구한다.
+    private int ResolveMileageMilestone(GearRepo repo, int gachaId)
+    {
+        int stepSize = _mileageTracker.StepSize;
+        if (stepSize <= 0)
+            return 0;
+
+        int cycle = GetMileageCycle(repo, gachaId, stepSize);
+        if (cycle <= 0)
+            return 0;
+
+        // RegisterDraws 직후이므로 이번 뽑기가 반영된 누적 횟수다.
+        int totalAfter = _mileageTracker.GetTotalDrawCount(gachaId);
+        if (totalAfter <= 0)
+            return 0;
+
+        int within = ((totalAfter - 1) % cycle) + 1;                  // 1..cycle (사이클 내 위치)
+        return ((within - 1) / stepSize + 1) * stepSize;              // stepSize 단위 올림 → MileageCount 키
+    }
+
+    // 데이터에 정의된 마일리지 구간(stepSize 간격)을 훑어 1사이클 누적 한도(마지막 구간 = Reset 지점)를 구한다.
+    private int GetMileageCycle(GearRepo repo, int gachaId, int stepSize)
+    {
+        if (_mileageCycleCache.TryGetValue(gachaId, out int cached))
+            return cached;
+
+        int cycle = 0;
+        // 안전장치: 최대 100구간까지만 탐색(미정의 구간 1회 조회 시 GearRepo 경고 로그가 1번 남는다).
+        for (int m = stepSize; m <= stepSize * 100; m += stepSize)
+        {
+            if (repo.GetGachaReward(gachaId, m) == null)
+                break;
+            cycle = m;
+        }
+
+        _mileageCycleCache[gachaId] = cycle;
+        return cycle;
     }
 }
