@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -27,6 +28,10 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     [Tooltip("정렬 성공 후 클리어 연출 시간(초)")]
     [SerializeField] private float _clearDuration = 0.3f;
 
+    [Header("초기화 설정")]
+    [SerializeField] private int _minInitialFill = 16;
+    [SerializeField] private int _maxInitialFill = 22;
+
     // ---------- Private ----------
     private bool _isProcessing;
     private System.Random _rng;
@@ -44,15 +49,14 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         _rng = new System.Random(seed);
         _model.Initialize();
 
+        int targetFill = _rng.Next(_minInitialFill, _maxInitialFill + 1);
+
+        PreFillBoard(targetFill);
+
         // 대기열 4개 채우기
         for (int i = 0; i < SortModel.WAITING_COUNT; i++)
         {
             _model.SetWaiting(i, GenerateWaitingCombo());
-        }
-        // 처음 3개 테이블에 대기열에서 넣기
-        for (int t = 0; t < SortModel.TABLE_COUNT; t++)
-        {
-            FillTableFromQueue(t);
         }
     }
 
@@ -387,5 +391,61 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
         Time.timeScale = 1f;                          // 4-2-5 인게임 진행 재개
         _isProcessing = false;
+    }
+
+    // 초기 배치 메서드 구현
+    private void PreFillBoard(int count)
+    {
+        var emptySlots = new List<(int t, int s)>();
+        for (int t = 0; t < SortModel.TABLE_COUNT; t++)
+        {
+            for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
+            {
+                emptySlots.Add((t, s));
+            }
+        }
+
+        for (int i = 0; i < emptySlots.Count; i++)
+        {
+            int randomIndex = _rng.Next(i, emptySlots.Count);
+            var temp = emptySlots[i];
+            emptySlots[i] = emptySlots[randomIndex];
+            emptySlots[randomIndex] = temp;
+        }
+
+        int filled = 0;
+        foreach (var slot in emptySlots)
+        {
+            if (filled >= count) break;
+
+            List<int> possibleUnits = new List<int>();
+            for (int u = 0; u < SortModel.UNIT_TYPE_COUNT; u++)
+            {
+                if (CountUnitInTable(slot.t, u) < 2)
+                {
+                    possibleUnits.Add(u);
+                }
+            }
+
+            if (possibleUnits.Count > 0)
+            {
+                int selectedUnit = possibleUnits[_rng.Next(0, possibleUnits.Count)];
+                _model.PlaceUnit(slot.t, slot.s, selectedUnit);
+                filled++;
+
+                if (filled >= count) break;
+            }
+        }
+        Debug.Log($"[PreFill] 최종 배치된 유닛 수: {filled} / 목표: {count}");
+    }
+
+        private int CountUnitInTable(int tableIdx, int unitType)
+    {
+        int count = 0;
+        for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
+        {
+            if (_model.GetUnit(tableIdx, s) == unitType) count++;
+        }
+        return count;
     }
 }
