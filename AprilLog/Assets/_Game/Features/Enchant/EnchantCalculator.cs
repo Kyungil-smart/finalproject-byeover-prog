@@ -27,6 +27,7 @@ public class EnchantCalculator : MonoBehaviour
     private const string ADD_PROJECTILE = "ActivePlusCount";
     private const string PROJECTILE_GAP  = "PelletGap";
     private const string PROJECTILE_DAMAGE_REDUCE = "subPelletDmg";
+    private const int PROJECTILE_TAG = 20;
     
     // SkillAreaExtenstionCalculate
     private const string X_LENGTH_EXTENSION_RATE = "HitSize_X";
@@ -392,7 +393,7 @@ public class EnchantCalculator : MonoBehaviour
         foreach (var ownedStat in _enchantModel.OwnedStats.Values)
         {
             var data = ownedStat.Data;
-            if (data.Target_2 == skillData.SkillGroup_ID && data.Target_1 == 20)
+            if (data.Target_2 == skillData.SkillGroup_ID && data.Target_1 == PROJECTILE_TAG)
             {
                 if (skillData.Tag_ID_1 == data.Target_1 || skillData.Tag_ID_2 == data.Target_1 || 
                     skillData.Tag_ID_3 == data.Target_1 || skillData.Tag_ID_4 == data.Target_1)
