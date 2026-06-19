@@ -51,7 +51,7 @@ public class EnchantCalculator : MonoBehaviour
         _enableStatList = new ();
 
         _enchantModel.OnStatAcquired += HandleStatAcquired;
-        _enchantModel.OnSkillLevelUp += HandleStatLevelUp;
+        _enchantModel.OnStatLevelUp += HandleStatLevelUp;
         _enchantModel.OnStatRemoved += HandleStatRemoved;
         
         isInitialized = true;
