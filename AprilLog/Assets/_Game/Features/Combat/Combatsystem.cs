@@ -224,12 +224,13 @@ public class CombatSystem : MonoBehaviour
         float[] dur = { 5f, 5f, 6f };         // 지속(초)
 
         if (_hasteAtkBonus > 0 && _playerModel != null)   // 갱신: 기존 보너스 먼저 해제
-            _playerModel.ApplyAttackBonus_RemoveA(_hasteAtkBonus);
+            _playerModel.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, _hasteAtkBonus, true);
 
         _hasteAtkBonus = atk[lv - 1];
         _hasteIntervalMul = mul[lv - 1];
         _hasteEndTime = Time.time + dur[lv - 1];
-        if (_playerModel != null) _playerModel.ApplyAttackBonus_Add(_hasteAtkBonus);
+        if (_playerModel != null) 
+            _playerModel.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, _hasteAtkBonus, false);
     }
 
     private void ExpireHasteIfDue()
@@ -237,7 +238,8 @@ public class CombatSystem : MonoBehaviour
         if (_hasteAtkBonus == 0) return;
         if (Time.time >= _hasteEndTime)
         {
-            if (_playerModel != null) _playerModel.ApplyAttackBonus_RemoveA(_hasteAtkBonus);
+            if (_playerModel != null) 
+                _playerModel.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, _hasteAtkBonus, true);
             _hasteAtkBonus = 0;
             _hasteIntervalMul = 1f;
         }
