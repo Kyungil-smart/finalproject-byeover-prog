@@ -111,15 +111,16 @@ public class EnchantCalculator : MonoBehaviour
     /// </summary>
     /// <param name="skillId">계산을 실행할 스킬의 ID</param>
     /// <param name="pelletGap">추가 투사체의 간격 (interval)</param>
+    /// <param name="subPelletDmgReduce"></param>
     /// <param name="supPelletDmgReduce">추가 투사체가 원본 투사체에 비해 데미지가 감소하는 정도 (%)</param>
     /// <returns>이 스킬에 적용해야 될 추가 투사체 개수</returns>
-    public int ProjectileAddCalculate(int skillId, out float pelletGap, out float supPelletDmgReduce)
+    public int ProjectileAddCalculate(int skillId, out float pelletGap, out float subPelletDmgReduce)
     {
         if (!isInitialized)
         {
             Debug.LogWarning($"[EnchantCalculator] Not Initialized. All ProjectileAddCalculate result set 0.");
             pelletGap = 0;
-            supPelletDmgReduce = 0;
+            subPelletDmgReduce = 0;
             return 0;
         }
         
@@ -128,11 +129,11 @@ public class EnchantCalculator : MonoBehaviour
         {
             Debug.LogWarning($"[EnchantCalculator] Can't find the Skill data : {skillId}. All ProjectileAddCalculate result set 0.");
             pelletGap = 0;
-            supPelletDmgReduce = 0;
+            subPelletDmgReduce = 0;
             return 0;
         }
 
-        GetProjectileAdd(data, out int addProjectile, out pelletGap, out supPelletDmgReduce);
+        GetProjectileAdd(data, out int addProjectile, out pelletGap, out subPelletDmgReduce);
         
         return addProjectile;
     }
@@ -143,7 +144,7 @@ public class EnchantCalculator : MonoBehaviour
     /// <param name="skillId">계산을 실행할 스킬의 ID</param>
     /// <param name="xLengthExtensionRate">기본 히트박스의 X값을 이 값과 곱해야됨</param>
     /// <param name="yLengthExtensionRate">기본 히트박스의 Y값을 이 값과 곱해야됨</param>
-    public void SkillAreaExtenstionCalculate(int skillId, out float xLengthExtensionRate, out float yLengthExtensionRate)
+    public void SkillAreaExtensionCalculate(int skillId, out float xLengthExtensionRate, out float yLengthExtensionRate)
     {
         if (!isInitialized)
         {
