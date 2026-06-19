@@ -602,15 +602,24 @@ public class SkillSystem : MonoBehaviour
     }
 
     // 방전 (기획 v2.02 4-3): 타겟 위치에 가로로 넓은 전기 장판(피격 1440×200).
-    // ★ 고약한 CFXR 번개막 프리팹(루트 100배·Mesh혼합·scale 길들이기 불가) 폐기 → LineRenderer로 직접 그림.
-    //   장판 폭(sizeWorld)을 가로지르는 지그재그 번개줄 여러 가닥을 펄스마다 새로 그려 '지직'거리게 한다. 크기/위치 = sizeWorld 그대로(코드 100% 제어).
+    // 방전 (기획 4-3): 타겟 위치에 CFXR 번개막(가운데) + 양옆 구슬 2개를 깔고 지속 → 0.5초마다 데미지, 첫 피격 몬스터 슬로우.
     private System.Collections.IEnumerator LightningDischargeRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
     {
-        Color boltColor = new Color(0.82f, 0.7f, 1f, 1f);
-        float halfW = sizeWorld.x * 0.5f;
-        float yJit = sizeWorld.y * 0.35f;
+        var lib = LightningVfx;
+        GameObject barrier = null, orbL = null, orbR = null, connector = null;
+        if (lib != null)
+        {
+            float side = PxToWorld(lib.dischargeOrbOffsetPx);
+            barrier = SpawnVfx(lib.dischargeBarrier, center, lib.dischargeScale, 52);
+            orbL = SpawnVfx(lib.dischargeOrb, center + new Vector2(-side, 0f), lib.dischargeOrbScale, 53);
+            orbR = SpawnVfx(lib.dischargeOrb, center + new Vector2(side, 0f), lib.dischargeOrbScale, 53);
+            if (lib.dischargeConnector != null)
+                connector = SpawnVfx(lib.dischargeConnector, center + new Vector2(0f, PxToWorld(lib.dischargeConnectorYOffsetPx)), lib.dischargeConnectorScale, 51);
+        }
+        if (barrier == null && orbL == null)
+            SpawnHazardFlash(center, sizeWorld, new Color(0.8f, 0.7f, 1f, 0.35f)); // VFX 미연결 폴백
 
-        // 방전(기획 2-2): 이 스킬에 '처음 피해를 입은' 몬스터만 슬로우(Lv3일수록 길게). slowed로 첫 피격 추적.
+        // 기획 2-2: 이 스킬에 '처음 피해를 입은' 몬스터만 슬로우(Lv3일수록 길게). slowed로 첫 피격 추적.
         var slowed = new HashSet<MonsterAI>();
         float slowDur = 1.0f + 0.5f * Mathf.Clamp(data.Level, 1, 3); // Lv1 1.5 / Lv2 2.0 / Lv3 2.5초
 
@@ -626,22 +635,15 @@ public class SkillSystem : MonoBehaviour
                     hm.ApplySlow(0.5f, slowDur);
             }
 
-            // 장판 폭을 가로지르는 번개줄 3가닥 (펄스마다 새 지터 = 지직거림). 각 가닥은 다음 펄스 전에 페이드.
-            for (int s = 0; s < 3; s++)
-            {
-                float yo = Random.Range(-yJit, yJit);
-                var pts = new List<Vector2>
-                {
-                    new Vector2(center.x - halfW, center.y + yo),
-                    new Vector2(center.x + halfW, center.y + yo),
-                };
-                var line = SpawnLightningLine(pts, boltColor, 0.1f, 52, 14, sizeWorld.y * 0.18f);
-                if (line != null) StartCoroutine(FadeOutAndDestroy(line, 0f, interval * 0.9f));
-            }
-
             if (i < pulses - 1)
                 yield return new WaitForSeconds(interval);
         }
+
+        yield return new WaitForSeconds(0.3f);
+        if (barrier != null) Destroy(barrier);
+        if (orbL != null) Destroy(orbL);
+        if (orbR != null) Destroy(orbR);
+        if (connector != null) Destroy(connector);
     }
 
     // 사슬 번개 = 정통 체인 라이트닝 (기획 v2.02 4-2): 에이프릴→가장 가까운 적1→적2→… 로 전기줄이 1→2→3 순차로 '다다닥' 점프하며 각 타겟을 직격.
@@ -663,43 +665,47 @@ public class SkillSystem : MonoBehaviour
         }
 
         int hits = Mathf.Max(1, pulses);   // 기획: 5마리에게 4회 대미지 (pulses=PelletCount=4)
-        Color boltColor = new Color(0.82f, 0.7f, 1f, 1f);
-        var sparks = new List<GameObject>();
-        GameObject bolt = null;
+        var spawned = new List<GameObject>();
 
-        // ★ CFXR 번개막 폐기 → LineRenderer 지그재그 전기줄. pulses회(4) 반복: 매번 에이프릴→체인 전체를 새로 잇고(지직) 살아있는 타겟에 데미지.
+        // pulses회(4) 반복: 매 펄스마다 에이프릴→체인 구간을 CFXR 번개막(chainBolt)으로 잇고(구간별 회전) 살아있는 타겟에 데미지.
         for (int p = 0; p < hits; p++)
         {
             int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
-            var path = new List<Vector2> { _firePoint != null ? (Vector2)_firePoint.position : firstTarget };
 
+            // 이전 펄스 VFX 정리 후 이번 펄스 새로 (펄스마다 다시 그어짐 = 지직)
+            for (int s = 0; s < spawned.Count; s++) if (spawned[s] != null) Destroy(spawned[s]);
+            spawned.Clear();
+
+            Vector2 prev = _firePoint != null ? (Vector2)_firePoint.position : firstTarget;
             for (int i = 0; i < chainTargets.Count; i++)
             {
                 MonsterAI m = chainTargets[i];
                 if (m == null || !m.gameObject.activeInHierarchy) continue;
-                path.Add(m.transform.position);
-                m.TakeDamage(damage);   // 타겟 직격 (테이블: 사슬 = 면적 없는 타겟 직격)
+                Vector2 pos = m.transform.position;
+                Vector2 dir = pos - prev;
+                float angleDeg = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+                if (lib != null && lib.chainBolt != null)
+                {
+                    var bolt = SpawnVfx(lib.chainBolt, (prev + pos) * 0.5f, lib.chainScale, 52); // 직전 지점→타겟 전기줄 세그먼트
+                    if (bolt != null) { ApplyParticleRotation(bolt, angleDeg + lib.chainBoltRotationTrimDeg); spawned.Add(bolt); }
+                }
                 if (lib != null && lib.chainHitEffect != null)
                 {
-                    var hit = SpawnVfx(lib.chainHitEffect, m.transform.position, lib.chainHitScale, 53);
-                    if (hit != null) sparks.Add(hit);
+                    var hit = SpawnVfx(lib.chainHitEffect, pos, lib.chainHitScale, 53); // 몬스터 몸체 타격 이펙트
+                    if (hit != null) spawned.Add(hit);
                 }
+                m.TakeDamage(damage, data.StandardID);   // 타겟 직격 + 정산 인챈트별 최고뎀 기록
+                prev = pos;
             }
-
-            // 누적 경로로 번개줄 재생성 (펄스마다 새 지터 = 버즈)
-            if (bolt != null) Destroy(bolt);
-            if (path.Count >= 2)
-                bolt = SpawnLightningLine(path, boltColor, 0.11f, 52, 5, 0.28f);
 
             if (p < hits - 1)
                 yield return new WaitForSeconds(interval);
         }
 
-        // 마지막 줄은 잠깐 유지 후 페이드아웃, 스파크 정리
-        if (bolt != null) StartCoroutine(FadeOutAndDestroy(bolt, 0.1f, 0.2f));
-        yield return new WaitForSeconds(0.2f);
-        for (int i = 0; i < sparks.Count; i++)
-            if (sparks[i] != null) Destroy(sparks[i]);
+        yield return new WaitForSeconds(0.25f);
+        for (int s = 0; s < spawned.Count; s++)
+            if (spawned[s] != null) Destroy(spawned[s]);
     }
 
     // ===== 번개 줄(LineRenderer) VFX — CFXR 프리팹 의존 없이 코드로 100% 제어 (사슬·방전 공용) =====
@@ -930,7 +936,7 @@ public class SkillSystem : MonoBehaviour
         for (int i = 0; i < _hazardHitBuffer.Count; i++)
         {
             MonsterAI m = _hazardHitBuffer[i];
-            m.TakeDamage(damage);
+            m.TakeDamage(damage, data.StandardID);   // 데미지 + 정산 인챈트별 최고뎀 기록
 
             // 바람 CC: 허리케인(304)=매 타격 슬로우(50%) / 돌풍(303)=마지막(폭발) 펄스에만 넉백(위로).
             // 번개 CC: 벼락(404) Lv3=스턴(1.5초). 방전(403) 첫피격 슬로우는 LightningDischargeRoutine에서 처리.
@@ -1068,7 +1074,7 @@ public class SkillSystem : MonoBehaviour
         if (controller == null) return;
 
         float speed = data.Speed > 0 ? data.Speed : _basicProjectileSpeed;
-        controller.SetupStraight(damage, origin, target.transform.position, speed);
+        controller.SetupStraight(damage, origin, target.transform.position, speed, skillId: data.StandardID);
 
         // 정령이 시전하는 화염 작렬(StandardID 102)도 동일 스킨 적용 (기획 4-5: 정령 투사체는 화염 작렬 에셋 공유).
         if (data.StandardID == 102)
@@ -1151,7 +1157,7 @@ public class SkillSystem : MonoBehaviour
             maxPierce = 6 + 2 * lv;                                       // 템페스트 관통 8/10/12
             hitMul = data.NumberOfCycle > 0 ? data.NumberOfCycle : 1;     // 피격 시 8회 대미지
         }
-        controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed, pierce, maxPierce, hitMul);
+        controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed, pierce, maxPierce, hitMul, data.StandardID);
 
         // 화염 작렬 계열(StandardID 102)만 Fireball_2_normal VFX 스킨 + 진행방향 회전. 기본공격/타 투사체는 사각형 유지.
         if (data.StandardID == 102)

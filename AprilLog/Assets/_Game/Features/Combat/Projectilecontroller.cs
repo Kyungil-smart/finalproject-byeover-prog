@@ -41,6 +41,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
     private int _maxPierceCount = int.MaxValue;
     private int _piercedCount;
     private int _hitMultiplier = 1;
+    private int _skillId;   // 발사한 스킬의 StandardID — 정산 '인챈트별 최고뎀' 기록용(TakeDamage에 전달)
     private readonly HashSet<IDamageable> _piercedTargets = new HashSet<IDamageable>();
 
     // VFX 스킨 (풀 공유 오브젝트라 인스턴스 단위로 입히고 디스폰 시 원복)
@@ -89,7 +90,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
     /// 타겟 위치는 발사 순간 한 번만 보고 방향을 고정한다.
     /// 현재 기본 공격과 플레이어 스킬은 모두 이 메서드를 사용한다.
     /// </summary>
-    public void SetupStraight(int damage, Vector2 origin, Vector2 target, float speed, bool pierce = false, int maxPierceCount = int.MaxValue, int hitMultiplier = 1)
+    public void SetupStraight(int damage, Vector2 origin, Vector2 target, float speed, bool pierce = false, int maxPierceCount = int.MaxValue, int hitMultiplier = 1, int skillId = 0)
     {
         _behavior = null;
         _damage = damage;
@@ -99,6 +100,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _pierce = pierce;
         _maxPierceCount = maxPierceCount > 0 ? maxPierceCount : int.MaxValue;
         _hitMultiplier = hitMultiplier > 0 ? hitMultiplier : 1;
+        _skillId = skillId;
         _piercedCount = 0;
         _piercedTargets.Clear();
 
@@ -154,7 +156,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
         {
             if (!_piercedTargets.Add(target)) return;       // 이미 맞힌 적이면 무시(중복 방지)
             for (int h = 0; h < _hitMultiplier; h++)        // 템페스트: 피격 시 8회 대미지
-                target.TakeDamage(_damage);
+                target.TakeDamage(_damage, _skillId);
             _piercedCount++;
             if (_piercedCount >= _maxPierceCount)           // 관통 횟수 소진 → 종료
             {
@@ -164,7 +166,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
             return;
         }
 
-        target.TakeDamage(_damage);
+        target.TakeDamage(_damage, _skillId);
         if (_isStraightActive)
         {
             _isFinished = true;
@@ -185,6 +187,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _maxPierceCount = int.MaxValue;
         _piercedCount = 0;
         _hitMultiplier = 1;
+        _skillId = 0;
         _piercedTargets.Clear();
     }
 
@@ -200,6 +203,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _maxPierceCount = int.MaxValue;
         _piercedCount = 0;
         _hitMultiplier = 1;
+        _skillId = 0;
         _piercedTargets.Clear();
 
         // VFX 스킨 정리 — 풀 재사용 시 다음 투사체(기본공격 등)가 화염탄으로 보이지 않도록 반드시 원복.

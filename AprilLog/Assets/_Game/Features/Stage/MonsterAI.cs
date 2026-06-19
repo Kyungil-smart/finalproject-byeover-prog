@@ -318,17 +318,20 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     }
 
     // ---------- IDamageable ----------
-    public void TakeDamage(int baseDamage)
+    public void TakeDamage(int baseDamage) => TakeDamage(baseDamage, 0);
+
+    /// <summary>skillId(StandardID)를 함께 받아 정산 '인챈트별 최고뎀' 기록까지 처리. 0이면 스킬별 기록 생략(기본공격 등).</summary>
+    public void TakeDamage(int baseDamage, int skillId)
     {
         if (_state == State.Dead) return;
-        
+
         // Final_Damage = Base_Damage x { 1 - Effective_Armor / (100 + Effective_Armor) }
         int penetration = 0; // Todo : 데모때는 관통 없음. CBT때 시트 수정 예정
         // 유효 방어력 하한 0 (관통이 방어력보다 커도 데미지가 증폭되지 않도록, 기획 2-4-4)
         int effectiveArmor = Mathf.Max(0, _defense - penetration);
         int finalDamage = Mathf.FloorToInt(baseDamage * (1 - effectiveArmor / (float)(100 + effectiveArmor)));
 
-        RunStats.AddDamage(finalDamage); // 정산용 총 데미지 누적
+        RunStats.AddDamage(finalDamage, skillId); // 정산용: 총 데미지 + 스킬(인챈트)별 최고뎀 누적
 
         CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);

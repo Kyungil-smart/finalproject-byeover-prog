@@ -62,6 +62,7 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private int _defaultChapterId = 1;
 
     private GameObject _projectileTemplate;
+    private bool _settlementRewardGranted;   // 단계④: 정산 보상 중복 지급(재정산 중복가산) 방지 가드
 
     private void Start()
     {
@@ -276,9 +277,12 @@ public class InGameBootstrap : MonoBehaviour
         int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
         int maxDamage = RunStats.HighestDamage;
         
-        int enchantDamage1 = RunStats.HighestEnchantDamage1;
-        int enchantDamage2 = RunStats.HighestEnchantDamage2;
-        int enchantDamage3 = RunStats.HighestEnchantDamage1;
+        // 스킬(인챈트)별 단일타격 최고뎀 상위 3개. RunStats가 MonsterAI.TakeDamage(dmg, skillId)로 스킬ID별 기록.
+        // (.Key=StandardID로 어떤 인챈트인지도 알 수 있음 — 정산창에 이름 표시하려면 ResultPopup.Show에 ID 추가)
+        var topEnchants = RunStats.TopSkillsByDamage(3);
+        int enchantDamage1 = topEnchants.Count > 0 ? topEnchants[0].Value : 0;
+        int enchantDamage2 = topEnchants.Count > 1 ? topEnchants[1].Value : 0;
+        int enchantDamage3 = topEnchants.Count > 2 ? topEnchants[2].Value : 0;
 
         // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
         int gold = isVictory ? 100 : 0;
@@ -288,11 +292,13 @@ public class InGameBootstrap : MonoBehaviour
         int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
         int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
 
-        if (GameManager.Instance != null)
+        // 단계④: 같은 정산이 중복 발동돼도 보상은 한 번만 지급(재정산 중복가산 방지).
+        if (GameManager.Instance != null && !_settlementRewardGranted)
         {
             GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment);
+            _settlementRewardGranted = true;
         }
-        
+
         view.Show(isVictory, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, gold, parchment);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.

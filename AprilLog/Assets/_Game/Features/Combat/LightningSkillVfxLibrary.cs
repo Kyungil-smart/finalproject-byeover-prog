@@ -41,8 +41,8 @@ public class LightningSkillVfxLibrary : ScriptableObject
 
     [Header("방전 (StandardID 403) — Clone(전기선) + Charge_Lightning(양옆 구슬) + CFXR Electric Barrier(밑 연결점)")]
     public GameObject dischargeBarrier;
-    [Tooltip("방전 가운데 번개막 스케일 — 가로로 길게(피격 1440px). CFXR Barrier 100배 자식이라 0.15~ 시작. 인스펙터 튜닝")]
-    public float dischargeScale = 0.15f;
+    [Tooltip("방전 가운데 번개막 스케일 — ⚠ CFXR Barrier는 루트 100배라 0.04여도 실제 4배. 화면 덮음 방지로 프리팹 m_MaxParticleSize도 0.15로 캡함. 더 작게=0.02, 더 넓게=0.06. 인스펙터 튜닝")]
+    public float dischargeScale = 0.04f;
     public GameObject dischargeOrb;   // Charge_Lightning (양옆 구슬)
     [Tooltip("양옆 구슬 스케일 — ⚠ Charge_Lightning은 내부 200배 자식이라 아주 작게(0.005 이하). 인스펙터에서 직접 보며 튜닝")]
     public float dischargeOrbScale = 0.005f;
