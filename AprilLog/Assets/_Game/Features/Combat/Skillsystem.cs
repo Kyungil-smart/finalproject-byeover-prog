@@ -284,11 +284,11 @@ public class SkillSystem : MonoBehaviour
         int shots = Mathf.Max(1, data.PelletCount);
         if (shots <= 1)
         {
-            FireOneProjectile(data);
+            FireOneProjectile(data, type);
             return;
         }
 
-        StartCoroutine(FireBurstRoutine(data, shots));
+        StartCoroutine(FireBurstRoutine(data, shots, type));
     }
 
     // ---------- 장판 (hazard) ----------
@@ -834,6 +834,10 @@ public class SkillSystem : MonoBehaviour
             ApplyParticleRotation(skin, autoDeg + trimDeg);
         }
 
+        // Play On Awake에 의존하지 않고 파티클 재생을 명시적으로 보장한다.
+        // (불/바람 프리팹은 우연히 자동재생됐지만, 다중 파티클 variant는 자식으로 붙이면 재생이 안 잡혀 안 보이던 원인)
+        foreach (var ps in skin.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+
         controller.SetSkin(skin);
     }
 
@@ -1081,17 +1085,17 @@ public class SkillSystem : MonoBehaviour
         if (_cam == null) _cam = Camera.main;
     }
 
-    private System.Collections.IEnumerator FireBurstRoutine(Legacy_SkillData data, int shots)
+    private System.Collections.IEnumerator FireBurstRoutine(Legacy_SkillData data, int shots, AttackType type)
     {
         for (int i = 0; i < shots; i++)
         {
-            FireOneProjectile(data);
+            FireOneProjectile(data, type);
             yield return new WaitForSeconds(BurstShotInterval);
         }
     }
 
     // 한 발 발사 : 데미지 계산 → 가장 가까운 적 탐색 → 직선 탄.
-    private void FireOneProjectile(Legacy_SkillData data)
+    private void FireOneProjectile(Legacy_SkillData data, AttackType type)
     {
         // 데미지 계산
         float temp = _combatSystem.CalculateDamage(data.DmgRate);
@@ -1163,6 +1167,21 @@ public class SkillSystem : MonoBehaviour
                 AttachProjectileSkin(controller, obj, wlib.tempestProjectile, wlib.tempestProjectileScale,
                     _firePoint.position, targetPos, wlib.tempestRotationTrimDeg);
         }
+        else
+        {
+            // 원소 전용 스킨이 없는 투사체(소트 기본공격·더미 소트 스킬 등) → 공격 종류별 기본 VFX(소트=SortSkill/자동=AutoSkill).
+            GameObject def = GetBasicAttackSkin(type);
+            if (def != null)
+                AttachProjectileSkin(controller, obj, def, _basicAttackVfxScale, _firePoint.position, targetPos, _basicAttackVfxTrimDeg);
+        }
+    }
+
+    // 공격 종류별 기본 VFX 선택: 인스펙터(SkillSystem) 연결분 우선, 비면 FireSkillVfxLibrary 연결분.
+    private GameObject GetBasicAttackSkin(AttackType type)
+    {
+        if (type == AttackType.Sort) return _sortAttackVfx != null ? _sortAttackVfx : (Vfx != null ? Vfx.sortAttackVfx : null);
+        if (type == AttackType.Auto) return _autoAttackVfx != null ? _autoAttackVfx : (Vfx != null ? Vfx.autoAttackVfx : null);
+        return null;
     }
 
     /// <returns>실제로 발사했으면 true. 타겟 부재 등으로 스킵하면 false (자동공격 카운트는 발사 성공만 센다).</returns>
@@ -1183,8 +1202,8 @@ public class SkillSystem : MonoBehaviour
         // 기본 공격도 직선 탄 전용 경로를 사용해 발사 시 객체 생성을 줄인다.
         controller.SetupStraight(baseDmg, _firePoint.position, targetPos, _basicProjectileSpeed);
 
-        // 공격 종류별 VFX를 투사체에 입힌다 (소트=SortSkill, 자동=AutoSkill). 미연결이면 기본 사각 스프라이트.
-        GameObject skin = (type == AttackType.Sort) ? _sortAttackVfx : _autoAttackVfx;
+        // 공격 종류별 VFX를 투사체에 입힌다 (소트=SortSkill, 자동=AutoSkill).
+        GameObject skin = GetBasicAttackSkin(type);
         if (skin != null)
             AttachProjectileSkin(controller, obj, skin, _basicAttackVfxScale, _firePoint.position, targetPos, _basicAttackVfxTrimDeg);
         return true;
