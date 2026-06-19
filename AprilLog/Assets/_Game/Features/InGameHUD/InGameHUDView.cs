@@ -7,6 +7,9 @@
 // 수정자 : 김영찬
 // 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
 
+// 3차 수정자 : 조규민
+// 수정 내용 : StageBootstrapper 초기화 전에도 HP/EXP HUD Presenter가 먼저 연결될 수 있도록 초기화 조건 완화
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,6 +43,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     // ---------- Private ----------
     private InGameHUDPresenter _presenter;
     private StageModel _stageModel;
+    private bool _hasWarnedMissingCoreReferences;
     
     // ---------- 이벤트 ----------
     public event Action OnComboTimerActive;
@@ -80,6 +84,10 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
 
     private void Update()
     {
+        // HP/EXP는 StageModel 없이도 표시 가능하므로, 스테이지 조립 이벤트만 기다리지 않는다.
+        if (_presenter == null)
+            TryInitializePresenter(null);
+
         // StageBootstrapper는 런타임에 생성/조립되어 OnEnable 시점엔 아직 없을 수 있다.
         // 늦게라도 찾아서 구독되면 더 이상 폴링하지 않는다.
         if (!_boundToStageBootstrapper)
@@ -110,21 +118,35 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     // ---------- 초기화 ----------
     private void Init(StageModel stageModel)
     {
+        TryInitializePresenter(stageModel);
+    }
+
+    private bool TryInitializePresenter(StageModel stageModel)
+    {
         // 런타임 생성된 모델/시스템을 자가 연결 (씬에 직렬화 참조가 비어 있어도 동작).
         if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
         if (_comboModel == null) _comboModel = FindFirstObjectByType<ComboModel>();
         if (_growthSystem == null) _growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
         if (_loopManager == null) _loopManager = FindFirstObjectByType<StageLoopManager>();
 
-        if (_playerModel == null || _comboModel == null || _growthSystem == null || _loopManager == null)
+        if (_playerModel == null || _comboModel == null || _growthSystem == null)
         {
-            Debug.LogWarning("[InGameHUDView] PlayerModel 또는 ComboModel 또는 InGameGrowthSystem 또는 StageLoopManager 참조가 비어 있어 초기화를 건너뜁니다.", this);
-            return;
+            if (!_hasWarnedMissingCoreReferences)
+            {
+                Debug.LogWarning("[InGameHUDView] PlayerModel 또는 ComboModel 또는 InGameGrowthSystem 참조가 비어 있어 HUD 초기화를 대기합니다.", this);
+                _hasWarnedMissingCoreReferences = true;
+            }
+
+            return false;
         }
+
+        if (_presenter != null && _stageModel == stageModel)
+            return true;
 
         _presenter?.Dispose();
         _stageModel = stageModel;
-        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem,  _loopManager,_stageModel);
+        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem, _loopManager, _stageModel);
+        return true;
     }
 
     // ---------- IInGameHUDView ----------

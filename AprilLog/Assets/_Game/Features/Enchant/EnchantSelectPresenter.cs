@@ -12,6 +12,7 @@
 
 // 2차 수정자 : 조규민
 // 수정 내용 : 인게임 인챈트 선택 팝업에서 Inspector 설정 횟수만큼 리롤할 수 있도록 씬 이름 기반 테스트 제한 제거
+//            카드별 리롤 요청 시 해당 카드 1개만 새 후보로 교체하도록 변경
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -51,6 +52,7 @@ public class EnchantSelectPresenter
         _view.OnChoiceSelected += HandleChoice;
         _view.OnSkipSelected += HandleSkip;
         _view.OnRerollSelected += HandleReroll;
+        _view.OnCardRerollSelected += HandleCardReroll;
     }
 
     public void Dispose()
@@ -58,6 +60,7 @@ public class EnchantSelectPresenter
         _view.OnChoiceSelected -= HandleChoice;
         _view.OnSkipSelected -= HandleSkip;
         _view.OnRerollSelected -= HandleReroll;
+        _view.OnCardRerollSelected -= HandleCardReroll;
     }
 
     public void ShowSelection(int pickCount = 3)
@@ -78,6 +81,24 @@ public class EnchantSelectPresenter
             _rerollRemaining--;
         }
         _currentChoices = _selector.GenerateChoices(_model, _pickCount);
+        DisplayChoicesToView();
+    }
+
+    private void HandleCardReroll(int index)
+    {
+        if (_currentChoices == null) return;
+        if (index < 0 || index >= _currentChoices.Count) return;
+
+        List<EnchantCandidate> newChoices = _selector.GenerateChoices(_model, 1);
+        if (newChoices == null || newChoices.Count == 0) return;
+
+        if (!_unlimitedReroll)
+        {
+            if (_rerollRemaining <= 0) return;
+            _rerollRemaining--;
+        }
+
+        _currentChoices[index] = newChoices[0];
         DisplayChoicesToView();
     }
     
