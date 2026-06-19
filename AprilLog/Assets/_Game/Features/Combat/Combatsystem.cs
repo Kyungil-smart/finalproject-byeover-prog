@@ -212,8 +212,6 @@ public class CombatSystem : MonoBehaviour
         _autoAttackEnabled = true;
     }
 
-    // ---------- 헤이스트 버프 (바람 일반 301): 발동 시 일정시간 공격력↑ + 자동공격 간격↓ ----------
-    // ⚠ 수치는 placeholder (기획 effect 13005=공격력 / 13004=공속 기준 추정). 기획 확정 시 조정.
     private float _hasteEndTime;
     private int _hasteAtkBonus;          // 적용 중 공격력 보너스(해제용)
     private float _hasteIntervalMul = 1f; // 자동공격 간격 배율(작을수록 빠름)
