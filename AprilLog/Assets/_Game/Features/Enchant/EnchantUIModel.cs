@@ -90,8 +90,8 @@ public class EnchantUIModel : MonoBehaviour
                     EnchantId = data.Data.StatEnchant_ID,
                     Level = data.Data.StatLevel,
                     TypeLabel = "스텟",
-                    Name = $"Skill_ID: {data.Data.Stat_Name}",
-                    Description = $"Description_ID: {data.Data.Stat_Descrip}",
+                    Name = $"Skill_ID: {data.Data.StatName}",
+                    Description = $"Description_ID: {data.Data.StatDescrip}",
                     ImageKey = $"{data.Data.Image_ID}"
                 });
             }

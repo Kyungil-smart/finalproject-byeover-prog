@@ -3,6 +3,7 @@
 // 주의 사항 : 알파벳 순으로 정렬 할 것
 
 using System;
+using UnityEngine.Serialization;
 
 #region JSON 파싱용 래퍼
 
@@ -606,11 +607,11 @@ public class StatTableData
 {
     public int StatGroup_ID;
     public int StatEnchant_ID;
-    public int Stat_Name;
-    public int Stat_Descrip;
+    public int StatName;
+    public int StatDescrip;
+    public int StatLevel; //
     public int Target_1; // 대상 효과 ID
     public int Target_2; // 스킬 조건
-    public int StatLevel; // 
     public string ValueType_1;
     public int Variation_1;
     public string ValueType_2;

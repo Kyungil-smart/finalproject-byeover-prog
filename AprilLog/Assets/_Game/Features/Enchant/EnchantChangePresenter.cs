@@ -56,7 +56,7 @@ public class EnchantChangePresenter
             // ToDo : 이하 두 변수는 차후 번역 데이터 연결 할 것
             Name = $"Name ID: {_pendingEnchant.Name_ID}",
             Description = _pendingEnchant.Type == EnchantType.Skill ? 
-                          $"Description ID: {_pendingEnchant.SkillData.Skill_Descrip}" : $"Description ID: {_pendingEnchant.StatData.Stat_Descrip}",
+                          $"Description ID: {_pendingEnchant.SkillData.Skill_Descrip}" : $"Description ID: {_pendingEnchant.StatData.StatDescrip}",
             // ToDo : 차후 이미지 컬럼 변경 가능성 있으며, 이미지 불러오는 방법 결정 되면 수정해야됨
             ImageKey = _pendingEnchant.Type == EnchantType.Skill ? 
                         $"{_pendingEnchant.SkillData.SkillIcon_ID}" : $"{_pendingEnchant.StatData.Image_ID}" 

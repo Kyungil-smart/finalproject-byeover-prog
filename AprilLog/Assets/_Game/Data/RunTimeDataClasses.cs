@@ -130,10 +130,10 @@ public class StatGroupChainData
 
     public void AddData(StatTableData data)
     {
-        if (!StatNameChainData.ContainsKey(data.Stat_Name))
-            StatNameChainData[data.Stat_Name] = new StatNameChainData(data.Stat_Name);
+        if (!StatNameChainData.ContainsKey(data.StatName))
+            StatNameChainData[data.StatName] = new StatNameChainData(data.StatName);
         
-        StatNameChainData[data.Stat_Name].AddData(data);
+        StatNameChainData[data.StatName].AddData(data);
     }
 }
 
