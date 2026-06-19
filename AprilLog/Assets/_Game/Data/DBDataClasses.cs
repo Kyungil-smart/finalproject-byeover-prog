@@ -540,7 +540,7 @@ public class SpecialWaveRuleData
     public int TriggerTime;
     public string EndType;  // Duration, WaveEnd, Instant
     public int ActiveDuration;
-    public int SpecialSpawnInterval;
+    public float SpecialSpawnInterval;
     public int SpecialSpawnAmount;
 }
 
