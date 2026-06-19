@@ -214,7 +214,7 @@ public class StageModel
             }
 
             // Duration / WaveEnd 타입일 때의 주기적 스폰 (WaveType별 간격)
-            float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? 0.2f : 3.0f; // 러시 전용 0.2초 (기획 4-1-2)
+            float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? _currentSpecialRule.SpecialSpawnInterval : 3.0f; 
 
             if (_specialSpawnTimer >= spawnInterval)
             {
@@ -238,16 +238,20 @@ public class StageModel
             
             // 일반 웨이브 상태 초기화
             _waveTimer = 0f;
-            _spawnTimer = 0f;
+            int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
+            float currentInterval = Mathf.Max(0.3f, _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) - (timeFactor * 0.1f));
+            _spawnTimer = currentInterval;
 
             // 각 웨이브에 종속된 특수 웨이브 룰 불러오기
             _currentSpecialRule = DataManager.Instance.StageRepo.GetSpecialWaveRuleForStage(_currentRule.SpecialWave_ID); 
 
             // 특수 웨이브 상태 초기화
+            float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? _currentSpecialRule.SpecialSpawnInterval : 3.0f; 
+            
             _isSpecialWaveTriggered = false;
             _isSpecialWaveFinished = false;
             _specialWaveActiveTimer = 0f;
-            _specialSpawnTimer = 0f;
+            _specialSpawnTimer = spawnInterval;
             _isBossKilled = false;
 
             // 웨이브 상태 변경 및 전파
@@ -303,7 +307,7 @@ public class StageModel
         // 러시는 원래 2마리(기획 4-1-2)였으나 '몬스터 총량 50% 너프' 요청으로 1마리로 하향.
         // (총량 = 틱 수 × 한 틱당 물량 → 물량 절반이면 총량도 절반. EndType가 Instant/Duration/WaveEnd 무엇이든 동일하게 50% 감소,
         //  초당 생성률도 10→5마리/초로 떨어져 화면 과밀도 완화. 되돌리려면 러시만 2로 복구)
-        int spawnAmount = 1;
+        int spawnAmount = _currentSpecialRule.SpecialSpawnAmount;
         
         // 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀을 사용!
         // 단, 룰의 MonsterWavePool_ID는 웨이브풀 '그룹' ID(1006~1008)라서 GetMonsterPoolId로
@@ -337,7 +341,9 @@ public class StageModel
 
         if (specialQueue.Count > 0)
         {
-            float delay = (sType == SpawnType.Rush) ? 0f : 0.2f;
+            float baseStagger = _currentSpecialRule.SpecialSpawnInterval * 0.2f;
+            float variance = 0.3f + (float)_rng.NextDouble() * 0.7f;
+            float delay = (sType == SpawnType.Rush) ? baseStagger * variance : 0.2f;
             OnSpawnRequested?.Invoke(specialQueue, delay);
         }
     }
