@@ -33,6 +33,16 @@ public class SkillSystem : MonoBehaviour
     [Tooltip("기본 공격 투사체 속도")]
     [SerializeField] private float _basicProjectileSpeed = 10f;
 
+    [Header("기본공격 VFX (인스펙터에서 프리팹 드래그)")]
+    [Tooltip("자동공격 투사체 VFX — AutoSkill Variant 프리팹을 여기에 드래그")]
+    [SerializeField] private GameObject _autoAttackVfx;
+    [Tooltip("소트(정렬) 공격 투사체 VFX — SortSkill Variant 프리팹을 여기에 드래그")]
+    [SerializeField] private GameObject _sortAttackVfx;
+    [Tooltip("기본공격 VFX 스케일")]
+    [SerializeField] private float _basicAttackVfxScale = 1f;
+    [Tooltip("기본공격 VFX 진행방향 회전 보정(도). 뒤집히면 180")]
+    [SerializeField] private float _basicAttackVfxTrimDeg = 0f;
+
     // ---------- Private ----------
     private Dictionary<UnitType, Legacy_SkillData> _sortSkills = new Dictionary<UnitType, Legacy_SkillData>();
     private List<ComboSkillEntry> _comboSkills = new List<ComboSkillEntry>();
@@ -116,8 +126,7 @@ public class SkillSystem : MonoBehaviour
             case 401: prefab = lib.orbPrefab; scale = lib.orbScale; break;                 // 구형 번개
             case 404: prefab = lib.thunderboltPrefab; scale = lib.thunderboltScale; break;  // 벼락
             case 405: prefab = lib.laserPrefab; scale = lib.laserScale; break;              // 뇌격
-            case 402: prefab = lib.chainBolt; scale = lib.chainScale; break;                // 사슬 번개 (연결 번개막)
-            case 403: prefab = lib.dischargeBarrier; scale = lib.dischargeScale; break;     // 방전 (가운데 번개막)
+            // 402 사슬·403 방전은 전용 루틴(LightningChain/DischargeRoutine)에서 아크 파티클로 직접 그림 → 여기서 CFXR 막 안 씀.
         }
         return prefab != null;
     }
@@ -333,9 +342,9 @@ public class SkillSystem : MonoBehaviour
         }
 
         // 사슬 번개: 에이프릴→타겟 전기선 + 몬스터 타격 이펙트. 펄스 루프 우회.
-        if (cfg.style == HazardStyle.LightningChain)
+        if (cfg.style == HazardStyle.LightningChain)   // 402 에너지 볼(구가 적들 사이를 튕겨다니는 이동 투사체)
         {
-            StartCoroutine(LightningChainRoutine(data, fixedCenter, sizeWorld, pulses, cfg.pulseInterval));
+            StartCoroutine(EnergyBallRoutine(data, fixedCenter, sizeWorld, pulses, cfg.pulseInterval));
             yield break;
         }
 
@@ -394,10 +403,18 @@ public class SkillSystem : MonoBehaviour
                     var v = SpawnVfx(lvfx, center, lscale, 52);
                     if (v != null)
                     {
-                        // 뇌격: Lazer_purple prefab의 startRotation이 0이라 위아래가 뒤집혀 보임 → 스펙 4-5-2 'Start Rotation 180' 적용해 세로 방향 정렬. (벼락 등 다른 번개는 회전 안 함)
+                        // 뇌격(405): 세로 레이저 빔 — looping 유지(지속 빔)하고 laserSustainSec만큼 길게 띄운다. startRotation 180 보정(위아래 정렬).
+                        //   그 외 번개(벼락 등)는 기존대로 1회 재생.
                         if (data.StandardID == 405 && LightningVfx != null)
+                        {
                             ApplyParticleRotation(v, LightningVfx.laserRotationDeg);
-                        StopLoopingOneShot(v); Destroy(v, ComputeOneShotLifetime(v));
+                            float sustain = LightningVfx.laserSustainSec > 0f ? LightningVfx.laserSustainSec : 2f;
+                            Destroy(v, sustain);   // StopLoopingOneShot 안 함 → 루프 유지되어 빔이 지속 재생됨
+                        }
+                        else
+                        {
+                            StopLoopingOneShot(v); Destroy(v, ComputeOneShotLifetime(v));
+                        }
                     }
                     else SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
                 }
@@ -606,28 +623,40 @@ public class SkillSystem : MonoBehaviour
     private System.Collections.IEnumerator LightningDischargeRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
     {
         var lib = LightningVfx;
-        GameObject barrier = null, orbL = null, orbR = null, connector = null;
+
+        // 기획: 몬스터 위치(높이)만 읽어 벽의 Y를 정하고, 화면 좌·우 '끝'에 구슬을 고정 생성한 뒤
+        // 두 구슬 사이를 잇는 전기 벽을 1회 깔아 지속시킨다(적을 따라가지 않음 = 구슬·벽 위치 고정).
+        MonsterAI refM = FindNearestAliveMonster(_firePoint != null ? (Vector2)_firePoint.position : center, null);
+        float wallY = refM != null ? refM.transform.position.y : center.y;
+
+        float cx = CamCenterX();
+        float halfW = CamHalfWidth();
+        float inset = PxToWorld(lib != null ? lib.dischargeEdgeInsetPx : 60f);
+        Vector2 leftPos = new Vector2(cx - halfW + inset, wallY);
+        Vector2 rightPos = new Vector2(cx + halfW - inset, wallY);
+
+        // 양끝 구슬(CFXR 점 이펙트) + 그 사이 전기 벽(아크 파티클 타일)을 1회 고정 생성(이후 안 움직임, 적 안 따라감).
+        GameObject orbL = null, orbR = null;
+        var wallGos = new List<GameObject>();
         if (lib != null)
         {
-            float side = PxToWorld(lib.dischargeOrbOffsetPx);
-            barrier = SpawnVfx(lib.dischargeBarrier, center, lib.dischargeScale, 52);
-            orbL = SpawnVfx(lib.dischargeOrb, center + new Vector2(-side, 0f), lib.dischargeOrbScale, 53);
-            orbR = SpawnVfx(lib.dischargeOrb, center + new Vector2(side, 0f), lib.dischargeOrbScale, 53);
-            if (lib.dischargeConnector != null)
-                connector = SpawnVfx(lib.dischargeConnector, center + new Vector2(0f, PxToWorld(lib.dischargeConnectorYOffsetPx)), lib.dischargeConnectorScale, 51);
+            orbL = SpawnVfx(lib.dischargeOrb, leftPos, lib.dischargeOrbScale, 53);
+            orbR = SpawnVfx(lib.dischargeOrb, rightPos, lib.dischargeOrbScale, 53);
+            SpawnArcLine(wallGos, lib.arcEffect, leftPos, rightPos, lib.arcScale, lib.arcSpacing, 52);
         }
-        if (barrier == null && orbL == null)
-            SpawnHazardFlash(center, sizeWorld, new Color(0.8f, 0.7f, 1f, 0.35f)); // VFX 미연결 폴백
 
-        // 기획 2-2: 이 스킬에 '처음 피해를 입은' 몬스터만 슬로우(Lv3일수록 길게). slowed로 첫 피격 추적.
+        // 데미지 판정 = 화면 전체 폭 × 벽 두께 밴드. 적이 이 벽(고정 위치)을 지나면 맞음.
+        Vector2 wallCenter = new Vector2(cx, wallY);
+        Vector2 wallHitSize = new Vector2(halfW * 2f, sizeWorld.y);
+
+        // 기획 2-2: 이 스킬에 '처음 피해를 입은' 몬스터만 슬로우(Lv3일수록 길게).
         var slowed = new HashSet<MonsterAI>();
         float slowDur = 1.0f + 0.5f * Mathf.Clamp(data.Level, 1, 3); // Lv1 1.5 / Lv2 2.0 / Lv3 2.5초
 
         for (int i = 0; i < pulses; i++)
         {
-            DealHazardDamage(data, center, sizeWorld);
+            DealHazardDamage(data, wallCenter, wallHitSize);
 
-            // 이번 펄스에 맞은 몬스터(_hazardHitBuffer) 중 첫 피격자만 슬로우 (50%)
             for (int b = 0; b < _hazardHitBuffer.Count; b++)
             {
                 MonsterAI hm = _hazardHitBuffer[b];
@@ -640,155 +669,64 @@ public class SkillSystem : MonoBehaviour
         }
 
         yield return new WaitForSeconds(0.3f);
-        if (barrier != null) Destroy(barrier);
         if (orbL != null) Destroy(orbL);
         if (orbR != null) Destroy(orbR);
-        if (connector != null) Destroy(connector);
+        for (int g = 0; g < wallGos.Count; g++)
+            if (wallGos[g] != null) Destroy(wallGos[g]);
     }
 
-    // 사슬 번개 = 정통 체인 라이트닝 (기획 v2.02 4-2): 에이프릴→가장 가까운 적1→적2→… 로 전기줄이 1→2→3 순차로 '다다닥' 점프하며 각 타겟을 직격.
-    private System.Collections.IEnumerator LightningChainRoutine(Legacy_SkillData data, Vector2 firstTarget, Vector2 sizeWorld, int pulses, float interval)
+    // 에너지 볼 (StandardID 402, 기획 번개 2-1): 랜덤 적으로 전기 구가 '튕겨' 이동 → 도착(피격) 시 또 랜덤 적 탐색·이동 →
+    // 정해진 횟수(Lv1·2: 3회 / Lv3: 4회) 반복 후 소멸. 선을 긋는 게 아니라 구 1개가 적들 사이를 이동하며 직격.
+    private System.Collections.IEnumerator EnergyBallRoutine(Legacy_SkillData data, Vector2 firstTarget, Vector2 sizeWorld, int pulses, float interval)
     {
         var lib = LightningVfx;
-        int maxTargets = (lib != null && lib.chainMaxTargets > 0) ? lib.chainMaxTargets : 5;
+        int count = Mathf.Max(1, pulses);                               // 탐색 횟수 = 데이터 Count(PelletCount). 테이블 v1.04: Lv1·2=3, Lv3=4
+        float speed = (lib != null && lib.energyBallSpeed > 0f) ? lib.energyBallSpeed : 12f;
 
-        // 기획 2-1: 랜덤 타겟에서 시작해 가장 가까운 미방문 몬스터로 순차 연결 (최대 5마리)
-        var visited = new HashSet<MonsterAI>();
-        var chainTargets = new List<MonsterAI>();
-        if (!TryPickRandomAliveMonster(out MonsterAI startM)) yield break;
-        MonsterAI nextM = startM;
-        while (nextM != null && chainTargets.Count < maxTargets)
+        // 전기 구 1개를 플레이어 위치에서 생성(Plazma_Ball 파티클이 구를 따라다니며 재생).
+        Vector2 cur = _firePoint != null ? (Vector2)_firePoint.position : firstTarget;
+        GameObject ball = (lib != null && lib.plazmaBall != null) ? SpawnVfx(lib.plazmaBall, cur, lib.plazmaBallScale, 54) : null;
+
+        var avoid = new HashSet<MonsterAI>();                           // 직전 타겟 회피 → 매번 다른 적으로 튕김
+        for (int hop = 0; hop < count; hop++)
         {
-            visited.Add(nextM);
-            chainTargets.Add(nextM);
-            nextM = FindNearestAliveMonster(nextM.transform.position, visited);
-        }
+            // 랜덤 살아있는 적 탐색(직전 적 제외, 그것마저 없으면 아무 적이나)
+            if (!TryPickRandomAliveMonster(out MonsterAI target, avoid) && !TryPickRandomAliveMonster(out target, null))
+                break;
 
-        int hits = Mathf.Max(1, pulses);   // 기획: 5마리에게 4회 대미지 (pulses=PelletCount=4)
-        var spawned = new List<GameObject>();
-
-        // pulses회(4) 반복: 매 펄스마다 에이프릴→체인 구간을 CFXR 번개막(chainBolt)으로 잇고(구간별 회전) 살아있는 타겟에 데미지.
-        for (int p = 0; p < hits; p++)
-        {
-            int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
-
-            // 이전 펄스 VFX 정리 후 이번 펄스 새로 (펄스마다 다시 그어짐 = 지직)
-            for (int s = 0; s < spawned.Count; s++) if (spawned[s] != null) Destroy(spawned[s]);
-            spawned.Clear();
-
-            Vector2 prev = _firePoint != null ? (Vector2)_firePoint.position : firstTarget;
-            for (int i = 0; i < chainTargets.Count; i++)
+            // 타겟까지 이동(움직이면 추적). 안전 타임아웃 2초.
+            float t = 0f;
+            while (target != null && target.gameObject.activeInHierarchy)
             {
-                MonsterAI m = chainTargets[i];
-                if (m == null || !m.gameObject.activeInHierarchy) continue;
-                Vector2 pos = m.transform.position;
-                Vector2 dir = pos - prev;
-                float angleDeg = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                Vector2 dest = target.transform.position;
+                cur = Vector2.MoveTowards(cur, dest, speed * Time.deltaTime);
+                if (ball != null) ball.transform.position = (Vector3)cur;
+                if ((cur - dest).sqrMagnitude <= 0.04f) break;          // 도착
+                t += Time.deltaTime;
+                if (t > 2f) break;
+                yield return null;
+            }
 
-                if (lib != null && lib.chainBolt != null)
-                {
-                    var bolt = SpawnVfx(lib.chainBolt, (prev + pos) * 0.5f, lib.chainScale, 52); // 직전 지점→타겟 전기줄 세그먼트
-                    if (bolt != null) { ApplyParticleRotation(bolt, angleDeg + lib.chainBoltRotationTrimDeg); spawned.Add(bolt); }
-                }
+            // 도착(피격): 데미지 + 타격 스파크
+            if (target != null && target.gameObject.activeInHierarchy)
+            {
+                cur = target.transform.position;
+                if (ball != null) ball.transform.position = (Vector3)cur;
+
+                int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
+                target.TakeDamage(damage, data.StandardID);            // 정산 인챈트별 최고뎀 기록
                 if (lib != null && lib.chainHitEffect != null)
                 {
-                    var hit = SpawnVfx(lib.chainHitEffect, pos, lib.chainHitScale, 53); // 몬스터 몸체 타격 이펙트
-                    if (hit != null) spawned.Add(hit);
+                    var hit = SpawnVfx(lib.chainHitEffect, cur, lib.chainHitScale, 55);
+                    if (hit != null) Destroy(hit, 0.6f);
                 }
-                m.TakeDamage(damage, data.StandardID);   // 타겟 직격 + 정산 인챈트별 최고뎀 기록
-                prev = pos;
-            }
-
-            if (p < hits - 1)
-                yield return new WaitForSeconds(interval);
-        }
-
-        yield return new WaitForSeconds(0.25f);
-        for (int s = 0; s < spawned.Count; s++)
-            if (spawned[s] != null) Destroy(spawned[s]);
-    }
-
-    // ===== 번개 줄(LineRenderer) VFX — CFXR 프리팹 의존 없이 코드로 100% 제어 (사슬·방전 공용) =====
-    private Material _lightningMat;
-    private Material GetLightningMaterial()
-    {
-        if (_lightningMat == null)
-        {
-            Shader sh = Shader.Find("Sprites/Default");           // URP·기본 둘 다 존재, 정점색(LineRenderer 색) 지원
-            if (sh == null) sh = Shader.Find("Universal Render Pipeline/Unlit");
-            if (sh == null) sh = Shader.Find("Unlit/Color");
-            _lightningMat = new Material(sh);
-        }
-        return _lightningMat;
-    }
-
-    /// <summary>점들을 지그재그(번개)로 잇는 LineRenderer 1개 생성. 크기/위치는 인자 그대로 — 프리팹 스케일 함정 없음. 자동 삭제 안 함(호출부가 FadeOutAndDestroy 등으로 관리).</summary>
-    private GameObject SpawnLightningLine(IReadOnlyList<Vector2> points, Color color, float width, int sortingOrder, int subdivPerSegment, float jaggedAmplitude)
-    {
-        if (points == null || points.Count < 2) return null;
-
-        var go = new GameObject("LightningBolt");
-        var lr = go.AddComponent<LineRenderer>();
-        lr.useWorldSpace = true;
-        lr.sharedMaterial = GetLightningMaterial();   // material(인스턴스화) 대신 공유 — 누수 방지
-        lr.textureMode = LineTextureMode.Stretch;
-        lr.numCapVertices = 2;
-        lr.numCornerVertices = 2;
-        lr.startWidth = width;
-        lr.endWidth = width;
-        lr.startColor = color;
-        lr.endColor = color;
-        lr.sortingOrder = sortingOrder;
-        lr.alignment = LineAlignment.View;
-
-        var verts = BuildJaggedPath(points, subdivPerSegment, jaggedAmplitude);
-        lr.positionCount = verts.Count;
-        for (int i = 0; i < verts.Count; i++) lr.SetPosition(i, verts[i]);
-        return go;
-    }
-
-    // 각 구간을 subdiv 등분하고 중간점을 진행축 수직으로 흔들어 번개 모양. 끝점 근처(taper)는 안 흔들어 타겟/끝에 정확히 닿게 한다.
-    private static List<Vector3> BuildJaggedPath(IReadOnlyList<Vector2> pts, int subdiv, float amp)
-    {
-        var outv = new List<Vector3>();
-        if (subdiv < 1) subdiv = 1;
-        for (int i = 0; i < pts.Count - 1; i++)
-        {
-            Vector2 a = pts[i], b = pts[i + 1];
-            Vector2 d = b - a;
-            float len = d.magnitude;
-            Vector2 n = len > 0.0001f ? new Vector2(-d.y, d.x) / len : Vector2.up; // 진행축 수직
-            outv.Add(a);
-            for (int k = 1; k < subdiv; k++)
-            {
-                float t = k / (float)subdiv;
-                float taper = Mathf.Sin(t * Mathf.PI); // 양 끝 0, 가운데 1
-                Vector2 mid = Vector2.Lerp(a, b, t) + n * (Random.Range(-amp, amp) * taper);
-                outv.Add(mid);
+                avoid.Clear();
+                avoid.Add(target);                                     // 다음엔 이 적 회피
             }
         }
-        outv.Add(pts[pts.Count - 1]);
-        return outv;
-    }
 
-    // 번개줄을 hold초 유지 후 fade초 동안 알파 0으로 페이드 → 삭제.
-    private System.Collections.IEnumerator FadeOutAndDestroy(GameObject go, float hold, float fade)
-    {
-        if (go == null) yield break;
-        if (hold > 0f) yield return new WaitForSeconds(hold);
-
-        var lr = go != null ? go.GetComponent<LineRenderer>() : null;
-        Color baseColor = lr != null ? lr.startColor : Color.white;
-        float t = 0f;
-        while (t < fade && go != null && lr != null)
-        {
-            t += Time.deltaTime;
-            float a = Mathf.Lerp(baseColor.a, 0f, t / fade);
-            Color c = baseColor; c.a = a;
-            lr.startColor = c; lr.endColor = c;
-            yield return null;
-        }
-        if (go != null) Destroy(go);
+        yield return new WaitForSeconds(0.1f);                          // 마지막 피격 후 잠깐 뒤 소멸
+        if (ball != null) Destroy(ball);
     }
 
     // 살아있는 몬스터 중 from에서 가장 가까운 1마리 (exclude 제외). 체인 라이트닝 연결용.
@@ -912,6 +850,35 @@ public class SkillSystem : MonoBehaviour
             r.sortingOrder = sortingOrder;
 
         return go;
+    }
+
+    /// <summary>from→to를 따라 전기 아크 파티클(빌보드)을 일정 간격으로 타일 배치해 '전기선'을 만든다.
+    /// 빌보드는 transform으로 못 늘리므로 점을 따라 여러 개를 깔아 선처럼 보이게 한다. 생성된 인스턴스는 sink에 담아 호출부가 정리.</summary>
+    private void SpawnArcLine(List<GameObject> sink, GameObject prefab, Vector2 from, Vector2 to, float scale, float spacing, int sortingOrder)
+    {
+        if (prefab == null) return;
+
+        Vector2 d = to - from;
+        float dist = d.magnitude;
+        float angleDeg = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;        // 세그먼트 방향(가로=0, 세로=90)
+        int count = Mathf.Max(1, Mathf.RoundToInt(dist / Mathf.Max(0.05f, spacing)));
+
+        for (int i = 0; i <= count; i++)
+        {
+            Vector2 pos = Vector2.Lerp(from, to, count > 0 ? i / (float)count : 0.5f);
+            var go = Instantiate(prefab, (Vector3)pos, Quaternion.identity);
+            if (scale > 0f && !Mathf.Approximately(scale, 1f))
+                go.transform.localScale = go.transform.localScale * scale;
+
+            // 이 프리팹은 Billboard(View 정렬)이라 transform 회전이 안 먹는다 → 파티클 startRotation을 돌려
+            // 가로 스프라이트를 세그먼트 방향으로 정렬(세로 구간이면 세로로). 회전 적용분으로 즉시 재방출.
+            ApplyParticleRotation(go, -angleDeg);
+            foreach (var ps in go.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+
+            foreach (var r in go.GetComponentsInChildren<ParticleSystemRenderer>(true))
+                r.sortingOrder = sortingOrder;
+            if (sink != null) sink.Add(go);
+        }
     }
 
     private void DealHazardDamage(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, bool finalPulse = false)
@@ -1102,6 +1069,13 @@ public class SkillSystem : MonoBehaviour
         return _cam != null ? _cam.transform.position.x : 0f;
     }
 
+    // 화면 절반 폭(월드). 방전 전기벽을 화면 좌·우 끝까지 깔 때 사용.
+    private float CamHalfWidth()
+    {
+        EnsureCamera();
+        return _cam != null ? _cam.orthographicSize * _cam.aspect : 5f;
+    }
+
     private void EnsureCamera()
     {
         if (_cam == null) _cam = Camera.main;
@@ -1192,7 +1166,7 @@ public class SkillSystem : MonoBehaviour
     }
 
     /// <returns>실제로 발사했으면 true. 타겟 부재 등으로 스킵하면 false (자동공격 카운트는 발사 성공만 센다).</returns>
-    public bool FireBasicAttack()
+    public bool FireBasicAttack(AttackType type = AttackType.Auto)
     {
         float temp = _combatSystem.CalculateDamage(1.0f);
         int baseDmg = CalGroupDamageBonus(temp, DamageGroupType.None);
@@ -1208,6 +1182,11 @@ public class SkillSystem : MonoBehaviour
 
         // 기본 공격도 직선 탄 전용 경로를 사용해 발사 시 객체 생성을 줄인다.
         controller.SetupStraight(baseDmg, _firePoint.position, targetPos, _basicProjectileSpeed);
+
+        // 공격 종류별 VFX를 투사체에 입힌다 (소트=SortSkill, 자동=AutoSkill). 미연결이면 기본 사각 스프라이트.
+        GameObject skin = (type == AttackType.Sort) ? _sortAttackVfx : _autoAttackVfx;
+        if (skin != null)
+            AttachProjectileSkin(controller, obj, skin, _basicAttackVfxScale, _firePoint.position, targetPos, _basicAttackVfxTrimDeg);
         return true;
     }
 

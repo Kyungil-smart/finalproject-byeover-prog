@@ -117,7 +117,7 @@ public class CombatSystem : MonoBehaviour
             // 자동공격 N회마다 발동하는 일반 스킬 인챈트 (인챈트 테이블 v1.03 — 파이어브레스 등).
             // 카운트는 '발사 성공'만 센다 — 몬스터 공백(웨이브 전환 등) 중 틱에 N회째가 걸려
             // 파이어브레스 발동이 무음 소실되는 것을 방지.
-            if (_skillSystem.FireBasicAttack())
+            if (_skillSystem.FireBasicAttack(AttackType.Auto))
             {
                 _autoAttackCount++;
                 var autoSkills = _skillSystem.GetTriggeredAutoAttackSkills(_autoAttackCount);
@@ -157,7 +157,7 @@ public class CombatSystem : MonoBehaviour
         if (sortSkill != null)
             _skillSystem.FireSkill(sortSkill, AttackType.Sort);
         else
-            _skillSystem.FireBasicAttack();
+            _skillSystem.FireBasicAttack(AttackType.Sort);
  
         if (_combinationModel != null)
         {
@@ -212,6 +212,8 @@ public class CombatSystem : MonoBehaviour
         _autoAttackEnabled = true;
     }
 
+    // 헤이스트(바람 301): 발동 시 공격력↑ + 자동공격 간격↓. 수치 placeholder(기획 확정 시 조정).
+    // Develop 머지 후 교체 필수: ApplyAttackBonus_Add/_RemoveA(삭제됨) → StatusEnhance(PlayerStatus.Attack, CalFormula.Add, x, false/true).
     private float _hasteEndTime;
     private int _hasteAtkBonus;          // 적용 중 공격력 보너스(해제용)
     private float _hasteIntervalMul = 1f; // 자동공격 간격 배율(작을수록 빠름)
