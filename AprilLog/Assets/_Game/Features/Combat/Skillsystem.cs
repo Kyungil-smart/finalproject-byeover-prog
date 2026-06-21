@@ -115,6 +115,21 @@ public class SkillSystem : MonoBehaviour
         }
     }
 
+    private WaterSkillVfxLibrary _waterVfx;
+    private bool _waterVfxLoadTried;
+    private WaterSkillVfxLibrary WaterVfx
+    {
+        get
+        {
+            if (!_waterVfxLoadTried)
+            {
+                _waterVfxLoadTried = true;
+                _waterVfx = Resources.Load<WaterSkillVfxLibrary>("WaterSkillVfxLibrary");
+            }
+            return _waterVfx;
+        }
+    }
+
     /// <summary>번개 스킬 StandardID로 VFX 프리팹+스케일 해결. 라이브러리/프리팹 없으면 false.</summary>
     private bool TryGetLightningVfx(Legacy_SkillData data, out GameObject prefab, out float scale)
     {
@@ -142,6 +157,35 @@ public class SkillSystem : MonoBehaviour
             case 303: prefab = lib.gustHazard; scale = lib.gustHazardScale; break;            // 돌풍 (전방 단발)
             case 304: prefab = lib.hurricaneHazard; scale = lib.hurricaneHazardScale; break;  // 허리케인 (지속 소용돌이)
             case 306: prefab = lib.boomerangHazard; scale = lib.boomerangHazardScale; break;  // 부메랑 (백업 — skill_data에 306 행 없어 현재 미발동)
+        }
+        return prefab != null;
+    }
+
+    /// <summary>물 하자드 StandardID로 VFX 프리팹+스케일 해결 (장판형: 탄환세례 202·급류 203). 201/204/205는 전용 루틴에서 직접 소환.</summary>
+    private bool TryGetWaterVfx(Legacy_SkillData data, out GameObject prefab, out float scale)
+    {
+        prefab = null; scale = 1f;
+        var lib = WaterVfx;
+        if (lib == null || data == null) return false;
+        switch (data.StandardID)
+        {
+            case 202: prefab = lib.bulletShowerVfx; scale = lib.bulletShowerScale; break;  // 탄환 세례
+            case 203: prefab = lib.torrentVfx;      scale = lib.torrentScale;      break;  // 급류
+        }
+        return prefab != null;
+    }
+
+    private bool TryGetIceVfx(Legacy_SkillData data, out GameObject prefab, out float scale)
+    {
+        prefab = null; scale = 1f;
+        var lib = Vfx;
+        if (lib == null || data == null) return false;
+        switch (data.StandardID)
+        {
+            case 501: prefab = lib.iceCurtainVfx; scale = lib.iceCurtainScale; break;   // 마칭 아이스
+            case 503: prefab = lib.snowFreezeVfx; scale = lib.snowFreezeScale; break;    // 빙결 지대
+            case 504: prefab = lib.iceStormVfx;   scale = lib.iceStormScale;   break;    // 얼음 결정
+            case 505: prefab = lib.absoluteZeroVfx; scale = lib.absoluteZeroScale; break; // 절대영도 (Iceshower 전용)
         }
         return prefab != null;
     }
@@ -355,6 +399,48 @@ public class SkillSystem : MonoBehaviour
             yield break;
         }
 
+        // 절대영도: 최단거리 타겟 중심에 Iceshower 1회 + 2초간 0.2초마다 데미지(지속 빙벽). 펄스 루프 우회.
+        if (cfg.style == HazardStyle.AbsoluteZero)
+        {
+            StartCoroutine(AbsoluteZeroRoutine(data, fixedCenter, sizeWorld));
+            yield break;
+        }
+
+        // 마칭 아이스: 플레이어 X에서 위로 전진하는 좁은 정사각 마칭(PelletCount칸). 펄스 루프 우회.
+        if (cfg.style == HazardStyle.MarchingIce)
+        {
+            StartCoroutine(MarchingIceRoutine(data, sizeWorld, pulses, cfg.pulseInterval));
+            yield break;
+        }
+
+        // 얼음 결정: 플레이어에서 생성→타겟 방향으로 천천히 전진하며 5초 다단히트. 펄스 루프 우회.
+        if (cfg.style == HazardStyle.IceCrystalMoving)
+        {
+            StartCoroutine(IceCrystalRoutine(data, sizeWorld));
+            yield break;
+        }
+
+        // 물 폭탄: 장벽 윗변에서 물 공이 타겟으로 날아가 착탄 시 폭발(범위)+슬로우. 펄스 루프 우회.
+        if (cfg.style == HazardStyle.WaterBombImpact)
+        {
+            StartCoroutine(WaterBombRoutine(data, fixedCenter, sizeWorld));
+            yield break;
+        }
+
+        // 파도 소환: 타겟 X·장벽 Y에서 위로 솟구치며 전진하는 파도 장판. 펄스 루프 우회.
+        if (cfg.style == HazardStyle.WaveRise)
+        {
+            StartCoroutine(WaveSummonRoutine(data, fixedCenter, sizeWorld));
+            yield break;
+        }
+
+        // 하이드로 펌프: 전투구역 중앙 고정 세로 컬럼에 2초간 0.2초마다 틱. 펄스 루프 우회.
+        if (cfg.style == HazardStyle.WaterBeamSustain)
+        {
+            StartCoroutine(HydroPumpRoutine(data, sizeWorld));
+            yield break;
+        }
+
         for (int i = 0; i < pulses; i++)
         {
             Vector2 center;
@@ -429,6 +515,31 @@ public class SkillSystem : MonoBehaviour
                     }
                     else SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
                 }
+                else if (TryGetIceVfx(data, out GameObject ivfx, out float iscale))
+                {
+                    // 얼음 하자드(마칭 501/빙결 503/얼음결정 504/절대영도 505): center에 VFX 1회 소환·재생.
+                    var iv = SpawnVfx(ivfx, center, iscale, 52);
+                    if (iv != null)
+                    {
+                        StopLoopingOneShot(iv);
+                        foreach (var ps in iv.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+                        Destroy(iv, ComputeOneShotLifetime(iv));
+                    }
+                    else SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+                }
+                else if (TryGetWaterVfx(data, out GameObject wvfx2, out float wscale2))
+                {
+                    // 물 하자드(탄환세례 202·급류 203): center에 VFX 1회 소환·재생.
+                    var wv2 = SpawnVfx(wvfx2, center, wscale2, 52);
+                    if (wv2 != null)
+                    {
+                        if (WaterVfx != null) ApplyParticleRotation(wv2, data.StandardID == 203 ? WaterVfx.torrentRotationDeg : WaterVfx.bulletShowerRotationDeg);
+                        StopLoopingOneShot(wv2);
+                        foreach (var ps in wv2.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+                        Destroy(wv2, ComputeOneShotLifetime(wv2));
+                    }
+                    else SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+                }
                 else
                     SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
             }
@@ -436,6 +547,116 @@ public class SkillSystem : MonoBehaviour
             if (i < pulses - 1)
                 yield return new WaitForSeconds(cfg.pulseInterval);
         }
+    }
+
+    // 물 폭탄 (기획 1-1): 장벽 윗변 중앙에서 물 공이 최단거리 타겟으로 날아가 → 착탄 시 폭발 VFX + 범위 데미지 + 50% 슬로우(DealHazardDamage CC 201).
+    private System.Collections.IEnumerator WaterBombRoutine(Legacy_SkillData data, Vector2 target, Vector2 sizeWorld)
+    {
+        var lib = WaterVfx;
+        Vector2 start = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);  // 장벽 윗변 중앙(=파이어포인트)
+        Vector2 dir = target - start;
+
+        // 물 공 투사체 VFX (start→target 직선 비행)
+        GameObject ball = null;
+        if (lib != null && lib.waterBallProjectile != null)
+        {
+            ball = SpawnVfx(lib.waterBallProjectile, start, lib.waterBallScale, 53);
+            if (ball != null && dir.sqrMagnitude > 0.0001f)
+                ApplyParticleRotation(ball, -Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + lib.waterBallRotationTrimDeg);
+        }
+        const float flightTime = 0.25f;
+        float t = 0f;
+        while (t < flightTime)
+        {
+            t += Time.deltaTime;
+            if (ball != null) ball.transform.position = (Vector3)Vector2.Lerp(start, target, t / flightTime);
+            yield return null;
+        }
+        if (ball != null) Destroy(ball);
+
+        // 착탄 폭발 VFX + 범위 데미지(슬로우는 DealHazardDamage CC 201)
+        if (lib != null && lib.waterBombImpact != null)
+        {
+            var impact = SpawnVfx(lib.waterBombImpact, target, lib.waterBombImpactScale, 52);
+            if (impact != null)
+            {
+                ApplyParticleRotation(impact, lib.waterBombImpactRotationDeg);
+                StopLoopingOneShot(impact);
+                foreach (var ps in impact.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+                Destroy(impact, ComputeOneShotLifetime(impact));
+            }
+        }
+        else SpawnHazardFlash(target, sizeWorld, new Color(0.4f, 0.7f, 1f, 0.35f));
+        DealHazardDamage(data, target, sizeWorld, true);   // 폭발 1회 판정(250x250) + 50% 슬로우
+    }
+
+    // 파도 소환 (기획 3-1, 나미 R식): 타겟 X · 장벽 Y에서 시작해 위로 솟구치며 전진, 지나는 적에게 다단히트 + 마지막 넉백.
+    private System.Collections.IEnumerator WaveSummonRoutine(Legacy_SkillData data, Vector2 target, Vector2 sizeWorld)
+    {
+        var lib = WaterVfx;
+        float baseY = _firePoint != null ? _firePoint.position.y : 0f;
+        Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
+        float speed = PxToWorld(600f);     // 기획 Speed 600 (수직 상승)
+        const float duration = 1.2f;       // 솟구침 지속(튜닝 가능)
+
+        GameObject vfx = null;
+        if (lib != null && lib.waveVfx != null)
+        {
+            vfx = SpawnVfx(lib.waveVfx, cur, lib.waveScale, 52);
+            if (vfx != null)
+            {
+                // 기획 4-4: 프리팹 루트에 Euler(-10,0,-90) 베이크 — SpawnVfx가 identity로 생성하므로 코드에서 복원.
+                vfx.transform.rotation = Quaternion.Euler(lib.waveRotationXDeg, 0f, lib.waveRotationDeg);
+                foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+            }
+        }
+        else SpawnHazardFlash(cur, sizeWorld, new Color(0.4f, 0.7f, 1f, 0.35f));
+
+        const float tickGap = 0.2f;
+        float tickT = tickGap, elapsed = 0f;
+        DealHazardDamage(data, cur, sizeWorld);
+        while (elapsed < duration)
+        {
+            float dt = Time.deltaTime;
+            elapsed += dt; tickT += dt;
+            cur.y += speed * dt;                                  // 수직 상승
+            if (vfx != null) vfx.transform.position = (Vector3)cur;
+            if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, cur, sizeWorld, elapsed + tickGap >= duration); }
+            yield return null;
+        }
+        if (vfx != null) Destroy(vfx);
+    }
+
+    // 하이드로 펌프/아쿠아 스트림 (기획 3-2): 전투구역 중앙 고정 세로 컬럼에 Water_Beam 2초 지속 + 0.2초마다 틱.
+    private System.Collections.IEnumerator HydroPumpRoutine(Legacy_SkillData data, Vector2 sizeWorld)
+    {
+        var lib = WaterVfx;
+        Vector2 center = new Vector2(CamCenterX(), (_firePoint != null ? _firePoint.position.y : 0f) + sizeWorld.y * 0.5f);
+
+        GameObject beam = null;
+        if (lib != null && lib.hydroBeamVfx != null)
+        {
+            beam = SpawnVfx(lib.hydroBeamVfx, center, lib.hydroBeamScale, 52);
+            if (beam != null)
+            {
+                ApplyParticleRotation(beam, lib.hydroBeamRotationDeg);
+                // 지속 빔: looping 유지(StopLoopingOneShot 안 함) → 2초 동안 재생.
+                foreach (var ps in beam.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+            }
+        }
+        else SpawnHazardFlash(center, sizeWorld, new Color(0.4f, 0.7f, 1f, 0.35f));
+
+        const float duration = 2f;     // 기획 3-2: 2초 지속
+        const float tickGap = 0.2f;    // 0.2초 간격
+        float elapsed = 0f, tickT = 0f;
+        while (elapsed < duration)
+        {
+            float dt = Time.deltaTime;
+            elapsed += dt; tickT += dt;
+            if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, center, sizeWorld); }
+            yield return null;
+        }
+        if (beam != null) Destroy(beam);
     }
 
     // 메테오 시퀀스 (기획 4-4-3): 착탄 지점에 조준원이 먼저 깔리고, 하늘에서 운석이 그 위로 낙하 → 착탄 폭발
@@ -615,6 +836,107 @@ public class SkillSystem : MonoBehaviour
         }
 
         yield return new WaitForSeconds(0.3f);
+        if (vfx != null) Destroy(vfx);
+    }
+
+    // 절대영도 (기획 얼음 3-2 / 4-5): 최단거리 타겟 중심에 Iceshower VFX 1회 + 2초간 0.2초마다 범위 데미지(지속 빙벽) → 소멸.
+    private System.Collections.IEnumerator AbsoluteZeroRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld)
+    {
+        GameObject vfx = null;
+        if (TryGetIceVfx(data, out GameObject prefab, out float scale))
+        {
+            vfx = SpawnVfx(prefab, center, scale, 52);
+            if (vfx != null)
+                foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+        }
+        else SpawnHazardFlash(center, sizeWorld, new Color(0.6f, 0.85f, 1f, 0.35f)); // VFX 미연결 폴백
+
+        const float duration = 2f;   // 기획 4-5: 2초 지속
+        const float tick = 0.2f;     // 테이블 Count 0.2 = 틱 간격
+        int ticks = Mathf.Max(1, Mathf.RoundToInt(duration / tick));
+        for (int i = 0; i < ticks; i++)
+        {
+            DealHazardDamage(data, center, sizeWorld);
+            if (i < ticks - 1) yield return new WaitForSeconds(tick);
+        }
+
+        yield return new WaitForSeconds(0.2f);
+        if (vfx != null) Destroy(vfx);
+    }
+
+    // 마칭 아이스: 투사체/이동 아님. 에이프릴 정수리 '위'에서 제자리 발동(흐웨이 QW식 세로 분출 장판).
+    // 단일 VFX를 정수리 위에 고정 생성(이동X=투사체 아님, 스택X=타일링 직사각형 없음) + 정수리에서 위로 뻗는 좁은 세로 컬럼에 지속 범위 데미지.
+    private System.Collections.IEnumerator MarchingIceRoutine(Legacy_SkillData data, Vector2 sizeWorld, int pulses, float interval)
+    {
+        Vector2 head = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
+        float laneLen = Mathf.Max(1, pulses) * sizeWorld.y;                 // 위로 뻗는 길이 = PelletCount칸
+        Vector2 vfxPos = head + Vector2.up * (sizeWorld.y * 0.5f + 0.6f);   // 정수리 '위' 분출 지점(고정)
+        Vector2 hitCenter = head + Vector2.up * (laneLen * 0.5f);           // 정수리→위 좁은 세로 컬럼 판정
+        Vector2 hitSize = new Vector2(sizeWorld.x, laneLen);
+
+        GameObject vfx = null;
+        if (TryGetIceVfx(data, out GameObject prefab, out float scale))
+        {
+            vfx = SpawnVfx(prefab, vfxPos, scale, 52);                      // 단일·제자리(이동/스택 없음)
+            if (vfx != null)
+                foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+        }
+        else SpawnHazardFlash(hitCenter, hitSize, new Color(0.6f, 0.85f, 1f, 0.35f));
+
+        float duration = Mathf.Max(0.35f, pulses * (interval > 0f ? interval : 0.15f));
+        float tickGap = interval > 0f ? interval : 0.15f;
+        float elapsed = 0f, tickT = tickGap;
+        DealHazardDamage(data, hitCenter, hitSize);                         // 발동 즉시 1틱
+        while (elapsed < duration)
+        {
+            float dt = Time.deltaTime;
+            elapsed += dt; tickT += dt;
+            if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, hitCenter, hitSize); }
+            yield return null;
+        }
+        if (vfx != null) Destroy(vfx);
+    }
+
+    // 얼음 결정 (기획 얼음 3-1, 루나라 W식): 플레이어에서 생성 → 타겟 방향으로 천천히 전진하며 5초간 0.25초마다 다단히트.
+    private System.Collections.IEnumerator IceCrystalRoutine(Legacy_SkillData data, Vector2 sizeWorld)
+    {
+        Vector2 cur = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
+        Vector2 dir = Vector2.up;   // 타겟 없으면 위(몬스터 스폰 방향)로
+        if (TryPickRandomAliveMonster(out MonsterAI t))
+        {
+            Vector2 d = (Vector2)t.transform.position - cur;
+            if (d.sqrMagnitude > 0.01f) dir = d.normalized;
+        }
+
+        GameObject vfx = null;
+        if (TryGetIceVfx(data, out GameObject prefab, out float scale))
+        {
+            vfx = SpawnVfx(prefab, cur, scale, 52);
+            if (vfx != null)
+            {
+                // IceStorm 프리팹 콘은 로컬 -Y(아래)로 방출되고 SpawnVfx가 identity 회전으로 생성해 아래로 흘렀다.
+                // startRotation(ApplyParticleRotation)은 스프라이트만 돌리고 방출방향은 못 바꾸므로 transform 회전으로 진행방향 dir에 정렬한다.
+                // 로컬 -Y를 dir로 보내는 Z각 = atan2(dir.x, -dir.y) (위=180도, 오른쪽=90도).
+                float zDeg = Mathf.Atan2(dir.x, -dir.y) * Mathf.Rad2Deg;
+                vfx.transform.rotation = Quaternion.Euler(0f, 0f, zDeg);
+                foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+            }
+        }
+        else SpawnHazardFlash(cur, sizeWorld, new Color(0.6f, 0.85f, 1f, 0.35f));
+
+        const float duration = 5f;          // 기획 3-1: 5초 지속
+        const float tickGap = 0.25f;        // 기획 3-1-5-1: 0.25초 간격 다단히트
+        float speed = PxToWorld(300f);      // 테이블 Speed 300 (천천히 전진)
+        float elapsed = 0f, tickT = tickGap; // 첫 틱 즉시
+        while (elapsed < duration)
+        {
+            float dt = Time.deltaTime;
+            elapsed += dt; tickT += dt;
+            cur += dir * speed * dt;
+            if (vfx != null) vfx.transform.position = (Vector3)cur;
+            if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, cur, sizeWorld); }   // 504 슬로우는 DealHazardDamage 내장
+            yield return null;
+        }
         if (vfx != null) Destroy(vfx);
     }
 
@@ -917,6 +1239,18 @@ public class SkillSystem : MonoBehaviour
                 m.ApplyKnockback(Vector2.up * PxToWorld(600f), 0.2f);
             else if (data.StandardID == 404 && data.Level >= 3)
                 m.ApplyStun(1.5f);
+            else if (data.StandardID == 504)
+                m.ApplySlow(0.5f, data.Level >= 3 ? 2.0f : 1.0f);   // 얼음 결정: 슬로우(50%), Lv3 지속↑ (기획 3-1-5-3)
+            // 물 CC: 물폭탄(201)=착탄 50% 슬로우 / 탄환세례(202)=10% 슬로우 + 마지막 펄스 넉백 / 파도소환(204)=마지막 틱 넉백.
+            else if (data.StandardID == 201)
+                m.ApplySlow(0.5f, 1.0f);                                       // 물 폭탄: 50% 슬로우 (기획 1-1)
+            else if (data.StandardID == 202)
+            {
+                m.ApplySlow(0.9f, 1.0f);                                       // 탄환 세례: 10% 슬로우 (factor 0.9)
+                if (finalPulse) m.ApplyKnockback(Vector2.up * PxToWorld(400f), 0.15f);  // 넉백 (기획 2-1)
+            }
+            else if (data.StandardID == 204 && finalPulse)
+                m.ApplyKnockback(Vector2.up * PxToWorld(500f), 0.2f);         // 파도 소환: 넉백 (기획 3-1)
         }
     }
 
@@ -1125,7 +1459,7 @@ public class SkillSystem : MonoBehaviour
 
         // 관통 투사체: 바람 칼날(302, 이즈 궁식 느린 관통)·템페스트(305, 랜덤+관통+멀티히트).
         // 관통 횟수=레벨별, 멀티히트(피격당 N회 대미지)=템페스트의 NumberOfCycle(8). data.Speed로 속도 제어.
-        bool pierce = data.StandardID == 302 || data.StandardID == 305;
+        bool pierce = data.StandardID == 302 || data.StandardID == 305 || data.StandardID == 502;
         int maxPierce = int.MaxValue;
         int hitMul = 1;
         int lv = Mathf.Clamp(data.Level, 1, 3);
@@ -1135,6 +1469,7 @@ public class SkillSystem : MonoBehaviour
             maxPierce = 6 + 2 * lv;                                       // 템페스트 관통 8/10/12
             hitMul = data.NumberOfCycle > 0 ? data.NumberOfCycle : 1;     // 피격 시 8회 대미지
         }
+        else if (data.StandardID == 502) maxPierce = 15 + 5 * lv;         // 글레이셜 피어스 관통 20/25/30
         controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed, pierce, maxPierce, hitMul, data.StandardID);
 
         // 화염 작렬 계열(StandardID 102)만 Fireball_2_normal VFX 스킨 + 진행방향 회전. 기본공격/타 투사체는 사각형 유지.
@@ -1167,12 +1502,20 @@ public class SkillSystem : MonoBehaviour
                 AttachProjectileSkin(controller, obj, wlib.tempestProjectile, wlib.tempestProjectileScale,
                     _firePoint.position, targetPos, wlib.tempestRotationTrimDeg);
         }
+        else if (data.StandardID == 502)
+        {
+            // 글레이셜 피어스(얼음 관통 투사체): 거대 고드름 VFX 스킨.
+            var lib = Vfx;
+            if (lib != null && lib.harshJudgmentVfx != null)
+                AttachProjectileSkin(controller, obj, lib.harshJudgmentVfx, lib.harshJudgmentScale,
+                    _firePoint.position, targetPos, lib.harshJudgmentRotationTrimDeg);
+        }
         else
         {
             // 원소 전용 스킨이 없는 투사체(소트 기본공격·더미 소트 스킬 등) → 공격 종류별 기본 VFX(소트=SortSkill/자동=AutoSkill).
             GameObject def = GetBasicAttackSkin(type);
             if (def != null)
-                AttachProjectileSkin(controller, obj, def, _basicAttackVfxScale, _firePoint.position, targetPos, _basicAttackVfxTrimDeg);
+                AttachProjectileSkin(controller, obj, def, GetBasicAttackScale(type), _firePoint.position, targetPos, GetBasicAttackTrim(type));
         }
     }
 
@@ -1182,6 +1525,22 @@ public class SkillSystem : MonoBehaviour
         if (type == AttackType.Sort) return _sortAttackVfx != null ? _sortAttackVfx : (Vfx != null ? Vfx.sortAttackVfx : null);
         if (type == AttackType.Auto) return _autoAttackVfx != null ? _autoAttackVfx : (Vfx != null ? Vfx.autoAttackVfx : null);
         return null;
+    }
+
+    // 공격 종류별 기본공격 VFX 스케일: 라이브러리의 sort/auto 스케일 × SkillSystem 전역 배수(_basicAttackVfxScale, 기본 1).
+    private float GetBasicAttackScale(AttackType type)
+    {
+        float libScale = 1f;
+        if (Vfx != null) libScale = (type == AttackType.Sort) ? Vfx.sortAttackScale : Vfx.autoAttackScale;
+        return _basicAttackVfxScale * libScale;
+    }
+
+    // 공격 종류별 기본공격 VFX 회전 보정: 진행방향 자동정렬에 더해지는 오프셋. 라이브러리 sort/auto 트림 + 전역(_basicAttackVfxTrimDeg).
+    private float GetBasicAttackTrim(AttackType type)
+    {
+        float libTrim = 0f;
+        if (Vfx != null) libTrim = (type == AttackType.Sort) ? Vfx.sortAttackRotationTrimDeg : Vfx.autoAttackRotationTrimDeg;
+        return _basicAttackVfxTrimDeg + libTrim;
     }
 
     /// <returns>실제로 발사했으면 true. 타겟 부재 등으로 스킵하면 false (자동공격 카운트는 발사 성공만 센다).</returns>
@@ -1205,7 +1564,7 @@ public class SkillSystem : MonoBehaviour
         // 공격 종류별 VFX를 투사체에 입힌다 (소트=SortSkill, 자동=AutoSkill).
         GameObject skin = GetBasicAttackSkin(type);
         if (skin != null)
-            AttachProjectileSkin(controller, obj, skin, _basicAttackVfxScale, _firePoint.position, targetPos, _basicAttackVfxTrimDeg);
+            AttachProjectileSkin(controller, obj, skin, GetBasicAttackScale(type), _firePoint.position, targetPos, GetBasicAttackTrim(type));
         return true;
     }
 
@@ -1309,6 +1668,12 @@ public enum HazardStyle
     LightningDischarge, // 가운데 번개막 + 양옆 구슬 2개 지속 → 펄스마다 데미지 (방전)
     LightningChain, // 에이프릴→타겟 전기선 + 몬스터 몸체 타격 이펙트 (사슬 번개)
     WindVortex,     // VFX 1개를 center에 지속 생성 → 펄스마다 데미지 (허리케인 소용돌이)
+    AbsoluteZero,   // 최단거리 타겟 중심에 VFX 1회 + 2초간 0.2초마다 데미지 (절대영도 지속 빙벽)
+    MarchingIce,    // 플레이어 X에서 위로 한 칸씩 전진하는 좁은 정사각 얼음 마칭 (흐웨이 QW식)
+    IceCrystalMoving, // 플레이어에서 생성→타겟 방향으로 천천히 전진하며 5초 다단히트 (얼음 결정, 루나라 W식)
+    WaterBombImpact,  // 201: 물 공이 타겟으로 날아가 착탄 시 폭발(범위)+50% 슬로우 (물 폭탄)
+    WaveRise,         // 204: 타겟 X·장벽 Y에서 위로 솟구치며 전진하는 파도 장판 + 넉백 (파도 소환)
+    WaterBeamSustain, // 205: 중앙 고정 세로 컬럼에 2초간 0.2초마다 틱 (하이드로 펌프)
 }
 
 public struct HazardConfig

@@ -86,9 +86,10 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             
             _changePresenter = new EnchantChangePresenter(_changeView, _model, _modelUI, _navigator);
             
-            // 테스트2(Skill_TEST2) 씬에서만 새로고침 무한 — 스킬 뽑기 테스트용. (-1 = 무한 약속) 일반 씬은 Inspector _rerollCount 그대로.
+            // 테스트(Skill_TEST2 / Skill_TEST3) 씬에서만 새로고침 무한 — 스킬 뽑기 테스트용. (-1 = 무한 약속) 일반 씬은 Inspector _rerollCount 그대로.
             string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-            bool unlimitedReroll = activeScene.Contains("TEST2") || activeScene.Contains("테스트2");
+            bool unlimitedReroll = activeScene.Contains("TEST2") || activeScene.Contains("테스트2")
+                                || activeScene.Contains("TEST3") || activeScene.Contains("테스트3");
 
             _selectPresenter = new EnchantSelectPresenter(
                 this,

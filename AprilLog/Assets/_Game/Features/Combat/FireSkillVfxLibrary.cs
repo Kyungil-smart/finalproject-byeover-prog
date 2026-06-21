@@ -23,8 +23,35 @@ public class FireSkillVfxLibrary : ScriptableObject
     [Header("기본공격 VFX (자동/소트 투사체 — NomalSkill 폴더)")]
     [Tooltip("자동공격 투사체 VFX (AutoSkill Variant)")]
     public GameObject autoAttackVfx;
+    [Tooltip("자동공격 VFX 스케일")]
+    public float autoAttackScale = 1f;
+    [Tooltip("자동공격 VFX 회전 보정(도) — 진행방향 정렬에 더해지는 오프셋")]
+    public float autoAttackRotationTrimDeg = 0f;
     [Tooltip("소트(정렬) 공격 투사체 VFX (SortSkill Variant)")]
     public GameObject sortAttackVfx;
+    [Tooltip("소트 공격 VFX 스케일")]
+    public float sortAttackScale = 1f;
+    [Tooltip("소트 공격 VFX 회전 보정(도) — 진행방향 정렬에 더해지는 오프셋")]
+    public float sortAttackRotationTrimDeg = 0f;
+
+    [Header("얼음 스킬 VFX (Ice_Water_Skill 패키지)")]
+    [Tooltip("마칭 아이스 501 — Eff_Water_Uncommon_IceCurtainskill_03")]
+    public GameObject iceCurtainVfx;
+    public float iceCurtainScale = 1f;
+    [Tooltip("글레이셜 피어스 502(투사체) — Eff_Water_Epic_HarshJudgmentSkill_07")]
+    public GameObject harshJudgmentVfx;
+    public float harshJudgmentScale = 2f;
+    [Tooltip("글레이셜 피어스 진행방향 회전 보정(도). 뒤집히면 180")]
+    public float harshJudgmentRotationTrimDeg = 0f;
+    [Tooltip("빙결 지대 503 / 절대영도 505 — FX_Snow_Freeze")]
+    public GameObject snowFreezeVfx;
+    public float snowFreezeScale = 1f;
+    [Tooltip("얼음 결정 504 — Eff_Water_Epic_IceStorm_08")]
+    public GameObject iceStormVfx;
+    public float iceStormScale = 1f;
+    [Tooltip("절대영도 505 — Eff_Water_Common_IceshowerSkill_01")]
+    public GameObject absoluteZeroVfx;
+    public float absoluteZeroScale = 1f;
 
     [Tooltip("생성 구역(ellipse) 표시 후 낙하 시작까지 (예고 시간)")]
     public float meteorTelegraph = 0.5f;
