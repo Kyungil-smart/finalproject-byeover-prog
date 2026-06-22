@@ -161,7 +161,7 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     }
 
     // ---------- 정렬 성공 ----------
-    private IEnumerator ProcessMatch(int tableIdx)
+    public IEnumerator ProcessMatch(int tableIdx)
     {
         _isProcessing = true;
 

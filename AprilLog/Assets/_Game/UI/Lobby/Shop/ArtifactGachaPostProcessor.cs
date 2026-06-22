@@ -27,7 +27,8 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
     private GearRepo Repo => DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
 
     // 뽑힌 Gear_ID 목록을 처리한다. (각 획득 건을 순차적으로 정확히 계산)
-    public ArtifactGachaResult Process(int gachaId, List<int> drawnGearIds)
+    // applyMileage=false 면 누적(마일리지) 집계/보상을 건너뛴다(광고 무료뽑기용 — 천장/누적 제외).
+    public ArtifactGachaResult Process(int gachaId, List<int> drawnGearIds, bool applyMileage = true)
     {
         var result = new ArtifactGachaResult();
 
@@ -52,8 +53,9 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         // 직접 +1(중복) 케이스는 OnInventoryUpdated 가 발행되지 않으므로 리스트를 강제 갱신
         if (_listBinder != null) _listBinder.RefreshInventory();
 
-        // 누적(마일리지) 보상 구간 처리 + 즉시 재화 지급
-        ApplyMileage(gachaId, drawnGearIds != null ? drawnGearIds.Count : 0, result);
+        // 누적(마일리지) 보상 구간 처리 + 즉시 재화 지급 (무료뽑기는 applyMileage=false 로 건너뜀)
+        if (applyMileage)
+            ApplyMileage(gachaId, drawnGearIds != null ? drawnGearIds.Count : 0, result);
 
         return result;
     }

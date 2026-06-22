@@ -19,6 +19,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [SerializeField] private SortInputHandler _inputHandler;
     [SerializeField] private HintSystem _hintSystem;
     [SerializeField] private LocalizationManager _localization;
+    [SerializeField] private JokerSystem _jokerSystem;
 
     [Header("퍼즐 슬롯")]
     [Tooltip("9테이블 x 3슬롯. 순서대로 드래그")]
@@ -254,6 +255,8 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void ShowHint(int tableIdx, int slotIdx)
     {
+        if (_jokerSystem != null && _jokerSystem.IsActive) return;
+
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
         if (idx < 0 || idx >= _puzzleSlots.Length) return;
 
@@ -273,6 +276,8 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void ShowWaitingHint()
     {
+        if (_jokerSystem != null && _jokerSystem.IsActive) return;
+
         foreach (var slot in _waitingSlots)
         {
             if (slot == null)

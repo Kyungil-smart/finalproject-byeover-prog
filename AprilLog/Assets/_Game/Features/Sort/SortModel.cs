@@ -234,4 +234,16 @@ public class SortModel : MonoBehaviour
 
         return list;
     }
+
+    public void ReplaceTableUnits(int tableIdx, int unitType)
+    {
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+        {
+            _puzzleTables[tableIdx][s] = unitType;
+
+            OnSlotChanged?.Invoke(tableIdx, s, unitType);
+        }
+
+        Debug.Log($"[모델] 테이블 {tableIdx}의 모든 유닛을 타입 {unitType}(으)로 교체 완료");
+    }
 }

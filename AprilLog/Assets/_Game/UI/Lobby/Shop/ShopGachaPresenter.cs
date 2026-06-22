@@ -12,11 +12,11 @@ public class ShopGachaPresenter : MonoBehaviour
     public enum CostCurrency { Gold, Parchment }
 
     [Header("시스템 참조")]
-    [Tooltip("씬의 GachaManager. 비우면 자동 탐색 (CDH 반환 추가 후 사용)")]
+    [Tooltip("씬의 GachaManager")]
     [SerializeField] private GachaManager _gachaManager;
     [Tooltip("씬의 CurrencyModel. 비우면 자동 탐색")]
     [SerializeField] private CurrencyModel _currencyModel;
-    [Tooltip("[임시] 등급별 기어 추첨용 GearMasterTable SO. CDH가 ExecuteGacha 반환을 추가하면 더 이상 필요 없음")]
+    [Tooltip("등급별 기어 추첨용 GearMasterTable SO. 현재 추첨 데이터 소스라 필수(연결 유지).")]
     [SerializeField] private GearMasterTable _gearTable;
 
     [Header("뽑기 박스 ID (GachaBoxTable 의 Gacha_ID)")]
@@ -94,6 +94,32 @@ public class ShopGachaPresenter : MonoBehaviour
         OnClickTenDraw();
     }
 
+    // [광고 보상형 무료 뽑기] AdGachaController 가 호출한다.
+    // 비용 차감 없음 + 천장(레전더리 확정) 제외 + 누적(마일리지) 제외.
+    // 결과 표시는 기존 1회 결과창/슬롯을 그대로 재사용한다.
+    // 정상적으로 1개 이상 뽑히면 true 반환(호출 측 쿨타임 시작 판단용).
+    public bool FreeDrawSingle(int gachaId)
+    {
+        SetActiveGacha(gachaId);
+
+        // 천장 미적용(usePity:false) — 무료뽑기는 천장 카운트에 포함하지 않는다.
+        List<int> drawn = ExecuteDraw(_gachaId, 1, usePity: false);
+
+        FillSlots(_singleSlots, drawn);
+
+        // 누적 미집계(countMileage:false) — 무료뽑기는 마일리지 보상에 포함하지 않는다.
+        ArtifactGachaResult post = ProcessDraw(_gachaId, drawn, countMileage: false);
+
+        // 자동 분해 보상(한도 초과분)은 유료 뽑기와 동일하게 결과창에 표시한다.
+        if (_singleDecomposeView != null)
+            _singleDecomposeView.Show(post.TotalStone, post.TotalShard);
+
+        if (_singleResultPopup != null)
+            _singleResultPopup.SetActive(true);
+
+        return drawn != null && drawn.Count > 0;
+    }
+
     // 결과창 확인 버튼 OnClick 에 연결 (두 결과창 모두 닫음)
     public void OnClickConfirm()
     {
@@ -130,7 +156,7 @@ public class ShopGachaPresenter : MonoBehaviour
         FillSlots(slots, drawn);
 
         // 획득 반영(한도/자동분해/누적보상). 다중 뽑기의 각 획득 건을 순차적으로 정확히 계산.
-        ArtifactGachaResult post = ProcessDraw(_gachaId, drawn);
+        ArtifactGachaResult post = ProcessDraw(_gachaId, drawn, countMileage: true);
 
         // 자동 분해 보상 → 이 결과 팝업의 RewardPreviewSlot 에 표시(없으면 슬롯 전부 끔).
         if (decomposeView != null)
@@ -149,10 +175,11 @@ public class ShopGachaPresenter : MonoBehaviour
     }
 
     // 뽑힌 Gear_ID 목록을 유저 데이터에 반영하고 자동분해/누적보상 결과를 돌려준다.
-    private ArtifactGachaResult ProcessDraw(int gachaId, List<int> drawn)
+    // countMileage=false 면 누적(마일리지) 보상 집계를 건너뛴다(광고 무료뽑기용).
+    private ArtifactGachaResult ProcessDraw(int gachaId, List<int> drawn, bool countMileage)
     {
         if (_postProcessor != null)
-            return _postProcessor.Process(gachaId, drawn);
+            return _postProcessor.Process(gachaId, drawn, countMileage);
 
         // 폴백 : 후처리기 미연결 시 기존처럼 단순 보유 추가만 한다(자동분해/누적보상 미동작).
         ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
@@ -168,7 +195,7 @@ public class ShopGachaPresenter : MonoBehaviour
     // 아래 전체를 다음 한 줄로 교체
     // return _gachaManager.ExecuteGacha(gachaId, count);
     //
-    private List<int> ExecuteDraw(int gachaId, int count)
+    private List<int> ExecuteDraw(int gachaId, int count, bool usePity = true)
     {
         var result = new List<int>();
 
@@ -182,7 +209,8 @@ public class ShopGachaPresenter : MonoBehaviour
         }
 
         // 천장(레전더리 확정) : 레전더리 박스에서 누적 N번째 뽑기마다 레전더리 확정.
-        bool pityBox = box.PityType == "RandomLegendary" && box.PityCount > 0;
+        // usePity=false(광고 무료뽑기)면 천장 적용 안 함 — 순수 확률 추첨만.
+        bool pityBox = usePity && box.PityType == "RandomLegendary" && box.PityCount > 0;
         int preTotal = (pityBox && _postProcessor != null) ? _postProcessor.GetDrawTotal(gachaId) : 0;
 
         for (int i = 0; i < count; i++)
