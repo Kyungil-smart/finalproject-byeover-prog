@@ -1526,7 +1526,7 @@ MonoBehaviour:
     Stat_HeldWeight: 60
     Stat_UnheldWeight: 40
   _model: {fileID: 673703853}
-  _modelUI: {fileID: 832098345}
+  _modelUI: {fileID: 0}
   _navigator: {fileID: 1980292180}
   _changeView: {fileID: 1446440523}
   _choiceContainer: {fileID: 1181439378}
@@ -2429,52 +2429,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
---- !u!1 &161812886
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 161812887}
-  - component: {fileID: 161812888}
-  m_Layer: 0
-  m_Name: EnchantCalculator
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &161812887
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 161812886}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1711602647}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &161812888
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 161812886}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49ab24cdc644c774bb9ca55178cdcabc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnchantCalculator
-  _playerModel: {fileID: 1508674580}
-  _enchantModel: {fileID: 673703853}
 --- !u!1 &162783977
 GameObject:
   m_ObjectHideFlags: 0
@@ -8301,52 +8255,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 832abf790691a4c498826a52ea96abc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantChangeInfoTableUI
---- !u!1 &673703852
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 673703854}
-  - component: {fileID: 673703853}
-  m_Layer: 0
-  m_Name: EnchantModel
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &673703853
+--- !u!114 &673703853 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 3100357772879558623, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+  m_PrefabInstance: {fileID: 4818175968475747483}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 673703852}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b5b66d35492f5e04abff8773b7ae2f57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantModel
-  _model: {fileID: 832098345}
-  _calculator: {fileID: 359282423}
---- !u!4 &673703854
+--- !u!4 &673703854 stripped
 Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+  m_PrefabInstance: {fileID: 4818175968475747483}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 673703852}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1711602647}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &678225802
 GameObject:
   m_ObjectHideFlags: 0
@@ -10012,51 +9936,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a9642825eb9e4241a3515dc1b8d3114, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombinationModel
---- !u!1 &832098344
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 832098346}
-  - component: {fileID: 832098345}
-  m_Layer: 0
-  m_Name: EnchantUIModel
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &832098345
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 832098344}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f9177b48fac9f60428f45711dac211fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnchantUIModel
-  _model: {fileID: 673703853}
---- !u!4 &832098346
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 832098344}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1711602647}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &833655791
 GameObject:
   m_ObjectHideFlags: 0
@@ -11383,6 +11262,7 @@ MonoBehaviour:
   _inputHandler: {fileID: 834509329}
   _hintSystem: {fileID: 1332131989}
   _localization: {fileID: 0}
+  _jokerSystem: {fileID: 0}
   _puzzleSlots:
   - {fileID: 2052879785}
   - {fileID: 468350445}
@@ -18680,6 +18560,10 @@ MonoBehaviour:
   _firePoint: {fileID: 0}
   _monsterSpawner: {fileID: 0}
   _basicProjectileSpeed: 10
+  _autoAttackVfx: {fileID: 0}
+  _sortAttackVfx: {fileID: 0}
+  _basicAttackVfxScale: 1
+  _basicAttackVfxTrimDeg: 0
 --- !u!1 &1526545945
 GameObject:
   m_ObjectHideFlags: 0
@@ -20593,8 +20477,6 @@ Transform:
   - {fileID: 550814359}
   - {fileID: 830662635}
   - {fileID: 673703854}
-  - {fileID: 832098346}
-  - {fileID: 161812887}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1732387890
@@ -25720,6 +25602,67 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2146646766}
   m_CullTransparentMesh: 1
+--- !u!1001 &4818175968475747483
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1711602647}
+    m_Modifications:
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245021127522847841, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1851699633418350246, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: _playerModel
+      value: 
+      objectReference: {fileID: 1508674580}
+    - target: {fileID: 3337106085163611107, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+      propertyPath: m_Name
+      value: EnchantModel
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
