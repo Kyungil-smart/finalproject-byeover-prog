@@ -1,11 +1,15 @@
 // 담당자 : 정승우
 // 설명   : 투사체 이동 + 충돌 판정
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 // 수정자 : 정승우
 // 수정내용 : Setup과 SetupStraight의 사용 목적을 명확히 구분.
+
+// 수정자 : 김영찬
+// 수정 내용 : 몬스터 투사체 전용 SetupMonsterProjectile 구현
 
 /// <summary>
 /// 투사체 1개의 이동과 충돌을 처리한다.
@@ -43,6 +47,11 @@ public class ProjectileController : MonoBehaviour, IPoolable
     private int _hitMultiplier = 1;
     private int _skillId;   // 발사한 스킬의 StandardID — 정산 '인챈트별 최고뎀' 기록용(TakeDamage에 전달)
     private readonly HashSet<IDamageable> _piercedTargets = new HashSet<IDamageable>();
+    
+    // 몬스터 전용 필드
+    private bool _isMonsterProjectile = false;
+    private PlayerModel _player;
+    private float _targetPosY;
 
     // VFX 스킨 (풀 공유 오브젝트라 인스턴스 단위로 입히고 디스폰 시 원복)
     private GameObject _skin;
@@ -80,6 +89,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _behavior = behavior;
         _damage = damage;
         _isStraightActive = false;
+        _isMonsterProjectile = false;
         _isFinished = false;
         _lifeTimer = 0f;
         _behavior.Initialize(transform, origin, target, 10f);
@@ -97,6 +107,7 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _lifeTimer = 0f;
         _isFinished = false;
         _isStraightActive = true;
+        _isMonsterProjectile = false;
         _pierce = pierce;
         _maxPierceCount = maxPierceCount > 0 ? maxPierceCount : int.MaxValue;
         _hitMultiplier = hitMultiplier > 0 ? hitMultiplier : 1;
@@ -113,6 +124,25 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _velocity = direction * finalSpeed;
     }
 
+    /// <summary>
+    /// 몬스터 전용 초기화<br/>
+    /// 타겟 위치는 MonsterAI에 몬스터가 도달해야되는 방어선을 기준으로 함
+    /// </summary>
+    public void SetupMonsterProjectile(int damage, PlayerModel player, float targetPosY, float speed = 0)
+    {
+        _behavior = null;
+        _damage = damage;
+        _isStraightActive = false;
+        _isMonsterProjectile = true;
+        _isFinished = false;
+        _lifeTimer = 0f;
+        _player = player;
+        _targetPosY = targetPosY;
+        
+        float finalSpeed = speed > 0f ? speed : DefaultSpeed;
+        _velocity = Vector2.down * finalSpeed;
+    }
+
     // ---------- Update ----------
     private void Update()
     {
@@ -121,13 +151,14 @@ public class ProjectileController : MonoBehaviour, IPoolable
             UpdateStraight(Time.deltaTime);
             return;
         }
+        
+        if (_isMonsterProjectile)
+        {
+            UpdateMonsterProjectile(transform.position.y, Time.deltaTime);
+            return;
+        }
 
-        if (_behavior == null) return;
-
-        _behavior.UpdateMovement(Time.deltaTime);
-
-        if (_behavior.IsFinished)
-            DespawnSelf();
+        UpdateBehavior(Time.deltaTime);
     }
 
     private void UpdateStraight(float deltaTime)
@@ -143,6 +174,26 @@ public class ProjectileController : MonoBehaviour, IPoolable
         {
             DespawnSelf();
         }
+    }
+
+    private void UpdateBehavior(float deltaTime)
+    {
+        if (_behavior == null) return;
+
+        _behavior.UpdateMovement(deltaTime);
+
+        if (_behavior.IsFinished)
+            DespawnSelf();
+    }
+
+    private void UpdateMonsterProjectile(float posY, float deltaTime)
+    {
+        transform.position += _velocity * deltaTime;
+
+        if (!(posY <= _targetPosY)) return;
+        
+        _player.TakeDamage(_damage, 0);
+        DespawnSelf();
     }
 
     // ---------- 충돌 ----------
@@ -205,6 +256,10 @@ public class ProjectileController : MonoBehaviour, IPoolable
         _hitMultiplier = 1;
         _skillId = 0;
         _piercedTargets.Clear();
+        
+        _isMonsterProjectile = false;
+        _player = null;
+        _targetPosY = 0;
 
         // VFX 스킨 정리 — 풀 재사용 시 다음 투사체(기본공격 등)가 화염탄으로 보이지 않도록 반드시 원복.
         // Destroy는 프레임 끝에 처리되는데 풀은 같은 프레임에 이 오브젝트를 즉시 재사용할 수 있으므로,

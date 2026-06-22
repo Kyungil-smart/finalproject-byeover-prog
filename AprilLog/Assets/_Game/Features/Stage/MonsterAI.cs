@@ -286,11 +286,13 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     public void RangeAttack(int damage)
     {
-        // 기획상 투사체를 발사해야 하나, 몬스터 투사체 연출은 후속 작업.
-        // 현재는 사거리에서 멈춘 뒤 방어선에 데미지를 적용해 원거리 몬스터가
-        // 실제로 플레이어를 위협하도록 한다. (투사체 ToDo: ProjectileController 연동)
-        if (_playerModel != null)
-            _playerModel.TakeDamage(damage);
+        var obj = PoolManager.Instance.Spawn("Projectile_Basic", transform.position, Quaternion.identity);
+        if (obj == null) return;
+
+        var controller = obj.GetComponent<ProjectileController>();
+        if (controller == null) return;
+        
+        controller.SetupMonsterProjectile(damage, _playerModel, _defenseLineY);
     }
 
     private void KamikazeAttack(int damage)
