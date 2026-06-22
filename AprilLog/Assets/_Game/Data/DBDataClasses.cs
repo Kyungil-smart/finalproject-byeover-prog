@@ -3,6 +3,7 @@
 // 주의 사항 : 알파벳 순으로 정렬 할 것
 
 using System;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 #region JSON 파싱용 래퍼
@@ -635,6 +636,7 @@ public class UnitTableData
     public int UnitID;
     public string Name;
     public string Type; // normal, special - 테이블 내 동일한 유닛 두개와 같이 있으면 동일 유닛 취급
+    public Sprite UnitSprite;
 }
 
 #endregion

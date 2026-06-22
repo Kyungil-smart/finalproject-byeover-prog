@@ -20,6 +20,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [SerializeField] private HintSystem _hintSystem;
     [SerializeField] private LocalizationManager _localization;
     [SerializeField] private JokerSystem _jokerSystem;
+    [SerializeField] private UnitDataManager _unitDataManager;
 
     [Header("퍼즐 슬롯")]
     [Tooltip("9테이블 x 3슬롯. 순서대로 드래그")]
@@ -153,10 +154,11 @@ public class SortTableView : MonoBehaviour, ISortTableView
         if (idx >= _puzzleSlots.Length) return;
 
         var img = _puzzleSlots[idx];
-        if (img != null && unitType >= 0 && unitType < _unitSprites.Length)
+        var unitData = _unitDataManager.GetUnitData(unitType);
+        if (img != null && unitData != null)
         {
             // Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
-            img.sprite = _unitSprites[unitType];
+            img.sprite = unitData.UnitSprite;
             img.enabled = true;
             img.color = Color.white;
         }
