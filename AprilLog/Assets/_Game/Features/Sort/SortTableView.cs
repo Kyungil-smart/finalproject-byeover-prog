@@ -7,6 +7,7 @@ using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.Rendering.DebugUI;
+using System.Collections;
 
 /// <summary>
 /// 퍼즐 테이블과 대기열의 시각적 표시를 담당한다. 로직 없음.
@@ -35,6 +36,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     // ---------- Private ----------
     private SortTablePresenter _presenter;
+    private bool _isHintBlocked = false;
     private int _currentDraggingUnitType = -1;
 
     // 슬롯 화면좌표 재캐싱 트리거. 안드로이드는 SafeArea/해상도가 1~3프레임 늦게 확정되고,
@@ -48,7 +50,19 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         _presenter = new SortTablePresenter(this, _model, _inputHandler, _hintSystem);
 
+        StartCoroutine(SubscribeToManager());
+
         StartCoroutine(SetupAfterLayout());
+    }
+
+    private IEnumerator SubscribeToManager() // IEnumerator 컴파일 에러
+    {
+        yield return new WaitUntil(() => JokerManager.Instance != null);
+
+        JokerManager.Instance.OnJokerBlockingStateChanged += (blocked) => {
+            _isHintBlocked = blocked;
+            Debug.Log($"[View] 힌트 차단 상태 변경: {blocked}");
+        };
     }
 
     private void Update()
@@ -261,7 +275,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void ShowHint(int tableIdx, int slotIdx)
     {
-        if (_jokerSystem != null && _jokerSystem.IsActive) return;
+        if (_isHintBlocked) return;
 
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
         if (idx < 0 || idx >= _puzzleSlots.Length) return;
@@ -282,7 +296,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void ShowWaitingHint()
     {
-        if (_jokerSystem != null && _jokerSystem.IsActive) return;
+       if (_isHintBlocked) return;
 
         foreach (var slot in _waitingSlots)
         {

@@ -55,8 +55,11 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     private IEnumerator JokerRoutine(int baseUnitType)
     {
+        JokerManager.Instance?.SetJokerActive(true);
+
         IsActive = true;
         if (_inputHandler != null) _inputHandler.enabled = false;
+        if (_effectSprite != null) _effectSprite.gameObject.SetActive(true);
 
         Debug.Log("조커 시스템 작동 시작");
 
@@ -65,7 +68,6 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         for (int i = 0; i < 12; i++)
         {
             int targetTable = GetNextJokerTarget();
-
             int currentTableColor = FindFirstValidUnitInTable(targetTable);
             Debug.Log($"[조커 연출] {i + 1}회차: 타겟 테이블 {targetTable}");
             _model.ReplaceTableUnits(targetTable, currentTableColor);
@@ -90,6 +92,8 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
         Debug.Log("조커 시스템 작동 종료");
         if (_inputHandler != null) _inputHandler.enabled = true;
+        
         IsActive = false;
+        JokerManager.Instance?.SetJokerActive(false);
     }
 }
