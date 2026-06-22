@@ -206,7 +206,10 @@ public class CombatSystem : MonoBehaviour
         float baseDmg = attack * skillDmgRate * comboBonus * critModifier;
         return baseDmg;
     }
- 
+
+    /// <summary>EnchantCalculator 경로용: 콤보 보너스만 노출(콤보 보존). DamageCalculate가 ATK/크리/그룹은 처리하므로 콤보만 곱한다.</summary>
+    public float GetComboBonusRate() => _comboModel != null ? (float)_comboModel.GetComboBonusRate() : 1f;
+
     public void EnableAutoAttack()
     {
         _autoAttackEnabled = true;

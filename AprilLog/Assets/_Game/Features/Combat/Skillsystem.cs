@@ -21,6 +21,9 @@ public class SkillSystem : MonoBehaviour
     // ---------- SerializeField ----------
     [Header("참조")]
     [SerializeField] private CombatSystem _combatSystem;
+    [Tooltip("새 인챈트 테이블 기반 데미지/투사체/범위/효과 계산기 (없거나 매핑 데미지 0이면 레거시 공식으로 폴백)")]
+    [SerializeField] private EnchantCalculator _enchantCalculator;
+    private bool _hasTriedResolveEnchant;
 
     [Header("발사 위치")]
     [Tooltip("투사체가 생성되는 기준 위치")]
@@ -326,6 +329,13 @@ public class SkillSystem : MonoBehaviour
         // PelletCount만큼 다발 발사(예: 화염 작렬 3발). 1발이면 즉시, 2발 이상이면 빠르게 연속 발사하며
         // 매 발마다 가장 가까운 적을 다시 탐색한다(앞 발에 적이 죽으면 다음 적으로). 기획 1-1 화염 작렬.
         int shots = Mathf.Max(1, data.PelletCount);
+        // 투사체 증가 인챈트: 추가 발사 수(보유 없으면 0 → 무변화). 추가탄 간격(pelletGap)·데미지감소(subPelletDmgReduce)는 후속 정교화.
+        ResolveReferences();
+        if (_enchantCalculator != null && data != null)
+        {
+            int addShots = _enchantCalculator.ProjectileAddCalculate(MapToNewDamageId(data.SkillID), out _, out _);
+            if (addShots > 0) shots += addShots;
+        }
         if (shots <= 1)
         {
             FireOneProjectile(data, type);
@@ -343,6 +353,12 @@ public class SkillSystem : MonoBehaviour
         if (_monsterSpawner == null || _firePoint == null) yield break;
 
         Vector2 sizeWorld = new Vector2(PxToWorld(cfg.widthPx), PxToWorld(cfg.heightPx));
+        // 인챈트 범위 확장(HitSize_X/Y). 보유 인챈트 없으면 1f라 무변화. DealHazardDamage·VFX 둘 다 sizeWorld 기반이라 동시 적용됨.
+        if (_enchantCalculator != null)
+        {
+            _enchantCalculator.SkillAreaExtensionCalculate(MapToNewDamageId(data.SkillID), out float xRate, out float yRate);
+            sizeWorld = new Vector2(sizeWorld.x * xRate, sizeWorld.y * yRate);
+        }
         int pulses = Mathf.Max(1, data.PelletCount);
 
         // 파이어브레스: 시전 시점의 최단거리 타겟 위치에 고정(수정 소환 연출) — 펄스마다 재탐색하지 않는다.
@@ -1035,7 +1051,7 @@ public class SkillSystem : MonoBehaviour
                 cur = target.transform.position;
                 if (ball != null) ball.transform.position = (Vector3)cur;
 
-                int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
+                int damage = ComputeSkillDamage(data);
                 target.TakeDamage(damage, data.StandardID);            // 정산 인챈트별 최고뎀 기록
                 if (lib != null && lib.chainHitEffect != null)
                 {
@@ -1209,8 +1225,7 @@ public class SkillSystem : MonoBehaviour
 
     private void DealHazardDamage(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, bool finalPulse = false)
     {
-        float temp = _combatSystem.CalculateDamage(data.DmgRate);
-        int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
+        int damage = ComputeSkillDamage(data);
 
         Vector2 half = sizeWorld * 0.5f;
         var alive = _monsterSpawner.AliveMonsters;
@@ -1369,8 +1384,7 @@ public class SkillSystem : MonoBehaviour
         if (_monsterSpawner == null) return;
         if (!_monsterSpawner.TryFindAttackTarget(origin, out MonsterAI target)) return;
 
-        float temp = _combatSystem.CalculateDamage(data.DmgRate);
-        int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
+        int damage = ComputeSkillDamage(data);
 
         var obj = PoolManager.Instance.Spawn("Projectile_Basic", origin, Quaternion.identity);
         if (obj == null) return;
@@ -1431,9 +1445,8 @@ public class SkillSystem : MonoBehaviour
     // 한 발 발사 : 데미지 계산 → 가장 가까운 적 탐색 → 직선 탄.
     private void FireOneProjectile(Legacy_SkillData data, AttackType type)
     {
-        // 데미지 계산
-        float temp = _combatSystem.CalculateDamage(data.DmgRate);
-        int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
+        // 데미지 계산 (새 인챈트 경로 → DamageCalculate, 폴백 시 레거시)
+        int damage = ComputeSkillDamage(data);
 
         ResolveReferences();
 
@@ -1607,11 +1620,48 @@ public class SkillSystem : MonoBehaviour
 
     private void ResolveReferences()
     {
+        if (_enchantCalculator == null && !_hasTriedResolveEnchant)
+        {
+            _hasTriedResolveEnchant = true;
+            _enchantCalculator = FindFirstObjectByType<EnchantCalculator>();
+        }
         if (_monsterSpawner != null) return;
         if (_hasTriedResolveSpawner) return;
 
         _hasTriedResolveSpawner = true;
         _monsterSpawner = FindFirstObjectByType<MonsterSpawner>();
+    }
+
+    /// <summary>부트스트랩이 명시적으로 EnchantCalculator를 주입할 때 사용(미주입 시 ResolveReferences가 Find로 폴백).</summary>
+    public void SetEnchantCalculator(EnchantCalculator calc) { if (calc != null) _enchantCalculator = calc; }
+
+    // 레거시 SkillID(4자리) → 신규 SkillEnchantTable Skill_ID(5자리). 기본 = 원소digit 뒤 0 삽입(2011→20011, 같은 스킬의 ID 재포맷).
+    // 분할 스킬(투사체 본체 Dmg=0, 데미지는 폭발 엔트리)만 폭발 ID로 오버라이드. 물폭탄: 기획 확인(20111~20113).
+    private static readonly Dictionary<int, int> NewDamageIdOverride = new Dictionary<int, int>
+    {
+        { 2011, 20111 }, { 2012, 20112 }, { 2013, 20113 },
+    };
+
+    private static int MapToNewDamageId(int legacySkillId)
+    {
+        if (NewDamageIdOverride.TryGetValue(legacySkillId, out int o)) return o;
+        return (legacySkillId / 1000) * 10000 + (legacySkillId % 1000);   // insert-0: 2011→20011, 5053→50053
+    }
+
+    // 새 인챈트 경로 데미지: DamageCalculate(ATK/크리/스킬·그룹보너스) × 콤보(보존). 매핑 데미지 0(분할 본체/미정의)·계산기 부재 시 레거시 공식 폴백 → 0뎀으로 안 깨짐.
+    private int ComputeSkillDamage(Legacy_SkillData data)
+    {
+        ResolveReferences();
+        if (_enchantCalculator != null && data != null)
+        {
+            int baseDmg = _enchantCalculator.DamageCalculate(MapToNewDamageId(data.SkillID));
+            if (baseDmg > 0)
+            {
+                float comboBonus = _combatSystem != null ? _combatSystem.GetComboBonusRate() : 1f;
+                return Mathf.FloorToInt(baseDmg * comboBonus);
+            }
+        }
+        return CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
     }
 
     private int CalGroupDamageBonus(float damage, DamageGroupType damageGroupType)
