@@ -23,7 +23,11 @@ public class EnchantUIModel : MonoBehaviour
 
         // 머지 후 씬 미배선 방어: 역참조(EnchantModel)가 안 꽂혀 있으면 같은 오브젝트에서 찾는다.
         if (_model == null) _model = GetComponent<EnchantModel>();
-        if (_model == null) return; // 그래도 없으면 이벤트 구독 스킵 (크래시 방지)
+        if (_model == null)
+        {
+            Debug.LogError("[EnchantUIModel] Enchant Model Not Found. Init Failed.");
+            return; // 그래도 없으면 이벤트 구독 스킵 (크래시 방지)
+        }
 
         _model.OnSkillAcquired += HandleSkillRefresh;
         _model.OnSkillLevelUp += HandleSkillRefresh;
