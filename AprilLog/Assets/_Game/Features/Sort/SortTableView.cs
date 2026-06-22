@@ -30,9 +30,6 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [Tooltip("4테이블 x 3슬롯. 순서대로 드래그")]
     [SerializeField] private Image[] _waitingSlots;
 
-    [Header("유닛 스프라이트")]
-    [SerializeField] private Sprite[] _unitSprites;
-
     [Header("드래그 연출용 가짜 유닛")]
     [SerializeField] private Image _dragFeedbackImg;
 
@@ -155,12 +152,18 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
         var img = _puzzleSlots[idx];
         var unitData = _unitDataManager.GetUnitData(unitType);
+       
         if (img != null && unitData != null)
         {
             // Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
             img.sprite = unitData.UnitSprite;
             img.enabled = true;
             img.color = Color.white;
+        }
+        
+        else
+        {
+            img.enabled = false;
         }
     }
 
@@ -241,10 +244,11 @@ public class SortTableView : MonoBehaviour, ISortTableView
             if (img == null) continue;
 
             int unitType = combo.unitTypes[i];
+            var unitData = _unitDataManager.GetUnitData(unitType);
 
-            if (unitType >= 0 && unitType < _unitSprites.Length)
+            if (unitType >= 0 && unitData.UnitSprite !=null)
             {
-                img.sprite = _unitSprites[unitType];
+                img.sprite = unitData.UnitSprite;
                 img.enabled = true;
             }
             else

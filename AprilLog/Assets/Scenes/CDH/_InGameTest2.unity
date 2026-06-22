@@ -11550,7 +11550,7 @@ MonoBehaviour:
   _inputHandler: {fileID: 834509329}
   _hintSystem: {fileID: 1332131989}
   _localization: {fileID: 0}
-  _jokerSystem: {fileID: 0}
+  _jokerSystem: {fileID: 1617368137}
   _unitDataManager: {fileID: 2102348385}
   _puzzleSlots:
   - {fileID: 2052879785}
@@ -11593,7 +11593,6 @@ MonoBehaviour:
   - {fileID: 1503807688}
   - {fileID: 584299090}
   - {fileID: 1955661031}
-  _unitSprites: []
   _dragFeedbackImg: {fileID: 2132899288}
 --- !u!114 &944614813
 MonoBehaviour:
@@ -20007,6 +20006,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3254199832480924920, guid: 8a1c21bab4666934fb9ade47b9f57cf6, type: 3}
   m_PrefabInstance: {fileID: 1617368134}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1617368137 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3927948313172620772, guid: 8a1c21bab4666934fb9ade47b9f57cf6, type: 3}
+  m_PrefabInstance: {fileID: 1617368134}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1617368136}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ae001b40d4c3e048b49f1ec51c6f645, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JokerSystem
 --- !u!1 &1618226928
 GameObject:
   m_ObjectHideFlags: 0

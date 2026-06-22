@@ -636,6 +636,7 @@ public class UnitTableData
     public int UnitID;
     public string Name;
     public string Type; // normal, special - 테이블 내 동일한 유닛 두개와 같이 있으면 동일 유닛 취급
+    public int Unit_Image_ID;
     public Sprite UnitSprite;
 }
 
