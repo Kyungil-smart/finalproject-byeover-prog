@@ -8,32 +8,46 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class HousingPlayerTouchReaction : MonoBehaviour
 {
-    private const float DisplaySeconds = 2f;
-    private const float TouchCountResetSeconds = 3f;
-
     [Header("터치 영역")]
     [Tooltip("플레이어 터치 판정에 사용할 RectTransform입니다.")]
     [SerializeField] private RectTransform _touchArea;
 
-    [Header("반응 문구")]
-    [Tooltip("플레이어 위에 표시할 반응 텍스트입니다.")]
+    [Header("반응 말풍선")]
+    [Tooltip("플레이어 위에 표시할 말풍선 루트입니다.")]
+    [SerializeField] private GameObject _reactionBubble;
+    [Tooltip("말풍선 안에 표시할 반응 텍스트입니다.")]
     [SerializeField] private TextMeshProUGUI _reactionText;
 
-    private int _touchCount;
-    private float _hideTimer;
-    private float _resetTimer;
+    private HousingPlayerReactionPresenter _presenter;
 
     private void Awake()
     {
+        _presenter = new HousingPlayerReactionPresenter();
         ResolveMissingReferences();
+        HideReaction();
+    }
+
+    private void OnDisable()
+    {
+        _presenter?.Reset();
         HideReaction();
     }
 
     private void Update()
     {
         HandleInput();
-        UpdateHideTimer();
-        UpdateResetTimer();
+
+        if (_presenter == null)
+        {
+            return;
+        }
+
+        if (_presenter.Update(Time.deltaTime) == false)
+        {
+            return;
+        }
+
+        HideReaction();
     }
 
     private void HandleInput()
@@ -76,92 +90,34 @@ public class HousingPlayerTouchReaction : MonoBehaviour
 
     private void HandlePlayerTouched()
     {
-        _touchCount++;
-        _hideTimer = DisplaySeconds;
-        _resetTimer = TouchCountResetSeconds;
-
-        ShowReaction(GetReactionMessage(_touchCount));
-    }
-
-    private void UpdateHideTimer()
-    {
-        if (_reactionText == null)
+        if (_presenter == null)
         {
-            return;
+            _presenter = new HousingPlayerReactionPresenter();
         }
 
-        if (_reactionText.gameObject.activeSelf == false)
-        {
-            return;
-        }
-
-        _hideTimer -= Time.deltaTime;
-
-        if (_hideTimer > 0f)
-        {
-            return;
-        }
-
-        HideReaction();
-    }
-
-    private void UpdateResetTimer()
-    {
-        if (_touchCount <= 0)
-        {
-            return;
-        }
-
-        _resetTimer -= Time.deltaTime;
-
-        if (_resetTimer > 0f)
-        {
-            return;
-        }
-
-        _touchCount = 0;
+        ShowReaction(_presenter.HandleTouched());
     }
 
     private void ShowReaction(string _message)
     {
-        if (_reactionText == null)
+        if (_reactionBubble == null || _reactionText == null)
         {
-            Debug.LogWarning("[HousingPlayerTouchReaction] 반응 텍스트가 연결되지 않았습니다.", this);
+            Debug.LogWarning("[HousingPlayerTouchReaction] 반응 말풍선 연결을 확인해 주세요.", this);
             return;
         }
 
         _reactionText.text = _message;
-        _reactionText.gameObject.SetActive(true);
+        _reactionBubble.SetActive(true);
     }
 
     private void HideReaction()
     {
-        if (_reactionText == null)
+        if (_reactionBubble == null)
         {
             return;
         }
 
-        _reactionText.gameObject.SetActive(false);
-    }
-
-    private string GetReactionMessage(int _count)
-    {
-        if (_count <= 1)
-        {
-            return "어... 갑자기 왜 그래?";
-        }
-
-        if (_count == 2)
-        {
-            return "아, 또 와줬구나!";
-        }
-
-        if (_count == 3)
-        {
-            return "잠깐만... 너무 자주 누르는 거 아니야?";
-        }
-
-        return "으으... 너무 정신없어...";
+        _reactionBubble.SetActive(false);
     }
 
     private void ResolveMissingReferences()
@@ -171,12 +127,26 @@ public class HousingPlayerTouchReaction : MonoBehaviour
             _touchArea = GetComponent<RectTransform>();
         }
 
+        if (_reactionBubble == null && _reactionText != null)
+        {
+            _reactionBubble = _reactionText.transform.parent != transform
+                ? _reactionText.transform.parent.gameObject
+                : _reactionText.gameObject;
+        }
+
         if (_reactionText != null)
         {
             return;
         }
 
         _reactionText = GetComponentInChildren<TextMeshProUGUI>(true);
+
+        if (_reactionBubble == null && _reactionText != null)
+        {
+            _reactionBubble = _reactionText.transform.parent != transform
+                ? _reactionText.transform.parent.gameObject
+                : _reactionText.gameObject;
+        }
     }
 
     private Camera GetEventCamera()

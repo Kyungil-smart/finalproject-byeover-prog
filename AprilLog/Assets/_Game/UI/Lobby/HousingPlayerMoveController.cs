@@ -8,6 +8,7 @@ using UnityEngine;
 public class HousingPlayerMoveController : MonoBehaviour
 {
     private const float ArrivalDistance = 0.01f;
+    private const float DirectionFlipEpsilon = 0.001f;
     private const float MinPatrolDistance = 120f;
     private const float MaxPatrolDistance = 360f;
     private const float MinIdleTime = 2f;
@@ -22,6 +23,14 @@ public class HousingPlayerMoveController : MonoBehaviour
     [Tooltip("실제로 이동시킬 플레이어 Transform입니다.")]
     [SerializeField] private Transform _player;
 
+    [Header("방향 전환")]
+    [Tooltip("이동 방향에 따라 좌우 반전할 플레이어 시각 Transform입니다. 비우면 Player를 사용합니다.")]
+    [SerializeField] private Transform _playerVisual;
+    [Tooltip("플레이어 반전 시 글자처럼 같이 뒤집히면 안 되는 자식 Transform 목록입니다.")]
+    [SerializeField] private Transform[] _nonFlipTargets;
+    [Tooltip("원본 스프라이트가 오른쪽을 보고 있으면 켭니다.")]
+    [SerializeField] private bool _defaultFacesRight = true;
+
     [Header("이동 설정")]
     [Tooltip("초당 이동 거리입니다.")]
     [SerializeField] private float _moveSpeed = 3f;
@@ -33,6 +42,15 @@ public class HousingPlayerMoveController : MonoBehaviour
     private Vector3 _targetPosition;
     private bool _hasTarget;
     private float _idleTimer;
+    private float _playerVisualBaseScaleX = 1f;
+    private float[] _nonFlipBaseScaleXs;
+    private Vector2[] _nonFlipBaseAnchoredPositions;
+
+    private void Awake()
+    {
+        ResolvePlayerVisual();
+        CacheFlipBaseScales();
+    }
 
     private void Update()
     {
@@ -64,6 +82,8 @@ public class HousingPlayerMoveController : MonoBehaviour
             _targetPosition,
             _moveSpeed * Time.deltaTime
         );
+
+        UpdateFacingDirection(_nextPosition.x - _player.position.x);
 
         if (CanMoveTo(_nextPosition) == false)
         {
@@ -138,6 +158,7 @@ public class HousingPlayerMoveController : MonoBehaviour
                 continue;
             }
 
+            UpdateFacingDirection(_candidate.x - _player.position.x);
             _worldPosition = _candidate;
             return true;
         }
@@ -196,5 +217,114 @@ public class HousingPlayerMoveController : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void ResolvePlayerVisual()
+    {
+        if (_playerVisual != null)
+        {
+            return;
+        }
+
+        _playerVisual = _player;
+    }
+
+    private void CacheFlipBaseScales()
+    {
+        if (_playerVisual != null)
+        {
+            _playerVisualBaseScaleX = Mathf.Abs(_playerVisual.localScale.x);
+        }
+
+        if (_nonFlipTargets == null)
+        {
+            _nonFlipBaseScaleXs = null;
+            _nonFlipBaseAnchoredPositions = null;
+            return;
+        }
+
+        _nonFlipBaseScaleXs = new float[_nonFlipTargets.Length];
+        _nonFlipBaseAnchoredPositions = new Vector2[_nonFlipTargets.Length];
+
+        for (int _index = 0; _index < _nonFlipTargets.Length; _index++)
+        {
+            Transform _target = _nonFlipTargets[_index];
+            _nonFlipBaseScaleXs[_index] = _target != null ? Mathf.Abs(_target.localScale.x) : 1f;
+            _nonFlipBaseAnchoredPositions[_index] = GetAnchoredPosition(_target);
+        }
+    }
+
+    private void UpdateFacingDirection(float _deltaX)
+    {
+        if (_playerVisual == null)
+        {
+            return;
+        }
+
+        if (Mathf.Abs(_deltaX) <= DirectionFlipEpsilon)
+        {
+            return;
+        }
+
+        bool _isMovingRight = _deltaX > 0f;
+        float _directionScale = _isMovingRight == _defaultFacesRight ? 1f : -1f;
+
+        SetLocalScaleX(_playerVisual, _playerVisualBaseScaleX * _directionScale);
+        UpdateNonFlipTargets(_directionScale);
+    }
+
+    private void UpdateNonFlipTargets(float _directionScale)
+    {
+        if (_nonFlipTargets == null || _nonFlipBaseScaleXs == null || _nonFlipBaseAnchoredPositions == null)
+        {
+            return;
+        }
+
+        for (int _index = 0; _index < _nonFlipTargets.Length; _index++)
+        {
+            Transform _target = _nonFlipTargets[_index];
+
+            if (_target == null)
+            {
+                continue;
+            }
+
+            if (_target.IsChildOf(_playerVisual) == false)
+            {
+                continue;
+            }
+
+            SetLocalScaleX(_target, _nonFlipBaseScaleXs[_index] * _directionScale);
+            SetAnchoredPositionX(_target, _nonFlipBaseAnchoredPositions[_index].x * _directionScale);
+        }
+    }
+
+    private void SetLocalScaleX(Transform _target, float _scaleX)
+    {
+        Vector3 _localScale = _target.localScale;
+        _localScale.x = _scaleX;
+        _target.localScale = _localScale;
+    }
+
+    private Vector2 GetAnchoredPosition(Transform _target)
+    {
+        if (_target is RectTransform _rectTransform)
+        {
+            return _rectTransform.anchoredPosition;
+        }
+
+        return Vector2.zero;
+    }
+
+    private void SetAnchoredPositionX(Transform _target, float _anchoredPositionX)
+    {
+        if (_target is not RectTransform _rectTransform)
+        {
+            return;
+        }
+
+        Vector2 _anchoredPosition = _rectTransform.anchoredPosition;
+        _anchoredPosition.x = _anchoredPositionX;
+        _rectTransform.anchoredPosition = _anchoredPosition;
     }
 }
