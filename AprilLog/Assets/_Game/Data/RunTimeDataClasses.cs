@@ -307,6 +307,19 @@ public class FusionEnchantData
     }
 }
 
+[Serializable]
+public class EnchantSequenceConfig
+{
+    [Header("인챈트 등장 순서 (원하는 만큼 추가/수정 가능)")]
+    // 기본값: 스킬 -> 스킬 -> 스탯
+    public List<EnchantType> DrawSequence = new List<EnchantType> 
+    { 
+        EnchantType.Skill, 
+        EnchantType.Skill, 
+        EnchantType.Stat 
+    };
+}
+
 #endregion
 
 #region 인첸트 도감 지원

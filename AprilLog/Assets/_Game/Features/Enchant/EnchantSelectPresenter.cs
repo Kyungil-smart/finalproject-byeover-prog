@@ -14,13 +14,16 @@
 // 수정 내용 : 인게임 인챈트 선택 팝업에서 Inspector 설정 횟수만큼 리롤할 수 있도록 씬 이름 기반 테스트 제한 제거
 //            카드별 리롤 요청 시 해당 카드 1개만 새 후보로 교체하도록 변경
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 기존 로직과 신규 로직을 선택 사용 하기 위해 인터페이스 생성 후 등록
+
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// 인챈트 선택지 생성 + 유저 선택 처리.
 /// </summary>
-public class EnchantSelectPresenter
+public class EnchantSelectPresenter : IEnchantSelectPresenter
 {
     private readonly IEnchantSelectView _view;
     private readonly EnchantModel _model;
