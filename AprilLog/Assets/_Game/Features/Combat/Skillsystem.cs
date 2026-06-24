@@ -577,8 +577,13 @@ public class SkillSystem : MonoBehaviour
         if (lib != null && lib.waterBallProjectile != null)
         {
             ball = SpawnVfx(lib.waterBallProjectile, start, lib.waterBallScale, 53);
-            if (ball != null && dir.sqrMagnitude > 0.0001f)
-                ApplyParticleRotation(ball, -Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + lib.waterBallRotationTrimDeg);
+            if (ball != null)
+            {
+                if (dir.sqrMagnitude > 0.0001f)
+                    ApplyParticleRotation(ball, -Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + lib.waterBallRotationTrimDeg);
+                // 인스턴스화 파티클은 Play On Awake가 안 잡혀 안 보일 수 있음 → 명시적 재생(폭발과 동일).
+                foreach (var ps in ball.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+            }
         }
         const float flightTime = 0.25f;
         float t = 0f;
@@ -612,8 +617,8 @@ public class SkillSystem : MonoBehaviour
         var lib = WaterVfx;
         float baseY = _firePoint != null ? _firePoint.position.y : 0f;
         Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
-        float speed = PxToWorld(600f);     // 기획 Speed 600 (수직 상승)
-        const float duration = 1.2f;       // 솟구침 지속(튜닝 가능)
+        float speed = PxToWorld(250f);     // 나미 R식: 천천히 전진하며 적을 밀기 (느린 속도)
+        const float duration = 2.0f;       // 느리게 더 멀리 전진(튜닝 가능)
 
         GameObject vfx = null;
         if (lib != null && lib.waveVfx != null)
@@ -1264,8 +1269,8 @@ public class SkillSystem : MonoBehaviour
                 m.ApplySlow(0.9f, 1.0f);                                       // 탄환 세례: 10% 슬로우 (factor 0.9)
                 if (finalPulse) m.ApplyKnockback(Vector2.up * PxToWorld(400f), 0.15f);  // 넉백 (기획 2-1)
             }
-            else if (data.StandardID == 204 && finalPulse)
-                m.ApplyKnockback(Vector2.up * PxToWorld(500f), 0.2f);         // 파도 소환: 넉백 (기획 3-1)
+            else if (data.StandardID == 204)
+                m.ApplyKnockback(Vector2.up * PxToWorld(120f), 0.2f);         // 파도 소환: 매 틱 위로 밀기(나미 R식 푸시)
         }
     }
 
@@ -1654,11 +1659,19 @@ public class SkillSystem : MonoBehaviour
         ResolveReferences();
         if (_enchantCalculator != null && data != null)
         {
-            int baseDmg = _enchantCalculator.DamageCalculate(MapToNewDamageId(data.SkillID));
-            if (baseDmg > 0)
+            // 계산기 미초기화/참조 누락(예: _playerModel 미연결)으로 던져도 전투(특히 뒤이은 VFX 스폰)가 안 죽도록 폴백.
+            try
             {
-                float comboBonus = _combatSystem != null ? _combatSystem.GetComboBonusRate() : 1f;
-                return Mathf.FloorToInt(baseDmg * comboBonus);
+                int baseDmg = _enchantCalculator.DamageCalculate(MapToNewDamageId(data.SkillID));
+                if (baseDmg > 0)
+                {
+                    float comboBonus = _combatSystem != null ? _combatSystem.GetComboBonusRate() : 1f;
+                    return Mathf.FloorToInt(baseDmg * comboBonus);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[SkillSystem] EnchantCalculator.DamageCalculate 실패 → 레거시 폴백: {e.Message}");
             }
         }
         return CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));

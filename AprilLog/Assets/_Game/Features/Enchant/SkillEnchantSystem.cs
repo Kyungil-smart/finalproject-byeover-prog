@@ -33,8 +33,12 @@ public class SkillEnchantSystem : MonoBehaviour
     private static readonly Dictionary<int, int> NameIdToLegacyEnchantId = new Dictionary<int, int>
     {
         { 50, 101 }, { 51, 102 }, { 52, 103 }, { 53, 104 }, { 54, 105 }, // 불: 파이어브레스/화염작렬/화염정령/대지균열/메테오
+        { 60, 201 }, { 61, 202 }, { 62, 203 }, { 63, 204 }, { 64, 205 }, // 물: 물폭탄/탄환세례/급류/파도소환/하이드로펌프
         { 70, 301 }, { 71, 302 }, { 72, 303 }, { 73, 304 }, { 74, 305 }, // 바람: 헤이스트/바람칼날/돌풍/허리케인/템페스트
         { 80, 401 }, { 81, 402 }, { 82, 403 }, { 83, 404 }, { 84, 405 }, // 번개: 구형/사슬/방전/벼락/뇌격
+        { 90, 501 }, { 91, 502 }, { 92, 503 }, { 93, 504 }, { 94, 505 }, // 얼음: 마칭/글레이셜/빙결/얼음결정/절대영도
+        // ★물폭탄(Name 60)은 신규 테이블에 투사체(20011)+폭발(20111) 두 엔트리가 같은 Name이라, OwnedSkills가 폭발(20111→idx 11)을 잡으면
+        //   1순위 산술변환(idx 1~9 가정)이 실패한다. 이 폴백표가 60→201로 받아줘야 자동공격 등록이 누락되지 않는다.
     };
 
     public void Initialize(EnchantModel enchantModel, SkillSystem skillSystem,
@@ -84,7 +88,7 @@ public class SkillEnchantSystem : MonoBehaviour
     // 1순위: 보유 스킬의 고유 Skill_ID(5자리)에서 산술 변환 → Name 충돌(공식 v1.04 방전·벼락 둘 다 82)에도 정확, asset 재export에도 안 깨짐.
     //   base=Skill_ID/10(레벨 자리 제거), element=base/1000, idx=base%1000, Legacy=element*100+idx.
     //   예) 40041/10=4004→404(벼락), 40031/10=4003→403(방전), 10011/10=1001→101(파브), 30021/10=3002→302(바람칼날).
-    //   물(2xxxx)→201~, 얼음(5xxxx)→501~ 은 Legacy에 스킬이 없어 GetEnchantMaster=null로 자연 스킵된다.
+    //   물(2xxxx)→201~, 얼음(5xxxx)→501~ 도 Legacy EnchantMaster에 추가돼 정상 등록됨. (물폭탄은 폭발 엔트리 idx>9로 1순위가 실패할 수 있어 폴백표가 60→201로 보정)
     // 2순위: 보유 데이터가 없을 때(세이브 복구 등) Name→Legacy 고정 매핑표 폴백.
     private int ResolveLegacyEnchantId(int nameId)
     {
