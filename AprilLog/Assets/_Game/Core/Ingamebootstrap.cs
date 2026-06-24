@@ -456,7 +456,7 @@ public class InGameBootstrap : MonoBehaviour
         // ===== 얼음 속성 장판 (골격 — placeholder VFX=색 사각형(하늘). 데미지/판정/발동만. 빙결/슬로우 CC·이동장판은 폴리싱) =====
         // 글레이셜 피어스 5021~23(조합)은 투사체(piercing)라 기본 투사체 경로 — 여기 등록 안 함.
         Color iceFlash = new Color(0.6f, 0.9f, 1f, 0.4f);
-        // 마칭 아이스 5011~13 (일반): 장판형. 에이프릴 정수리 위에서 제자리 발동(흐웨이 QW식 세로 컬럼). 위로 PelletCount(6/7/8)칸 좁은 세로 범위에 지속 틱. 100×100 기본. (style=MarchingIce → MarchingIceRoutine, placement 미사용)
+        // 마칭 아이스 5011~13 (일반): 장판형. 에이프릴 → 최단거리 타겟 방향으로 100×100 정사각형 PelletCount(6/7/8)칸을 pulseInterval마다 순차 발동(마칭). (style=MarchingIce → MarchingIceRoutine, placement 미사용. 2026-06-24 QA 개편: 제자리→타겟 전진)
         var marchingIce = new HazardConfig { placement = HazardPlacement.PlayerFront, style = HazardStyle.MarchingIce, widthPx = 100, heightPx = 100, pulseInterval = 0.15f, flashColor = iceFlash };
         skillSystem.RegisterHazardSkill(5011, marchingIce);
         skillSystem.RegisterHazardSkill(5012, marchingIce);

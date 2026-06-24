@@ -459,6 +459,13 @@ public class SkillSystem : MonoBehaviour
             yield break;
         }
 
+        // 돌풍(303): 2단계 장판. (A) 3히트 장판 1개 → 텀 → (B) 별도 1히트 폭발+넉백 장판 1개. 펄스 루프 우회.
+        if (data.StandardID == 303)
+        {
+            StartCoroutine(GustTwoPhaseRoutine(data, fixedCenter, sizeWorld, cfg));
+            yield break;
+        }
+
         for (int i = 0; i < pulses; i++)
         {
             Vector2 center;
@@ -486,7 +493,12 @@ public class SkillSystem : MonoBehaviour
                     break;
 
                 default: // NearestTarget
-                    center = fixedCenter;
+                    // 급류(203): 화면 전체폭(1440) 띠는 X를 화면 중앙 고정, Y만 타겟을 따른다 (기획 4-3 '고정 X·타겟 Y').
+                    //            타겟 X에 중심정렬하면 화면 끝 타겟일 때 띠 절반이 화면 밖으로 나가 반대편 끝까지 안 닿음.
+                    if (data.StandardID == 203)
+                        center = new Vector2(CamCenterX(), fixedCenter.y);
+                    else
+                        center = fixedCenter;
                     break;
             }
 
@@ -843,6 +855,44 @@ public class SkillSystem : MonoBehaviour
     }
 
     // 지속형 바람 장판(허리케인 소용돌이): VFX 1개를 center에 생성·유지 → pulses회 데미지(간격 interval) → 한 박자 뒤 삭제.
+    // 돌풍(303) 2단계: (A) 3히트 장판 1개(같은 center에 0.12초 간격 3틱, 넉백 없음) → 텀 → (B) 별도 1히트 폭발 장판 1개(넉백 위로). VFX는 A에서 본체 1개, B에서 폭발 1개.
+    private System.Collections.IEnumerator GustTwoPhaseRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, HazardConfig cfg)
+    {
+        const int phaseAHits = 3;       // (A) 3회 대미지
+        const float aTick = 0.12f;      // 3히트 내부 간격
+        const float gap = 0.25f;        // A→B 사이 텀(별개 장판으로 보이게)
+
+        // (A) 3히트 장판: 같은 center에 3틱. 넉백 X(finalPulse=false 고정).
+        SpawnGustVfx(data, center, sizeWorld, cfg);
+        for (int i = 0; i < phaseAHits; i++)
+        {
+            DealHazardDamage(data, center, sizeWorld, false);
+            if (i < phaseAHits - 1) yield return new WaitForSeconds(aTick);
+        }
+
+        yield return new WaitForSeconds(gap);
+
+        // (B) 별도 1히트 폭발 장판: 넉백 발동(finalPulse=true 경로 재사용).
+        SpawnGustVfx(data, center, sizeWorld, cfg);
+        DealHazardDamage(data, center, sizeWorld, true);
+    }
+
+    // 돌풍 VFX 1개 소환(제네릭 펄스 루프의 바람 분기 로직을 추출). prefab 없으면 색 플래시 폴백.
+    private void SpawnGustVfx(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, HazardConfig cfg)
+    {
+        if (TryGetWindVfx(data, out GameObject wvfx, out float wscale))
+        {
+            var wv = SpawnVfx(wvfx, center, wscale, 52);
+            if (wv != null)
+            {
+                if (WindVfx != null) ApplyParticleRotation(wv, WindVfx.gustRotationDeg);
+                StopLoopingOneShot(wv); Destroy(wv, ComputeOneShotLifetime(wv));
+                return;
+            }
+        }
+        SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+    }
+
     private System.Collections.IEnumerator WindHeldRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
     {
         GameObject vfx = null;
@@ -887,37 +937,42 @@ public class SkillSystem : MonoBehaviour
         if (vfx != null) Destroy(vfx);
     }
 
-    // 마칭 아이스: 투사체/이동 아님. 에이프릴 정수리 '위'에서 제자리 발동(흐웨이 QW식 세로 분출 장판).
-    // 단일 VFX를 정수리 위에 고정 생성(이동X=투사체 아님, 스택X=타일링 직사각형 없음) + 정수리에서 위로 뻗는 좁은 세로 컬럼에 지속 범위 데미지.
+    // 마칭 아이스(QA 개편 2026-06-24): 에이프릴 → 최단거리 타겟 좌표 방향으로 100x100 정사각형 N칸(=PelletCount)을
+    // interval마다 한 칸씩 순차 발동. 각 칸은 그 자리에 1틱 판정 + VFX 1개. 칸을 이으면 타겟으로 가는 마칭 형태.
     private System.Collections.IEnumerator MarchingIceRoutine(Legacy_SkillData data, Vector2 sizeWorld, int pulses, float interval)
     {
-        Vector2 head = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
-        float laneLen = Mathf.Max(1, pulses) * sizeWorld.y;                 // 위로 뻗는 길이 = PelletCount칸
-        Vector2 vfxPos = head + Vector2.up * (sizeWorld.y * 0.5f + 0.6f);   // 정수리 '위' 분출 지점(고정)
-        Vector2 hitCenter = head + Vector2.up * (laneLen * 0.5f);           // 정수리→위 좁은 세로 컬럼 판정
-        Vector2 hitSize = new Vector2(sizeWorld.x, laneLen);
+        int steps = Mathf.Max(1, pulses);                                   // 칸 수 = PelletCount(6/7/8)
+        float tickGap = interval > 0f ? interval : 0.15f;                   // 칸 간 순차 틱 간격
+        float cellGap = sizeWorld.y;                                        // 칸 간격 = 정사각형 한 변(100px world)
 
-        GameObject vfx = null;
-        if (TryGetIceVfx(data, out GameObject prefab, out float scale))
-        {
-            vfx = SpawnVfx(prefab, vfxPos, scale, 52);                      // 단일·제자리(이동/스택 없음)
-            if (vfx != null)
-                foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
-        }
-        else SpawnHazardFlash(hitCenter, hitSize, new Color(0.6f, 0.85f, 1f, 0.35f));
+        Vector2 start = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
+        // 타겟 좌표 = 최단거리 살아있는 몬스터(없으면 위/스폰 방향으로 직진).
+        MonsterAI tgt = FindNearestAliveMonster(start, null);
+        Vector2 dir = tgt != null ? ((Vector2)tgt.transform.position - start) : Vector2.up;
+        dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector2.up;
 
-        float duration = Mathf.Max(0.35f, pulses * (interval > 0f ? interval : 0.15f));
-        float tickGap = interval > 0f ? interval : 0.15f;
-        float elapsed = 0f, tickT = tickGap;
-        DealHazardDamage(data, hitCenter, hitSize);                         // 발동 즉시 1틱
-        while (elapsed < duration)
+        bool haveVfx = TryGetIceVfx(data, out GameObject prefab, out float scale);
+        float zDeg = Mathf.Atan2(dir.x, -dir.y) * Mathf.Rad2Deg;            // IceCrystalRoutine과 동일한 로컬 -Y → dir 정렬
+
+        for (int i = 0; i < steps; i++)
         {
-            float dt = Time.deltaTime;
-            elapsed += dt; tickT += dt;
-            if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, hitCenter, hitSize); }
-            yield return null;
+            // i번째 칸 중심 = start에서 dir로 (i+0.5)칸 전진. 첫 칸은 에이프릴 바로 앞.
+            Vector2 cell = start + dir * (cellGap * (i + 0.5f));
+            if (haveVfx)
+            {
+                GameObject vfx = SpawnVfx(prefab, cell, scale, 52);
+                if (vfx != null)
+                {
+                    vfx.transform.rotation = Quaternion.Euler(0f, 0f, zDeg);
+                    foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+                    Destroy(vfx, tickGap * 2f);                             // 칸 잔상만 잠깐 유지
+                }
+            }
+            else SpawnHazardFlash(cell, sizeWorld, new Color(0.6f, 0.85f, 1f, 0.35f));
+
+            DealHazardDamage(data, cell, sizeWorld);                        // 그 칸(정사각형 100x100)만 1틱 판정
+            if (i < steps - 1) yield return new WaitForSeconds(tickGap);    // 다음 칸까지 대기 = 순차(마칭)
         }
-        if (vfx != null) Destroy(vfx);
     }
 
     // 얼음 결정 (기획 얼음 3-1, 루나라 W식): 플레이어에서 생성 → 최장거리 타겟 좌표로 초당 500px 전진하며 5초간 0.25초마다 다단히트.

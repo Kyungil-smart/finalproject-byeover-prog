@@ -94,9 +94,12 @@ public class SkillEnchantSystem : MonoBehaviour
     {
         if (_enchantModel != null && _enchantModel.OwnedSkills.TryGetValue(nameId, out var owned) && owned.Data != null)
         {
-            int baseId = owned.Data.Skill_ID / 10;
-            int element = baseId / 1000;
-            int idx = baseId % 1000;
+            int baseId = owned.Data.Skill_ID / 10;   // 레벨 자리 제거. 예) 20111→2011, 10011→1001
+            int element = baseId / 1000;             // 원소: 1불 2물 3바람 4번개 5얼음
+            int idx = baseId % 1000;                 // 스킬 인덱스. 물폭탄 폭발행은 11(=폭발 sub-id), 투사체행은 1
+            // 물폭탄처럼 같은 Name에 투사체(2001x)+폭발(2011x) 두 엔트리가 있어 폭발행(idx 11)이 체인을 점령하면
+            // idx의 폭발 자리(10단위)를 떼어 원래 스킬 인덱스(1~9)로 정규화한다. 11→1, 12→2 ... → 폴백표 없이도 201로 해석됨.
+            if (idx > 9) idx %= 10;
             if (element >= 1 && element <= 9 && idx >= 1 && idx <= 9)
                 return element * 100 + idx;
         }
@@ -149,13 +152,11 @@ public class SkillEnchantSystem : MonoBehaviour
                 break;
 
             case 1021: // 화염 작렬 (조합): 연두·빨강·파랑 각 1정렬
-                if (_combinationModel != null)
-                    _combinationModel.SetRecipe(0, new int[] { 2, 0, 1 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 2, 0, 1 }, skillId);
                 break;
 
             case 1031: // 화염 정령 소환 (조합): 노랑·파랑·연두 각 1정렬
-                if (_combinationModel != null)
-                    _combinationModel.SetRecipe(1, new int[] { 3, 1, 2 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 3, 1, 2 }, skillId);
                 break;
 
             case 1041: // 대지 균열 (콤보): 콤보 7의 배수
@@ -171,13 +172,12 @@ public class SkillEnchantSystem : MonoBehaviour
                 _skillSystem.ReplaceAutoAttackSkill(HasteCadence[clampedLevel - 1], data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
-            // 조합 슬롯은 MAX_RECIPES=3개뿐이고 불이 slot 0,1을 점유 → 바람/번개 조합은 빈 slot 2를 공유한다.
-            //    즉 바람칼날/돌풍/사슬번개/방전 중 '마지막에 획득한 1종'만 활성. 동시 활성하려면 MAX_RECIPES+UI 슬롯 확장 필요.
+            // 조합 인챈트는 RegisterRecipe로 '인챈트 선택 순서대로 가장 왼쪽 빈 슬롯'에 배치된다 (기획 3-2-1, 최대 3개).
             case 3021: // 바람 칼날 (조합): 빨강·노랑·하양 (v1.04) — 느린 관통 투사체(관통 15/20/25, 이즈궁식). 발사/관통은 SkillSystem.FireOneProjectile.
-                _combinationModel?.SetRecipe(2, new int[] { 0, 3, 4 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 0, 3, 4 }, skillId);
                 break;
             case 3031: // 돌풍 (조합): 파랑·초록·하양 (v1.04) — 3타 후 마지막 펄스=폭발+넉백(위로), Lv3 범위↑. CC는 SkillSystem.DealHazardDamage.
-                _combinationModel?.SetRecipe(2, new int[] { 1, 2, 4 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 1, 2, 4 }, skillId);
                 break;
             case 3041: // 허리케인 (콤보): 콤보 10의 배수 (v1.04) — 지속 장판 + 매 타격 슬로우(50%). 슬로우는 SkillSystem.DealHazardDamage→MonsterAI.ApplySlow.
                 _skillSystem.ReplaceComboSkill(10, data);
@@ -192,10 +192,10 @@ public class SkillEnchantSystem : MonoBehaviour
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
             case 4021: // 에너지 볼 (조합): 적들 사이를 튕겨다니는 전기 구 (Lv1·2=3회/Lv3=4회 탐색). EnergyBallRoutine.
-                _combinationModel?.SetRecipe(2, new int[] { 3, 2, 0 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 3, 2, 0 }, skillId);
                 break;
-            case 4031: // 방전 (조합): 파랑·빨강·하양 (v1.04, slot 2 공유) — 지속 장판 + 첫 피격 몬스터 슬로우(Lv3 지속↑). LightningDischargeRoutine.
-                _combinationModel?.SetRecipe(2, new int[] { 1, 0, 4 }, skillId);
+            case 4031: // 방전 (조합): 파랑·빨강·하양 (v1.04) — 지속 장판 + 첫 피격 몬스터 슬로우(Lv3 지속↑). LightningDischargeRoutine.
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 1, 0, 4 }, skillId);
                 break;
             case 4041: // 벼락 (콤보): 콤보 9의 배수 (v1.04) — 엘리트/보스 우선 타겟 + 정사각 4히트 + Lv3 스턴(1.5초). DealHazardDamage/HazardRoutine.
                 _skillSystem.ReplaceComboSkill(9, data);
@@ -209,12 +209,12 @@ public class SkillEnchantSystem : MonoBehaviour
                 _skillSystem.ReplaceAutoAttackSkill(WaterBombCadence[clampedLevel - 1], data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
-            // 조합 슬롯 MAX_RECIPES=3, 불이 slot 0,1 점유 → 물/얼음/바람/번개 조합 8종이 slot 2 공유(마지막 획득 1종만 활성). 슬롯 확장은 폴리싱.
+            // 조합 인챈트는 RegisterRecipe로 '인챈트 선택 순서대로 빈 슬롯'에 배치 (기획 3-2-1, 최대 3개).
             case 2021: // 탄환 세례 (조합): 하양·초록·노랑 (v1.04) — 도트·슬로우 미구현, 현재 장판 데미지만
-                _combinationModel?.SetRecipe(2, new int[] { 4, 2, 3 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 4, 2, 3 }, skillId);
                 break;
             case 2031: // 급류 (조합): 하양·노랑·파랑 (v1.04) — 전체 폭 띠 장판 4히트
-                _combinationModel?.SetRecipe(2, new int[] { 4, 3, 1 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 4, 3, 1 }, skillId);
                 break;
             case 2041: // 파도 소환 (콤보): 콤보 8의 배수 (v1.04) — 이동장판 미구현, 현재 전방 단발 장판
                 _skillSystem.ReplaceComboSkill(8, data);
@@ -229,10 +229,10 @@ public class SkillEnchantSystem : MonoBehaviour
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
             case 5021: // 글레이셜 피어스 (조합): 빨강·노랑·파랑 (v1.04) — 관통 미구현, 현재 단발 투사체
-                _combinationModel?.SetRecipe(2, new int[] { 0, 3, 1 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 0, 3, 1 }, skillId);
                 break;
             case 5031: // 빙결 지대 (조합): 초록·하양·빨강 (v1.04) — 빙결 CC 미구현, 현재 장판 데미지만
-                _combinationModel?.SetRecipe(2, new int[] { 2, 4, 0 }, skillId);
+                _combinationModel?.RegisterRecipe(baseId, new int[] { 2, 4, 0 }, skillId);
                 break;
             case 5041: // 얼음 결정 (콤보): 콤보 5의 배수 (기획서 3-1) — IceStorm VFX + 슬로우(Lv3 지속↑). 이동장판(player→target)은 폴리싱.
                 _skillSystem.ReplaceComboSkill(5, data);
