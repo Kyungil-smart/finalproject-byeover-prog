@@ -51,4 +51,11 @@ public static class ArtifactGradeInfo
     {
         return Assets != null ? Assets.GetSlotSprite(grade) : null;
     }
+
+    // 데이터의 등급 문자열("Rare"/"Epic"/"Legendary")을 enum 으로 변환. 알 수 없으면 Rare.
+    public static ArtifactGrade FromGearGrade(string gearGrade)
+        => System.Enum.TryParse(gearGrade, out ArtifactGrade grade) ? grade : ArtifactGrade.Rare;
+
+    // 등급 문자열로 바로 슬롯 이미지를 얻는 편의 메서드.
+    public static Sprite SlotSprite(string gearGrade) => SlotSprite(FromGearGrade(gearGrade));
 }
