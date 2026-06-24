@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class GearRepo : MonoBehaviour
 {
@@ -147,7 +146,6 @@ public class GearRepo : MonoBehaviour
         Debug.LogWarning($"[GearRepo] GetGearUpgradeCost data not found. Get 0.\nGearID: {gearId}, CurLevel: {curLevel}, CostType: {costType}");
         return 0;
     }
-    
     
     // ---------- 보조 함수 ----------
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(

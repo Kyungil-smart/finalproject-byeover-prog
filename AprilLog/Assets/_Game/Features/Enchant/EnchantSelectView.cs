@@ -18,11 +18,14 @@
 //            카드별 리롤 버튼과 특정 카드만 리롤하는 이벤트 연결, Viewport Mask 외부 오버레이 배치 추가
 //            씬 RerollBoundary를 남은 리롤 횟수 표시 전용으로 변경
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 기존 인첸트 선택 로직과 신규 인첸트 선택 로직을 선택해 게임에 적용 가능 하도록 수정
+//           이 기능은 인스팩터에서 작동 되며, 게임 씬 구동 전에 선택 해둬야됨. (빌드나 에디터 실행 도중에는 스위치 되지 않음)
+
 using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>
@@ -37,8 +40,13 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public event Action OnRerollSelected;
     public event Action<int> OnCardRerollSelected;
 
-    [Header("인챈트 등장 확률 설정")]
+    [Header("인챈트 등장 확률 설정 및 출현 로직 결정")]
+    [Tooltip("인챈트 등장 확률 설정")]
     [SerializeField] private EnchantProbabilityConfig _probabilityConfig;
+    [Tooltip("인챈트 등장 턴 순서 설정 (스킬/스텟 분리 출현 선택 시)")]
+    [SerializeField] private EnchantSequenceConfig _sequenceConfig;
+    [Tooltip("스킬/스텟이 분리 출현하는 시퀀스 선택 / True = 스킬/스텟이 순서에 맞춰 분리되어 출현")]
+    [SerializeField] private bool _useSequence;
     
     [Header("참조")]
     [SerializeField] private EnchantModel _model;
@@ -65,7 +73,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [Tooltip("EnchantCard 프리팹")]
     [SerializeField] private GameObject _cardPrefab;
 
-    private EnchantSelectPresenter _selectPresenter;
+    private IEnchantSelectPresenter _selectPresenter;
     private EnchantChangePresenter _changePresenter;
     
     private bool _isInitialized;
@@ -91,15 +99,31 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             bool unlimitedReroll = activeScene.Contains("TEST2") || activeScene.Contains("테스트2")
                                 || activeScene.Contains("TEST3") || activeScene.Contains("테스트3");
 
-            _selectPresenter = new EnchantSelectPresenter(
-                this,
-                _model,
-                DataManager.Instance.SpellRepo,
-                _navigator,
-                _probabilityConfig,
-                _changePresenter,
-                unlimitedReroll ? -1 : _rerollCount
-            );
+            if (_useSequence)
+            {
+                _selectPresenter = new EnchantSequenceSelectPresenter(
+                    this, 
+                    _model, 
+                    DataManager.Instance.SpellRepo, 
+                    _navigator, 
+                    _probabilityConfig, 
+                    _sequenceConfig, 
+                    _changePresenter,
+                    unlimitedReroll ? -1 : _rerollCount
+                );
+            }
+            else
+            {
+                _selectPresenter = new EnchantSelectPresenter(
+                    this,
+                    _model,
+                    DataManager.Instance.SpellRepo,
+                    _navigator,
+                    _probabilityConfig,
+                    _changePresenter,
+                    unlimitedReroll ? -1 : _rerollCount
+                );
+            }
             
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
             if (_rerollButton != null)

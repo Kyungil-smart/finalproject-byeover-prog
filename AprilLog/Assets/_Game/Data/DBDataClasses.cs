@@ -621,6 +621,46 @@ public class StatTableData
     public int Image_ID;
 }
 
+/// <summary>
+/// 스토리에 사용하는 캐릭터의 리소스(포트레이트 정보)<br/>
+/// 생성일 : 26.06.24<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class Story_CharacterData
+{
+    public int ID;
+    public int Resource_ID;
+}
+
+/// <summary>
+/// 스토리 대화 데이터<br/>
+/// 생성일 : 26.06.24<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class Story_TalkData
+{
+    public int ID;
+    public int GroupID;
+    public int TextBox;
+    public string name_KR;
+    public string name_EN;
+    public string Text_KR;
+    public string Text_EN;
+    public int portrait1;
+    public int direction1;
+    public int portrait2;
+    public int direction2;
+    public int portrait3;
+    public int direction3;
+    public int speaker;
+    public int BG;
+    public int CG;
+    public int BGM;
+    public int SFX;
+}
+
 #endregion
 
 #region ----- U -----
