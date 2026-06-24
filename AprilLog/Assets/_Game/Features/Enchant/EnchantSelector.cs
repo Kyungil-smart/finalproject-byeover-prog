@@ -26,7 +26,7 @@ public class EnchantSelector
         _config = config;
     }
 
-    public List<EnchantCandidate> GenerateChoices(EnchantModel playerModel, int pickCount = 3, List<int> excludedNameIds = null)
+    public List<EnchantCandidate> GenerateChoices(EnchantModel playerModel, int pickCount = 3, HashSet<int> excludedNameIds = null)
     {
         List<EnchantCandidate> finalPool = new List<EnchantCandidate>();
         

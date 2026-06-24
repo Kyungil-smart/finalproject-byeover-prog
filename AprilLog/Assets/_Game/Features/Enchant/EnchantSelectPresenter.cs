@@ -43,6 +43,9 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     private List<EnchantCandidate> _currentChoices;
     private int _rerollRemaining;
     private int _pickCount = 3;     // 리롤 시 같은 개수로 다시 뽑기 위해 보관
+    
+    // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
+    private HashSet<int> _seenEnchantIds = new HashSet<int>();
 
     public EnchantSelectPresenter(IEnchantSelectView view, EnchantModel model, SpellRepo repo, ScreenNavigator navigator, EnchantProbabilityConfig config, EnchantChangePresenter changePresenter, int rerollCount)
     {
@@ -73,8 +76,23 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     {
         _pickCount = pickCount;
         _rerollRemaining = _baseRerollCount;
-        _currentChoices = _selector.GenerateChoices(_model, pickCount);
+        
+        _seenEnchantIds.Clear();
+        
+        GenerateChoices(pickCount);
         DisplayChoicesToView();
+    }
+
+    private void GenerateChoices(int pickCount = 3)
+    {
+        _currentChoices = _selector.GenerateChoices(_model, pickCount, _seenEnchantIds);
+        
+        // 새로 뽑힌 인첸트들을 관측 목록에 누적 추가
+        if (_currentChoices == null) return;
+        foreach (var choice in _currentChoices)
+        {
+            _seenEnchantIds.Add(choice.Name_ID);
+        }
     }
 
     // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 EnchantSelector가 처리).
@@ -97,7 +115,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
             }
         }
         
-        _currentChoices = _selector.GenerateChoices(_model, _pickCount, excludedIds);
+        GenerateChoices(_pickCount);
         DisplayChoicesToView();
     }
 
@@ -105,15 +123,8 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     {
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
-
-        // 다른 카드들과 중복을 막기 위해 현재 떠있는 3개를 전부 제외 목록에 넣음
-        List<int> excludedIds = new List<int>();
-        foreach (var choice in _currentChoices)
-        {
-            excludedIds.Add(choice.Name_ID);
-        }
         
-        var newChoice = _selector.GenerateChoices(_model, 1, excludedIds)[0];
+        var newChoice = _selector.GenerateChoices(_model, 1, _seenEnchantIds)[0];
         if (newChoice == null) return;
 
         if (!_unlimitedReroll)
@@ -123,6 +134,8 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         }
 
         _currentChoices[index] = newChoice;
+        _seenEnchantIds.Add(newChoice.Name_ID);
+        
         DisplayChoicesToView();
     }
     

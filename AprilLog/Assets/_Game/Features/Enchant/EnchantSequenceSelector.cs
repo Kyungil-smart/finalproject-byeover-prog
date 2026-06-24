@@ -27,7 +27,7 @@ public class EnchantSequenceSelector
     
     // ---------- 인첸트 선택 로직 ----------
     // 스킬 전용 픽
-    public List<EnchantCandidate> GenerateSkillChoices(EnchantModel playerModel, int pickCount = 3, List<int> excludedNameIds = null)
+    public List<EnchantCandidate> GenerateSkillChoices(EnchantModel playerModel, int pickCount = 3, HashSet<int> excludedNameIds = null)
     {
         List<EnchantCandidate> finalPool = new List<EnchantCandidate>();
         List<EnchantCandidate> skillHeld = new List<EnchantCandidate>();
@@ -95,7 +95,7 @@ public class EnchantSequenceSelector
     }
     
     // 스탯 전용 픽
-    public List<EnchantCandidate> GenerateStatChoices(EnchantModel playerModel, int pickCount = 3, List<int> excludedNameIds = null)
+    public List<EnchantCandidate> GenerateStatChoices(EnchantModel playerModel, int pickCount = 3, HashSet<int> excludedNameIds = null)
     {
         List<EnchantCandidate> finalPool = new List<EnchantCandidate>();
         List<EnchantCandidate> statHeld = new List<EnchantCandidate>();

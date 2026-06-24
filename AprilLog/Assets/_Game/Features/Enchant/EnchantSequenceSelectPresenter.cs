@@ -30,6 +30,9 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     private List<EnchantCandidate> _currentChoices;
     private int _rerollRemaining;
     private int _pickCount = 3;
+    
+    // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
+    private HashSet<int> _seenEnchantIds = new HashSet<int>();
 
     // ---------- 초기화 ----------
     public EnchantSequenceSelectPresenter(IEnchantSelectView view, EnchantModel model, SpellRepo repo, ScreenNavigator navigator, EnchantProbabilityConfig config, EnchantSequenceConfig sequenceConfig, EnchantChangePresenter changePresenter, int rerollCount)
@@ -66,6 +69,8 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         _pickCount = pickCount;
         _rerollRemaining = _baseRerollCount;
         
+        _seenEnchantIds.Clear();
+        
         // 현재 몇 번째 뽑기인지에 따라 스킬/스탯 차례 계산
         int sequenceIndex = _model.TotalDrawCount % _sequenceConfig.DrawSequence.Count;
         _currentTurnType = _sequenceConfig.DrawSequence[sequenceIndex];
@@ -75,11 +80,18 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     }
 
     // 차례에 맞는 종류만 뽑기
-    private void GenerateChoicesByTurnType(int pickCount, List<int> excludedIds = null)
+    private void GenerateChoicesByTurnType(int pickCount)
     {
         _currentChoices = _currentTurnType == EnchantType.Skill ? 
-            _sequenceSelector.GenerateSkillChoices(_model, pickCount, excludedIds) : 
-            _sequenceSelector.GenerateStatChoices(_model, pickCount, excludedIds);
+            _sequenceSelector.GenerateSkillChoices(_model, pickCount, _seenEnchantIds) : 
+            _sequenceSelector.GenerateStatChoices(_model, pickCount, _seenEnchantIds);
+        
+        // 새로 뽑힌 인첸트들을 관측 목록에 누적 추가
+        if (_currentChoices == null) return;
+        foreach (var choice in _currentChoices)
+        {
+            _seenEnchantIds.Add(choice.Name_ID);
+        }
     }
     
     // ---------- 유저 클릭 처리 ----------
@@ -141,13 +153,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
             _rerollRemaining--;
         }
         
-        List<int> excludedIds = new List<int>();
-        foreach (var choice in _currentChoices)
-        {
-            excludedIds.Add(choice.Name_ID);
-        }
-        
-        GenerateChoicesByTurnType(_pickCount, excludedIds);
+        GenerateChoicesByTurnType(_pickCount);
         DisplayChoicesToView();
     }
 
@@ -156,30 +162,22 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     {
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
-        
-        // 다른 카드들과 똑같은 게 나오면 안 되므로, 현재 떠 있는 3개를 전부 제외 목록에 넣음
-        List<int> excludedIds = new List<int>();
-        foreach (var choice in _currentChoices)
-        {
-            excludedIds.Add(choice.Name_ID);
-        }
 
         var newChoice = _currentTurnType == EnchantType.Skill 
-            ? _sequenceSelector.GenerateSkillChoices(_model, 1, excludedIds)[0]
-            : _sequenceSelector.GenerateStatChoices(_model, 1, excludedIds)[0];
+            ? _sequenceSelector.GenerateSkillChoices(_model, 1, _seenEnchantIds)[0]
+            : _sequenceSelector.GenerateStatChoices(_model, 1, _seenEnchantIds)[0];
+        if (newChoice == null) return;
         
         if (!_unlimitedReroll)
         {
             if (_rerollRemaining <= 0) return;
             _rerollRemaining--;
         }
-
-        // 안전장치로 인해 정상적으로 뽑혔다면 교체
-        if (newChoice != null)
-        {
-            _currentChoices[index] = newChoice;
-            DisplayChoicesToView();
-        }
+        
+        _currentChoices[index] = newChoice;
+        _seenEnchantIds.Add(newChoice.Name_ID);
+            
+        DisplayChoicesToView();
     }
 
     // ---------- 보조 함수 ----------
