@@ -17,6 +17,9 @@
 // 3차 수정자 : 김영찬
 // 수정 내용 : 기존 로직과 신규 로직을 선택 사용 하기 위해 인터페이스 생성 후 등록
 
+// 4차 수정자 : 김영찬
+// 수정 내용 : 리롤 시 리롤 전 인첸트가 중복 등장하지 않도록 수정
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -83,7 +86,18 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
             if (_rerollRemaining <= 0) return;
             _rerollRemaining--;
         }
-        _currentChoices = _selector.GenerateChoices(_model, _pickCount);
+        
+        // 화면에 떠 있는 카드들을 제외 리스트에 담기
+        List<int> excludedIds = new List<int>();
+        if (_currentChoices != null)
+        {
+            foreach (var choice in _currentChoices)
+            {
+                excludedIds.Add(choice.Name_ID);
+            }
+        }
+        
+        _currentChoices = _selector.GenerateChoices(_model, _pickCount, excludedIds);
         DisplayChoicesToView();
     }
 
@@ -92,8 +106,15 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
 
-        List<EnchantCandidate> newChoices = _selector.GenerateChoices(_model, 1);
-        if (newChoices == null || newChoices.Count == 0) return;
+        // 다른 카드들과 중복을 막기 위해 현재 떠있는 3개를 전부 제외 목록에 넣음
+        List<int> excludedIds = new List<int>();
+        foreach (var choice in _currentChoices)
+        {
+            excludedIds.Add(choice.Name_ID);
+        }
+        
+        var newChoice = _selector.GenerateChoices(_model, 1, excludedIds)[0];
+        if (newChoice == null) return;
 
         if (!_unlimitedReroll)
         {
@@ -101,7 +122,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
             _rerollRemaining--;
         }
 
-        _currentChoices[index] = newChoices[0];
+        _currentChoices[index] = newChoice;
         DisplayChoicesToView();
     }
     

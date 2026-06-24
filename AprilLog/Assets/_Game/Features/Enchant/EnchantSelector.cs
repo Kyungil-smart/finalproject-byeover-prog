@@ -1,7 +1,11 @@
 // 담당자 : 김영찬
 // 설명   : 인챈트 등장 가중치 계산 + 랜덤 선택 (기획 v1.04 반영)
 
+// 수정자 : 김영찬
+// 수정 내용 : 인첸트 리롤 시 기존 인첸트가 등장하지 않도록 수정
+
 using System.Collections.Generic;
+using UnityEngine;
 
 public class EnchantSelector
 {
@@ -22,7 +26,7 @@ public class EnchantSelector
         _config = config;
     }
 
-    public List<EnchantCandidate> GenerateChoices(EnchantModel playerModel, int pickCount = 3)
+    public List<EnchantCandidate> GenerateChoices(EnchantModel playerModel, int pickCount = 3, List<int> excludedNameIds = null)
     {
         List<EnchantCandidate> finalPool = new List<EnchantCandidate>();
         
@@ -124,7 +128,24 @@ public class EnchantSelector
 
         for (int i = 0; i < statHeld.Count; i++) { statHeld[i].Weight = indStatHeld; finalPool.Add(statHeld[i]); }
         for (int i = 0; i < statUnheld.Count; i++) { statUnheld[i].Weight = indStatUnheld; finalPool.Add(statUnheld[i]); }
-
+        
+        // 리롤 배제 및 풀 고갈 방지 (가중치가 모두 부여된 최종 풀에서 걸러내기)
+        if (excludedNameIds != null && excludedNameIds.Count > 0)
+        {
+            // 배제할 ID가 없는 애들만 남긴 임시 풀 생성
+            var filteredPool = finalPool.FindAll(x => !excludedNameIds.Contains(x.Name_ID));
+            
+            // 남은 전체 스킬+스탯 종류가 뽑아야 할 개수(pickCount) 이상일 때만 제외 적용 (에러 방지)
+            if (filteredPool.Count >= pickCount)
+            {
+                finalPool = filteredPool;
+            }
+            else
+            {
+                Debug.LogWarning("[EnchantSelector] 남은 인챈트 풀이 부족하여 리롤 중복 배제 로직을 무시합니다.");
+            }
+        }
+        
         // pickCount만큼 뽑기
         return GetWeightedRandomPicks(finalPool, pickCount);
     }
@@ -140,7 +161,7 @@ public class EnchantSelector
             float totalWeight = 0f;
             for (int w = 0; w < tempPool.Count; w++) totalWeight += tempPool[w].Weight;
 
-            float randomVal = UnityEngine.Random.Range(0f, totalWeight);
+            float randomVal = Random.Range(0f, totalWeight);
             float cursor = 0f;
 
             for (int j = 0; j < tempPool.Count; j++)

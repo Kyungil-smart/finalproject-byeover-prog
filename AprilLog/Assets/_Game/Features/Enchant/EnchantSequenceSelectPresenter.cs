@@ -1,6 +1,9 @@
 // 작성자 : 김영찬
 // 설명 : EnchantSequenceSelector를 지원하는 중재자(스킬/스텟 선택 분리)
 
+// 수정자 : 김영찬
+// 수정 내용 : 인첸트 리롤 시 기존 인첸트가 등장하지 않도록 수정
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -66,19 +69,17 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         // 현재 몇 번째 뽑기인지에 따라 스킬/스탯 차례 계산
         int sequenceIndex = _model.TotalDrawCount % _sequenceConfig.DrawSequence.Count;
         _currentTurnType = _sequenceConfig.DrawSequence[sequenceIndex];
-
-        // 차례에 맞는 종류만 뽑기
-        GenerateChoicesByTurnType(pickCount);
         
+        GenerateChoicesByTurnType(pickCount);
         DisplayChoicesToView();
     }
 
-    private void GenerateChoicesByTurnType(int pickCount)
+    // 차례에 맞는 종류만 뽑기
+    private void GenerateChoicesByTurnType(int pickCount, List<int> excludedIds = null)
     {
-        if (_currentTurnType == EnchantType.Skill)
-            _currentChoices = _sequenceSelector.GenerateSkillChoices(_model, pickCount);
-        else
-            _currentChoices = _sequenceSelector.GenerateStatChoices(_model, pickCount);
+        _currentChoices = _currentTurnType == EnchantType.Skill ? 
+            _sequenceSelector.GenerateSkillChoices(_model, pickCount, excludedIds) : 
+            _sequenceSelector.GenerateStatChoices(_model, pickCount, excludedIds);
     }
     
     // ---------- 유저 클릭 처리 ----------
@@ -87,28 +88,33 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         if (index < 0 || index >= _currentChoices.Count) return;
         var selected = _currentChoices[index];
 
-        if (selected.Type == EnchantType.Skill)
+        switch (selected.Type)
         {
-            if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
+            case EnchantType.Skill:
             {
-                _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
-                ClosePopupAndCountUp(); 
+                if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
+                {
+                    _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
+                    ClosePopupAndCountUp(); 
+                }
+                else
+                {
+                    _changePresenter.OpenChangePopup(selected); 
+                }
+                break;
             }
-            else
+            case EnchantType.Stat:
             {
-                _changePresenter.OpenChangePopup(selected); 
-            }
-        }
-        else if (selected.Type == EnchantType.Stat)
-        {
-            if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
-            {
-                _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
-                ClosePopupAndCountUp();
-            }
-            else
-            {
-                _changePresenter.OpenChangePopup(selected); 
+                if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
+                {
+                    _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
+                    ClosePopupAndCountUp();
+                }
+                else
+                {
+                    _changePresenter.OpenChangePopup(selected); 
+                }
+                break;
             }
         }
     }
@@ -134,7 +140,14 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
             if (_rerollRemaining <= 0) return;
             _rerollRemaining--;
         }
-        GenerateChoicesByTurnType(_pickCount);
+        
+        List<int> excludedIds = new List<int>();
+        foreach (var choice in _currentChoices)
+        {
+            excludedIds.Add(choice.Name_ID);
+        }
+        
+        GenerateChoicesByTurnType(_pickCount, excludedIds);
         DisplayChoicesToView();
     }
 
@@ -143,10 +156,17 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     {
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
+        
+        // 다른 카드들과 똑같은 게 나오면 안 되므로, 현재 떠 있는 3개를 전부 제외 목록에 넣음
+        List<int> excludedIds = new List<int>();
+        foreach (var choice in _currentChoices)
+        {
+            excludedIds.Add(choice.Name_ID);
+        }
 
         var newChoice = _currentTurnType == EnchantType.Skill 
-            ? _sequenceSelector.GenerateSkillChoices(_model, 1)[0]
-            : _sequenceSelector.GenerateStatChoices(_model, 1)[0];
+            ? _sequenceSelector.GenerateSkillChoices(_model, 1, excludedIds)[0]
+            : _sequenceSelector.GenerateStatChoices(_model, 1, excludedIds)[0];
         
         if (!_unlimitedReroll)
         {
@@ -154,8 +174,12 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
             _rerollRemaining--;
         }
 
-        _currentChoices[index] = newChoice;
-        DisplayChoicesToView();
+        // 안전장치로 인해 정상적으로 뽑혔다면 교체
+        if (newChoice != null)
+        {
+            _currentChoices[index] = newChoice;
+            DisplayChoicesToView();
+        }
     }
 
     // ---------- 보조 함수 ----------
