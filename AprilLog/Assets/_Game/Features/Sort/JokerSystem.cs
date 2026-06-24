@@ -14,6 +14,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     [SerializeField] private RectTransform _effectSprite;
     [SerializeField] private SortModel _model;
     [SerializeField] private SortSystem _sortSystem;
+    [SerializeField] private CanvasGroup[] _tableCanvasGroups;
 
     private JokerPatternData _activePattern;
     private int _currentIndex = 0;
@@ -68,6 +69,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         for (int i = 0; i < 12; i++)
         {
             int targetTable = GetNextJokerTarget();
+            HighlightTable(targetTable);
             int currentTableColor = FindFirstValidUnitInTable(targetTable);
             Debug.Log($"[조커 연출] {i + 1}회차: 타겟 테이블 {targetTable}");
             _model.ReplaceTableUnits(targetTable, currentTableColor);
@@ -95,5 +97,13 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         
         IsActive = false;
         JokerManager.Instance?.SetJokerActive(false);
+    }
+
+    private void HighlightTable(int targetIndex)
+    {
+        for (int i = 0; i < _tableCanvasGroups.Length; i++)
+        {
+            _tableCanvasGroups[i].alpha = (i == targetIndex) ? 0f : 0.78f;
+        }
     }
 }
