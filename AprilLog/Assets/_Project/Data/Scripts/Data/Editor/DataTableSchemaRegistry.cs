@@ -84,8 +84,11 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("StageWaveRule", "stage_wave_rule", "StageWaveRuleData", "StageWaveRuleTable", true),
         new DataTableSchema("Stamina", "stamina", "StaminaData", "StaminaTable", true),
         new DataTableSchema("StatTable", "stat_table", "StatTableData", "StatEnchantTable", true),
-        
+
         new DataTableSchema("UnitTable", "unit_table", "UnitTableData", "UnitMasterTable", true),
+        
+        new DataTableSchema("3_NPCtalk", "3_npc_talk", "Story_TalkData", "Story_TalkTable", true),
+        new DataTableSchema("5_Character", "5_character", "Story_CharacterData", "Story_CharacterTable", true),
         
         // Legacy List
         new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),
