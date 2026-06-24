@@ -199,6 +199,8 @@ public class SkillSystem : MonoBehaviour
 
     // 다발 스킬(PelletCount>1)의 발 간 간격(초). "빠르게 연속 발사" 연출용.
     private const float BurstShotInterval = 0.08f;
+    // 화염 작렬/화염 정령(StandardID 102)의 발 간 간격(초). QA 요청: 0.25초로 느리게.
+    private const float FlameBurstShotInterval = 0.25f;
 
     private void Awake()
     {
@@ -918,16 +920,22 @@ public class SkillSystem : MonoBehaviour
         if (vfx != null) Destroy(vfx);
     }
 
-    // 얼음 결정 (기획 얼음 3-1, 루나라 W식): 플레이어에서 생성 → 타겟 방향으로 천천히 전진하며 5초간 0.25초마다 다단히트.
+    // 얼음 결정 (기획 얼음 3-1, 루나라 W식): 플레이어에서 생성 → 최장거리 타겟 좌표로 초당 500px 전진하며 5초간 0.25초마다 다단히트.
     private System.Collections.IEnumerator IceCrystalRoutine(Legacy_SkillData data, Vector2 sizeWorld)
     {
-        Vector2 cur = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
-        Vector2 dir = Vector2.up;   // 타겟 없으면 위(몬스터 스폰 방향)로
-        if (TryPickRandomAliveMonster(out MonsterAI t))
-        {
-            Vector2 d = (Vector2)t.transform.position - cur;
-            if (d.sqrMagnitude > 0.01f) dir = d.normalized;
-        }
+        const float duration = 5f;          // 기획 3-1: 5초 지속
+        const float tickGap = 0.25f;        // 기획 3-1-5-1: 0.25초 간격 다단히트
+        float speed = PxToWorld(500f);      // QA 재현: 초당 500px 전진(자리 고정 → 최장거리 타겟 추적)
+
+        Vector2 start = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
+        Vector2 cur = start;
+
+        // 최장거리(가장 먼) 살아있는 몬스터 좌표를 1회 잡아 그 좌표로 이동. 없으면 위(스폰 방향)로 끝까지.
+        Vector2 destCoord = start + Vector2.up * (speed * duration);
+        if (TryPickFarthestAliveMonster(start, out MonsterAI t))
+            destCoord = t.transform.position;
+        Vector2 dir = destCoord - start;
+        dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector2.up;
 
         GameObject vfx = null;
         if (TryGetIceVfx(data, out GameObject prefab, out float scale))
@@ -945,15 +953,12 @@ public class SkillSystem : MonoBehaviour
         }
         else SpawnHazardFlash(cur, sizeWorld, new Color(0.6f, 0.85f, 1f, 0.35f));
 
-        const float duration = 5f;          // 기획 3-1: 5초 지속
-        const float tickGap = 0.25f;        // 기획 3-1-5-1: 0.25초 간격 다단히트
-        float speed = PxToWorld(300f);      // 테이블 Speed 300 (천천히 전진)
         float elapsed = 0f, tickT = tickGap; // 첫 틱 즉시
         while (elapsed < duration)
         {
             float dt = Time.deltaTime;
             elapsed += dt; tickT += dt;
-            cur += dir * speed * dt;
+            cur = Vector2.MoveTowards(cur, destCoord, speed * dt);   // 최장거리 좌표로 전진(도착하면 그 자리 유지)
             if (vfx != null) vfx.transform.position = (Vector3)cur;
             if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, cur, sizeWorld); }   // 504 슬로우는 DealHazardDamage 내장
             yield return null;
@@ -1305,6 +1310,23 @@ public class SkillSystem : MonoBehaviour
         return true;
     }
 
+    // 살아있는 몬스터 중 from에서 가장 먼 1마리 (얼음 결정: 최장거리 타겟). 없으면 false.
+    private bool TryPickFarthestAliveMonster(Vector2 from, out MonsterAI picked)
+    {
+        picked = null;
+        if (_monsterSpawner == null) return false;
+        var alive = _monsterSpawner.AliveMonsters;
+        float best = -1f;
+        for (int i = 0; i < alive.Count; i++)
+        {
+            MonsterAI m = alive[i];
+            if (m == null || !m.gameObject.activeInHierarchy) continue;
+            float d = ((Vector2)m.transform.position - from).sqrMagnitude;
+            if (d > best) { best = d; picked = m; }
+        }
+        return picked != null;
+    }
+
     // 장판 표시(플레이스홀더): 반투명 사각형을 잠깐 띄운다.
     private void SpawnHazardFlash(Vector2 center, Vector2 sizeWorld, Color color)
     {
@@ -1440,10 +1462,12 @@ public class SkillSystem : MonoBehaviour
 
     private System.Collections.IEnumerator FireBurstRoutine(Legacy_SkillData data, int shots, AttackType type)
     {
+        // 화염 작렬(StandardID 102)만 0.25초 간격, 그 외 다발 스킬은 기본(0.08초) 유지.
+        float interval = data.StandardID == 102 ? FlameBurstShotInterval : BurstShotInterval;
         for (int i = 0; i < shots; i++)
         {
             FireOneProjectile(data, type);
-            yield return new WaitForSeconds(BurstShotInterval);
+            yield return new WaitForSeconds(interval);
         }
     }
 
