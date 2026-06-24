@@ -1,7 +1,11 @@
 // 작성자 : 김영찬
 // 설명 : 스킬과 스탯이 분리되어 순서대로 등장할 때 사용하는 전용 셀렉터
 
+// 수정자 : 김영찬
+// 수정 내용 : 인첸트 리롤 시 기존 인첸트가 등장하지 않도록 수정
+
 using System.Collections.Generic;
+using UnityEngine;
 
 public class EnchantSequenceSelector
 {
@@ -23,7 +27,7 @@ public class EnchantSequenceSelector
     
     // ---------- 인첸트 선택 로직 ----------
     // 스킬 전용 픽
-    public List<EnchantCandidate> GenerateSkillChoices(EnchantModel playerModel, int pickCount = 3)
+    public List<EnchantCandidate> GenerateSkillChoices(EnchantModel playerModel, int pickCount = 3, HashSet<int> excludedNameIds = null)
     {
         List<EnchantCandidate> finalPool = new List<EnchantCandidate>();
         List<EnchantCandidate> skillHeld = new List<EnchantCandidate>();
@@ -50,6 +54,25 @@ public class EnchantSequenceSelector
                 else skillUnheld.Add(candidate);
             }
         }
+        
+        // 리롤 배제 및 안전장치
+        if (excludedNameIds != null && excludedNameIds.Count > 0)
+        {
+            // 제외하고 나서 남는 스킬이 몇 개인지 미리 계산
+            int remainCount = skillHeld.FindAll(x => !excludedNameIds.Contains(x.Name_ID)).Count + 
+                              skillUnheld.FindAll(x => !excludedNameIds.Contains(x.Name_ID)).Count;
+
+            // 남은 스킬이 뽑아야 할 개수(pickCount)보다 많거나 같을 때만 배제 실행
+            if (remainCount >= pickCount)
+            {
+                skillHeld.RemoveAll(x => excludedNameIds.Contains(x.Name_ID));
+                skillUnheld.RemoveAll(x => excludedNameIds.Contains(x.Name_ID));
+            }
+            else
+            {
+                Debug.LogWarning("[EnchantSelector] 남은 스킬 풀이 부족하여 리롤 중복 배제 로직을 무시합니다.");
+            }
+        }
 
         float sHeldTotal = 0f, sUnheldTotal = 0f;
         int heldSkillCount = playerModel.GetHeldSkillCount();
@@ -72,7 +95,7 @@ public class EnchantSequenceSelector
     }
     
     // 스탯 전용 픽
-    public List<EnchantCandidate> GenerateStatChoices(EnchantModel playerModel, int pickCount = 3)
+    public List<EnchantCandidate> GenerateStatChoices(EnchantModel playerModel, int pickCount = 3, HashSet<int> excludedNameIds = null)
     {
         List<EnchantCandidate> finalPool = new List<EnchantCandidate>();
         List<EnchantCandidate> statHeld = new List<EnchantCandidate>();
@@ -97,6 +120,23 @@ public class EnchantSequenceSelector
 
                 if (currentLv > 0) statHeld.Add(candidate);
                 else statUnheld.Add(candidate);
+            }
+        }
+        
+        // 리롤 배제 및 안전장치
+        if (excludedNameIds != null && excludedNameIds.Count > 0)
+        {
+            int remainCount = statHeld.FindAll(x => !excludedNameIds.Contains(x.Name_ID)).Count + 
+                              statUnheld.FindAll(x => !excludedNameIds.Contains(x.Name_ID)).Count;
+
+            if (remainCount >= pickCount)
+            {
+                statHeld.RemoveAll(x => excludedNameIds.Contains(x.Name_ID));
+                statUnheld.RemoveAll(x => excludedNameIds.Contains(x.Name_ID));
+            }
+            else
+            {
+                Debug.LogWarning("[EnchantSelector] 남은 스텟 인첸트 풀이 부족하여 리롤 중복 배제 로직을 무시합니다.");
             }
         }
 
@@ -127,7 +167,7 @@ public class EnchantSequenceSelector
             float totalWeight = 0f;
             for (int w = 0; w < tempPool.Count; w++) totalWeight += tempPool[w].Weight;
 
-            float randomVal = UnityEngine.Random.Range(0f, totalWeight);
+            float randomVal = Random.Range(0f, totalWeight);
             float cursor = 0f;
 
             for (int j = 0; j < tempPool.Count; j++)

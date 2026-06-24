@@ -1,6 +1,9 @@
 // 작성자 : 김영찬
 // 설명 : EnchantSequenceSelector를 지원하는 중재자(스킬/스텟 선택 분리)
 
+// 수정자 : 김영찬
+// 수정 내용 : 인첸트 리롤 시 기존 인첸트가 등장하지 않도록 수정
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -27,6 +30,9 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     private List<EnchantCandidate> _currentChoices;
     private int _rerollRemaining;
     private int _pickCount = 3;
+    
+    // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
+    private HashSet<int> _seenEnchantIds = new HashSet<int>();
 
     // ---------- 초기화 ----------
     public EnchantSequenceSelectPresenter(IEnchantSelectView view, EnchantModel model, SpellRepo repo, ScreenNavigator navigator, EnchantProbabilityConfig config, EnchantSequenceConfig sequenceConfig, EnchantChangePresenter changePresenter, int rerollCount)
@@ -63,22 +69,29 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         _pickCount = pickCount;
         _rerollRemaining = _baseRerollCount;
         
+        _seenEnchantIds.Clear();
+        
         // 현재 몇 번째 뽑기인지에 따라 스킬/스탯 차례 계산
         int sequenceIndex = _model.TotalDrawCount % _sequenceConfig.DrawSequence.Count;
         _currentTurnType = _sequenceConfig.DrawSequence[sequenceIndex];
-
-        // 차례에 맞는 종류만 뽑기
-        GenerateChoicesByTurnType(pickCount);
         
+        GenerateChoicesByTurnType(pickCount);
         DisplayChoicesToView();
     }
 
+    // 차례에 맞는 종류만 뽑기
     private void GenerateChoicesByTurnType(int pickCount)
     {
-        if (_currentTurnType == EnchantType.Skill)
-            _currentChoices = _sequenceSelector.GenerateSkillChoices(_model, pickCount);
-        else
-            _currentChoices = _sequenceSelector.GenerateStatChoices(_model, pickCount);
+        _currentChoices = _currentTurnType == EnchantType.Skill ? 
+            _sequenceSelector.GenerateSkillChoices(_model, pickCount, _seenEnchantIds) : 
+            _sequenceSelector.GenerateStatChoices(_model, pickCount, _seenEnchantIds);
+        
+        // 새로 뽑힌 인첸트들을 관측 목록에 누적 추가
+        if (_currentChoices == null) return;
+        foreach (var choice in _currentChoices)
+        {
+            _seenEnchantIds.Add(choice.Name_ID);
+        }
     }
     
     // ---------- 유저 클릭 처리 ----------
@@ -87,28 +100,33 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         if (index < 0 || index >= _currentChoices.Count) return;
         var selected = _currentChoices[index];
 
-        if (selected.Type == EnchantType.Skill)
+        switch (selected.Type)
         {
-            if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
+            case EnchantType.Skill:
             {
-                _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
-                ClosePopupAndCountUp(); 
+                if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
+                {
+                    _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
+                    ClosePopupAndCountUp(); 
+                }
+                else
+                {
+                    _changePresenter.OpenChangePopup(selected); 
+                }
+                break;
             }
-            else
+            case EnchantType.Stat:
             {
-                _changePresenter.OpenChangePopup(selected); 
-            }
-        }
-        else if (selected.Type == EnchantType.Stat)
-        {
-            if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
-            {
-                _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
-                ClosePopupAndCountUp();
-            }
-            else
-            {
-                _changePresenter.OpenChangePopup(selected); 
+                if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
+                {
+                    _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
+                    ClosePopupAndCountUp();
+                }
+                else
+                {
+                    _changePresenter.OpenChangePopup(selected); 
+                }
+                break;
             }
         }
     }
@@ -134,6 +152,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
             if (_rerollRemaining <= 0) return;
             _rerollRemaining--;
         }
+        
         GenerateChoicesByTurnType(_pickCount);
         DisplayChoicesToView();
     }
@@ -145,16 +164,19 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         if (index < 0 || index >= _currentChoices.Count) return;
 
         var newChoice = _currentTurnType == EnchantType.Skill 
-            ? _sequenceSelector.GenerateSkillChoices(_model, 1)[0]
-            : _sequenceSelector.GenerateStatChoices(_model, 1)[0];
+            ? _sequenceSelector.GenerateSkillChoices(_model, 1, _seenEnchantIds)[0]
+            : _sequenceSelector.GenerateStatChoices(_model, 1, _seenEnchantIds)[0];
+        if (newChoice == null) return;
         
         if (!_unlimitedReroll)
         {
             if (_rerollRemaining <= 0) return;
             _rerollRemaining--;
         }
-
+        
         _currentChoices[index] = newChoice;
+        _seenEnchantIds.Add(newChoice.Name_ID);
+            
         DisplayChoicesToView();
     }
 
