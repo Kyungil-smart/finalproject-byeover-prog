@@ -21,6 +21,9 @@ public class SkillSystem : MonoBehaviour
     // ---------- SerializeField ----------
     [Header("참조")]
     [SerializeField] private CombatSystem _combatSystem;
+    [Tooltip("새 인챈트 테이블 기반 데미지/투사체/범위/효과 계산기 (없거나 매핑 데미지 0이면 레거시 공식으로 폴백)")]
+    [SerializeField] private EnchantCalculator _enchantCalculator;
+    private bool _hasTriedResolveEnchant;
 
     [Header("발사 위치")]
     [Tooltip("투사체가 생성되는 기준 위치")]
@@ -196,6 +199,8 @@ public class SkillSystem : MonoBehaviour
 
     // 다발 스킬(PelletCount>1)의 발 간 간격(초). "빠르게 연속 발사" 연출용.
     private const float BurstShotInterval = 0.08f;
+    // 화염 작렬/화염 정령(StandardID 102)의 발 간 간격(초). QA 요청: 0.25초로 느리게.
+    private const float FlameBurstShotInterval = 0.25f;
 
     private void Awake()
     {
@@ -326,6 +331,13 @@ public class SkillSystem : MonoBehaviour
         // PelletCount만큼 다발 발사(예: 화염 작렬 3발). 1발이면 즉시, 2발 이상이면 빠르게 연속 발사하며
         // 매 발마다 가장 가까운 적을 다시 탐색한다(앞 발에 적이 죽으면 다음 적으로). 기획 1-1 화염 작렬.
         int shots = Mathf.Max(1, data.PelletCount);
+        // 투사체 증가 인챈트: 추가 발사 수(보유 없으면 0 → 무변화). 추가탄 간격(pelletGap)·데미지감소(subPelletDmgReduce)는 후속 정교화.
+        ResolveReferences();
+        if (_enchantCalculator != null && data != null)
+        {
+            int addShots = _enchantCalculator.ProjectileAddCalculate(MapToNewDamageId(data.SkillID), out _, out _);
+            if (addShots > 0) shots += addShots;
+        }
         if (shots <= 1)
         {
             FireOneProjectile(data, type);
@@ -343,6 +355,12 @@ public class SkillSystem : MonoBehaviour
         if (_monsterSpawner == null || _firePoint == null) yield break;
 
         Vector2 sizeWorld = new Vector2(PxToWorld(cfg.widthPx), PxToWorld(cfg.heightPx));
+        // 인챈트 범위 확장(HitSize_X/Y). 보유 인챈트 없으면 1f라 무변화. DealHazardDamage·VFX 둘 다 sizeWorld 기반이라 동시 적용됨.
+        if (_enchantCalculator != null)
+        {
+            _enchantCalculator.SkillAreaExtensionCalculate(MapToNewDamageId(data.SkillID), out float xRate, out float yRate);
+            sizeWorld = new Vector2(sizeWorld.x * xRate, sizeWorld.y * yRate);
+        }
         int pulses = Mathf.Max(1, data.PelletCount);
 
         // 파이어브레스: 시전 시점의 최단거리 타겟 위치에 고정(수정 소환 연출) — 펄스마다 재탐색하지 않는다.
@@ -441,6 +459,13 @@ public class SkillSystem : MonoBehaviour
             yield break;
         }
 
+        // 돌풍(303): 2단계 장판. (A) 3히트 장판 1개 → 텀 → (B) 별도 1히트 폭발+넉백 장판 1개. 펄스 루프 우회.
+        if (data.StandardID == 303)
+        {
+            StartCoroutine(GustTwoPhaseRoutine(data, fixedCenter, sizeWorld, cfg));
+            yield break;
+        }
+
         for (int i = 0; i < pulses; i++)
         {
             Vector2 center;
@@ -468,7 +493,12 @@ public class SkillSystem : MonoBehaviour
                     break;
 
                 default: // NearestTarget
-                    center = fixedCenter;
+                    // 급류(203): 화면 전체폭(1440) 띠는 X를 화면 중앙 고정, Y만 타겟을 따른다 (기획 4-3 '고정 X·타겟 Y').
+                    //            타겟 X에 중심정렬하면 화면 끝 타겟일 때 띠 절반이 화면 밖으로 나가 반대편 끝까지 안 닿음.
+                    if (data.StandardID == 203)
+                        center = new Vector2(CamCenterX(), fixedCenter.y);
+                    else
+                        center = fixedCenter;
                     break;
             }
 
@@ -561,8 +591,13 @@ public class SkillSystem : MonoBehaviour
         if (lib != null && lib.waterBallProjectile != null)
         {
             ball = SpawnVfx(lib.waterBallProjectile, start, lib.waterBallScale, 53);
-            if (ball != null && dir.sqrMagnitude > 0.0001f)
-                ApplyParticleRotation(ball, -Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + lib.waterBallRotationTrimDeg);
+            if (ball != null)
+            {
+                if (dir.sqrMagnitude > 0.0001f)
+                    ApplyParticleRotation(ball, -Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + lib.waterBallRotationTrimDeg);
+                // 인스턴스화 파티클은 Play On Awake가 안 잡혀 안 보일 수 있음 → 명시적 재생(폭발과 동일).
+                foreach (var ps in ball.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+            }
         }
         const float flightTime = 0.25f;
         float t = 0f;
@@ -596,8 +631,8 @@ public class SkillSystem : MonoBehaviour
         var lib = WaterVfx;
         float baseY = _firePoint != null ? _firePoint.position.y : 0f;
         Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
-        float speed = PxToWorld(600f);     // 기획 Speed 600 (수직 상승)
-        const float duration = 1.2f;       // 솟구침 지속(튜닝 가능)
+        float speed = PxToWorld(250f);     // 나미 R식: 천천히 전진하며 적을 밀기 (느린 속도)
+        const float duration = 2.0f;       // 느리게 더 멀리 전진(튜닝 가능)
 
         GameObject vfx = null;
         if (lib != null && lib.waveVfx != null)
@@ -820,6 +855,44 @@ public class SkillSystem : MonoBehaviour
     }
 
     // 지속형 바람 장판(허리케인 소용돌이): VFX 1개를 center에 생성·유지 → pulses회 데미지(간격 interval) → 한 박자 뒤 삭제.
+    // 돌풍(303) 2단계: (A) 3히트 장판 1개(같은 center에 0.12초 간격 3틱, 넉백 없음) → 텀 → (B) 별도 1히트 폭발 장판 1개(넉백 위로). VFX는 A에서 본체 1개, B에서 폭발 1개.
+    private System.Collections.IEnumerator GustTwoPhaseRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, HazardConfig cfg)
+    {
+        const int phaseAHits = 3;       // (A) 3회 대미지
+        const float aTick = 0.12f;      // 3히트 내부 간격
+        const float gap = 0.25f;        // A→B 사이 텀(별개 장판으로 보이게)
+
+        // (A) 3히트 장판: 같은 center에 3틱. 넉백 X(finalPulse=false 고정).
+        SpawnGustVfx(data, center, sizeWorld, cfg);
+        for (int i = 0; i < phaseAHits; i++)
+        {
+            DealHazardDamage(data, center, sizeWorld, false);
+            if (i < phaseAHits - 1) yield return new WaitForSeconds(aTick);
+        }
+
+        yield return new WaitForSeconds(gap);
+
+        // (B) 별도 1히트 폭발 장판: 넉백 발동(finalPulse=true 경로 재사용).
+        SpawnGustVfx(data, center, sizeWorld, cfg);
+        DealHazardDamage(data, center, sizeWorld, true);
+    }
+
+    // 돌풍 VFX 1개 소환(제네릭 펄스 루프의 바람 분기 로직을 추출). prefab 없으면 색 플래시 폴백.
+    private void SpawnGustVfx(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, HazardConfig cfg)
+    {
+        if (TryGetWindVfx(data, out GameObject wvfx, out float wscale))
+        {
+            var wv = SpawnVfx(wvfx, center, wscale, 52);
+            if (wv != null)
+            {
+                if (WindVfx != null) ApplyParticleRotation(wv, WindVfx.gustRotationDeg);
+                StopLoopingOneShot(wv); Destroy(wv, ComputeOneShotLifetime(wv));
+                return;
+            }
+        }
+        SpawnHazardFlash(center, sizeWorld, cfg.flashColor);
+    }
+
     private System.Collections.IEnumerator WindHeldRoutine(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, int pulses, float interval)
     {
         GameObject vfx = null;
@@ -864,49 +937,60 @@ public class SkillSystem : MonoBehaviour
         if (vfx != null) Destroy(vfx);
     }
 
-    // 마칭 아이스: 투사체/이동 아님. 에이프릴 정수리 '위'에서 제자리 발동(흐웨이 QW식 세로 분출 장판).
-    // 단일 VFX를 정수리 위에 고정 생성(이동X=투사체 아님, 스택X=타일링 직사각형 없음) + 정수리에서 위로 뻗는 좁은 세로 컬럼에 지속 범위 데미지.
+    // 마칭 아이스(QA 개편 2026-06-24): 에이프릴 → 최단거리 타겟 좌표 방향으로 100x100 정사각형 N칸(=PelletCount)을
+    // interval마다 한 칸씩 순차 발동. 각 칸은 그 자리에 1틱 판정 + VFX 1개. 칸을 이으면 타겟으로 가는 마칭 형태.
     private System.Collections.IEnumerator MarchingIceRoutine(Legacy_SkillData data, Vector2 sizeWorld, int pulses, float interval)
     {
-        Vector2 head = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
-        float laneLen = Mathf.Max(1, pulses) * sizeWorld.y;                 // 위로 뻗는 길이 = PelletCount칸
-        Vector2 vfxPos = head + Vector2.up * (sizeWorld.y * 0.5f + 0.6f);   // 정수리 '위' 분출 지점(고정)
-        Vector2 hitCenter = head + Vector2.up * (laneLen * 0.5f);           // 정수리→위 좁은 세로 컬럼 판정
-        Vector2 hitSize = new Vector2(sizeWorld.x, laneLen);
+        int steps = Mathf.Max(1, pulses);                                   // 칸 수 = PelletCount(6/7/8)
+        float tickGap = interval > 0f ? interval : 0.15f;                   // 칸 간 순차 틱 간격
+        float cellGap = sizeWorld.y;                                        // 칸 간격 = 정사각형 한 변(100px world)
 
-        GameObject vfx = null;
-        if (TryGetIceVfx(data, out GameObject prefab, out float scale))
-        {
-            vfx = SpawnVfx(prefab, vfxPos, scale, 52);                      // 단일·제자리(이동/스택 없음)
-            if (vfx != null)
-                foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
-        }
-        else SpawnHazardFlash(hitCenter, hitSize, new Color(0.6f, 0.85f, 1f, 0.35f));
+        Vector2 start = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
+        // 타겟 좌표 = 최단거리 살아있는 몬스터(없으면 위/스폰 방향으로 직진).
+        MonsterAI tgt = FindNearestAliveMonster(start, null);
+        Vector2 dir = tgt != null ? ((Vector2)tgt.transform.position - start) : Vector2.up;
+        dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector2.up;
 
-        float duration = Mathf.Max(0.35f, pulses * (interval > 0f ? interval : 0.15f));
-        float tickGap = interval > 0f ? interval : 0.15f;
-        float elapsed = 0f, tickT = tickGap;
-        DealHazardDamage(data, hitCenter, hitSize);                         // 발동 즉시 1틱
-        while (elapsed < duration)
+        bool haveVfx = TryGetIceVfx(data, out GameObject prefab, out float scale);
+        float zDeg = Mathf.Atan2(dir.x, -dir.y) * Mathf.Rad2Deg;            // IceCrystalRoutine과 동일한 로컬 -Y → dir 정렬
+
+        for (int i = 0; i < steps; i++)
         {
-            float dt = Time.deltaTime;
-            elapsed += dt; tickT += dt;
-            if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, hitCenter, hitSize); }
-            yield return null;
+            // i번째 칸 중심 = start에서 dir로 (i+0.5)칸 전진. 첫 칸은 에이프릴 바로 앞.
+            Vector2 cell = start + dir * (cellGap * (i + 0.5f));
+            if (haveVfx)
+            {
+                GameObject vfx = SpawnVfx(prefab, cell, scale, 52);
+                if (vfx != null)
+                {
+                    vfx.transform.rotation = Quaternion.Euler(0f, 0f, zDeg);
+                    foreach (var ps in vfx.GetComponentsInChildren<ParticleSystem>(true)) { ps.Clear(); ps.Play(); }
+                    Destroy(vfx, tickGap * 2f);                             // 칸 잔상만 잠깐 유지
+                }
+            }
+            else SpawnHazardFlash(cell, sizeWorld, new Color(0.6f, 0.85f, 1f, 0.35f));
+
+            DealHazardDamage(data, cell, sizeWorld);                        // 그 칸(정사각형 100x100)만 1틱 판정
+            if (i < steps - 1) yield return new WaitForSeconds(tickGap);    // 다음 칸까지 대기 = 순차(마칭)
         }
-        if (vfx != null) Destroy(vfx);
     }
 
-    // 얼음 결정 (기획 얼음 3-1, 루나라 W식): 플레이어에서 생성 → 타겟 방향으로 천천히 전진하며 5초간 0.25초마다 다단히트.
+    // 얼음 결정 (기획 얼음 3-1, 루나라 W식): 플레이어에서 생성 → 최장거리 타겟 좌표로 초당 500px 전진하며 5초간 0.25초마다 다단히트.
     private System.Collections.IEnumerator IceCrystalRoutine(Legacy_SkillData data, Vector2 sizeWorld)
     {
-        Vector2 cur = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
-        Vector2 dir = Vector2.up;   // 타겟 없으면 위(몬스터 스폰 방향)로
-        if (TryPickRandomAliveMonster(out MonsterAI t))
-        {
-            Vector2 d = (Vector2)t.transform.position - cur;
-            if (d.sqrMagnitude > 0.01f) dir = d.normalized;
-        }
+        const float duration = 5f;          // 기획 3-1: 5초 지속
+        const float tickGap = 0.25f;        // 기획 3-1-5-1: 0.25초 간격 다단히트
+        float speed = PxToWorld(500f);      // QA 재현: 초당 500px 전진(자리 고정 → 최장거리 타겟 추적)
+
+        Vector2 start = _firePoint != null ? (Vector2)_firePoint.position : new Vector2(CamCenterX(), 0f);
+        Vector2 cur = start;
+
+        // 최장거리(가장 먼) 살아있는 몬스터 좌표를 1회 잡아 그 좌표로 이동. 없으면 위(스폰 방향)로 끝까지.
+        Vector2 destCoord = start + Vector2.up * (speed * duration);
+        if (TryPickFarthestAliveMonster(start, out MonsterAI t))
+            destCoord = t.transform.position;
+        Vector2 dir = destCoord - start;
+        dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector2.up;
 
         GameObject vfx = null;
         if (TryGetIceVfx(data, out GameObject prefab, out float scale))
@@ -924,15 +1008,12 @@ public class SkillSystem : MonoBehaviour
         }
         else SpawnHazardFlash(cur, sizeWorld, new Color(0.6f, 0.85f, 1f, 0.35f));
 
-        const float duration = 5f;          // 기획 3-1: 5초 지속
-        const float tickGap = 0.25f;        // 기획 3-1-5-1: 0.25초 간격 다단히트
-        float speed = PxToWorld(300f);      // 테이블 Speed 300 (천천히 전진)
         float elapsed = 0f, tickT = tickGap; // 첫 틱 즉시
         while (elapsed < duration)
         {
             float dt = Time.deltaTime;
             elapsed += dt; tickT += dt;
-            cur += dir * speed * dt;
+            cur = Vector2.MoveTowards(cur, destCoord, speed * dt);   // 최장거리 좌표로 전진(도착하면 그 자리 유지)
             if (vfx != null) vfx.transform.position = (Vector3)cur;
             if (tickT >= tickGap) { tickT = 0f; DealHazardDamage(data, cur, sizeWorld); }   // 504 슬로우는 DealHazardDamage 내장
             yield return null;
@@ -1035,7 +1116,7 @@ public class SkillSystem : MonoBehaviour
                 cur = target.transform.position;
                 if (ball != null) ball.transform.position = (Vector3)cur;
 
-                int damage = CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
+                int damage = ComputeSkillDamage(data);
                 target.TakeDamage(damage, data.StandardID);            // 정산 인챈트별 최고뎀 기록
                 if (lib != null && lib.chainHitEffect != null)
                 {
@@ -1209,8 +1290,7 @@ public class SkillSystem : MonoBehaviour
 
     private void DealHazardDamage(Legacy_SkillData data, Vector2 center, Vector2 sizeWorld, bool finalPulse = false)
     {
-        float temp = _combatSystem.CalculateDamage(data.DmgRate);
-        int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
+        int damage = ComputeSkillDamage(data);
 
         Vector2 half = sizeWorld * 0.5f;
         var alive = _monsterSpawner.AliveMonsters;
@@ -1249,8 +1329,8 @@ public class SkillSystem : MonoBehaviour
                 m.ApplySlow(0.9f, 1.0f);                                       // 탄환 세례: 10% 슬로우 (factor 0.9)
                 if (finalPulse) m.ApplyKnockback(Vector2.up * PxToWorld(400f), 0.15f);  // 넉백 (기획 2-1)
             }
-            else if (data.StandardID == 204 && finalPulse)
-                m.ApplyKnockback(Vector2.up * PxToWorld(500f), 0.2f);         // 파도 소환: 넉백 (기획 3-1)
+            else if (data.StandardID == 204)
+                m.ApplyKnockback(Vector2.up * PxToWorld(120f), 0.2f);         // 파도 소환: 매 틱 위로 밀기(나미 R식 푸시)
         }
     }
 
@@ -1283,6 +1363,23 @@ public class SkillSystem : MonoBehaviour
         if (_hazardHitBuffer.Count == 0) return false;
         picked = _hazardHitBuffer[Random.Range(0, _hazardHitBuffer.Count)];
         return true;
+    }
+
+    // 살아있는 몬스터 중 from에서 가장 먼 1마리 (얼음 결정: 최장거리 타겟). 없으면 false.
+    private bool TryPickFarthestAliveMonster(Vector2 from, out MonsterAI picked)
+    {
+        picked = null;
+        if (_monsterSpawner == null) return false;
+        var alive = _monsterSpawner.AliveMonsters;
+        float best = -1f;
+        for (int i = 0; i < alive.Count; i++)
+        {
+            MonsterAI m = alive[i];
+            if (m == null || !m.gameObject.activeInHierarchy) continue;
+            float d = ((Vector2)m.transform.position - from).sqrMagnitude;
+            if (d > best) { best = d; picked = m; }
+        }
+        return picked != null;
     }
 
     // 장판 표시(플레이스홀더): 반투명 사각형을 잠깐 띄운다.
@@ -1369,8 +1466,7 @@ public class SkillSystem : MonoBehaviour
         if (_monsterSpawner == null) return;
         if (!_monsterSpawner.TryFindAttackTarget(origin, out MonsterAI target)) return;
 
-        float temp = _combatSystem.CalculateDamage(data.DmgRate);
-        int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
+        int damage = ComputeSkillDamage(data);
 
         var obj = PoolManager.Instance.Spawn("Projectile_Basic", origin, Quaternion.identity);
         if (obj == null) return;
@@ -1421,19 +1517,20 @@ public class SkillSystem : MonoBehaviour
 
     private System.Collections.IEnumerator FireBurstRoutine(Legacy_SkillData data, int shots, AttackType type)
     {
+        // 화염 작렬(StandardID 102)만 0.25초 간격, 그 외 다발 스킬은 기본(0.08초) 유지.
+        float interval = data.StandardID == 102 ? FlameBurstShotInterval : BurstShotInterval;
         for (int i = 0; i < shots; i++)
         {
             FireOneProjectile(data, type);
-            yield return new WaitForSeconds(BurstShotInterval);
+            yield return new WaitForSeconds(interval);
         }
     }
 
     // 한 발 발사 : 데미지 계산 → 가장 가까운 적 탐색 → 직선 탄.
     private void FireOneProjectile(Legacy_SkillData data, AttackType type)
     {
-        // 데미지 계산
-        float temp = _combatSystem.CalculateDamage(data.DmgRate);
-        int damage = CalGroupDamageBonus(temp, GetDamageGroupType(data));
+        // 데미지 계산 (새 인챈트 경로 → DamageCalculate, 폴백 시 레거시)
+        int damage = ComputeSkillDamage(data);
 
         ResolveReferences();
 
@@ -1607,11 +1704,56 @@ public class SkillSystem : MonoBehaviour
 
     private void ResolveReferences()
     {
+        if (_enchantCalculator == null && !_hasTriedResolveEnchant)
+        {
+            _hasTriedResolveEnchant = true;
+            _enchantCalculator = FindFirstObjectByType<EnchantCalculator>();
+        }
         if (_monsterSpawner != null) return;
         if (_hasTriedResolveSpawner) return;
 
         _hasTriedResolveSpawner = true;
         _monsterSpawner = FindFirstObjectByType<MonsterSpawner>();
+    }
+
+    /// <summary>부트스트랩이 명시적으로 EnchantCalculator를 주입할 때 사용(미주입 시 ResolveReferences가 Find로 폴백).</summary>
+    public void SetEnchantCalculator(EnchantCalculator calc) { if (calc != null) _enchantCalculator = calc; }
+
+    // 레거시 SkillID(4자리) → 신규 SkillEnchantTable Skill_ID(5자리). 기본 = 원소digit 뒤 0 삽입(2011→20011, 같은 스킬의 ID 재포맷).
+    // 분할 스킬(투사체 본체 Dmg=0, 데미지는 폭발 엔트리)만 폭발 ID로 오버라이드. 물폭탄: 기획 확인(20111~20113).
+    private static readonly Dictionary<int, int> NewDamageIdOverride = new Dictionary<int, int>
+    {
+        { 2011, 20111 }, { 2012, 20112 }, { 2013, 20113 },
+    };
+
+    private static int MapToNewDamageId(int legacySkillId)
+    {
+        if (NewDamageIdOverride.TryGetValue(legacySkillId, out int o)) return o;
+        return (legacySkillId / 1000) * 10000 + (legacySkillId % 1000);   // insert-0: 2011→20011, 5053→50053
+    }
+
+    // 새 인챈트 경로 데미지: DamageCalculate(ATK/크리/스킬·그룹보너스) × 콤보(보존). 매핑 데미지 0(분할 본체/미정의)·계산기 부재 시 레거시 공식 폴백 → 0뎀으로 안 깨짐.
+    private int ComputeSkillDamage(Legacy_SkillData data)
+    {
+        ResolveReferences();
+        if (_enchantCalculator != null && data != null)
+        {
+            // 계산기 미초기화/참조 누락(예: _playerModel 미연결)으로 던져도 전투(특히 뒤이은 VFX 스폰)가 안 죽도록 폴백.
+            try
+            {
+                int baseDmg = _enchantCalculator.DamageCalculate(MapToNewDamageId(data.SkillID));
+                if (baseDmg > 0)
+                {
+                    float comboBonus = _combatSystem != null ? _combatSystem.GetComboBonusRate() : 1f;
+                    return Mathf.FloorToInt(baseDmg * comboBonus);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[SkillSystem] EnchantCalculator.DamageCalculate 실패 → 레거시 폴백: {e.Message}");
+            }
+        }
+        return CalGroupDamageBonus(_combatSystem.CalculateDamage(data.DmgRate), GetDamageGroupType(data));
     }
 
     private int CalGroupDamageBonus(float damage, DamageGroupType damageGroupType)

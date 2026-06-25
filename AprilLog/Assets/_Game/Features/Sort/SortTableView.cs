@@ -7,6 +7,7 @@ using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.Rendering.DebugUI;
+using System.Collections;
 
 /// <summary>
 /// 퍼즐 테이블과 대기열의 시각적 표시를 담당한다. 로직 없음.
@@ -20,6 +21,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [SerializeField] private HintSystem _hintSystem;
     [SerializeField] private LocalizationManager _localization;
     [SerializeField] private JokerSystem _jokerSystem;
+    [SerializeField] private UnitDataManager _unitDataManager;
 
     [Header("퍼즐 슬롯")]
     [Tooltip("9테이블 x 3슬롯. 순서대로 드래그")]
@@ -29,14 +31,12 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [Tooltip("4테이블 x 3슬롯. 순서대로 드래그")]
     [SerializeField] private Image[] _waitingSlots;
 
-    [Header("유닛 스프라이트")]
-    [SerializeField] private Sprite[] _unitSprites;
-
     [Header("드래그 연출용 가짜 유닛")]
     [SerializeField] private Image _dragFeedbackImg;
 
     // ---------- Private ----------
     private SortTablePresenter _presenter;
+    private bool _isHintBlocked = false;
     private int _currentDraggingUnitType = -1;
 
     // 슬롯 화면좌표 재캐싱 트리거. 안드로이드는 SafeArea/해상도가 1~3프레임 늦게 확정되고,
@@ -50,7 +50,19 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         _presenter = new SortTablePresenter(this, _model, _inputHandler, _hintSystem);
 
+        StartCoroutine(SubscribeToManager());
+
         StartCoroutine(SetupAfterLayout());
+    }
+
+    private IEnumerator SubscribeToManager() // IEnumerator 컴파일 에러
+    {
+        yield return new WaitUntil(() => JokerManager.Instance != null);
+
+        JokerManager.Instance.OnJokerBlockingStateChanged += (blocked) => {
+            _isHintBlocked = blocked;
+            Debug.Log($"[View] 힌트 차단 상태 변경: {blocked}");
+        };
     }
 
     private void Update()
@@ -153,12 +165,19 @@ public class SortTableView : MonoBehaviour, ISortTableView
         if (idx >= _puzzleSlots.Length) return;
 
         var img = _puzzleSlots[idx];
-        if (img != null && unitType >= 0 && unitType < _unitSprites.Length)
+        var unitData = _unitDataManager.GetUnitData(unitType);
+       
+        if (img != null && unitData != null)
         {
             // Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
-            img.sprite = _unitSprites[unitType];
+            img.sprite = unitData.UnitSprite;
             img.enabled = true;
             img.color = Color.white;
+        }
+        
+        else
+        {
+            img.enabled = false;
         }
     }
 
@@ -239,10 +258,11 @@ public class SortTableView : MonoBehaviour, ISortTableView
             if (img == null) continue;
 
             int unitType = combo.unitTypes[i];
+            var unitData = _unitDataManager.GetUnitData(unitType);
 
-            if (unitType >= 0 && unitType < _unitSprites.Length)
+            if (unitType >= 0 && unitData.UnitSprite !=null)
             {
-                img.sprite = _unitSprites[unitType];
+                img.sprite = unitData.UnitSprite;
                 img.enabled = true;
             }
             else
@@ -255,7 +275,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void ShowHint(int tableIdx, int slotIdx)
     {
-        if (_jokerSystem != null && _jokerSystem.IsActive) return;
+        if (_isHintBlocked) return;
 
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
         if (idx < 0 || idx >= _puzzleSlots.Length) return;
@@ -276,7 +296,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void ShowWaitingHint()
     {
-        if (_jokerSystem != null && _jokerSystem.IsActive) return;
+       if (_isHintBlocked) return;
 
         foreach (var slot in _waitingSlots)
         {

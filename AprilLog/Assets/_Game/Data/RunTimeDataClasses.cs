@@ -270,10 +270,10 @@ public class AcquiredStatData
 
 public struct EffectSpec
 {
-    public int Id;
-    public float CalValue;
-    public float CalDuration;
-    public float CalInterval;
+    public int Id { get;  private set; }
+    public float CalValue { get; private set; }
+    public float CalDuration { get; private set; }
+    public float CalInterval { get; private set; }
 
     public EffectSpec(int id, float calValue, float calDuration, float calInterval)
     {
@@ -282,6 +282,42 @@ public struct EffectSpec
         CalDuration = calDuration;
         CalInterval = calInterval;
     }
+}
+
+public class FusionEnchantData
+{
+    public int EnchantId { get; private set; }
+    public int Sort1 { get; private set; }
+    public int Sort2 { get; private set; }
+    public int Sort3 { get; private set; }
+    public int IconImageKey { get; private set; }
+
+    public FusionEnchantData(int enchantId, int sort1, int sort2, int sort3, int iconImageKey)
+    {
+        EnchantId = enchantId;
+        Sort1 = sort1;
+        Sort2 = sort2;
+        Sort3 = sort3;
+        IconImageKey = iconImageKey;
+    }
+    
+    public void LevelUp()
+    {
+        EnchantId += 1;
+    }
+}
+
+[Serializable]
+public class EnchantSequenceConfig
+{
+    [Header("인챈트 등장 순서 (원하는 만큼 추가/수정 가능)")]
+    // 기본값: 스킬 -> 스킬 -> 스탯
+    public List<EnchantType> DrawSequence = new List<EnchantType> 
+    { 
+        EnchantType.Skill, 
+        EnchantType.Skill, 
+        EnchantType.Stat 
+    };
 }
 
 #endregion

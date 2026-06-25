@@ -4,11 +4,15 @@
 // 수정자 : 김영찬
 // 설명 : 기획서 - v1.04_인게임 성장 시스템_이균호 > 인첸트 시트 반영 (스킬/스탯 분리, 그룹별 보유 한도 적용), 스킬 파트 연동 이벤트 추가
 
+// 수정자 : 김영찬
+// 설명 : 새로운 인첸트 선택 로직에 필요한 변수 및 제어함수 추가
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 인게임에서 획득한 인챈트 목록과 레벨을 관리한다.
@@ -16,7 +20,10 @@ using UnityEngine.Rendering;
 /// </summary>
 public class EnchantModel : MonoBehaviour
 {
-    [SerializeField] private EnchantUIModel _model;
+    // ---------- 직렬화 ----------
+    [Header("참조")]
+    [SerializeField] private EnchantUIModel _uiModel;
+    [SerializeField] private EnchantCombinationModel _combinationModel;
     [SerializeField] private EnchantCalculator _calculator;
     
     // ---------- 이벤트 ----------
@@ -57,25 +64,35 @@ public class EnchantModel : MonoBehaviour
     public IReadOnlyDictionary<int, AcquiredStatData> OwnedStats => _ownedStats;
     
     // ---------- private  ----------
-    private WaitForEndOfFrame _endOfFrame;
+    // 뽑기 팝업이 뜬 총 횟수를 추적 (스킬/스탯 순서 계산용)
+    public int TotalDrawCount { get; private set; }
 
     // ---------- 초기화 ----------
     public void Initialize()
     {
-        _endOfFrame = new WaitForEndOfFrame();
+        CountReset();
         _ownedSkills.Clear();
         _ownedStats.Clear();
         // 머지 후 씬 미배선 방어: EnchantUIModel(_model)이 인스펙터에 안 꽂혀 있으면
         // 같은 오브젝트에서 찾거나 새로 생성한다 (상호 참조 자동 복구). 없으면 여기서 NRE 나며 InitializeAll 전체가 중단됨.
-        if (_model == null)
-            _model = GetComponent<EnchantUIModel>() ?? gameObject.AddComponent<EnchantUIModel>();
-        _model.InitUIModel();
+        if (_uiModel == null)
+            _uiModel = GetComponent<EnchantUIModel>() ?? gameObject.AddComponent<EnchantUIModel>();
+        _uiModel.InitUIModel();
+        
+        if (_combinationModel == null)
+            _combinationModel = GetComponent<EnchantCombinationModel>() ?? gameObject.AddComponent<EnchantCombinationModel>();
+        _combinationModel.InitCombinationModel();
+        
+        if (_calculator == null)
+            _calculator = GetComponent<EnchantCalculator>() ?? gameObject.AddComponent<EnchantCalculator>();
         _calculator.InitCalculator();
     }
 
     public void OnDestroy()
     {
-        if (_model != null) _model.Discard();
+        if (_uiModel != null) _uiModel.Discard();
+        if (_combinationModel != null) _combinationModel.Discard();
+        if (_calculator != null) _calculator.Discard();
     }
 
     // ---------- 획득 한도 체크 ----------
@@ -272,5 +289,15 @@ public class EnchantModel : MonoBehaviour
             }
         }
         return null;
+    }
+
+    public void CountUpDrawCount()
+    {
+        TotalDrawCount++;
+    }
+
+    private void CountReset()
+    {
+        TotalDrawCount = 0;
     }
 }

@@ -49,6 +49,8 @@ public class SortInputHandler : MonoBehaviour
     // ---------- Update ----------
     private void Update()
     {
+        if (!enabled) return;
+        if (Time.timeScale == 0f) return;
         if (_slotPositions == null) return;
 
 #if UNITY_EDITOR

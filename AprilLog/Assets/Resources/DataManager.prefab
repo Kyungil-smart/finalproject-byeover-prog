@@ -35,6 +35,7 @@ Transform:
   - {fileID: 3470293329070297349}
   - {fileID: 477945419651395269}
   - {fileID: 7625400932578170336}
+  - {fileID: 1877090889797705916}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2686668722264016636
@@ -54,6 +55,7 @@ MonoBehaviour:
   _configRepo: {fileID: 5312618537466236587}
   _spellRepo: {fileID: 2879789208227239077}
   _gearRepo: {fileID: 5817649387064816332}
+  _storyRepo: {fileID: 8095329745793383508}
 --- !u!1 &1239554882421372277
 GameObject:
   m_ObjectHideFlags: 0
@@ -152,6 +154,7 @@ MonoBehaviour:
   _skillTable: {fileID: 11400000, guid: 5e08a4cee98ee954f94a94b7e29c33f3, type: 2}
   _effectTable: {fileID: 11400000, guid: 092a509d8921a9d47a1622780acbff34, type: 2}
   _statTable: {fileID: 11400000, guid: 2ac955bbd9d0a2f439c7ac0b7e135343, type: 2}
+  _skillDataTable: {fileID: 0}
 --- !u!1 &2786283696942931756
 GameObject:
   m_ObjectHideFlags: 0
@@ -308,3 +311,49 @@ MonoBehaviour:
   _battleRewardTable: {fileID: 11400000, guid: d9e95eb9ce55ea641ae115baee189021, type: 2}
   _staminaTable: {fileID: 11400000, guid: 9d6b752f7710dd44db3be327423a3575, type: 2}
   _itemTable: {fileID: 11400000, guid: 2b6f6a45e656b084f99669953d2f340e, type: 2}
+--- !u!1 &8025937306101436034
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1877090889797705916}
+  - component: {fileID: 8095329745793383508}
+  m_Layer: 0
+  m_Name: StoryRepo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1877090889797705916
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8025937306101436034}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6732585189422164533}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8095329745793383508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8025937306101436034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbbf32fc4378c78409113507333de540, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StoryRepo
+  _talkTable: {fileID: 11400000, guid: 98d453b59dc9c3144bef193ed43441c0, type: 2}
+  _characterTable: {fileID: 11400000, guid: 7e384ecab65b22f4eb52e1f88b1e912d, type: 2}

@@ -50,12 +50,37 @@ public class EnchantCalculator : MonoBehaviour
     {
         _repo = DataManager.Instance.SpellRepo;
         _enableStatList = new ();
+        
+        // 머지 후 씬 미배선 방어: 역참조(EnchantModel)가 안 꽂혀 있으면 같은 오브젝트에서 찾는다.
+        if (_enchantModel == null) _enchantModel = GetComponent<EnchantModel>();
+        if (_enchantModel == null)
+        {
+            Debug.LogError("[EnchantCalculator] Enchant Model Not Found. Init Failed.");
+            return; // 그래도 없으면 이벤트 구독 스킵 (크래시 방지)
+        }
 
         _enchantModel.OnStatAcquired += HandleStatAcquired;
         _enchantModel.OnStatLevelUp += HandleStatLevelUp;
         _enchantModel.OnStatRemoved += HandleStatRemoved;
         
+        // 머지 후 씬 미배선 방어: 역참조(PlayerModel)가 안 꽂혀 있으면 하이어라키에서 찾는다.
+        if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
+        if (_playerModel == null)
+        {
+            Debug.LogError("[EnchantCalculator] Player Model Not Found. Init Failed.");
+            return; // 그래도 없으면 이벤트 구독 스킵 (크래시 방지)
+        }
+        
         isInitialized = true;
+    }
+
+    public void Discard()
+    {
+        if (_enchantModel == null) return;
+        
+        _enchantModel.OnStatAcquired -= HandleStatAcquired;
+        _enchantModel.OnStatLevelUp -= HandleStatLevelUp;
+        _enchantModel.OnStatRemoved -= HandleStatRemoved;
     }
     
     // ---------- 스킬 계산 ----------

@@ -3,6 +3,7 @@
 // 주의 사항 : 알파벳 순으로 정렬 할 것
 
 using System;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 #region JSON 파싱용 래퍼
@@ -620,6 +621,46 @@ public class StatTableData
     public int Image_ID;
 }
 
+/// <summary>
+/// 스토리에 사용하는 캐릭터의 리소스(포트레이트 정보)<br/>
+/// 생성일 : 26.06.24<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class Story_CharacterData
+{
+    public int ID;
+    public int Resource_ID;
+}
+
+/// <summary>
+/// 스토리 대화 데이터<br/>
+/// 생성일 : 26.06.24<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class Story_TalkData
+{
+    public int ID;
+    public int GroupID;
+    public int TextBox;
+    public string name_KR;
+    public string name_EN;
+    public string Text_KR;
+    public string Text_EN;
+    public int portrait1;
+    public int direction1;
+    public int portrait2;
+    public int direction2;
+    public int portrait3;
+    public int direction3;
+    public int speaker;
+    public int BG;
+    public int CG;
+    public int BGM;
+    public int SFX;
+}
+
 #endregion
 
 #region ----- U -----
@@ -635,6 +676,8 @@ public class UnitTableData
     public int UnitID;
     public string Name;
     public string Type; // normal, special - 테이블 내 동일한 유닛 두개와 같이 있으면 동일 유닛 취급
+    public int Unit_Image_ID;
+    public Sprite UnitSprite;
 }
 
 #endregion
