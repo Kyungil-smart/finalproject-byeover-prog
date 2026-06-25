@@ -11650,8 +11650,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 920b1b0542b525541819206897302f13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombinationView
-  _model: {fileID: 0}
+  _model: {fileID: 830662636}
+  _enchantCombinationModel: {fileID: 4818175968475747484}
   _recipeSlots: []
+  _unitSprites:
+  - {fileID: 21300000, guid: 6aafc1df4e8accf4b9b4e59a86719fb6, type: 3}
+  - {fileID: 21300000, guid: 3f9bada0cd343b24589039154e15793b, type: 3}
+  - {fileID: 21300000, guid: 6066f1772d75bc1449c1140ecd0b2b77, type: 3}
+  - {fileID: 21300000, guid: 9b1c48921ae84f54fadaa9771e5e2f40, type: 3}
+  - {fileID: 21300000, guid: 4115b8c5dfe4901428f091774c18de39, type: 3}
 --- !u!114 &967314021
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25803,6 +25810,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+--- !u!114 &4818175968475747484 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7870391972268580545, guid: 54370d530b02b094c871a6ca9e40e913, type: 3}
+  m_PrefabInstance: {fileID: 4818175968475747483}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27b55ac19d7ce254da9ea7f9f7ac6924, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnchantFusionModel
 --- !u!114 &6708711512914367952
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,3 +1,6 @@
+// 작성자 : 김영찬
+// 내용 : 인첸트 모델의 스킬 선택 목록을 보고 해당 데이터 중 조합 스킬에 대한 처리를 담당함
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,7 +18,7 @@ public class EnchantCombinationModel : MonoBehaviour
     private SpellRepo _repo;
     
     // ---------- 이벤트  ----------
-    private event Action OnCombinationChanged;
+    public event Action OnCombinationChanged;
     
     // ---------- 초기화 ----------
     public void InitCombinationModel()
