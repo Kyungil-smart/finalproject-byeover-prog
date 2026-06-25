@@ -62,7 +62,7 @@ public class LocalizationManager : MonoBehaviour
     }
 
     // ---------- 텍스트 조회 ----------
-    public string GetText(string key)
+    public string Get(string key)
     {
         if (!_entries.TryGetValue(key, out var entry))
         {
@@ -83,9 +83,9 @@ public class LocalizationManager : MonoBehaviour
     // 포맷 파라미터 있는 버전
     // 시트: "ENCHANT_DESC_3001" -> "매직 미사일 데미지가 {0}% 증가"
     // 사용: Get("ENCHANT_DESC_3001", 15) -> "매직 미사일 데미지가 15% 증가"
-    public string GetText(string key, params object[] args)
+    public string Get(string key, params object[] args)
     {
-        string template = GetText(key);
+        string template = Get(key);
         if (template.StartsWith("[")) return template;
 
         try
