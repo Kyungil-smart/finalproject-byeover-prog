@@ -20,7 +20,6 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [SerializeField] private SortInputHandler _inputHandler;
     [SerializeField] private HintSystem _hintSystem;
     [SerializeField] private LocalizationManager _localization;
-    [SerializeField] private JokerSystem _jokerSystem;
     [SerializeField] private UnitDataManager _unitDataManager;
 
     [Header("퍼즐 슬롯")]
@@ -34,9 +33,10 @@ public class SortTableView : MonoBehaviour, ISortTableView
     [Header("드래그 연출용 가짜 유닛")]
     [SerializeField] private Image _dragFeedbackImg;
 
+    public bool _isHintBlocked = false;
+
     // ---------- Private ----------
     private SortTablePresenter _presenter;
-    private bool _isHintBlocked = false;
     private int _currentDraggingUnitType = -1;
 
     // 슬롯 화면좌표 재캐싱 트리거. 안드로이드는 SafeArea/해상도가 1~3프레임 늦게 확정되고,
@@ -50,19 +50,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
     {
         _presenter = new SortTablePresenter(this, _model, _inputHandler, _hintSystem);
 
-        StartCoroutine(SubscribeToManager());
-
         StartCoroutine(SetupAfterLayout());
-    }
-
-    private IEnumerator SubscribeToManager() // IEnumerator 컴파일 에러
-    {
-        yield return new WaitUntil(() => JokerManager.Instance != null);
-
-        JokerManager.Instance.OnJokerBlockingStateChanged += (blocked) => {
-            _isHintBlocked = blocked;
-            Debug.Log($"[View] 힌트 차단 상태 변경: {blocked}");
-        };
     }
 
     private void Update()

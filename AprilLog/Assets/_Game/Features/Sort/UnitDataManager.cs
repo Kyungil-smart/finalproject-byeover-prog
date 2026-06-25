@@ -26,12 +26,25 @@ public class UnitDataManager : MonoBehaviour
 
     public UnitTableData GetUnitData(int unitType)
     {
+        if (_unitDataMap == null) Awake();
+
+        UnitTableData data = null;
+
+        if (unitType == 5)
+        {
+            if (_unitDataMap.TryGetValue(1006, out data))
+            {
+                return data;
+            }
+        }
+
         int realId = 1000 + (unitType + 1);
 
-        if (_unitDataMap.TryGetValue(realId, out var data))
+        if (_unitDataMap.TryGetValue(realId, out data))
         {
             return data;
         }
+
         Debug.Log($"{realId} 번 데이터를 찾을 수 없습니다!");
         return null;
     }
