@@ -3,6 +3,9 @@
 //          스탯 인챈트는 EnchantApplicationSystem이, 스킬 인챈트는 이 시스템이 담당.
 //          인챈트 테이블 v1.03 규칙: 자동 공격(60010)은 '일반 스킬 인챈트 획득 시 자동 획득'.
 
+// 수정자 : 김영찬
+// 수정 내용 : 스킬 DB에 기반하여 조합식 등록하는 함수 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -129,12 +132,29 @@ public class SkillEnchantSystem : MonoBehaviour
             Debug.LogWarning($"[스킬인챈트] SpellRepo/SkillSystem이 없어 스킬을 등록하지 못했습니다 (enchant {enchantId}).");
             return;
         }
-
+        
         // 스킬 ID 규칙: 베이스 ID + (레벨-1). 예) 파이어브레스 1011/1012/1013
         int clampedLevel = Mathf.Clamp(level, 1, 3);
         int baseId = master.LinkedSkillID;
         int skillId = baseId + clampedLevel - 1;
-
+        
+        // DB 데이터로 조합 스킬 여부 검증 및 동적 할당
+        // enchantId가 DB의 Name_ID이므로, 조합 스킬 그룹(EnchantModel.GROUP_COMBINATION_SKILL)에 이 스킬이 있는지 검색
+        var combinationChain = spellRepo.GetSkillChainByName(EnchantModel.GROUP_COMBINATION_SKILL, enchantId);
+        if (combinationChain != null)
+        {
+            var newSkillData = combinationChain.GetNextLevelData(clampedLevel - 1);
+            if (newSkillData != null)
+            {
+                // 신규 테이블의 데이터를 읽어와서 동적으로 조합 슬롯 등록
+                RegisterCombinationFromTable(newSkillData, baseId, skillId);
+                Debug.Log($"[스킬인챈트] '{master.Name}' Lv{clampedLevel} 조합식 동적 적용 (skillId: {skillId})");
+                
+                return;
+            }
+        }
+        
+        // DB에 없는 값을 삽입 시 레거시 데이터 활용
         var data = spellRepo.GetSkill(skillId);
         if (data == null)
         {
@@ -247,5 +267,40 @@ public class SkillEnchantSystem : MonoBehaviour
         }
 
         Debug.Log($"[스킬인챈트] '{master.Name}' Lv{clampedLevel} 적용 (skillId={skillId})");
+    }
+    
+    // DB기반 스킬 획득 처리 시 사용
+    private void RegisterCombinationFromTable(SkillTableData skillData, int baseId, int currentSkillId)
+    {
+        if (skillData.SkillGroup_ID == EnchantModel.GROUP_COMBINATION_SKILL)
+        {
+            List<int> ingredients = new List<int>();
+            
+            int req1 = ConvertRawIdToUnitType(skillData.RequiredValue_1);
+            int req2 = ConvertRawIdToUnitType(skillData.RequiredValue_2);
+            int req3 = ConvertRawIdToUnitType(skillData.RequiredValue_3);
+
+            if (req1 != (int)UnitType.None) ingredients.Add(req1);
+            if (req2 != (int)UnitType.None) ingredients.Add(req2);
+            if (req3 != (int)UnitType.None) ingredients.Add(req3);
+
+            // 조합 모델에 슬롯 등록 (baseId를 키로 사용 - 문서 5장 규칙)
+            _combinationModel.RegisterRecipe(baseId, ingredients.ToArray(), currentSkillId);
+        }
+    }
+    
+    // FusionEnchantData 변환
+    private int ConvertRawIdToUnitType(float rawValue)
+    {
+        int id = Mathf.RoundToInt(rawValue);
+        return id switch
+        {
+            1001 => (int)UnitType.Red,
+            1002 => (int)UnitType.Blue,
+            1003 => (int)UnitType.Yellow, // DB 1003 -> Enum 3 (Yellow)
+            1004 => (int)UnitType.Green,  // DB 1004 -> Enum 2 (Green)
+            1005 => (int)UnitType.Purple, // 하양/보라
+            _ => (int)UnitType.None
+        };
     }
 }

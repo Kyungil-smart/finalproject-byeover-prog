@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 조합식 Model -- 재료 충족 상태
 
+// 수정자 : 김영찬 
+// 수정 내용 : UI에서 조합식이 등록되었음을 알수 있도록 이벤트 추가
+
 using System;
 using UnityEngine;
 
@@ -13,6 +16,7 @@ public class CombinationModel : MonoBehaviour
     public event Action<int, int> OnIngredientFulfilled;    // recipeIdx, ingredientIdx
     public event Action<int> OnRecipeCompleted;             // recipeIdx
     public event Action<int> OnRecipeConsumed;              // recipeIdx
+    public event Action<int, int, int[]> OnRecipeRegistered; // slotIndex, recipeKey(baseId), ingredients
 
     // ---------- 상수 ----------
     public const int MAX_RECIPES = 3;
@@ -54,6 +58,9 @@ public class CombinationModel : MonoBehaviour
                     skillId = skillId,
                     isActive = true
                 };
+                
+                // UI쪽에 슬롯 번호와 재료를 발송하는 이벤트
+                OnRecipeRegistered?.Invoke(r, recipeKey, ingredients);
                 return;
             }
         }
