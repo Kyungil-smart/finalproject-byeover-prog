@@ -48,6 +48,22 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        bool hasActiveJoker = false;
+        foreach (var icon in _jokerIcons)
+        {
+            if (icon.enabled)
+            {
+                hasActiveJoker = true;
+                break;
+            }
+        }
+
+        if (!hasActiveJoker)
+        {
+            Debug.Log("사용할 수 있는 조커가 없습니다!");
+            return;
+        }
+
         if (IsActive || _patternLibrary == null || _patternLibrary.patterns.Count == 0) return;
 
         if (_currentActiveIndex >= 0)

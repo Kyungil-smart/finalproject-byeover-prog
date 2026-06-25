@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using Random = UnityEngine.Random;
+using System.IO;
 
 public class ArtifactManager : MonoBehaviour
 {
@@ -11,6 +12,49 @@ public class ArtifactManager : MonoBehaviour
     public event Action OnInventoryUpdated;
 
     public List<ArtifactInstance> MyArtifacts = new List<ArtifactInstance>();
+    private string SavePath => Path.Combine(Application.persistentDataPath, "ArtifactSave.json");
+
+    [System.Serializable]
+    public class GameSaveData
+    {
+        public int UpgradeStone;
+        public int LegendaryShard;
+        public List<ArtifactInstance> MyArtifacts;
+    }
+
+    public void SaveData()
+    {
+        GameSaveData data = new GameSaveData
+        {
+            UpgradeStone = this.UpgradeStone,
+            LegendaryShard = this.LegendaryShard,
+            MyArtifacts = this.MyArtifacts
+        };
+
+        string json = JsonUtility.ToJson(data, true);
+        File.WriteAllText(SavePath, json);
+        Debug.Log($"[저장 완료] 경로: {SavePath}");
+    }
+
+    public void LoadData()
+    {
+        if (!File.Exists(SavePath)) return;
+
+        string json = File.ReadAllText(SavePath);
+        GameSaveData loadedData = JsonUtility.FromJson<GameSaveData>(json);
+
+        this.UpgradeStone = loadedData.UpgradeStone;
+        this.LegendaryShard = loadedData.LegendaryShard;
+        this.MyArtifacts = loadedData.MyArtifacts;
+
+        Debug.Log("[로드 완료] 아티팩트 데이터를 불러왔습니다.");
+    }
+
+    private void Start()
+    {
+        LoadData();
+        OnInventoryUpdated += SaveData;
+    }
 
     public void Initialize()
     {
@@ -74,7 +118,7 @@ public class ArtifactManager : MonoBehaviour
                 this.UpgradeStone += reward;
                 Debug.Log($"[자동 분해] {grade} 초과분 {excessCount}개 → 에픽 강화석 지급");
             }
-           
+
         }
     }
 
@@ -137,7 +181,7 @@ public class ArtifactManager : MonoBehaviour
         }
 
         else if (item.CurrentCount > costData.CostAmount)
-        { 
+        {
             item.CurrentCount -= costData.CostAmount;
             item.AscensionCount++;
         }
