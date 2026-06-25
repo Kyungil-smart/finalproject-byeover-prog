@@ -5,7 +5,7 @@ public class JokerData : MonoBehaviour
 {
     public int unitID = 1006;
     public UnitTableData myData;
-    public Image iconImage;
+    public Image iconImage; //
 
     private void OnEnable()
     {
