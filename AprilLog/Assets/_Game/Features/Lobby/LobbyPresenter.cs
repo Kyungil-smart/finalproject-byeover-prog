@@ -11,6 +11,12 @@ public class LobbyPresenter
 
     public LobbyPresenter(ILobbyView view, PlayerProgressModel progress, CurrencyModel currency)
     {
+        if (view == null || progress == null || currency == null)
+        {
+            Debug.LogWarning("[LobbyPresenter] Required dependency is missing. Presenter initialization skipped.");
+            return;
+        }
+
         _view = view;
         _progress = progress;
         _currency = currency;
@@ -27,6 +33,9 @@ public class LobbyPresenter
 
     public void Dispose()
     {
+        if (_view == null || _progress == null || _currency == null)
+            return;
+
         _progress.OnCharacterLevelChanged -= HandleLevelChanged;
         _progress.OnProgressUpdated -= HandleProgressUpdated;
         _currency.OnCurrencyChanged -= HandleCurrencyChanged;

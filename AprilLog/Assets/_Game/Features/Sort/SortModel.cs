@@ -1,5 +1,7 @@
-// 담당자 : 정승우
+// 담당자 : 최동훈
 // 설명   : Sort 퍼즐 Model -- 슬롯 상태 데이터 + 이벤트
+// 수정 사항 : 보드 내 모든 슬롯을 무작위 유닛으로 채우는 랜덤 배치(ShuffleBoard) 로직 구현
+// 최종 변경 일자 : 26.05.27
 
 using System;
 using System.Collections.Generic;
@@ -71,6 +73,7 @@ public class SortModel : MonoBehaviour
     public void SetWaiting(int index, WaitingCombo combo)
     {
         _waitingQueue[index] = combo;
+        // Debug.Log($"[모델] 대기열 {index}번 갱신됨! 유닛 타입: {combo.unitTypes[0]}");
         OnWaitingUpdated?.Invoke(index, combo);
     }
 
@@ -91,6 +94,27 @@ public class SortModel : MonoBehaviour
                 _puzzleTables[t][s] = -1;
 
         OnBoardReset?.Invoke();
+    }
+
+    // ---------- 랜덤 배치 및 셔플 ----------
+    public void ShuffleBoard()
+    {
+        if (_puzzleTables == null)
+        {
+            Initialize();
+        }
+
+        for (int t = 0; t < TABLE_COUNT; t++)
+        {
+            for (int s = 0; s < SLOTS_PER_TABLE; s++)
+            {
+                int randomUnitType = UnityEngine.Random.Range(0, UNIT_TYPE_COUNT);
+
+                _puzzleTables[t][s] = randomUnitType;
+
+                OnSlotChanged?.Invoke(t, s, randomUnitType);
+            }
+        }
     }
 
     // ---------- 조회 ----------
@@ -147,5 +171,79 @@ public class SortModel : MonoBehaviour
             }
         }
         return _cachedCounts;
+    }
+
+    // 기획 3-2: 퍼즐 테이블에 '3개 이상' 배치된 유닛 종류 중 하나를 랜덤 선택해
+    //           그 종류의 유닛들을 흔든다. 3개 이상인 종류가 없으면 빈 리스트 반환
+    //           → HintSystem이 대기 테이블을 흔든다 (3-2-4).
+    public List<(int t, int s)> GetHintTargets()
+    {
+        var twoMatches = new List<(int tableIdx, int unitType)>();
+
+        for (int t = 0; t < TABLE_COUNT; t++)
+        {
+            for (int type = 0; type < UNIT_TYPE_COUNT; type++)
+            {
+                if (GetCountInTable(t, type) == 2)
+                {
+                    twoMatches.Add((t, type));
+                }
+            }
+        }
+
+        foreach (var target in twoMatches)
+        {
+            for (int helperIdx = 0; helperIdx < TABLE_COUNT; helperIdx++)
+            {
+                if (target.tableIdx == helperIdx) continue;
+
+                if (GetCountInTable(helperIdx, target.unitType) == 1)
+                {
+                    return CreateTargetList(target.tableIdx, helperIdx, target.unitType);
+                }
+            }
+        }
+        return new List<(int t, int s)>();
+    }
+
+    private int GetCountInTable(int tableIdx, int unitType)
+    {
+        int count = 0;
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+            if (GetUnit(tableIdx, s) == unitType) count++;
+        return count;
+    }
+
+    private List<(int t, int s)> CreateTargetList(int t1, int t2, int unitType)
+    {
+        var list = new List<(int t, int s)>();
+
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+        {
+            if (GetUnit(t1, s) == unitType)
+                list.Add((t1, s));
+        }
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+        {
+            if (GetUnit(t2, s) == unitType)
+            {
+                list.Add((t2, s));
+                break;
+            }
+        }
+
+        return list;
+    }
+
+    public void ReplaceTableUnits(int tableIdx, int unitType)
+    {
+        for (int s = 0; s < SLOTS_PER_TABLE; s++)
+        {
+            _puzzleTables[tableIdx][s] = unitType;
+
+            OnSlotChanged?.Invoke(tableIdx, s, unitType);
+        }
+
+        Debug.Log($"[모델] 테이블 {tableIdx}의 모든 유닛을 타입 {unitType}(으)로 교체 완료");
     }
 }

@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24ae2bfe4bd064d45add2a0bb7948b29, type: 3}
+  m_Name: BattleRewardTable
+  m_EditorClassIdentifier: Assembly-CSharp::BattleRewardTable
+  rows:
+  - Target_ID: 2001
+    RewardTrigger: WaveClear
+    RewardScope: InGame
+    FirstRewardItem: 75001
+    FirstRewardAmount: 2
+    SecondRewardItem: 75002
+    SecondRewardAmount: 1
+  - Target_ID: 2002
+    RewardTrigger: EliteKill
+    RewardScope: InGame
+    FirstRewardItem: 75001
+    FirstRewardAmount: 2
+    SecondRewardItem: 75002
+    SecondRewardAmount: 1
+  - Target_ID: 2003
+    RewardTrigger: BossKill
+    RewardScope: InGame
+    FirstRewardItem: 75001
+    FirstRewardAmount: 2
+    SecondRewardItem: 75002
+    SecondRewardAmount: 1

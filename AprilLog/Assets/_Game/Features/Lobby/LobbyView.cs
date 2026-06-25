@@ -4,6 +4,7 @@
 using System;
 using UnityEngine;
 using TMPro;
+// 추가: 조규민 - 로비 진입 시 계정 클라우드 데이터 바인더를 자동 연결한다.
 
 public class LobbyView : MonoBehaviour, ILobbyView
 {
@@ -27,6 +28,14 @@ public class LobbyView : MonoBehaviour, ILobbyView
 
     private void Awake()
     {
+        EnsureCloudDataBinder();
+
+        if (_progress == null || _currency == null)
+        {
+            Debug.LogWarning("[LobbyView] Required model is missing. LobbyPresenter creation skipped.");
+            return;
+        }
+
         _presenter = new LobbyPresenter(this, _progress, _currency);
     }
 
@@ -44,20 +53,37 @@ public class LobbyView : MonoBehaviour, ILobbyView
             _localization.OnLanguageChanged -= ApplyTexts;
     }
 
-    private void ApplyTexts() { /* 로컬라이제이션 텍스트 적용 */ }
+    private void ApplyTexts() { }
 
-    public void SetPlayerInfo(string name, int level) => _levelText.SetText("Lv.{0}", level);
-    public void SetStageButtons(StageDisplayData[] stages) { /* 스테이지 버튼 생성 */ }
+    public void SetPlayerInfo(string name, int level)
+    {
+        if (_levelText != null)
+            _levelText.SetText("Lv.{0}", level);
+    }
+
+    public void SetStageButtons(Legacy_StageDisplayData[] stages) { }
     public void SetCurrency(int gold, int parchment)
     {
-        _goldText.SetText("{0}", gold);
-        _parchmentText.SetText("{0}", parchment);
-    }
-    public void ShowResumePrompt() { /* 이어하기 팝업 */ }
+        if (_goldText != null)
+            _goldText.SetText("{0}", gold);
 
-    // 버튼 콜백
+        if (_parchmentText != null)
+            _parchmentText.SetText("{0}", parchment);
+    }
+    public void ShowResumePrompt() { OnResumeClicked?.Invoke(); }
+
     public void OnStageButtonClicked(int stageId) => OnStageSelected?.Invoke(stageId);
     public void OnGrowthButtonClicked() => OnGrowthClicked?.Invoke();
     public void OnBookButtonClicked() => OnBookClicked?.Invoke();
     public void OnOptionButtonClicked() => OnOptionClicked?.Invoke();
+
+    private void EnsureCloudDataBinder()
+    {
+        if (GetComponent<LobbyCloudDataBinder>() != null)
+        {
+            return;
+        }
+
+        gameObject.AddComponent<LobbyCloudDataBinder>();
+    }
 }

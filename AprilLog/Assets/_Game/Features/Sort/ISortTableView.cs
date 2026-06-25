@@ -6,6 +6,7 @@ public interface ISortTableView
     void PlaceUnit(int tableIdx, int slotIdx, int unitType);
     void ClearSlot(int tableIdx, int slotIdx);
     void ShowDragFeedback(int fromTable, int fromSlot, UnityEngine.Vector2 dragPos);
+    void UpdateDragFeedbackPosition(UnityEngine.Vector2 dragPos);
     void HideDragFeedback();
     void PlayClearAnimation(int tableIdx);
     void LockSlot(int tableIdx, int slotIdx);

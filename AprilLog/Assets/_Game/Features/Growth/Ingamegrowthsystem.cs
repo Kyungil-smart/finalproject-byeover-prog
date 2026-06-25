@@ -1,112 +1,179 @@
 // 담당자 : 정승우
 // 설명   : 인게임 레벨/EXP 관리
 
+// 1차 수정자 : 김영찬 ->
+// 수정내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, DataManager의 Instance를 통해 호출하는것으로 수정
+
+// 수정자 : 정승우
+// 수정내용 : ConfigRepo가 Inspector에 연결되지 않아도 DataManager에서 자동 참조
+
+// 수정자 : 김영찬
+// DataManager 최신화 중 기존 연결을 Legacy로 변경 및 최신화 완료
+
+// 수정자 : 김영찬
+// 몬스터 사망 시 획득 Exp와 연결 완료
+
 using System;
 using UnityEngine;
-
+ 
 /// <summary>
-/// 몬스터 처치 -> EXP 획득 -> 레벨업 -> 인챈트 선택 흐름을 관리한다.
-/// 경험치 초과분은 다음 레벨로 이월됨.
+/// 몬스터 처치 -> EXP 획득 -> 레벨업 흐름을 관리한다.
 /// </summary>
 public class InGameGrowthSystem : MonoBehaviour
 {
     // ---------- 이벤트 ----------
     public event Action<int> OnLevelUp;
-    public event Action<int, int> OnEXPChanged;     // current, required
-
+    public event Action<int, int> OnEXPChanged;
+ 
     // ---------- SerializeField ----------
     [Header("참조")]
     [SerializeField] private MonsterSpawner _spawner;
     [SerializeField] private ScreenNavigator _navigator;
     [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private PlayerModel _playerModel;
-
+ 
     [Header("설정")]
-    [Tooltip("인게임 최대 레벨")]
     [SerializeField] private int _maxLevel = 30;
 
-    [Tooltip("몬스터 처치당 기본 경험치")]
-    [SerializeField] private int _baseExpPerKill = 50;
-
+    // 데드락 통지(SortSystem.OnDeadlockDetected) 구독용. 비면 런타임 자동 탐색.
+    [SerializeField] private SortSystem _sortSystem;
+ 
     // ---------- 데이터 ----------
     public int CurrentLevel { get; private set; }
     public int CurrentEXP { get; private set; }
-
-    // ---------- 초기화 ----------
+ 
     public void Initialize()
     {
+        ResolveRepository();
+
         CurrentLevel = 1;
         CurrentEXP = 0;
     }
-
+ 
     public void RestoreFromSave(int level, int exp)
     {
+        ResolveRepository();
+
         CurrentLevel = level;
         CurrentEXP = exp;
     }
 
-    // ---------- 생명주기 ----------
+    /// <summary>
+    /// 현재 레벨/EXP 상태를 이벤트로 한 번 발행한다.
+    /// HUD Presenter가 모델 초기화 이후에 생성되어 구독만으론 현재 값을 못 받는 경우,
+    /// 이걸 호출해 초기 동기화(placeholder 덮어쓰기)를 한다.
+    /// </summary>
+    public void EmitCurrentState()
+    {
+        ResolveRepository();
+
+        OnLevelUp?.Invoke(CurrentLevel);
+
+        int required = 0;
+        if (_configRepo != null)
+        {
+            var levelData = _configRepo.GetInLevel(CurrentLevel);
+            if (levelData != null) required = levelData.RequiredEXP;
+        }
+        OnEXPChanged?.Invoke(CurrentEXP, required);
+    }
+ 
     private void OnEnable()
     {
+        ResolveRepository();   // _spawner/_navigator/_sortSystem 등 자가 연결
+
         if (_spawner != null)
             _spawner.OnMonsterDied += HandleMonsterDied;
+
+        // 데드락 발생 시 EXP 10% 감소(기획 4-2-6) 연결
+        if (_sortSystem != null)
+            _sortSystem.OnDeadlockDetected += ApplyDeadlockPenalty;
     }
 
     private void OnDisable()
     {
         if (_spawner != null)
             _spawner.OnMonsterDied -= HandleMonsterDied;
-    }
 
-    private void HandleMonsterDied(MonsterAI monster)
+        if (_sortSystem != null)
+            _sortSystem.OnDeadlockDetected -= ApplyDeadlockPenalty;
+    }
+ 
+    private void HandleMonsterDied(MonsterAI monster, bool isKamikaze = false)
     {
-        AddEXP(_baseExpPerKill);
+        if (!isKamikaze)
+        {
+            AddEXP(monster.Exp);
+        }
     }
-
-    // ---------- EXP ----------
+ 
     public void AddEXP(int amount)
     {
+        ResolveRepository();
+        if (_configRepo == null)
+        {
+            Debug.LogError("[InGameGrowthSystem] ConfigRepo를 찾을 수 없어 EXP 처리를 중단합니다.");
+            return;
+        }
+
         if (CurrentLevel >= _maxLevel) return;
-
+ 
         CurrentEXP += amount;
-
+ 
         var levelData = _configRepo.GetInLevel(CurrentLevel);
         if (levelData == null) return;
-
+ 
         int required = levelData.RequiredEXP;
-
-        // 초과분 이월: 필요 1000인데 1200 들어오면 레벨업 + 잔여 200
+ 
         while (CurrentEXP >= required && CurrentLevel < _maxLevel)
         {
             CurrentEXP -= required;
             CurrentLevel++;
 
-            // 레벨업 시 HP 회복
-            _playerModel.Heal(levelData.HPRecovery);
-
+            // HPRecovery는 최대 체력 대비 비율(예: 0.08 = 8%)이다.
+            // 기존엔 RoundToInt(0.08)=0 이라 회복이 전혀 적용되지 않았다.
+            if (_playerModel != null)
+                _playerModel.Heal(Mathf.RoundToInt(_playerModel.MaxHP * levelData.HPRecovery));
             OnLevelUp?.Invoke(CurrentLevel);
-
-            // 인챈트 선택 팝업
+ 
             if (_navigator != null)
                 _navigator.ShowEnchantSelection();
-
-            // 다음 레벨 데이터
+ 
             levelData = _configRepo.GetInLevel(CurrentLevel);
             if (levelData == null) break;
             required = levelData.RequiredEXP;
         }
-
+ 
         OnEXPChanged?.Invoke(CurrentEXP, required);
     }
-
-    // 데드락 페널티: 경험치 10% 감소 (0 이하로는 안 내려감)
+ 
     public void ApplyDeadlockPenalty()
     {
+        ResolveRepository();
+        if (_configRepo == null)
+        {
+            Debug.LogError("[InGameGrowthSystem] ConfigRepo를 찾을 수 없어 데드락 패널티를 처리할 수 없습니다.");
+            return;
+        }
+
         var levelData = _configRepo.GetInLevel(CurrentLevel);
         if (levelData == null) return;
-
+ 
         int penalty = Mathf.RoundToInt(levelData.RequiredEXP * 0.1f);
         CurrentEXP = Mathf.Max(0, CurrentEXP - penalty);
         OnEXPChanged?.Invoke(CurrentEXP, levelData.RequiredEXP);
+    }
+
+    // 씬에 직렬화 참조가 비어 있어도 동작하도록 모든 의존성을 자가 연결한다 (다른 시스템과 동일 패턴).
+    // 특히 _navigator(레벨업 시 인챈트 팝업 호출)와 _spawner(몬스터 처치 EXP 수신)가 핵심.
+    private void ResolveRepository()
+    {
+        if (_configRepo == null && DataManager.Instance != null)
+            _configRepo = DataManager.Instance.ConfigRepo;
+
+        if (_spawner == null) _spawner = FindFirstObjectByType<MonsterSpawner>();
+        if (_navigator == null) _navigator = FindFirstObjectByType<ScreenNavigator>();
+        if (_playerModel == null) _playerModel = FindFirstObjectByType<PlayerModel>();
+        if (_sortSystem == null) _sortSystem = FindFirstObjectByType<SortSystem>();
     }
 }

@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6784d2c56429e2848899c08e41932852, type: 3}
+  m_Name: EffectMasterTable
+  m_EditorClassIdentifier: Assembly-CSharp::EffectMasterTable
+  rows:
+  - Effect_ID: 13001
+    EffectName: 0
+    EffectType: KnockBack
+    OverLap: 
+    GrowthType: None
+    Value: 600
+    Duration: 0
+    Interval: 0
+  - Effect_ID: 13002
+    EffectName: 0
+    EffectType: Slow
+    OverLap: 
+    GrowthType: None
+    Value: 0.3
+    Duration: 3
+    Interval: 0
+  - Effect_ID: 13003
+    EffectName: 0
+    EffectType: DotDamage
+    OverLap: 
+    GrowthType: Add
+    Value: 10
+    Duration: 5
+    Interval: 0.5
+  - Effect_ID: 13004
+    EffectName: 0
+    EffectType: StatusUP
+    OverLap: 
+    GrowthType: Add
+    Value: 10
+    Duration: 5
+    Interval: 0
+  - Effect_ID: 13005
+    EffectName: 0
+    EffectType: StatusUP
+    OverLap: 
+    GrowthType: Add
+    Value: 12
+    Duration: 5
+    Interval: 0
+  - Effect_ID: 13006
+    EffectName: 0
+    EffectType: DotDamage
+    OverLap: 
+    GrowthType: Add
+    Value: 10
+    Duration: 4
+    Interval: 0.5
+  - Effect_ID: 13007
+    EffectName: 0
+    EffectType: Stun
+    OverLap: 
+    GrowthType: None
+    Value: 0
+    Duration: 3
+    Interval: 0

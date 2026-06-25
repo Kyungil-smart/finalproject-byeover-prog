@@ -33,6 +33,7 @@ public class PoolManager : MonoBehaviour
         }
 
         Instance = this;
+        DontDestroyOnLoad(gameObject);   // Boot에서 워밍업한 몬스터 풀(Monster_11..30 등)이 _InGame까지 유지되도록. 없으면 빌드에서 몬스터 미스폰.
 
         _pools = new Dictionary<string, Queue<GameObject>>();
         _prefabs = new Dictionary<string, GameObject>();
@@ -55,6 +56,15 @@ public class PoolManager : MonoBehaviour
         }
 
         Debug.Log($"[Pool] WarmUp 완료. {_pools.Count}개 풀 등록됨.");
+    }
+
+    /// <summary>
+    /// 런타임에 풀을 보장한다(이미 있으면 무시). 코드로 만든 프리팹/템플릿 등록용.
+    /// </summary>
+    public void EnsurePool(string key, GameObject prefab, int initialCount)
+    {
+        if (string.IsNullOrEmpty(key) || prefab == null) return;
+        RegisterPool(key, prefab, initialCount);
     }
 
     private void RegisterPool(string key, GameObject prefab, int count)

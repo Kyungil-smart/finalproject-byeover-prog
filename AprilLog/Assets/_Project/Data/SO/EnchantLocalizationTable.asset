@@ -1,0 +1,616 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45a55ff273affd14fb357475f0c10a6c, type: 3}
+  m_Name: EnchantLocalizationTable
+  m_EditorClassIdentifier: Assembly-CSharp::EnchantLocalizationTable
+  rows:
+  - Language_ID: 2
+    KR: "\uBD88"
+    EN: Fire
+  - Language_ID: 3
+    KR: "\uBB3C"
+    EN: Water
+  - Language_ID: 4
+    KR: "\uAD00\uD1B5"
+    EN: Pierce
+  - Language_ID: 5
+    KR: "\uBC14\uB78C"
+    EN: Wind
+  - Language_ID: 6
+    KR: "\uD295\uAE40"
+    EN: Bounce
+  - Language_ID: 7
+    KR: "\uBC88\uAC1C"
+    EN: Elec.
+  - Language_ID: 9
+    KR: "\uC5BC\uC74C"
+    EN: Ice
+  - Language_ID: 10
+    KR: "\uBC94\uC704"
+    EN: Hazard
+  - Language_ID: 20
+    KR: "\uD22C\uC0AC\uCCB4"
+    EN: Proj.
+  - Language_ID: 45
+    KR: "\uC77C\uBC18 \uACF5\uACA9"
+    EN: Sort Attack
+  - Language_ID: 49
+    KR: "\uC790\uB3D9 \uACF5\uACA9"
+    EN: Auto Attack
+  - Language_ID: 50
+    KR: "\uD30C\uC774\uC5B4\uBE0C\uB808\uC2A4"
+    EN: Fire Breath
+  - Language_ID: 51
+    KR: "\uD654\uC5FC \uC791\uB82C"
+    EN: Fire Blast
+  - Language_ID: 52
+    KR: "\uD654\uC5FC \uC815\uB839 \uC18C\uD658"
+    EN: Fire Sprite
+  - Language_ID: 53
+    KR: "\uB300\uC9C0 \uADE0\uC5F4"
+    EN: Earth Burst
+  - Language_ID: 54
+    KR: "\uBA54\uD14C\uC624"
+    EN: Meteor
+  - Language_ID: 60
+    KR: "\uBB3C \uD3ED\uD0C4"
+    EN: Aqua Bomb
+  - Language_ID: 61
+    KR: "\uD0C4\uD658 \uC138\uB840"
+    EN: Aqua Splash
+  - Language_ID: 62
+    KR: "\uAE09\uB958"
+    EN: Wave Wipe
+  - Language_ID: 63
+    KR: "\uD30C\uB3C4 \uC18C\uD658"
+    EN: Wave
+  - Language_ID: 64
+    KR: "\uD558\uC774\uB4DC\uB85C \uD38C\uD504"
+    EN: Aqua Stream
+  - Language_ID: 70
+    KR: "\uD5E4\uC774\uC2A4\uD2B8"
+    EN: Wind Turbo
+  - Language_ID: 71
+    KR: "\uBC14\uB78C \uCE7C\uB0A0"
+    EN: Wind Blade
+  - Language_ID: 72
+    KR: "\uB3CC\uD48D"
+    EN: Vortex Strike
+  - Language_ID: 73
+    KR: "\uD5C8\uB9AC\uCF00\uC778"
+    EN: Wind Spin
+  - Language_ID: 74
+    KR: "\uD15C\uD398\uC2A4\uD2B8"
+    EN: Tempest
+  - Language_ID: 80
+    KR: "\uAD6C\uD615 \uBC88\uAC1C"
+    EN: Spark Sphere
+  - Language_ID: 81
+    KR: "\uC5D0\uB108\uC9C0\uBCFC"
+    EN: Energy Ball
+  - Language_ID: 82
+    KR: "\uBC29\uC804"
+    EN: Lightning Link
+  - Language_ID: 83
+    KR: "\uBCBC\uB77D"
+    EN: Lightning
+  - Language_ID: 84
+    KR: "\uB1CC\uACA9"
+    EN: Volt Cannon
+  - Language_ID: 90
+    KR: "\uB9C8\uCE6D \uC544\uC774\uC2A4"
+    EN: Frost Spike
+  - Language_ID: 91
+    KR: "\uAE00\uB808\uC774\uC15C \uD53C\uC5B4\uC2A4"
+    EN: Glacial Pierce
+  - Language_ID: 92
+    KR: "\uBE59\uACB0 \uC9C0\uB300"
+    EN: Frost Field
+  - Language_ID: 93
+    KR: "\uC5BC\uC74C \uACB0\uC815"
+    EN: Glacial Glide
+  - Language_ID: 94
+    KR: "\uC808\uB300\uC601\uB3C4"
+    EN: Frost Shower
+  - Language_ID: 200
+    KR: "\uC790\uB3D9 \uACF5\uACA9 \uAC15\uD654"
+    EN: Auto-Attack Enhancement
+  - Language_ID: 201
+    KR: "\uD22C\uC0AC\uCCB4 \uD655\uB300"
+    EN: Projectile Size Increase
+  - Language_ID: 202
+    KR: "\uD22C\uC0AC\uCCB4 \uC99D\uAC00 (\uC77C\uBC18)"
+    EN: Projectile Plus (Nomale)
+  - Language_ID: 203
+    KR: "\uD22C\uC0AC\uCCB4 \uC99D\uAC00 (\uC870\uD569)"
+    EN: Projectile Plus (Combi)
+  - Language_ID: 204
+    KR: "\uD22C\uC0AC\uCCB4 \uC99D\uAC00 (\uCF64\uBCF4)"
+    EN: Projectile Plus (Combo)
+  - Language_ID: 300
+    KR: "\uBCA0\uB9AC\uC5B4 \uC218\uB9AC"
+    EN: Barrier Restoration
+  - Language_ID: 301
+    KR: "\uBCA0\uB9AC\uC5B4 \uAC15\uD654"
+    EN: Barrier Enhancement
+  - Language_ID: 400
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uBD88)"
+    EN: Critical Hit Boost (Fire)
+  - Language_ID: 401
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uBB3C)"
+    EN: Critical Hit Boost (Water)
+  - Language_ID: 402
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uBC14\uB78C)"
+    EN: Critical Hit Boost (Wind)
+  - Language_ID: 403
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uBC88\uAC1C)"
+    EN: Critical Hit Boost (Elec.)
+  - Language_ID: 404
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uC5BC\uC74C)"
+    EN: Critical Hit Boost (Ice)
+  - Language_ID: 405
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uC77C\uBC18)"
+    EN: Critical Hit Boost (Nomal)
+  - Language_ID: 406
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uC870\uD569)"
+    EN: Critical Hit Boost (Combi)
+  - Language_ID: 407
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uCF64\uBCF4)"
+    EN: Critical Hit Boost (Combo)
+  - Language_ID: 408
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uBC94\uC704)"
+    EN: Critical Hit Boost (Hazard)
+  - Language_ID: 409
+    KR: "\uCE58\uBA85\uD0C0 \uAC15\uD654 (\uD22C\uC0AC\uCCB4)"
+    EN: Critical Hit Boost (Proj.)
+  - Language_ID: 410
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uBD88)"
+    EN: Critical Rate Boost (Fire)
+  - Language_ID: 411
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uBB3C)"
+    EN: Critical Rate Boost (Water)
+  - Language_ID: 412
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uBC14\uB78C)"
+    EN: Critical Rate Boost (Wind)
+  - Language_ID: 413
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uBC88\uAC1C)"
+    EN: Critical Rate Boost (Elec.)
+  - Language_ID: 414
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uC5BC\uC74C)"
+    EN: Critical Rate Boost (Ice)
+  - Language_ID: 415
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uC77C\uBC18)"
+    EN: Critical Rate Boost (Nomal)
+  - Language_ID: 416
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uC870\uD569)"
+    EN: Critical Rate Boost (Combi)
+  - Language_ID: 417
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uCF64\uBCF4)"
+    EN: Critical Rate Boost (Combo)
+  - Language_ID: 418
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uBC94\uC704)"
+    EN: Critical Rate Boost (Hazard)
+  - Language_ID: 419
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 \uC5C5 (\uD22C\uC0AC\uCCB4)"
+    EN: Critical Rate Boost (Proj.)
+  - Language_ID: 500
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uBD88)"
+    EN: Critical Damage Boost (Fire)
+  - Language_ID: 501
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uBB3C)"
+    EN: Critical Damage Boost (Water)
+  - Language_ID: 502
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uBC14\uB78C)"
+    EN: Critical Damage Boost (Wind)
+  - Language_ID: 503
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uBC88\uAC1C)"
+    EN: Critical Damage Boost (Elec.)
+  - Language_ID: 504
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uC5BC\uC74C)"
+    EN: Critical Damage Boost (Ice)
+  - Language_ID: 505
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uC77C\uBC18)"
+    EN: Critical Damage Boost (Nomal)
+  - Language_ID: 506
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uC870\uD569)"
+    EN: Critical Damage Boost (Combi)
+  - Language_ID: 507
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uCF64\uBCF4)"
+    EN: Critical Damage Boost (Combo)
+  - Language_ID: 508
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uBC94\uC704)"
+    EN: Critical Damage Boost (Hazard)
+  - Language_ID: 509
+    KR: "\uCE58\uBA85\uD0C0 \uACF5\uACA9 \uC5C5 (\uD22C\uC0AC\uCCB4)"
+    EN: Critical Damage Boost (Proj.)
+  - Language_ID: 600
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uBD88)"
+    EN: Skill Damage UP (Fire)
+  - Language_ID: 601
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uBB3C)"
+    EN: Skill Damage UP (Water)
+  - Language_ID: 602
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uBC88\uAC1C)"
+    EN: Skill Damage UP (Wind)
+  - Language_ID: 603
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uBC14\uB78C)"
+    EN: Skill Damage UP (Elec.)
+  - Language_ID: 604
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uC5BC\uC74C)"
+    EN: Skill Damage UP (Ice)
+  - Language_ID: 605
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uC77C\uBC18)"
+    EN: Skill Damage UP (Nomal)
+  - Language_ID: 606
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uC870\uD569)"
+    EN: Skill Damage UP (Combi)
+  - Language_ID: 607
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uCF64\uBCF4)"
+    EN: Skill Damage UP (Combo)
+  - Language_ID: 608
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uBC94\uC704)"
+    EN: Skill Damage UP (Hazard)
+  - Language_ID: 609
+    KR: "\uC2A4\uD0AC \uACF5\uACA9 \uC5C5 (\uD22C\uC0AC\uCCB4)"
+    EN: Skill Damage UP (Proj.)
+  - Language_ID: 700
+    KR: "\uAC10\uC804 \uD6A8\uACFC \uAC15\uD654 (\uC77C\uBC18)"
+    EN: Shock Effect Boost (Nomal)
+  - Language_ID: 701
+    KR: "\uC0C1\uCC98 \uD6A8\uACFC \uAC15\uD654 (\uC77C\uBC18)"
+    EN: Wound Effect Up (Nomal)
+  - Language_ID: 702
+    KR: "\uC2A4\uD134 \uD6A8\uACFC \uAC15\uD654 (\uC77C\uBC18)"
+    EN: Stun Effect Up (Nomal)
+  - Language_ID: 703
+    KR: "\uAC10\uC804 \uD6A8\uACFC \uAC15\uD654 (\uC870\uD569)"
+    EN: Shock Effect Boost (Combi)
+  - Language_ID: 704
+    KR: "\uC0C1\uCC98 \uD6A8\uACFC \uAC15\uD654 (\uC870\uD569)"
+    EN: Wound Effect Up (Combi)
+  - Language_ID: 705
+    KR: "\uC2A4\uD134 \uD6A8\uACFC \uAC15\uD654 (\uC870\uD569)"
+    EN: Stun Effect Up (Combi)
+  - Language_ID: 706
+    KR: "\uAC10\uC804 \uD6A8\uACFC \uAC15\uD654 (\uCF64\uBCF4)"
+    EN: Shock Effect Boost (Combo)
+  - Language_ID: 707
+    KR: "\uC0C1\uCC98 \uD6A8\uACFC \uAC15\uD654 (\uCF64\uBCF4)"
+    EN: Wound Effect Up (Combo)
+  - Language_ID: 708
+    KR: "\uC2A4\uD134 \uD6A8\uACFC \uAC15\uD654 (\uCF64\uBCF4)"
+    EN: Stun Effect Up (Combo)
+  - Language_ID: 800
+    KR: "\uACF5\uACA9 \uBC94\uC704 \uC99D\uAC00 (\uBD88)"
+    EN: Attack Range Boost (Fire)
+  - Language_ID: 801
+    KR: "\uACF5\uACA9 \uBC94\uC704 \uC99D\uAC00 (\uBB3C)"
+    EN: Attack Range Boost (Water)
+  - Language_ID: 802
+    KR: "\uACF5\uACA9 \uBC94\uC704 \uC99D\uAC00 (\uBC14\uB78C)"
+    EN: Attack Range Boost (Wind)
+  - Language_ID: 803
+    KR: "\uACF5\uACA9 \uBC94\uC704 \uC99D\uAC00 (\uBC88\uAC1C)"
+    EN: Attack Range Boost (Elec.)
+  - Language_ID: 804
+    KR: "\uACF5\uACA9 \uBC94\uC704 \uC99D\uAC00 (\uC5BC\uC74C)"
+    EN: Attack Range Boost (Ice)
+  - Language_ID: 1045
+    KR: "sort\uC5D0 \uC131\uACF5\uD588\uC744 \uACBD\uC6B0 \uD22C\uC0AC\uCCB4\uB97C
+      \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+    EN: Fires projectile upon successful sort
+  - Language_ID: 1049
+    KR: "\uC77C\uC815 \uAE30\uAC04\uB9C8\uB2E4 \uC790\uB3D9\uC73C\uB85C \uBC1C\uC0AC\uB418\uB294
+      \uD22C\uC0AC\uCCB4\uAC00 \uCD94\uAC00\uB429\uB2C8\uB2E4."
+    EN: Adds a projectile that fires automatically periodically
+  - Language_ID: 1050
+    KR: "\uBD88\uC744 \uBFDC\uC5B4\uB0B4\uB294 \uAD6C\uC2AC\uC744 \uC18C\uD658\uD569\uB2C8\uB2E4."
+    EN: Spawns a fire-breathing orb
+  - Language_ID: 1051
+    KR: "\uC5EC\uB7EC \uAC1C\uC758 \uD30C\uC774\uC5B4\uBCFC\uC744 \uBC1C\uC0AC\uD569\uB2C8\uB2E4"
+    EN: Fires a burst of fireballs
+  - Language_ID: 1052
+    KR: "\uD654\uBA85 \uC791\uB82C\uC744 \uC0AC\uC6A9\uD558\uB294 \uD654\uC5FC \uC815\uB839\uC744
+      \uC18C\uD658\uD569\uB2C8\uB2E4."
+    EN: Get a fairy that shoots Fire Blast
+  - Language_ID: 1053
+    KR: "\uB545\uC744 \uB36E\uB294 \uBD88\uAE30\uB465\uC774 \uC19F\uC544\uC624\uB985\uB2C8\uB2E4."
+    EN: Raises a ground-covering pillar of flame
+  - Language_ID: 1054
+    KR: "\uBAAC\uC2A4\uD130\uC758 \uBA38\uB9AC \uC704\uB85C \uC6B4\uC11D\uC744 \uB5A8\uC5B4\uD2B8\uB9BD\uB2C8\uB2E4."
+    EN: Drops a meteor on top of monsters
+  - Language_ID: 1060
+    KR: "\uD53C\uACA9 \uC2DC \uD3ED\uBC1C\uD558\uB294 \uBB3C \uD3ED\uD0C4\uC744 \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+    EN: Fires water bomb that explodes on impact
+  - Language_ID: 1061
+    KR: "\uBD80\uCC44\uAF34 \uBC94\uC704\uC758 \uBB3C \uD0C4\uD658 \uC138\uB840\uB97C
+      \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+    EN: Sprays water bullets in a cone
+  - Language_ID: 1062
+    KR: "\uD654\uBA74\uC758 \uC77C\uBD80\uB97C \uAC00\uB85C\uC9C0\uB974\uB294 \uBB3C\uC904\uAE30\uB97C
+      \uC18C\uD658\uD569\uB2C8\uB2E4."
+    EN: Channels a water stream across part of the screen
+  - Language_ID: 1063
+    KR: "\uD30C\uB3C4\uB97C \uC0DD\uC131\uD574 \uBAAC\uC2A4\uD130\uB97C \uBC00\uCCD0\uB0C5\uB2C8\uB2E4"
+    EN: Conjures a wave that knocks back monsters
+  - Language_ID: 1064
+    KR: "\uB9F5 \uC911\uC559\uC744 \uAC00\uB974\uB294 \uAC70\uB300\uD55C \uBB3C\uB300\uD3EC\uB97C
+      \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+    EN: Blasts a giant water cannon through the center of the map
+  - Language_ID: 1070
+    KR: "\uC77C\uC815 \uAE30\uAC04 \uB3D9\uC548 \uC790\uB3D9 \uACF5\uACA9\uC774 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances auto-attacks for a limited time
+  - Language_ID: 1071
+    KR: "\uCD08\uC2B9\uB2EC \uD615\uD0DC\uC758 \uBC14\uB78C \uCE7C\uB0A0\uC744 \uBC1C\uC0AC\uD569\uB2C8\uB2E4"
+    EN: Fires a crescent-shaped wind blade
+  - Language_ID: 1072
+    KR: "\uBC14\uB78C\uC744 \uBAA8\uC73C\uB294 \uAD6C\uB97C \uC0DD\uC131\uD569\uB2C8\uB2E4."
+    EN: Creates a sphere of concentrated wind
+  - Language_ID: 1073
+    KR: "\uD654\uBA74 \uC911\uC559\uC5D0 \uAC70\uB300\uD55C \uD5C8\uB9AC\uCF00\uC778\uC744
+      \uB9CC\uB4ED\uB2C8\uB2E4."
+    EN: Creates a giant hurricane in the center of the screen
+  - Language_ID: 1074
+    KR: "\uBAAC\uC2A4\uD130\uB97C \uAD00\uD1B5\uD558\uB294 \uBC14\uB78C \uB369\uC5B4\uB9AC\uB97C
+      \uBC1C\uC0AC\uD569\uB2C8\uB2E4"
+    EN: Fires a mass of wind that pierces through monsters
+  - Language_ID: 1080
+    KR: "\uAD6C\uD615 \uBC88\uAC1C\uB97C \uBC1C\uC0AC\uD574 \uC9C0\uC18D\uC801\uC73C\uB85C
+      \uACF5\uACA9\uD569\uB2C8\uB2E4"
+    EN: Fires a lightning orb that attacks continuously
+  - Language_ID: 1081
+    KR: "\uBAAC\uC2A4\uD130 \uC0AC\uC774\uB97C \uD295\uAE30\uB294 \uC804\uAE30 \uACF5\uC744
+      \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+    EN: Fires an electric ball that bounces between monsters
+  - Language_ID: 1082
+    KR: "\uC11C\uB85C \uC804\uB958\uAC00 \uD750\uB974\uB294 \uB450 \uAC1C\uC758 \uAD6C\uC2AC\uC744
+      \uC124\uCE58\uD55C\uB2E4."
+    EN: Places two beads that channel electricity between them
+  - Language_ID: 1083
+    KR: "\uD558\uB298\uC5D0\uC11C \uBC88\uAC1C\uB97C \uB5A8\uC5B4\uB728\uB9BD\uB2C8\uB2E4."
+    EN: Strikes down lightning from the sky
+  - Language_ID: 1084
+    KR: "\uBAAC\uC2A4\uD130\uB97C \uD5A5\uD574 \uBC88\uAC1C \uAD11\uC120\uC744 \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+    EN: Discharges a lightning beam toward monsters
+  - Language_ID: 1090
+    KR: "\uBAAC\uC2A4\uD130\uB97C \uD5A5\uD574 \uC5BC\uC74C \uAC00\uC2DC\uAC00 \uC19F\uC544\uC624\uB985\uB2C8\uB2E4."
+    EN: Ice spikes rise up toward monsters
+  - Language_ID: 1091
+    KR: "\uBAAC\uC2A4\uD130\uB97C \uAD00\uD1B5\uD558\uB294 \uAC15\uB825\uD55C \uACE0\uB4DC\uB984\uC744
+      \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
+    EN: Launches a powerful, piercing icicle through monsters
+  - Language_ID: 1092
+    KR: "\uBAAC\uC2A4\uD130\uC758 \uC911\uC2EC\uC73C\uB85C \uBE59\uACB0 \uAD6C\uC5ED\uC744
+      \uC0DD\uC131\uD569\uB2C8\uB2E4."
+    EN: Spawns a freezing field at the monster's center
+  - Language_ID: 1093
+    KR: "\uBAAC\uC2A4\uD130\uB97C \uD5A5\uD574 \uCC9C\uCC9C\uD788 \uC774\uB3D9\uD558\uB294
+      \uC5BC\uC74C \uACB0\uC815\uC744 \uC0DD\uC131\uD55C\uB2E4."
+    EN: Spawns ice crystals that slowly drift toward monsters
+  - Language_ID: 1094
+    KR: "\uC808\uB300 \uC601\uB3C4\uC758 \uACE0\uB4DC\uB984\uC744 \uC0DD\uC131\uD574
+      \uB5A8\uC5B4\uB728\uB9B0\uB2E4."
+    EN: Summons an absolute zero icicle to fall from above
+  - Language_ID: 1200
+    KR: "\uC790\uB3D9 \uACF5\uACA9\uC758 \uBC1C\uC0AC \uC8FC\uAE30\uAC00 \uC9E7\uC544\uC9D1\uB2C8\uB2E4."
+    EN: Decreases the interval of auto-attacks.
+  - Language_ID: 1201
+    KR: "\uD22C\uC0AC\uCCB4\uC758 \uD06C\uAE30\uAC00 \uD655\uB300\uB429\uB2C8\uB2E4."
+    EN: Increases the size of projectiles.
+  - Language_ID: 1202
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC\uB85C \uBC1C\uC0AC\uB418\uB294 \uD22C\uC0AC\uCCB4\uC758
+      \uAC2F\uC218\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Adds extra projectiles to normal skills.
+  - Language_ID: 1203
+    KR: "\uC870\uD569 \uC2A4\uD0AC\uB85C \uBC1C\uC0AC\uB418\uB294 \uD22C\uC0AC\uCCB4\uC758
+      \uAC2F\uC218\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Adds extra projectiles to combi skills.
+  - Language_ID: 1204
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC\uB85C \uBC1C\uC0AC\uB418\uB294 \uD22C\uC0AC\uCCB4\uC758
+      \uAC2F\uC218\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Adds extra projectiles to combo skills.
+  - Language_ID: 1300
+    KR: "\uBC29\uBCBD\uC744 \uC218\uB9AC\uD569\uB2C8\uB2E4."
+    EN: Mends the barrier.
+  - Language_ID: 1301
+    KR: "\uBC29\uBCBD\uC744 \uAC15\uD654\uD569\uB2C8\uB2E4."
+    EN: Strengthens the defensive wall.
+  - Language_ID: 1400
+    KR: "\uBD88 \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Fire attack critical strikes.
+  - Language_ID: 1401
+    KR: "\uBB3C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Water attack critical strikes.
+  - Language_ID: 1402
+    KR: "\uBC14\uB78C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Wind attack critical strikes.
+  - Language_ID: 1403
+    KR: "\uBC88\uAC1C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Elec. attack critical strikes.
+  - Language_ID: 1404
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Ice attack critical strikes.
+  - Language_ID: 1405
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Nomal Skill critical strikes.
+  - Language_ID: 1406
+    KR: "\uC870\uD569 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Combi Skill critical strikes.
+  - Language_ID: 1407
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Combo Skill critical strikes.
+  - Language_ID: 1408
+    KR: "\uBC94\uC704 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Hazard attack critical strikes.
+  - Language_ID: 1409
+    KR: "\uD22C\uC0AC\uCCB4 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0\uAC00 \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Boosts Proj. attack critical strikes.
+  - Language_ID: 1410
+    KR: "\uBD88 \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Fire attacks.
+  - Language_ID: 1411
+    KR: "\uBB3C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Water attacks.
+  - Language_ID: 1412
+    KR: "\uBC14\uB78C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Wind attacks.
+  - Language_ID: 1413
+    KR: "\uBC88\uAC1C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Elec. attacks.
+  - Language_ID: 1414
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Ice attacks.
+  - Language_ID: 1415
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Nomal Skill.
+  - Language_ID: 1416
+    KR: "\uC870\uD569 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Combi Skill.
+  - Language_ID: 1417
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Combo Skill.
+  - Language_ID: 1418
+    KR: "\uBC94\uC704 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Hazard Attack
+  - Language_ID: 1419
+    KR: "\uD22C\uC0AC\uCCB4 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uD655\uB960\uC774
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Raises critical strike chance for Proj. Attack
+  - Language_ID: 1500
+    KR: "\uBD88 \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Fire attacks.
+  - Language_ID: 1501
+    KR: "\uBB3C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Water attacks.
+  - Language_ID: 1502
+    KR: "\uBC14\uB78C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Wind attacks.
+  - Language_ID: 1503
+    KR: "\uBC88\uAC1C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Elec. attacks.
+  - Language_ID: 1504
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Ice attacks.
+  - Language_ID: 1505
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Nomal Skill.
+  - Language_ID: 1506
+    KR: "\uC870\uD569 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Combi Skill.
+  - Language_ID: 1507
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Combo Skill.
+  - Language_ID: 1508
+    KR: "\uBC94\uC704 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Hazard Attack
+  - Language_ID: 1509
+    KR: "\uD22C\uC0AC\uCCB4 \uACF5\uACA9\uC758 \uCE58\uBA85\uD0C0 \uB370\uBBF8\uC9C0\uAC00
+      \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Boosts critical hit damage of Proj. Attack
+  - Language_ID: 1600
+    KR: "\uBD88 \uC18D\uC131 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increases the damage of Fire attacks.
+  - Language_ID: 1601
+    KR: "\uBB3C \uC18D\uC131 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Water attacks.
+  - Language_ID: 1602
+    KR: "\uBC14\uB78C \uC18D\uC131 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Wind attacks.
+  - Language_ID: 1603
+    KR: "\uBC88\uAC1C \uC18D\uC131 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Elec. attacks.
+  - Language_ID: 1604
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Ice attacks.
+  - Language_ID: 1605
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Nomal Skill.
+  - Language_ID: 1606
+    KR: "\uC870\uD569 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Combi Skill.
+  - Language_ID: 1607
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Combo Skill.
+  - Language_ID: 1608
+    KR: "\uBC94\uC704 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Hazard Attack
+  - Language_ID: 1609
+    KR: "\uD22C\uC0AC\uCCB4 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Increase damage of Proj. Attack
+  - Language_ID: 1700
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uAC10\uC804 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances shock effects upon activating Normal skills.
+  - Language_ID: 1701
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uC0C1\uCC98 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances wound effects upon activating Normal skills.
+  - Language_ID: 1702
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uC2A4\uD134 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances stun effects upon activating Normal skills.
+  - Language_ID: 1703
+    KR: "\uC870\uD569 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uAC10\uC804 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances shock effects upon activating Combi skills.
+  - Language_ID: 1704
+    KR: "\uC870\uD569 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uC0C1\uCC98 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances wound effects upon activating Combi skills.
+  - Language_ID: 1705
+    KR: "\uC870\uD569 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uC2A4\uD134 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances stun effects upon activating Combi skills.
+  - Language_ID: 1706
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uAC10\uC804 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances shock effects upon activating Combo skills.
+  - Language_ID: 1707
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uC0C1\uCC98 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances wound effects upon activating Combo skills.
+  - Language_ID: 1708
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC \uBC1C\uB3D9 \uC2DC \uC2A4\uD134 \uD6A8\uACFC\uAC00
+      \uAC15\uD654\uB429\uB2C8\uB2E4."
+    EN: Enhances stun effects upon activating Combo skills.
+  - Language_ID: 1800
+    KR: "\uBD88 \uC18D\uC131\uC758 \uACF5\uACA9 \uBC94\uC704\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Expands the area of effect for Fire attacks.
+  - Language_ID: 1801
+    KR: "\uBB3C \uC18D\uC131\uC758 \uACF5\uACA9 \uBC94\uC704\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Expands the area of effect forWater attacks.
+  - Language_ID: 1802
+    KR: "\uC5BC\uC74C \uC18D\uC131\uC758 \uACF5\uACA9 \uBC94\uC704\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Expands the area of effect forWind attacks.
+  - Language_ID: 1803
+    KR: "\uBC88\uAC1C \uC18D\uC131\uC758 \uACF5\uACA9 \uBC94\uC704\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Expands the area of effect forElec. attacks.
+  - Language_ID: 1804
+    KR: "\uC5BC\uC74C \uC18D\uC131\uC758 \uACF5\uACA9 \uBC94\uC704\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+    EN: Expands the area of effect forIce attacks.

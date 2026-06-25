@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : 조합식 Model -- 재료 충족 상태
 
+// 수정자 : 김영찬 
+// 수정 내용 : UI에서 조합식이 등록되었음을 알수 있도록 이벤트 추가
+
 using System;
 using UnityEngine;
 
@@ -13,6 +16,7 @@ public class CombinationModel : MonoBehaviour
     public event Action<int, int> OnIngredientFulfilled;    // recipeIdx, ingredientIdx
     public event Action<int> OnRecipeCompleted;             // recipeIdx
     public event Action<int> OnRecipeConsumed;              // recipeIdx
+    public event Action<int, int, int[]> OnRecipeRegistered; // slotIndex, recipeKey(baseId), ingredients
 
     // ---------- 상수 ----------
     public const int MAX_RECIPES = 3;
@@ -26,15 +30,43 @@ public class CombinationModel : MonoBehaviour
         _recipes = new CombinationRecipe[MAX_RECIPES];
     }
 
-    public void SetRecipe(int index, int[] ingredients, int skillId)
+    // 조합식 등록 (기획 3-2-1: 인챈트 선택 순서대로 가장 왼쪽 빈 슬롯부터 채움).
+    // recipeKey = 레벨 무관 고정 식별자(인챈트 LinkedSkillID). 같은 스킬 레벨업이면 기존 슬롯 갱신(정렬 진행도 유지).
+    public void RegisterRecipe(int recipeKey, int[] ingredients, int skillId)
     {
-        _recipes[index] = new CombinationRecipe
+        // 이미 보유한 조합 스킬(레벨업) → 같은 슬롯의 skillId만 갱신, 충족 진행도는 그대로 둔다.
+        for (int r = 0; r < MAX_RECIPES; r++)
         {
-            ingredients = ingredients,
-            fulfilled = new bool[ingredients.Length],
-            skillId = skillId,
-            isActive = true
-        };
+            if (_recipes[r] != null && _recipes[r].recipeKey == recipeKey)
+            {
+                _recipes[r].skillId = skillId;
+                _recipes[r].isActive = true;
+                return;
+            }
+        }
+
+        // 신규 조합 스킬 → 가장 왼쪽 빈 슬롯에 배치.
+        for (int r = 0; r < MAX_RECIPES; r++)
+        {
+            if (_recipes[r] == null || !_recipes[r].isActive)
+            {
+                _recipes[r] = new CombinationRecipe
+                {
+                    recipeKey = recipeKey,
+                    ingredients = ingredients,
+                    fulfilled = new bool[ingredients.Length],
+                    skillId = skillId,
+                    isActive = true
+                };
+                
+                // UI쪽에 슬롯 번호와 재료를 발송하는 이벤트
+                OnRecipeRegistered?.Invoke(r, recipeKey, ingredients);
+                return;
+            }
+        }
+
+        // 기획 1-6-2/3-1-1: 조합 인챈트는 최대 3개 → 드래프트에서 막혀야 하며 여기 도달하면 안 됨(방어 로그).
+        Debug.LogWarning($"[CombinationModel] 조합 슬롯({MAX_RECIPES}개)이 가득 차 recipeKey {recipeKey} 등록을 건너뜁니다 (기획상 조합 인챈트 최대 3개).");
     }
 
     // 정렬 성공할 때마다 호출. 같은 테이블 같은 재료는 1개만 충족 (기획서 3-1-3-2)
@@ -101,6 +133,7 @@ public class CombinationModel : MonoBehaviour
 [System.Serializable]
 public class CombinationRecipe
 {
+    public int recipeKey;   // 레벨 무관 고정 식별자(인챈트 LinkedSkillID). 레벨업 시 같은 슬롯 갱신용.
     public int[] ingredients;
     public bool[] fulfilled;
     public int skillId;

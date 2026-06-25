@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f82c3d2fb77d65741b038c5fd02390b3, type: 3}
+  m_Name: SpecialWaveRuleTable
+  m_EditorClassIdentifier: Assembly-CSharp::SpecialWaveRuleTable
+  rows:
+  - SpecialWave_ID: 2001
+    MonsterWavePool_ID: 0
+    WaveType: Rush
+    TriggerTime: 20
+    EndType: Duration
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0.5
+    SpecialSpawnAmount: 3
+  - SpecialWave_ID: 2002
+    MonsterWavePool_ID: 1006
+    WaveType: Elite
+    TriggerTime: 10
+    EndType: Instant
+    ActiveDuration: 0
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 2003
+    MonsterWavePool_ID: 1007
+    WaveType: Boss
+    TriggerTime: 10
+    EndType: Instant
+    ActiveDuration: 0
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1

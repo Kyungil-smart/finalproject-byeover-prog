@@ -1,0 +1,2577 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cc14954d8e336d4fbb7a8b2dd968bed, type: 3}
+  m_Name: StatEnchantTable
+  m_EditorClassIdentifier: Assembly-CSharp::StatEnchantTable
+  rows:
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70101
+    StatName: 200
+    StatDescrip: 1200
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: BaseAttackSpeed
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200200
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70102
+    StatName: 200
+    StatDescrip: 1200
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: BaseAttackSpeed
+    Variation_2: 0.25
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200200
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70103
+    StatName: 200
+    StatDescrip: 1200
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: BaseAttackSpeed
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200200
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70104
+    StatName: 201
+    StatDescrip: 1201
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+    Image_ID: 200201
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70105
+    StatName: 201
+    StatDescrip: 1201
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.8
+    ValueType_3: HitSize_Y
+    Variation_3: 4.8
+    Image_ID: 200201
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70106
+    StatName: 201
+    StatDescrip: 1201
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+    Image_ID: 200201
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70107
+    StatName: 202
+    StatDescrip: 1202
+    StatLevel: 1
+    Target_1: 20
+    Target_2: 100000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 1
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.2
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70108
+    StatName: 202
+    StatDescrip: 1202
+    StatLevel: 2
+    Target_1: 20
+    Target_2: 100000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 2
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.3
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70109
+    StatName: 202
+    StatDescrip: 1202
+    StatLevel: 3
+    Target_1: 20
+    Target_2: 100000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 3
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.4
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70110
+    StatName: 203
+    StatDescrip: 1203
+    StatLevel: 1
+    Target_1: 20
+    Target_2: 200000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 1
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.2
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70111
+    StatName: 203
+    StatDescrip: 1203
+    StatLevel: 2
+    Target_1: 20
+    Target_2: 200000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 2
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.3
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70112
+    StatName: 203
+    StatDescrip: 1203
+    StatLevel: 3
+    Target_1: 20
+    Target_2: 200000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 3
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.4
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70113
+    StatName: 204
+    StatDescrip: 1204
+    StatLevel: 1
+    Target_1: 20
+    Target_2: 300000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 1
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.2
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70114
+    StatName: 204
+    StatDescrip: 1204
+    StatLevel: 2
+    Target_1: 20
+    Target_2: 300000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 2
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.3
+    Image_ID: 200202
+  - StatGroup_ID: 100000
+    StatEnchant_ID: 70115
+    StatName: 204
+    StatDescrip: 1204
+    StatLevel: 3
+    Target_1: 20
+    Target_2: 300000000
+    ValueType_1: ActivePlusCount
+    Variation_1: 3
+    ValueType_2: PelletGap
+    Variation_2: 30
+    ValueType_3: subPelletDmg
+    Variation_3: 0.4
+    Image_ID: 200202
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70201
+    StatName: 300
+    StatDescrip: 1300
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: CastPerKillCount
+    Variation_1: 100
+    ValueType_2: heal
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200300
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70202
+    StatName: 300
+    StatDescrip: 1300
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: CastPerKillCount
+    Variation_1: 100
+    ValueType_2: heal
+    Variation_2: 0.07
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200300
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70203
+    StatName: 300
+    StatDescrip: 1300
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: CastPerKillCount
+    Variation_1: 100
+    ValueType_2: heal
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200300
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70204
+    StatName: 301
+    StatDescrip: 1301
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: MaxHP
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200301
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70205
+    StatName: 301
+    StatDescrip: 1301
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: MaxHP
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200301
+  - StatGroup_ID: 200000
+    StatEnchant_ID: 70206
+    StatName: 301
+    StatDescrip: 1301
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 0
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: MaxHP
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200301
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70301
+    StatName: 400
+    StatDescrip: 1400
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70302
+    StatName: 400
+    StatDescrip: 1400
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70303
+    StatName: 400
+    StatDescrip: 1400
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70304
+    StatName: 401
+    StatDescrip: 1401
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70305
+    StatName: 401
+    StatDescrip: 1401
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70306
+    StatName: 401
+    StatDescrip: 1401
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70307
+    StatName: 402
+    StatDescrip: 1402
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70308
+    StatName: 402
+    StatDescrip: 1402
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70309
+    StatName: 402
+    StatDescrip: 1402
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70310
+    StatName: 403
+    StatDescrip: 1403
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70311
+    StatName: 403
+    StatDescrip: 1403
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70312
+    StatName: 403
+    StatDescrip: 1403
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70313
+    StatName: 404
+    StatDescrip: 1404
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70314
+    StatName: 404
+    StatDescrip: 1404
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70315
+    StatName: 404
+    StatDescrip: 1404
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70316
+    StatName: 405
+    StatDescrip: 1405
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70317
+    StatName: 405
+    StatDescrip: 1405
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70318
+    StatName: 405
+    StatDescrip: 1405
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70319
+    StatName: 406
+    StatDescrip: 1406
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70320
+    StatName: 406
+    StatDescrip: 1406
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70321
+    StatName: 406
+    StatDescrip: 1406
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70322
+    StatName: 407
+    StatDescrip: 1407
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70323
+    StatName: 407
+    StatDescrip: 1407
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70324
+    StatName: 407
+    StatDescrip: 1407
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70325
+    StatName: 408
+    StatDescrip: 1408
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70326
+    StatName: 408
+    StatDescrip: 1408
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70327
+    StatName: 408
+    StatDescrip: 1408
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70328
+    StatName: 409
+    StatDescrip: 1409
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.05
+    ValueType_3: CriticalDamage
+    Variation_3: 2
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70329
+    StatName: 409
+    StatDescrip: 1409
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: CriticalDamage
+    Variation_3: 5
+    Image_ID: 200400
+  - StatGroup_ID: 300000
+    StatEnchant_ID: 70330
+    StatName: 409
+    StatDescrip: 1409
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.15
+    ValueType_3: CriticalDamage
+    Variation_3: 10
+    Image_ID: 200400
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70331
+    StatName: 410
+    StatDescrip: 1410
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70332
+    StatName: 410
+    StatDescrip: 1410
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70333
+    StatName: 410
+    StatDescrip: 1410
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70334
+    StatName: 411
+    StatDescrip: 1411
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70335
+    StatName: 411
+    StatDescrip: 1411
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70336
+    StatName: 411
+    StatDescrip: 1411
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70337
+    StatName: 412
+    StatDescrip: 1412
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70338
+    StatName: 412
+    StatDescrip: 1412
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70339
+    StatName: 412
+    StatDescrip: 1412
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70340
+    StatName: 413
+    StatDescrip: 1413
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70341
+    StatName: 413
+    StatDescrip: 1413
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70342
+    StatName: 413
+    StatDescrip: 1413
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70343
+    StatName: 414
+    StatDescrip: 1414
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70344
+    StatName: 414
+    StatDescrip: 1414
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70345
+    StatName: 414
+    StatDescrip: 1414
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70346
+    StatName: 415
+    StatDescrip: 1415
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70347
+    StatName: 415
+    StatDescrip: 1415
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70348
+    StatName: 415
+    StatDescrip: 1415
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70349
+    StatName: 416
+    StatDescrip: 1416
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70350
+    StatName: 416
+    StatDescrip: 1416
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70351
+    StatName: 416
+    StatDescrip: 1416
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70352
+    StatName: 417
+    StatDescrip: 1417
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70353
+    StatName: 417
+    StatDescrip: 1417
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70354
+    StatName: 417
+    StatDescrip: 1417
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70355
+    StatName: 418
+    StatDescrip: 1418
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70356
+    StatName: 418
+    StatDescrip: 1418
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70357
+    StatName: 418
+    StatDescrip: 1418
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70358
+    StatName: 419
+    StatDescrip: 1419
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70359
+    StatName: 419
+    StatDescrip: 1419
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 400000
+    StatEnchant_ID: 70360
+    StatName: 419
+    StatDescrip: 1419
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalRate
+    Variation_2: 0.4
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200410
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70361
+    StatName: 500
+    StatDescrip: 1500
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70362
+    StatName: 500
+    StatDescrip: 1500
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70363
+    StatName: 500
+    StatDescrip: 1500
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70364
+    StatName: 501
+    StatDescrip: 1501
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70365
+    StatName: 501
+    StatDescrip: 1501
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70366
+    StatName: 501
+    StatDescrip: 1501
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70367
+    StatName: 502
+    StatDescrip: 1502
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70368
+    StatName: 502
+    StatDescrip: 1502
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70369
+    StatName: 502
+    StatDescrip: 1502
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70370
+    StatName: 503
+    StatDescrip: 1503
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70371
+    StatName: 503
+    StatDescrip: 1503
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70372
+    StatName: 503
+    StatDescrip: 1503
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70373
+    StatName: 504
+    StatDescrip: 1504
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70374
+    StatName: 504
+    StatDescrip: 1504
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70375
+    StatName: 504
+    StatDescrip: 1504
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70376
+    StatName: 505
+    StatDescrip: 1505
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70377
+    StatName: 505
+    StatDescrip: 1505
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70378
+    StatName: 505
+    StatDescrip: 1505
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70379
+    StatName: 506
+    StatDescrip: 1506
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70380
+    StatName: 506
+    StatDescrip: 1506
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70381
+    StatName: 506
+    StatDescrip: 1506
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70382
+    StatName: 507
+    StatDescrip: 1507
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70383
+    StatName: 507
+    StatDescrip: 1507
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70384
+    StatName: 507
+    StatDescrip: 1507
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70385
+    StatName: 508
+    StatDescrip: 1508
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70386
+    StatName: 508
+    StatDescrip: 1508
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70387
+    StatName: 508
+    StatDescrip: 1508
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70388
+    StatName: 509
+    StatDescrip: 1509
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 5
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70389
+    StatName: 509
+    StatDescrip: 1509
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 15
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 500000
+    StatEnchant_ID: 70390
+    StatName: 509
+    StatDescrip: 1509
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: CriticalDamage
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200500
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70401
+    StatName: 600
+    StatDescrip: 1600
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70402
+    StatName: 600
+    StatDescrip: 1600
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70403
+    StatName: 600
+    StatDescrip: 1600
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70404
+    StatName: 601
+    StatDescrip: 1601
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70405
+    StatName: 601
+    StatDescrip: 1601
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70406
+    StatName: 601
+    StatDescrip: 1601
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70407
+    StatName: 602
+    StatDescrip: 1602
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70408
+    StatName: 602
+    StatDescrip: 1602
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70409
+    StatName: 602
+    StatDescrip: 1602
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70410
+    StatName: 603
+    StatDescrip: 1603
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70411
+    StatName: 603
+    StatDescrip: 1603
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70412
+    StatName: 603
+    StatDescrip: 1603
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70413
+    StatName: 604
+    StatDescrip: 1604
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70414
+    StatName: 604
+    StatDescrip: 1604
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70415
+    StatName: 604
+    StatDescrip: 1604
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70416
+    StatName: 605
+    StatDescrip: 1605
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70417
+    StatName: 605
+    StatDescrip: 1605
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70418
+    StatName: 605
+    StatDescrip: 1605
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70419
+    StatName: 606
+    StatDescrip: 1606
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70420
+    StatName: 606
+    StatDescrip: 1606
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70421
+    StatName: 606
+    StatDescrip: 1606
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70422
+    StatName: 607
+    StatDescrip: 1607
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70423
+    StatName: 607
+    StatDescrip: 1607
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70424
+    StatName: 607
+    StatDescrip: 1607
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70425
+    StatName: 608
+    StatDescrip: 1608
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70426
+    StatName: 608
+    StatDescrip: 1608
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70427
+    StatName: 608
+    StatDescrip: 1608
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 10
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70428
+    StatName: 609
+    StatDescrip: 1609
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 10
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70429
+    StatName: 609
+    StatDescrip: 1609
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 20
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 600000
+    StatEnchant_ID: 70430
+    StatName: 609
+    StatDescrip: 1609
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 20
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Dmg
+    Variation_2: 30
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200600
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70501
+    StatName: 700
+    StatDescrip: 1700
+    StatLevel: 1
+    Target_1: 13003
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70502
+    StatName: 700
+    StatDescrip: 1700
+    StatLevel: 2
+    Target_1: 13003
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70503
+    StatName: 700
+    StatDescrip: 1700
+    StatLevel: 3
+    Target_1: 13003
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70504
+    StatName: 701
+    StatDescrip: 1701
+    StatLevel: 1
+    Target_1: 13006
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70505
+    StatName: 701
+    StatDescrip: 1701
+    StatLevel: 2
+    Target_1: 13006
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70506
+    StatName: 701
+    StatDescrip: 1701
+    StatLevel: 3
+    Target_1: 13006
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70507
+    StatName: 702
+    StatDescrip: 1702
+    StatLevel: 1
+    Target_1: 13007
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70508
+    StatName: 702
+    StatDescrip: 1702
+    StatLevel: 2
+    Target_1: 13007
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70509
+    StatName: 702
+    StatDescrip: 1702
+    StatLevel: 3
+    Target_1: 13007
+    Target_2: 100000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70510
+    StatName: 703
+    StatDescrip: 1703
+    StatLevel: 1
+    Target_1: 13003
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70511
+    StatName: 703
+    StatDescrip: 1703
+    StatLevel: 2
+    Target_1: 13003
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70512
+    StatName: 703
+    StatDescrip: 1703
+    StatLevel: 3
+    Target_1: 13003
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70513
+    StatName: 704
+    StatDescrip: 1704
+    StatLevel: 1
+    Target_1: 13006
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70514
+    StatName: 704
+    StatDescrip: 1704
+    StatLevel: 2
+    Target_1: 13006
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70515
+    StatName: 704
+    StatDescrip: 1704
+    StatLevel: 3
+    Target_1: 13006
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70516
+    StatName: 705
+    StatDescrip: 1705
+    StatLevel: 1
+    Target_1: 13007
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70517
+    StatName: 705
+    StatDescrip: 1705
+    StatLevel: 2
+    Target_1: 13007
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70518
+    StatName: 705
+    StatDescrip: 1705
+    StatLevel: 3
+    Target_1: 13007
+    Target_2: 200000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70519
+    StatName: 706
+    StatDescrip: 1706
+    StatLevel: 1
+    Target_1: 13003
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70520
+    StatName: 706
+    StatDescrip: 1706
+    StatLevel: 2
+    Target_1: 13003
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70521
+    StatName: 706
+    StatDescrip: 1706
+    StatLevel: 3
+    Target_1: 13003
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70522
+    StatName: 707
+    StatDescrip: 1707
+    StatLevel: 1
+    Target_1: 13006
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70523
+    StatName: 707
+    StatDescrip: 1707
+    StatLevel: 2
+    Target_1: 13006
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70524
+    StatName: 707
+    StatDescrip: 1707
+    StatLevel: 3
+    Target_1: 13006
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70525
+    StatName: 708
+    StatDescrip: 1708
+    StatLevel: 1
+    Target_1: 13007
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.05
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70526
+    StatName: 708
+    StatDescrip: 1708
+    StatLevel: 2
+    Target_1: 13007
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.1
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 700000
+    StatEnchant_ID: 70527
+    StatName: 708
+    StatDescrip: 1708
+    StatLevel: 3
+    Target_1: 13007
+    Target_2: 300000000
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: Main_Value
+    Variation_2: 0.2
+    ValueType_3: 
+    Variation_3: 0
+    Image_ID: 200700
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70601
+    StatName: 800
+    StatDescrip: 1800
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70602
+    StatName: 800
+    StatDescrip: 1800
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.8
+    ValueType_3: HitSize_Y
+    Variation_3: 4.8
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70603
+    StatName: 800
+    StatDescrip: 1800
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 2
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70604
+    StatName: 801
+    StatDescrip: 1801
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70605
+    StatName: 801
+    StatDescrip: 1801
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.8
+    ValueType_3: HitSize_Y
+    Variation_3: 4.8
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70606
+    StatName: 801
+    StatDescrip: 1801
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 3
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70607
+    StatName: 802
+    StatDescrip: 1802
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70608
+    StatName: 802
+    StatDescrip: 1802
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.8
+    ValueType_3: HitSize_Y
+    Variation_3: 4.8
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70609
+    StatName: 802
+    StatDescrip: 1802
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 5
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70610
+    StatName: 803
+    StatDescrip: 1803
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70611
+    StatName: 803
+    StatDescrip: 1803
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.8
+    ValueType_3: HitSize_Y
+    Variation_3: 4.8
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70612
+    StatName: 803
+    StatDescrip: 1803
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 7
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70613
+    StatName: 804
+    StatDescrip: 1804
+    StatLevel: 1
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 2.4
+    ValueType_3: HitSize_Y
+    Variation_3: 2.4
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70614
+    StatName: 804
+    StatDescrip: 1804
+    StatLevel: 2
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 4.8
+    ValueType_3: HitSize_Y
+    Variation_3: 4.8
+    Image_ID: 200800
+  - StatGroup_ID: 800000
+    StatEnchant_ID: 70615
+    StatName: 804
+    StatDescrip: 1804
+    StatLevel: 3
+    Target_1: 0
+    Target_2: 9
+    ValueType_1: 
+    Variation_1: 0
+    ValueType_2: HitSize_X
+    Variation_2: 9.5
+    ValueType_3: HitSize_Y
+    Variation_3: 9.5
+    Image_ID: 200800

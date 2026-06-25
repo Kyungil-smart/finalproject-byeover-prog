@@ -36,9 +36,14 @@ public class HintSystem : MonoBehaviour
 
         if (_timer >= GetDelay())
         {
+            Debug.Log("[힌트] 조건 만족! ShowHint 호출");
             ShowHint();
             _timer = 0f;
         }
+    }
+    private void Start()
+    {
+        Debug.Log("[힌트] HintSystem 시작됨");
     }
 
     public void ResetTimer()
@@ -56,36 +61,19 @@ public class HintSystem : MonoBehaviour
 
     private void ShowHint()
     {
-        var counts = _model.CountUnitTypes();
-
-        // 3개 이상인 유닛 찾기
-        var candidates = new List<int>();
-        foreach (var pair in counts)
+        var targets = _model.GetHintTargets();
+        Debug.Log($"[힌트] 타겟 개수: {targets.Count}");
+        if (targets.Count > 0)
         {
-            if (pair.Value >= 3)
-                candidates.Add(pair.Key);
-        }
-
-        if (candidates.Count > 0)
-        {
-            // 그 유닛이 있는 슬롯 중 하나를 흔들기
-            int hintUnit = candidates[UnityEngine.Random.Range(0, candidates.Count)];
-
-            for (int t = 0; t < SortModel.TABLE_COUNT; t++)
+            foreach (var t in targets)
             {
-                for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
-                {
-                    if (_model.GetUnit(t, s) == hintUnit)
-                    {
-                        OnHintShow?.Invoke(t, s);
-                        return;
-                    }
-                }
+                Debug.Log($"[힌트] 타겟 흔들기: 테이블 {t.t}, 슬롯 {t.s}");
+                OnHintShow?.Invoke(t.t, t.s);
             }
         }
         else
         {
-            // 3개 이상인 게 없으면 대기 테이블 흔들기
+            Debug.Log("[힌트] 대기열 흔들기 시도!");
             OnHintWaiting?.Invoke();
         }
     }

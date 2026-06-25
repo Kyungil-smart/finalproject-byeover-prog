@@ -1,0 +1,370 @@
+// 담당자 : 김영찬
+// WaveSystem MVP의 M 담당
+// (구)StageRunner.cs에서 분화
+
+// 1차 수정 : 1차 수정된 StageLoopManager.cs에서 시간과 전투중 상태를 분리하여 이식
+
+// 2차 수정 : WaveCount 삭제 되어 해당 변수 사용 스크립트 삭제
+
+// 수정자 : 김영찬
+// 수정내용 : 데모버전 DB에 맞춰 최신화
+
+// 수정자 : 김영찬
+// 수정내용 : 인게임 UI에 넘겨줄 정보 이벤트 연결
+
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// 시간과 전투 상태를 관리하는 순수 C# 컴포넌트
+/// SpawnTracker는 MonsterSpawner.cs에 정의되어 있음. 여기서 중복 선언 금지.
+/// </summary>
+public class StageModel
+{
+    // ---------- 상태 및 데이터 ----------
+    private StageData _stageData;
+    private List<StageWaveRuleData> _waveRules;
+    private StageWaveRuleData _currentRule;
+    private SpecialWaveRuleData _currentSpecialRule; 
+    private System.Random _rng;
+    
+    public enum WaveState { WaveRunning, WaveTransition }
+    private WaveState _state;
+    
+    // 정규 웨이브 변수
+    private float _waveTimer;
+    private float _spawnTimer;
+    private float _transitionTimer;
+    private float _waveTransitionDelay;
+    
+    // 특수 웨이브 변수
+    private float _specialWaveActiveTimer; 
+    private float _specialSpawnTimer;      
+    private bool _isSpecialWaveTriggered;
+    private bool _isSpecialWaveFinished;
+    private bool _isBossKilled; // 외부(Presenter)에서 찔러주는 보스 사망 여부
+    
+    private int _currentWaveIndex;
+    private int _waveCount;
+    private int _stageLevel;
+    
+    // ---------- 특수 웨이브 스폰타입 정의 ----------
+    public enum SpawnType { Normal, Rush, Elite, Gimmick, Boss }
+    
+    // ---------- 스폰 명령서 구조체 ----------
+    public struct SpawnCommand
+    {
+        public int CharacterId;
+        public MonsterStageScalingData ScalingData;
+        public int AccumulateCount; // 스탯을 몇 번 누적해서 보정할 것인가?
+        public SpawnType Type;
+    }
+    
+    // ---------- 이벤트 ----------
+    public event Action<int, int> OnWaveStarted;
+    public event Action OnWaveStopped;
+    public event Action OnStageClearTriggered;
+    public event Action<Queue<SpawnCommand>, float> OnSpawnRequested;
+    public event Action OnDespawnRemainingRequested;
+    public event Action<float> OnTimeChanged;
+    public event Action<WaveState> OnWaveStateChanged;
+    public event Action<SpawnType> OnSpecialWaveEntered;
+    
+    // ---------- 생성자 ----------
+    public StageModel(StageData stageData, List<StageWaveRuleData> waveRules, System.Random rng, float transitionTime)
+    {
+        _stageData = stageData;
+        _waveRules = waveRules;
+        _rng = rng;
+        _waveCount = waveRules != null ? waveRules.Count : 0;
+        _stageLevel = _stageData.Stage_ID % 100; // 101 -> 1
+
+        _currentWaveIndex = 0;
+        _state = WaveState.WaveTransition;
+        _waveTransitionDelay = transitionTime;
+        _transitionTimer = _waveTransitionDelay; // 시작하자마자 첫 웨이브 진입
+    }
+
+    // ---------- Update ----------
+    public void Tick(float deltaTime)
+    {
+        if (_state == WaveState.WaveRunning)
+        {
+            UpdateWaveRunning(deltaTime);
+            UpdateSpecialWave(deltaTime); // 💡 정규 스폰과 정지 없이 백그라운드 병렬 작동!
+            OnTimeChanged?.Invoke(_currentRule.WaveDuration - _waveTimer);
+        }
+        else if (_state == WaveState.WaveTransition)
+        {
+            UpdateWaveTransition(deltaTime);
+            OnTimeChanged?.Invoke(_waveTransitionDelay - _transitionTimer);
+        }
+    }
+    
+    // ---------- WaveRunning Logic ----------
+    private void UpdateWaveRunning(float deltaTime)
+    {
+        _waveTimer += deltaTime;
+        _spawnTimer += deltaTime;
+        
+        // --- 가속 스폰 로직 (제한 없이 무한정 소환) ---
+        int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
+        float currentInterval = Mathf.Max(0.3f, _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) - (timeFactor * 0.1f));
+        int currentAmount = Mathf.Min(5, _currentRule.SpawnAmount + Mathf.FloorToInt((_stageLevel - 1) / 2f) + timeFactor);
+
+        // --- 몹 스폰 (제한 없이 무조건 소환) ---
+        if (_spawnTimer >= currentInterval)
+        {
+            _spawnTimer = 0f;
+            Queue<SpawnCommand> spawnQueue = new Queue<SpawnCommand>();
+            
+            for (int i = 0; i < currentAmount; i++)
+            {
+                SpawnCommand cmd = RollDiceForMonster(_currentRule, SpawnType.Normal);
+                if (cmd.CharacterId > 0) spawnQueue.Enqueue(cmd);
+            }
+            
+            if (spawnQueue.Count > 0)
+            {
+                // 시차 소환: 기준시차(주기×0.2)에 0.3~1.0 가변 배율 적용 (기획 3-6-2)
+                float baseStagger = currentInterval * 0.2f;
+                float variance = 0.3f + (float)_rng.NextDouble() * 0.7f;
+                OnSpawnRequested?.Invoke(spawnQueue, baseStagger * variance);
+            }
+        }
+
+        // --- 웨이브 종료 판정 (WaveEndType) ---
+        bool isWaveEnd = false;
+        if (_currentRule.WaveEndType == "TimeOver")
+        {
+            isWaveEnd = (_waveTimer >= _currentRule.WaveDuration);
+        }
+        else if (_currentRule.WaveEndType == "TimeOverOrBossKill")
+        {
+            isWaveEnd = (_waveTimer >= _currentRule.WaveDuration) || _isBossKilled;
+        }
+
+        // --- 종료 후처리 (WaveEndAction) ---
+        if (isWaveEnd)
+        {
+            // "DespawnRemaining"이면 남은 몹 청소, "KeepAlive"면 무시
+            if (_currentRule.WaveEndAction == "DespawnRemaining")
+            {
+                OnDespawnRemainingRequested?.Invoke(); 
+            }
+
+            OnWaveStopped?.Invoke();
+            _currentWaveIndex++;
+
+            if (_currentWaveIndex >= _waveRules.Count)
+                OnStageClearTriggered?.Invoke();
+            else
+            {
+                _state = WaveState.WaveTransition;
+                _transitionTimer = 0f;
+                OnWaveStateChanged?.Invoke(_state);
+            }
+        }
+    }
+    
+    private void UpdateSpecialWave(float deltaTime)
+    {
+        if (_currentSpecialRule == null || _isSpecialWaveFinished) return;
+
+        // --- 발동 타이밍 체크 (TriggerTime) ---
+        if (!_isSpecialWaveTriggered && _waveTimer >= _currentSpecialRule.TriggerTime)
+        {
+            _isSpecialWaveTriggered = true;
+            _specialWaveActiveTimer = 0f;
+            _specialSpawnTimer = 0f; // 즉시 스폰을 위해 초기화
+            OnSpecialWaveEntered?.Invoke(Enum.TryParse(_currentSpecialRule.WaveType, out SpawnType parsedType) ? parsedType : SpawnType.Normal);
+        }
+
+        // --- 지속 및 종료 로직 ---
+        if (_isSpecialWaveTriggered && !_isSpecialWaveFinished)
+        {
+            _specialWaveActiveTimer += deltaTime;
+            _specialSpawnTimer += deltaTime;
+
+            // 종료 조건 검사 (EndType)
+            bool isTimeToEnd = false;
+            switch (_currentSpecialRule.EndType)
+            {
+                case "Instant": break; // 1회성은 아래에서 처리
+                case "Duration":
+                    if (_specialWaveActiveTimer >= _currentSpecialRule.ActiveDuration) isTimeToEnd = true;
+                    break;
+                case "WaveEnd": break; // 웨이브 끝날 때까지 유지
+            }
+
+            if (isTimeToEnd)
+            {
+                _isSpecialWaveFinished = true;
+                return; 
+            }
+
+            // 특수 스폰 실행 (Instant = 1회성). 트리거 직후 한 번만 발동.
+            // (float 동등비교 대신 _isSpecialWaveFinished 가드로 1회 보장)
+            if (_currentSpecialRule.EndType == "Instant")
+            {
+                ExecuteSpecialSpawn();
+                _isSpecialWaveFinished = true;
+                return;
+            }
+
+            // Duration / WaveEnd 타입일 때의 주기적 스폰 (WaveType별 간격)
+            float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? _currentSpecialRule.SpecialSpawnInterval : 3.0f; 
+
+            if (_specialSpawnTimer >= spawnInterval)
+            {
+                _specialSpawnTimer = 0f;
+                ExecuteSpecialSpawn();
+            }
+        }
+    }
+    
+    // ---------- WaveTransition Logic ----------
+    private void UpdateWaveTransition(float deltaTime)
+    {
+        _transitionTimer += deltaTime;
+
+        if (_transitionTimer >= _waveTransitionDelay)
+        {
+            _transitionTimer = 0f;
+
+            // 일반 웨이브 룰 불러오기
+            _currentRule = _waveRules[_currentWaveIndex];
+            
+            // 일반 웨이브 상태 초기화
+            _waveTimer = 0f;
+            int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
+            float currentInterval = Mathf.Max(0.3f, _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) - (timeFactor * 0.1f));
+            _spawnTimer = currentInterval;
+
+            // 각 웨이브에 종속된 특수 웨이브 룰 불러오기
+            _currentSpecialRule = DataManager.Instance.StageRepo.GetSpecialWaveRuleForStage(_currentRule.SpecialWave_ID); 
+
+            // 특수 웨이브 상태 초기화
+            if (_currentSpecialRule != null)
+            {
+                float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? _currentSpecialRule.SpecialSpawnInterval : 3.0f; 
+                _specialSpawnTimer = spawnInterval;
+            }
+            else
+            {
+                _specialSpawnTimer = 0f;
+            }
+            
+            _isSpecialWaveTriggered = false;
+            _isSpecialWaveFinished = false;
+            _specialWaveActiveTimer = 0f;
+            _isBossKilled = false;
+
+            // 웨이브 상태 변경 및 전파
+            _state = WaveState.WaveRunning;
+            OnWaveStarted?.Invoke(_currentWaveIndex, _waveCount);
+            OnWaveStateChanged?.Invoke(_state);
+        }
+    }
+    
+    // ---------- 연산 함수 ----------
+    private SpawnCommand RollDiceForMonster(StageWaveRuleData rule, SpawnType type)
+    {
+        float roll = (float)(_rng.NextDouble() * 100.0);
+        string selectedType = "Normal"; 
+        
+        float cumulative = rule.NormalChance;
+        if (roll <= cumulative) { selectedType = "Normal"; }
+        else if (roll <= (cumulative += rule.AgileChance)) { selectedType = "Agile"; }
+        else if (roll <= (cumulative += rule.TankChance)) { selectedType = "Tank"; }
+        else if (roll <= (cumulative += rule.RangedChance)) { selectedType = "Ranged"; }
+        else if (roll <= (cumulative += rule.InfestedChance)) { selectedType = "Infested"; }
+        
+        int poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(rule.MonsterWavePool_ID, selectedType);
+        if (poolId < 0) return new SpawnCommand { CharacterId = -1 }; 
+        
+        int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
+        var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, poolId);
+
+        // 현재 스테이지와 시작 스테이지의 차이를 계산하여 누적 횟수 산출
+        int accumulateCount = 0;
+        if (scalingData != null)
+        {
+            // 예: Start가 101이고 현재가 105라면 -> 105 - 101 = 4번 누적!
+            // (만약 101스테이지 당시에 1번 누적하고 싶다면 마지막에 +1을 해주면 됩니다)
+            accumulateCount = Mathf.Max(0, _stageData.Stage_ID - scalingData.StartStage_ID);
+        }
+
+        return new SpawnCommand { 
+            CharacterId = characterId, 
+            ScalingData = scalingData,
+            AccumulateCount = accumulateCount, // 💡 산출된 누적 횟수 포장
+            Type = type 
+        };
+    }
+    
+    private void ExecuteSpecialSpawn()
+    {
+        Queue<SpawnCommand> specialQueue = new Queue<SpawnCommand>();
+        
+        SpawnType sType = Enum.TryParse(_currentSpecialRule.WaveType, out SpawnType parsedType) ? parsedType : SpawnType.Normal;
+        
+        // 특수 웨이브 타입에 따른 한 틱당 물량 설정.
+        // 러시는 원래 2마리(기획 4-1-2)였으나 '몬스터 총량 50% 너프' 요청으로 1마리로 하향.
+        // (총량 = 틱 수 × 한 틱당 물량 → 물량 절반이면 총량도 절반. EndType가 Instant/Duration/WaveEnd 무엇이든 동일하게 50% 감소,
+        //  초당 생성률도 10→5마리/초로 떨어져 화면 과밀도 완화. 되돌리려면 러시만 2로 복구)
+        int spawnAmount = _currentSpecialRule.SpecialSpawnAmount;
+        
+        // 특수 웨이브는 일반 풀이 아니라, 특수 룰에 지정된 전용 풀을 사용!
+        // 단, 룰의 MonsterWavePool_ID는 웨이브풀 '그룹' ID(1006~1008)라서 GetMonsterPoolId로
+        // 실제 몬스터풀 ID(6~8)로 변환해야 한다. (직접 넘기면 풀 미발견 → 특수 웨이브 전부 스폰 실패였음)
+        int poolId = -1;
+        if (_currentSpecialRule.MonsterWavePool_ID > 0)
+            poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(_currentSpecialRule.MonsterWavePool_ID, _currentSpecialRule.WaveType);
+
+        // 러시(2001)는 데이터에 그룹이 미지정(0) — 물량러시 기획 의도대로 일반 몬스터 풀로 폴백.
+        if (poolId < 0)
+            poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(1001, "Normal");
+
+        if (poolId < 0) return; // 그래도 못 찾으면 스폰 포기 (경고 스팸 방지)
+        
+        for (int i = 0; i < spawnAmount; i++)
+        {
+            int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
+            var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, poolId);
+            int accumulateCount = (scalingData != null) ? Mathf.Max(0, _stageData.Stage_ID - scalingData.StartStage_ID) : 0;
+
+            if (characterId > 0)
+            {
+                specialQueue.Enqueue(new SpawnCommand { 
+                    CharacterId = characterId, 
+                    ScalingData = scalingData,
+                    AccumulateCount = accumulateCount,
+                    Type = sType 
+                });
+            }
+        }
+
+        if (specialQueue.Count > 0)
+        {
+            float baseStagger = _currentSpecialRule.SpecialSpawnInterval * 0.2f;
+            float variance = 0.3f + (float)_rng.NextDouble() * 0.7f;
+            float delay = (sType == SpawnType.Rush) ? baseStagger * variance : 0.2f;
+            OnSpawnRequested?.Invoke(specialQueue, delay);
+        }
+    }
+    
+    // ---------- 기타 함수 ----------
+    public float GetWaveProgress()
+    {
+        if (_currentRule == null || _currentRule.WaveDuration <= 0f) return 0f;
+        return _waveTimer / _currentRule.WaveDuration;
+    }
+    
+    // 외부(Presenter)에서 보스 처치 소식을 전달할 때 사용
+    public void NotifyBossKilled()
+    {
+        _isBossKilled = true;
+    }
+}

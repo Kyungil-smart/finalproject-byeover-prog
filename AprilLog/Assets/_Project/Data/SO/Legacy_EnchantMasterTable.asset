@@ -1,0 +1,311 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7036da30e8c241ef9ad2562aee53cc55, type: 3}
+  m_Name: Legacy_EnchantMasterTable
+  m_EditorClassIdentifier: Assembly-CSharp::EnchantMasterTable
+  rows:
+  - EnchantID: 1
+    EnchantType: Attack
+    Name: "\uAD11\uD3ED\uD654"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 1
+    DescriptionKey: enchant_attack_rage
+    ImageKey: dummy_attack
+  - EnchantID: 2
+    EnchantType: Projectile
+    Name: "\uAD00\uD1B5\uC758 \uD654\uC0B4"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 2
+    DescriptionKey: enchant_pierce_arrow
+    ImageKey: dummy_pierce
+  - EnchantID: 3
+    EnchantType: Vitality
+    Name: "\uAC15\uCCA0 \uD53C\uBD80"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 3
+    DescriptionKey: enchant_hp_steelskin
+    ImageKey: dummy_hp
+  - EnchantID: 4
+    EnchantType: Vitality
+    Name: "\uC0DD\uBA85\uB825 \uC99D\uD3ED"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 3
+    DescriptionKey: enchant_hp_amplify
+    ImageKey: dummy_hp
+  - EnchantID: 5
+    EnchantType: Critical
+    Name: "\uC815\uBC00 \uC870\uC900"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 4
+    DescriptionKey: enchant_crit_aim
+    ImageKey: dummy_crit
+  - EnchantID: 6
+    EnchantType: Critical
+    Name: "\uCE58\uBA85\uC801 \uC77C\uACA9"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 5
+    DescriptionKey: enchant_critdmg_strike
+    ImageKey: dummy_critdmg
+  - EnchantID: 7
+    EnchantType: Attack
+    Name: "\uBD84\uB178"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 1
+    DescriptionKey: enchant_attack_fury
+    ImageKey: dummy_attack
+  - EnchantID: 8
+    EnchantType: Attack
+    Name: "\uB9F9\uACF5"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 1
+    DescriptionKey: enchant_attack_assault
+    ImageKey: dummy_attack
+  - EnchantID: 9
+    EnchantType: Vitality
+    Name: "\uBD88\uAD74"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 3
+    DescriptionKey: enchant_hp_fortitude
+    ImageKey: dummy_hp
+  - EnchantID: 10
+    EnchantType: Critical
+    Name: "\uC57D\uC810 \uAC04\uD30C"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 4
+    DescriptionKey: enchant_crit_weakpoint
+    ImageKey: dummy_crit
+  - EnchantID: 11
+    EnchantType: Critical
+    Name: "\uCC98\uD615\uC790"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 5
+    DescriptionKey: enchant_critdmg_executioner
+    ImageKey: dummy_critdmg
+  - EnchantID: 12
+    EnchantType: Projectile
+    Name: "\uAFF0\uB6AB\uAE30"
+    MaxLevel: 3
+    LinkedSkillID: 0
+    LinkedStatType: 2
+    DescriptionKey: enchant_pierce_penetrate
+    ImageKey: dummy_pierce
+  - EnchantID: 101
+    EnchantType: Skill
+    Name: "\uD30C\uC774\uC5B4\uBE0C\uB808\uC2A4"
+    MaxLevel: 3
+    LinkedSkillID: 1011
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_firebreath
+    ImageKey: dummy_attack
+  - EnchantID: 102
+    EnchantType: Skill
+    Name: "\uD654\uC5FC \uC791\uB82C"
+    MaxLevel: 3
+    LinkedSkillID: 1021
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_fireburst
+    ImageKey: dummy_attack
+  - EnchantID: 103
+    EnchantType: Skill
+    Name: "\uD654\uC5FC \uC815\uB839 \uC18C\uD658"
+    MaxLevel: 3
+    LinkedSkillID: 1031
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_firespirit
+    ImageKey: dummy_attack
+  - EnchantID: 104
+    EnchantType: Skill
+    Name: "\uB300\uC9C0 \uADE0\uC5F4"
+    MaxLevel: 3
+    LinkedSkillID: 1041
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_earthcrack
+    ImageKey: dummy_attack
+  - EnchantID: 105
+    EnchantType: Skill
+    Name: "\uBA54\uD14C\uC624"
+    MaxLevel: 3
+    LinkedSkillID: 1051
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_meteor
+    ImageKey: dummy_attack
+  - EnchantID: 301
+    EnchantType: Skill
+    Name: "\uD5E4\uC774\uC2A4\uD2B8"
+    MaxLevel: 3
+    LinkedSkillID: 3011
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_haste
+    ImageKey: dummy_attack
+  - EnchantID: 302
+    EnchantType: Skill
+    Name: "\uBC14\uB78C \uCE7C\uB0A0"
+    MaxLevel: 3
+    LinkedSkillID: 3021
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_windblade
+    ImageKey: dummy_attack
+  - EnchantID: 303
+    EnchantType: Skill
+    Name: "\uB3CC\uD48D"
+    MaxLevel: 3
+    LinkedSkillID: 3031
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_gust
+    ImageKey: dummy_attack
+  - EnchantID: 304
+    EnchantType: Skill
+    Name: "\uD5C8\uB9AC\uCF00\uC778"
+    MaxLevel: 3
+    LinkedSkillID: 3041
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_hurricane
+    ImageKey: dummy_attack
+  - EnchantID: 305
+    EnchantType: Skill
+    Name: "\uD15C\uD398\uC2A4\uD2B8"
+    MaxLevel: 3
+    LinkedSkillID: 3051
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_tempest
+    ImageKey: dummy_attack
+  - EnchantID: 401
+    EnchantType: Skill
+    Name: "\uAD6C\uD615 \uBC88\uAC1C"
+    MaxLevel: 3
+    LinkedSkillID: 4011
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_orblightning
+    ImageKey: dummy_attack
+  - EnchantID: 402
+    EnchantType: Skill
+    Name: "\uC0AC\uC2AC \uBC88\uAC1C"
+    MaxLevel: 3
+    LinkedSkillID: 4021
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_chainlightning
+    ImageKey: dummy_attack
+  - EnchantID: 403
+    EnchantType: Skill
+    Name: "\uBC29\uC804"
+    MaxLevel: 3
+    LinkedSkillID: 4031
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_discharge
+    ImageKey: dummy_attack
+  - EnchantID: 404
+    EnchantType: Skill
+    Name: "\uBCBC\uB77D"
+    MaxLevel: 3
+    LinkedSkillID: 4041
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_thunderbolt
+    ImageKey: dummy_attack
+  - EnchantID: 405
+    EnchantType: Skill
+    Name: "\uB1CC\uACA9"
+    MaxLevel: 3
+    LinkedSkillID: 4051
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_thunderstrike
+    ImageKey: dummy_attack
+  - EnchantID: 201
+    EnchantType: Skill
+    Name: "\uBB3C \uD3ED\uD0C4"
+    MaxLevel: 3
+    LinkedSkillID: 2011
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_waterbomb
+    ImageKey: dummy_attack
+  - EnchantID: 202
+    EnchantType: Skill
+    Name: "\uD0C4\uD658 \uC138\uB840"
+    MaxLevel: 3
+    LinkedSkillID: 2021
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_bulletshower
+    ImageKey: dummy_attack
+  - EnchantID: 203
+    EnchantType: Skill
+    Name: "\uAE09\uB958"
+    MaxLevel: 3
+    LinkedSkillID: 2031
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_torrent
+    ImageKey: dummy_attack
+  - EnchantID: 204
+    EnchantType: Skill
+    Name: "\uD30C\uB3C4 \uC18C\uD658"
+    MaxLevel: 3
+    LinkedSkillID: 2041
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_wavesummon
+    ImageKey: dummy_attack
+  - EnchantID: 205
+    EnchantType: Skill
+    Name: "\uD558\uC774\uB4DC\uB85C \uD38C\uD504"
+    MaxLevel: 3
+    LinkedSkillID: 2051
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_hydropump
+    ImageKey: dummy_attack
+  - EnchantID: 501
+    EnchantType: Skill
+    Name: "\uB9C8\uCE6D \uC544\uC774\uC2A4"
+    MaxLevel: 3
+    LinkedSkillID: 5011
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_marchingice
+    ImageKey: dummy_attack
+  - EnchantID: 502
+    EnchantType: Skill
+    Name: "\uAE00\uB808\uC774\uC15C \uD53C\uC5B4\uC2A4"
+    MaxLevel: 3
+    LinkedSkillID: 5021
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_glacialpierce
+    ImageKey: dummy_attack
+  - EnchantID: 503
+    EnchantType: Skill
+    Name: "\uBE59\uACB0 \uC9C0\uB300"
+    MaxLevel: 3
+    LinkedSkillID: 5031
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_freezezone
+    ImageKey: dummy_attack
+  - EnchantID: 504
+    EnchantType: Skill
+    Name: "\uC5BC\uC74C \uACB0\uC815"
+    MaxLevel: 3
+    LinkedSkillID: 5041
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_icecrystal
+    ImageKey: dummy_attack
+  - EnchantID: 505
+    EnchantType: Skill
+    Name: "\uC808\uB300\uC601\uB3C4"
+    MaxLevel: 3
+    LinkedSkillID: 5051
+    LinkedStatType: 0
+    DescriptionKey: enchant_skill_absolutezero
+    ImageKey: dummy_attack

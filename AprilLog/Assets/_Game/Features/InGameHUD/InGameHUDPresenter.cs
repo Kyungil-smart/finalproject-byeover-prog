@@ -1,39 +1,122 @@
 // 담당자 : 정승우
 // 설명   : 인게임 HUD Presenter -- Model 구독해서 View 갱신
 
+// 수정자 : 정승우
+// 수정내용 : Model 참조가 비어 있을 때 이벤트 구독 NullReference 방지
+
+// 수정자 : 김영찬
+// 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
+
 using UnityEngine;
 
-/// <summary>
-/// PlayerModel, ComboModel 변경을 구독해서 HUD View를 갱신한다.
-/// </summary>
 public class InGameHUDPresenter
 {
     private readonly IInGameHUDView _view;
     private readonly PlayerModel _player;
     private readonly ComboModel _combo;
+    private readonly InGameGrowthSystem _growthSystem;
+    private readonly StageLoopManager _loopManager;
+    private readonly StageModel _stage;
 
-    public InGameHUDPresenter(IInGameHUDView view, PlayerModel player, ComboModel combo)
+    public InGameHUDPresenter(IInGameHUDView view, PlayerModel player, ComboModel combo, InGameGrowthSystem growthSystem, StageLoopManager loopManager,StageModel stage)
     {
         _view = view;
         _player = player;
         _combo = combo;
+        _growthSystem = growthSystem;
+        _loopManager = loopManager;
+        _stage = stage;
 
-        _player.OnHPChanged += HandleHP;
-        _player.OnShieldChanged += HandleShield;
-        _combo.OnComboChanged += HandleCombo;
-        _combo.OnComboTimerChanged += HandleTimer;
+        if (player != null)
+        {
+            _player.OnHPChanged += HandleHp;
+        }
+
+        if (combo != null)
+        {
+            _combo.OnComboChanged += HandleCombo;
+        }
+
+        if (growthSystem != null)
+        {
+            _growthSystem.OnEXPChanged += HandleExp;
+            _growthSystem.OnLevelUp += HandleLevel;
+        }
+
+        if (loopManager != null)
+        {
+            _loopManager.OnStageChanged += HandleStageProgress;
+        }
+
+        if (stage != null)
+        {
+            _stage.OnTimeChanged += HandleTimer;
+            _stage.OnWaveStateChanged += HandleWaveState;
+            _stage.OnSpecialWaveEntered += HandleSpecialWaveEntered;
+        }
+
+        SyncInitialState();
+    }
+
+    // Presenter는 Model 초기화 이후에 생성되므로, 구독만으론 이미 지나간 초기 이벤트를 못 받는다.
+    // 생성 직후 현재 값을 한 번 강제로 끌어와 씬에 박힌 placeholder(예: "10,000", "Level 30")를 덮어쓴다.
+    private void SyncInitialState()
+    {
+        if (_player != null)
+            HandleHp(_player.CurrentHP, _player.MaxHP);
+
+        if (_growthSystem != null)
+            _growthSystem.EmitCurrentState();
     }
 
     public void Dispose()
     {
-        _player.OnHPChanged -= HandleHP;
-        _player.OnShieldChanged -= HandleShield;
-        _combo.OnComboChanged -= HandleCombo;
-        _combo.OnComboTimerChanged -= HandleTimer;
+        if (_player != null)
+        {
+            _player.OnHPChanged -= HandleHp;
+        }
+
+        if (_combo != null)
+        {
+            _combo.OnComboChanged -= HandleCombo;
+        }
+
+        if (_growthSystem != null)
+        {
+            _growthSystem.OnEXPChanged -= HandleExp;
+            _growthSystem.OnLevelUp -= HandleLevel;
+        }
+
+        if (_loopManager != null)
+        {
+            _loopManager.OnStageChanged -= HandleStageProgress;
+        }
+
+        if (_stage != null)
+        {
+            _stage.OnTimeChanged -= HandleTimer;
+            _stage.OnWaveStateChanged -= HandleWaveState;
+            _stage.OnSpecialWaveEntered -= HandleSpecialWaveEntered;
+        }
     }
 
-    private void HandleHP(int cur, int max) => _view.UpdateHP((float)cur / Mathf.Max(1, max));
-    private void HandleShield(int cur, int max) => _view.UpdateShield(max > 0 ? (float)cur / max : 0f);
+    // ---------- 이벤트 핸들러 ----------
+    private void HandleHp(int cur, int max)
+    {
+        _view.UpdateHP((float)cur / Mathf.Max(1, max));
+        _view.UpdateHPText(cur, max);
+    }
+    
+    private void HandleExp(int cur, int max)
+    {
+        _view.UpdateEXP((float)cur / Mathf.Max(1, max));
+        _view.UpdateEXPText(cur, max);
+    }
+
+    private void HandleLevel(int current) => _view.UpdateLevelText(current);
     private void HandleCombo(int count) => _view.UpdateCombo(count);
-    private void HandleTimer(float ratio) => _view.UpdateComboTimer(ratio);
+    private void HandleTimer(float remainTime) => _view.UpdateStageTimer(remainTime);
+    private void HandleWaveState(StageModel.WaveState state) => _view.UpdateWaveStateText(state);
+    private void HandleSpecialWaveEntered(StageModel.SpawnType type) => _view.UpdateSpecialWavePopup(type);
+    private void HandleStageProgress(int stageId) => _view.UpdateStageProgress(stageId);
 }
