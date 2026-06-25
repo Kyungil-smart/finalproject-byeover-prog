@@ -135,3 +135,10 @@ public enum DamageGroupType
     Fire,
     Ice,
 }
+
+public enum LocalizingType
+{
+    Enchant,
+    Gear,
+    UI
+}

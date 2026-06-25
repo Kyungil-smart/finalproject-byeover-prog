@@ -29,6 +29,7 @@ public class ReplayStoryPopup : MonoBehaviour
     private readonly List<ReplayStorySlot> spawnedSlots = new();
     private Button boundCloseButton;
     private bool useChapterTestDataForCurrentOpen;
+    private bool _returnToHousingPageAfterStory;
 
     private void Awake()
     {
@@ -53,6 +54,7 @@ public class ReplayStoryPopup : MonoBehaviour
     {
         // 추가:조규민 기능 설명: 기존 로비 옵션 다시보기는 기존 임시 다시보기 목록을 유지한다.
         useChapterTestDataForCurrentOpen = false;
+        _returnToHousingPageAfterStory = false;
         OpenInternal();
     }
 
@@ -60,6 +62,7 @@ public class ReplayStoryPopup : MonoBehaviour
     {
         // 추가:조규민 기능 설명: 하우징 책장 진입 시에만 ChapterTestData.asset 기반 4개 챕터 목록을 사용한다.
         useChapterTestDataForCurrentOpen = true;
+        _returnToHousingPageAfterStory = true;
         OpenInternal();
     }
 
@@ -291,11 +294,19 @@ public class ReplayStoryPopup : MonoBehaviour
             return;
         }
 
-        if (useChapterTestDataForCurrentOpen)
+        int chapterIndex = ResolveChapterIndex(data);
+        if (_returnToHousingPageAfterStory)
         {
-            // 추가:조규민 기능 설명: 하우징 책장 모드에서만 선택한 챕터 정보를 _Story 씬에서 읽을 수 있도록 Context에 저장한다.
-            int chapterIndex = 0;
-            int.TryParse(data.StoryId, out chapterIndex);
+            ReplayStorySelectionContext.SetReplay(
+                chapterIndex,
+                data.ChapterTitle,
+                data.EpisodeTitle,
+                data.UnlockConditionText,
+                returnSceneName,
+                LobbyPageType.Housing);
+        }
+        else
+        {
             ReplayStorySelectionContext.SetReplay(
                 chapterIndex,
                 data.ChapterTitle,
@@ -306,6 +317,17 @@ public class ReplayStoryPopup : MonoBehaviour
 
         Debug.Log($"[ReplayStory] 보기 클릭: {data.ChapterTitle} / {data.EpisodeTitle}");
         LoadStoryScene();
+    }
+
+    private static int ResolveChapterIndex(ReplayStoryData _data)
+    {
+        if (_data == null || string.IsNullOrWhiteSpace(_data.StoryId))
+            return 0;
+
+        if (int.TryParse(_data.StoryId, out int _chapterIndex))
+            return _chapterIndex;
+
+        return 0;
     }
 
     private void LoadStoryScene()
