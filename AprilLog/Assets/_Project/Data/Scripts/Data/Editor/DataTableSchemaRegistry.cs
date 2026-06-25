@@ -93,6 +93,9 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("3_NPCtalk", "3_npc_talk", "Story_TalkData", "Story_TalkTable", true),
         new DataTableSchema("5_Character", "5_character", "Story_CharacterData", "Story_CharacterTable", true),
         
+        // Localizing Data
+        new DataTableSchema("EnchantLocalizing", "enchant_localizing", "LocalizationData", "EnchantLocalizationTable", true),
+        
         // Legacy List
         new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),
         new DataTableSchema("SkillData", "skill_data", "Legacy_SkillData", "Legacy_SkillDataTable", false),

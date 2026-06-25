@@ -476,6 +476,14 @@ public class LegendaryShardExchangeData
     public int RequirementType; // 교환 조건 - UnownedOnly, None
 }
 
+[Serializable]
+public class LocalizationData
+{
+    public int Language_ID;
+    public string KR;
+    public string EN;
+}
+
 #endregion
 
 #region ----- O -----
