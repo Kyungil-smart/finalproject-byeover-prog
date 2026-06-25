@@ -37,9 +37,12 @@ public class TempStoryToGameFlow : MonoBehaviour
         if (ReplayStorySelectionContext.IsReplayMode)
         {
             string returnSceneName = ReplayStorySelectionContext.ReturnSceneName;
-            // 추가:조규민 기능 설명: 하우징 책장에서 시작한 다시보기는 로비 씬 복귀 후 하우징 페이지를 열도록 예약한다.
-            if (returnSceneName == "_Lobby")
-                LobbyReturnContext.RequestPage(LobbyPageType.Housing);
+            bool hasReturnLobbyPage = ReplayStorySelectionContext.HasReturnLobbyPage;
+            LobbyPageType returnLobbyPage = ReplayStorySelectionContext.ReturnLobbyPage;
+
+            // 추가:조규민 기능 설명: 다시보기 진입 출처가 로비 복귀 페이지를 지정한 경우에만 해당 페이지를 예약한다.
+            if (returnSceneName == "_Lobby" && hasReturnLobbyPage)
+                LobbyReturnContext.RequestPage(returnLobbyPage);
 
             // 추가:조규민 기능 설명: 복귀 전에 다시보기 상태를 초기화해 다음 일반 스토리 진입과 섞이지 않게 한다.
             ReplayStorySelectionContext.Clear();
