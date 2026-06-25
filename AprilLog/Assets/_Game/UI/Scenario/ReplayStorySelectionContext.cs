@@ -12,6 +12,8 @@ public static class ReplayStorySelectionContext
     public static string ChapterName { get; private set; }
     public static string ChapterDescription { get; private set; }
     public static string ReturnSceneName { get; private set; } = "_Lobby";
+    public static bool HasReturnLobbyPage { get; private set; }
+    public static LobbyPageType ReturnLobbyPage { get; private set; } = LobbyPageType.Main;
 
     public static void SetReplay(
         int _chapterIndex,
@@ -27,6 +29,21 @@ public static class ReplayStorySelectionContext
         ChapterName = string.IsNullOrWhiteSpace(_chapterName) ? "Chapter " + (_chapterIndex + 1) : _chapterName;
         ChapterDescription = _chapterDescription ?? string.Empty;
         ReturnSceneName = string.IsNullOrWhiteSpace(_returnSceneName) ? "_Lobby" : _returnSceneName;
+        HasReturnLobbyPage = false;
+        ReturnLobbyPage = LobbyPageType.Main;
+    }
+
+    public static void SetReplay(
+        int _chapterIndex,
+        string _chapterLabel,
+        string _chapterName,
+        string _chapterDescription,
+        string _returnSceneName,
+        LobbyPageType _returnLobbyPage)
+    {
+        SetReplay(_chapterIndex, _chapterLabel, _chapterName, _chapterDescription, _returnSceneName);
+        HasReturnLobbyPage = true;
+        ReturnLobbyPage = _returnLobbyPage;
     }
 
     public static void Clear()
@@ -38,6 +55,8 @@ public static class ReplayStorySelectionContext
         ChapterName = string.Empty;
         ChapterDescription = string.Empty;
         ReturnSceneName = "_Lobby";
+        HasReturnLobbyPage = false;
+        ReturnLobbyPage = LobbyPageType.Main;
     }
 
 }

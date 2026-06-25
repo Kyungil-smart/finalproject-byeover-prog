@@ -322,6 +322,46 @@ public class GearDismantleData
 
 #endregion
 
+#region ----- H -----
+
+/// <summary>
+/// 하우징 시스템에 사용되는 데이터<br/>
+/// 생성일 : 26.06.25<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class HousingFurnitureData
+{
+    public int Furniture_ID;
+    public int Name_ID; // 가구 이름 번역 데이터 ID
+    public string Location;
+    public string Category;
+    public string Type;
+    public string ICO;
+    public string Resources;
+    public int Item_ID; // Item Table에 있는 재화의 ID
+    public int Price;
+}
+
+/// <summary>
+/// 챕터 클리어 시 하우징 시스템에서 시간당 제공하는 누적 보상<br/>
+/// 생성일 : 26.06.25<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class HousingRewardData
+{
+    public int ClearChapter;
+    public int Item_1; // Item Table에 있는 재화의 ID
+    public int Amount_1;
+    public int Item_2;
+    public int Amount_2;
+    public int Item_3;
+    public int Amount_3;
+}
+
+#endregion
+
 #region ----- I -----
 
 /// <summary>
@@ -434,6 +474,14 @@ public class LegendaryShardExchangeData
     public int RewardAmount;
     public int RewardGrade; // 교환 아이템 등급 - Legendary, None
     public int RequirementType; // 교환 조건 - UnownedOnly, None
+}
+
+[Serializable]
+public class LocalizationData
+{
+    public int Language_ID;
+    public string KR;
+    public string EN;
 }
 
 #endregion

@@ -477,12 +477,12 @@ public class InGameBootstrap : MonoBehaviour
         iceCrystal.widthPx = 450; iceCrystal.heightPx = 450;
         skillSystem.RegisterHazardSkill(5043, iceCrystal);
 
-        // 절대영도 5051~53 (콤보): 최단거리 장판 400×300 / 450×350 / 500×400. Iceshower VFX + 2초간 0.2초마다 틱(AbsoluteZeroRoutine). (화면 전체 공격 방지로 축소)
-        var absoluteZero = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.AbsoluteZero, widthPx = 400, heightPx = 300, pulseInterval = 0.2f, flashColor = iceFlash };
+        // 절대영도 5051~53 (콤보): 최단거리 장판 650×450 / 750×500 / 850×550 (기획 테이블 HitSize 동기화, QA #191). Iceshower VFX + 2초간 0.2초마다 틱(AbsoluteZeroRoutine).
+        var absoluteZero = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.AbsoluteZero, widthPx = 650, heightPx = 450, pulseInterval = 0.2f, flashColor = iceFlash };
         skillSystem.RegisterHazardSkill(5051, absoluteZero);
-        absoluteZero.widthPx = 450; absoluteZero.heightPx = 350;
+        absoluteZero.widthPx = 750; absoluteZero.heightPx = 500;
         skillSystem.RegisterHazardSkill(5052, absoluteZero);
-        absoluteZero.widthPx = 500; absoluteZero.heightPx = 400;
+        absoluteZero.widthPx = 850; absoluteZero.heightPx = 550;
         skillSystem.RegisterHazardSkill(5053, absoluteZero);
 
         // 화염 정령 1031~33: 정령 2마리가 같은 레벨의 화염 작렬을 1초마다 5초간 시전

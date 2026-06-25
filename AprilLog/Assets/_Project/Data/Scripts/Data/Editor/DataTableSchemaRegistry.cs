@@ -64,6 +64,9 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("GearAscensionCost", "gear_ascension_cost", "GearAscensionCostData", "GearAscensionCostTable", true),
         new DataTableSchema("GachaReward", "gacha_reward", "GachaRewardData", "GachaRewardTable", true),
         
+        new DataTableSchema("FurnitureTable", "furniture_table", "HousingFurnitureData", "HousingFurnitureTable", true),
+        new DataTableSchema("HRewardTable", "h_reward_table", "HousingRewardData", "HousingRewardTable", true),
+        
         new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
         new DataTableSchema("ItemMaster", "item_master", "ItemData", "ItemTable", true),
         
@@ -89,6 +92,9 @@ public static class DataTableSchemaRegistry
         
         new DataTableSchema("3_NPCtalk", "3_npc_talk", "Story_TalkData", "Story_TalkTable", true),
         new DataTableSchema("5_Character", "5_character", "Story_CharacterData", "Story_CharacterTable", true),
+        
+        // Localizing Data
+        new DataTableSchema("EnchantLocalizing", "enchant_localizing", "LocalizationData", "EnchantLocalizationTable", true),
         
         // Legacy List
         new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),
