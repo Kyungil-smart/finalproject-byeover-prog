@@ -46,7 +46,8 @@ public class EnchantChangeSelectButtonUI : MonoBehaviour
 
         if (_skillImage != null)
         {
-            // ToDo : 스킬 아이콘 이미지 불러오는 형식 맞춰 작성
+            // 추가: 조규민 - 보유 인챈트 선택 버튼에도 같은 ImageKey 기반 아이콘을 표시한다.
+            EnchantIconLoader.ApplyIcon(_skillImage, _enchantDisplayData.ImageKey);
         }
     }
 

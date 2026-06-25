@@ -98,11 +98,8 @@ public class EnchantCardUI : MonoBehaviour
             _descriptionText.text = data.Description; 
         }
 
-        // 인첸트 아이콘 반영
-        if (_iconImage != null && data.ImageKey != null)
-        {
-            // ToDo : 스킬 이미지 어떻게 전달되는지에 따라 이미지 삽입 형태 변경
-        }
+        // 추가: 조규민 - 인챈트 선택 카드의 ImageKey를 Resources/EnchantIcons 경로의 Sprite로 표시한다.
+        EnchantIconLoader.ApplyIcon(_iconImage, data.ImageKey);
     }
 
     public void SetRerollState(bool available, int remaining)
