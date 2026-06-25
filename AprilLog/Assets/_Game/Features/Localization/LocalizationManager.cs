@@ -12,6 +12,8 @@ using UnityEngine;
 /// </summary>
 public class LocalizationManager : MonoBehaviour
 {
+    public static LocalizationManager Instance { get; private set; }
+
     // ---------- 이벤트 ----------
     public event Action OnLanguageChanged;
 
@@ -30,18 +32,24 @@ public class LocalizationManager : MonoBehaviour
     private string _currentLang;  // "ko" or "en"
 
     public string CurrentLanguage => _currentLang;
+    
+    private bool _isInitialized;
 
     // ---------- 초기화 ----------
-    public void Initialize()
+    private void Awake()
     {
-        _entries = new Dictionary<string, Legacy_LanguageEntry>();
-
-        if (_languageTable == null)
+        if (Instance != null)
         {
-            Debug.LogWarning("[Localization] LanguageTable SO가 연결 안 됨. Inspector 확인.");
+            Destroy(gameObject);
             return;
         }
-
+        
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+    
+    public void Initialize()
+    {
         _entries = BuildDictionary(_languageTable, nameof(_languageTable), r => r.Key);
         _enchantLocalizingData = BuildDictionary(_enchantTable, nameof(_enchantTable), r => r.Language_ID);
 
@@ -58,15 +66,22 @@ public class LocalizationManager : MonoBehaviour
             _currentLang = Application.systemLanguage == SystemLanguage.Korean ? "ko" : "en";
         }
 
+        _isInitialized = true;
         Debug.Log($"[Localization] 초기화 완료. {_entries.Count}개 키 로드. 현재 언어: {_currentLang}");
     }
 
     // ---------- 텍스트 조회 ----------
     public string Get(string key)
     {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning("[Localization] Not initialized. Return Key Code");
+            return $"[{key}]";
+        }
+        
         if (!_entries.TryGetValue(key, out var entry))
         {
-            // 키 없으면 눈에 띄게 표시. 게임 화면에서 바로 보임.
+            Debug.LogWarning($"[Localization] {key} is not found. Return Key Code");
             return $"[{key}]";
         }
 
@@ -100,8 +115,14 @@ public class LocalizationManager : MonoBehaviour
         }
     }
     
-    public string GetText(int id, LocalizingType localizingType)
+    public string Get(int id, LocalizingType localizingType)
     {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning("[Localization] Not initialized. Return Localizing Code");
+            return $"[{id}]";
+        }
+        
         LocalizationData entry = null;
         
         switch (localizingType)
@@ -109,12 +130,13 @@ public class LocalizationManager : MonoBehaviour
             case  LocalizingType.Enchant:
                 if (!_enchantLocalizingData.TryGetValue(id, out entry))
                 {
-                    // 키 없으면 눈에 띄게 표시. 게임 화면에서 바로 보임.
+                    Debug.LogWarning($"[Localization] {id} is not found. Return Localizing Code");
                     return $"[{id}]";
                 }
                 break;
         }
 
+        Debug.LogWarning($"[Localization] {localizingType} is wrong Localizing type of this id : {id}. Return Localizing Code");
         if(entry == null) return $"[{id}]";
         
         // 현재 언어에 맞는 텍스트 반환
@@ -130,9 +152,9 @@ public class LocalizationManager : MonoBehaviour
     // 포맷 파라미터 있는 버전
     // 시트: "ENCHANT_DESC_3001" -> "매직 미사일 데미지가 {0}% 증가"
     // 사용: Get("ENCHANT_DESC_3001", 15) -> "매직 미사일 데미지가 15% 증가"
-    public string GetText(int id, LocalizingType localizingType, params object[] args)
+    public string Get(int id, LocalizingType localizingType, params object[] args)
     {
-        string template = GetText(id, localizingType);
+        string template = Get(id, localizingType);
         if (template.StartsWith("[")) return template;
 
         try
