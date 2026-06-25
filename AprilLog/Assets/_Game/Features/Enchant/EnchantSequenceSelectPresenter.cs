@@ -196,7 +196,11 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                 Name = $"NameID: {candidate.Name_ID}", 
                 Description = candidate.Type == EnchantType.Skill ? 
                               $"데미지: {candidate.SkillData.Dmg}" : 
-                              $"수치 증가: {candidate.StatData.Variation_2}"
+                              $"수치 증가: {candidate.StatData.Variation_2}",
+                // 추가: 조규민 - 분리형 선택 흐름에서도 인챈트 아이콘 키를 카드 UI로 전달한다.
+                ImageKey = candidate.Type == EnchantType.Skill ? 
+                    $"{candidate.SkillData.SkillIcon_ID}" : 
+                    $"{candidate.StatData.Image_ID}"
             };
         }
         _view.SetChoices(displayData);
