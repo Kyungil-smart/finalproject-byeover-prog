@@ -45,27 +45,27 @@ public class CombinationView : MonoBehaviour, ICombinationView
 
     public void SetRecipe(int slotIdx, int recipeKey, int[] ingredients)
     {
-        if (_recipeSlots == null || slotIdx >= _recipeSlots.Length) return;
+        if (_recipeSlots == null || slotIdx < 0 || slotIdx >= _recipeSlots.Length) return;
 
-        if (_enchantCombinationModel != null && _enchantCombinationModel.FusionData.TryGetValue(recipeKey, out var fusionData))
+        // 재료(UnitType) 번호 → 실제 책 이미지. (아이콘 유무와 무관하게 재료는 항상 표시)
+        Sprite[] sprites = new Sprite[3];
+        for (int i = 0; i < 3; i++)
         {
-            // 조합 스킬 아이콘
-            Sprite icon = Resources.Load<Sprite>(PATH + $"{fusionData.IconImageKey}");
-            
-            // 재료(UnitType) 번호를 바탕으로 실제 이미지를 찾아 배열로 묶기
-            Sprite[] sprites = new Sprite[3];
-            for(int i = 0; i < 3; i++) 
-            {
-                int unitTypeIndex = ingredients[i];
-                if (unitTypeIndex >= 0 && unitTypeIndex < _unitSprites.Length)
-                {
-                    sprites[i] = _unitSprites[unitTypeIndex];
-                }
-            }
-
-            // 슬롯에 이미지 전달
-            _recipeSlots[slotIdx].SetupSlot(icon, sprites);
+            if (ingredients == null || i >= ingredients.Length) continue;
+            int unitTypeIndex = ingredients[i];
+            if (unitTypeIndex >= 0 && unitTypeIndex < _unitSprites.Length)
+                sprites[i] = _unitSprites[unitTypeIndex];
         }
+
+        // 조합 스킬 아이콘: FusionData(키=nameId=recipeKey)에 있으면 로드, 없으면 null(재료만 표시).
+        Sprite icon = null;
+        if (_enchantCombinationModel != null
+            && _enchantCombinationModel.FusionData.TryGetValue(recipeKey, out var fusionData))
+        {
+            icon = Resources.Load<Sprite>(PATH + $"{fusionData.IconImageKey}");
+        }
+
+        _recipeSlots[slotIdx].SetupSlot(icon, sprites);
     }
 
     public void MarkIngredientFulfilled(int slotIdx, int ingredientIdx)

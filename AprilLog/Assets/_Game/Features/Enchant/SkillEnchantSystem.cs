@@ -146,8 +146,8 @@ public class SkillEnchantSystem : MonoBehaviour
             var newSkillData = combinationChain.GetNextLevelData(clampedLevel - 1);
             if (newSkillData != null)
             {
-                // 신규 테이블의 데이터를 읽어와서 동적으로 조합 슬롯 등록
-                RegisterCombinationFromTable(newSkillData, baseId, skillId);
+                // 신규 테이블의 데이터를 읽어와서 동적으로 조합 슬롯 등록 (키=nameId=enchantId, FusionData와 일치)
+                RegisterCombinationFromTable(newSkillData, enchantId, skillId);
                 Debug.Log($"[스킬인챈트] '{master.Name}' Lv{clampedLevel} 조합식 동적 적용 (skillId: {skillId})");
                 
                 return;
@@ -270,12 +270,12 @@ public class SkillEnchantSystem : MonoBehaviour
     }
     
     // DB기반 스킬 획득 처리 시 사용
-    private void RegisterCombinationFromTable(SkillTableData skillData, int baseId, int currentSkillId)
+    private void RegisterCombinationFromTable(SkillTableData skillData, int nameId, int currentSkillId)
     {
         if (skillData.SkillGroup_ID == EnchantModel.GROUP_COMBINATION_SKILL)
         {
             List<int> ingredients = new List<int>();
-            
+
             int req1 = ConvertRawIdToUnitType(skillData.RequiredValue_1);
             int req2 = ConvertRawIdToUnitType(skillData.RequiredValue_2);
             int req3 = ConvertRawIdToUnitType(skillData.RequiredValue_3);
@@ -284,8 +284,9 @@ public class SkillEnchantSystem : MonoBehaviour
             if (req2 != (int)UnitType.None) ingredients.Add(req2);
             if (req3 != (int)UnitType.None) ingredients.Add(req3);
 
-            // 조합 모델에 슬롯 등록 (baseId를 키로 사용 - 문서 5장 규칙)
-            _combinationModel.RegisterRecipe(baseId, ingredients.ToArray(), currentSkillId);
+            // 조합 슬롯 등록 키 = nameId(카드 Name). EnchantCombinationModel.FusionData가 nameId 키라
+            // View.SetRecipe의 아이콘 조회(FusionData[recipeKey])와 키를 일치시켜야 박스가 채워진다.
+            _combinationModel.RegisterRecipe(nameId, ingredients.ToArray(), currentSkillId);
         }
     }
     
