@@ -631,8 +631,8 @@ public class SkillSystem : MonoBehaviour
         var lib = WaterVfx;
         float baseY = _firePoint != null ? _firePoint.position.y : 0f;
         Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
-        float speed = PxToWorld(250f);     // 나미 R식: 천천히 전진하며 적을 밀기 (느린 속도)
-        const float duration = 2.0f;       // 느리게 더 멀리 전진(튜닝 가능)
+        float speed = PxToWorld(125f);     // 나미 R식: 천천히 전진하며 적을 밀기 (QA 2026-06-25: 250→125로 2배 느리게)
+        const float duration = 4.0f;       // 속도 절반이라 같은 거리 도달하도록 지속 2.0→4.0초로 보정
 
         GameObject vfx = null;
         if (lib != null && lib.waveVfx != null)
@@ -647,7 +647,7 @@ public class SkillSystem : MonoBehaviour
         }
         else SpawnHazardFlash(cur, sizeWorld, new Color(0.4f, 0.7f, 1f, 0.35f));
 
-        const float tickGap = 0.2f;
+        const float tickGap = 0.4f;   // 속도 절반(125px/s)에 맞춰 0.2→0.4초: 4초 동안 총 틱 수(데미지/넉백)는 기존 2초·0.2초와 동일하게 유지
         float tickT = tickGap, elapsed = 0f;
         DealHazardDamage(data, cur, sizeWorld);
         while (elapsed < duration)
@@ -662,11 +662,14 @@ public class SkillSystem : MonoBehaviour
         if (vfx != null) Destroy(vfx);
     }
 
-    // 하이드로 펌프/아쿠아 스트림 (기획 3-2): 전투구역 중앙 고정 세로 컬럼에 Water_Beam 2초 지속 + 0.2초마다 틱.
+    // 하이드로 펌프/아쿠아 스트림 (기획 3-2): 에이프릴 머리 위에서 위로 뻗는 세로 컬럼에 Water_Beam 2초 지속 + 0.2초마다 틱.
     private System.Collections.IEnumerator HydroPumpRoutine(Legacy_SkillData data, Vector2 sizeWorld)
     {
         var lib = WaterVfx;
-        Vector2 center = new Vector2(CamCenterX(), (_firePoint != null ? _firePoint.position.y : 0f) + sizeWorld.y * 0.5f);
+        // X는 에이프릴(firePoint) 위치 고정, Y는 머리 위로 컬럼 길이의 절반만큼 올려 위로 뻗게 한다. (화면 중앙/몬스터 위치 아님)
+        Vector2 center = new Vector2(
+            _firePoint != null ? _firePoint.position.x : CamCenterX(),
+            (_firePoint != null ? _firePoint.position.y : 0f) + sizeWorld.y * 0.5f);
 
         GameObject beam = null;
         if (lib != null && lib.hydroBeamVfx != null)
