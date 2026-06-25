@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 951590700034829645}
   - component: {fileID: 7516637303247174308}
   - component: {fileID: 6588812781332287191}
-  - component: {fileID: 3234652227512448342}
   m_Layer: 5
   m_Name: Confirmed Gacha Information
   m_TagString: Untagged
@@ -138,23 +137,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &3234652227512448342
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 408587344164802092}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a76f1af7cf6e9340a259e6bf6b1d028, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GachaPityInfoView
-  _text: {fileID: 6588812781332287191}
-  _root: {fileID: 408587344164802092}
-  _postProcessor: {fileID: 0}
-  _gachaId: 3
-  _format: "{0}\uD68C \uBF51\uAE30 \uC2DC\uB3C4 \uC2DC \uB808\uC804\uB354\uB9AC \uD655\uC815!"
 --- !u!1 &657707639463187915
 GameObject:
   m_ObjectHideFlags: 0
@@ -264,8 +246,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.00023651123, y: 77.406}
-  m_SizeDelta: {x: -47.52, y: -154.811}
+  m_AnchoredPosition: {x: -0.00023651123, y: 68.64355}
+  m_SizeDelta: {x: -47.52, y: -172.3357}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &412735581019015232
 CanvasRenderer:
@@ -328,7 +310,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -602,17 +584,17 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2046052541142521734}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5688428413031155630}
-  m_Father: {fileID: 1657819868305125123}
+  m_Father: {fileID: 4197898259944060425}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 323, y: 0.00006866455}
+  m_AnchoredPosition: {x: 0.0036621094, y: -2.7255173}
   m_SizeDelta: {x: 125.000015, y: 125}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &1238793444972611668
@@ -1112,7 +1094,6 @@ GameObject:
   - component: {fileID: 3544124584576501871}
   - component: {fileID: 535189843626285315}
   - component: {fileID: 1102810293422711720}
-  - component: {fileID: 2168899111729155393}
   m_Layer: 5
   m_Name: Confirmed Gacha Information
   m_TagString: Untagged
@@ -1239,23 +1220,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &2168899111729155393
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2459601789826306583}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a76f1af7cf6e9340a259e6bf6b1d028, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GachaPityInfoView
-  _text: {fileID: 1102810293422711720}
-  _root: {fileID: 2459601789826306583}
-  _postProcessor: {fileID: 0}
-  _gachaId: 3
-  _format: "{0}\uD68C \uBF51\uAE30 \uC2DC\uB3C4 \uC2DC \uB808\uC804\uB354\uB9AC \uD655\uC815!"
 --- !u!1 &2734103383194943826
 GameObject:
   m_ObjectHideFlags: 0
@@ -1561,11 +1525,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4430219978230349830}
-  m_Father: {fileID: 1657819868305125123}
+  m_Father: {fileID: 4197898259944060425}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 448, y: 0.00006866455}
+  m_AnchoredPosition: {x: 125.00366, y: -2.7255173}
   m_SizeDelta: {x: 125.000015, y: 125}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &1164789701986545685
@@ -1712,8 +1676,7 @@ RectTransform:
   - {fileID: 1279437122077760772}
   - {fileID: 3544124584576501871}
   - {fileID: 2600634558436713052}
-  - {fileID: 4330228883643147213}
-  - {fileID: 2907161601113455788}
+  - {fileID: 4197898259944060425}
   m_Father: {fileID: 3636597300439747311}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
@@ -1830,8 +1793,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.0006942749, y: -21.347992}
-  m_SizeDelta: {x: -47.517, y: -83.68}
+  m_AnchoredPosition: {x: -0.0017471313, y: -2.1014}
+  m_SizeDelta: {x: -47.517, y: -122.1731}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2766803685334789113
 CanvasRenderer:
@@ -1897,12 +1860,12 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
+  m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_characterHorizontalScale: 1
   m_wordSpacing: 0
-  m_lineSpacing: 0
+  m_lineSpacing: 37
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
@@ -2184,6 +2147,43 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &4405028112204893976
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4197898259944060425}
+  m_Layer: 5
+  m_Name: Reward
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4197898259944060425
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4405028112204893976}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4330228883643147213}
+  - {fileID: 2907161601113455788}
+  m_Father: {fileID: 1657819868305125123}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 152.35, y: 2.7256}
+  m_SizeDelta: {x: 250, y: 119.55}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &5187401111929256289
 GameObject:
   m_ObjectHideFlags: 0
@@ -2419,6 +2419,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3636597300439747311}
+  - component: {fileID: 4430142255384046502}
   m_Layer: 5
   m_Name: LegendaryGachaInfo
   m_TagString: Untagged
@@ -2449,6 +2450,32 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -48}
   m_SizeDelta: {x: -110, y: 465}
   m_Pivot: {x: 0.5, y: 1}
+--- !u!114 &4430142255384046502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5588853508015350778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd07c6d49dfd85a4499ce8656bd84716, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GachaProgressView
+  _postProcessor: {fileID: 0}
+  _gachaId: 3
+  _confirmedCountText: {fileID: 1613203747720691657}
+  _confirmedRoot: {fileID: 8332136149206186252}
+  _cumulativeCountText: {fileID: 625097962211287875}
+  _cumulativeRoot: {fileID: 3111867604083614222}
+  _reward1Icon: {fileID: 2536845511777261362}
+  _reward2Icon: {fileID: 2215351630354821939}
+  _reward1Rect: {fileID: 4330228883643147213}
+  _reward1PosWhenTwo: {x: 0, y: 0}
+  _reward1PosWhenOne: {x: 0, y: 0}
+  _itemIcons: []
+  _currentNumberColorHex: '#8B5A2B'
+  _countFormat: <color={0}>{1}</color>/{2}
 --- !u!1 &5996867968689258509
 GameObject:
   m_ObjectHideFlags: 0
@@ -2460,7 +2487,6 @@ GameObject:
   - component: {fileID: 4041474903802273098}
   - component: {fileID: 3698673388133075350}
   - component: {fileID: 1613203747720691657}
-  - component: {fileID: 8999092746720036191}
   m_Layer: 5
   m_Name: Count
   m_TagString: Untagged
@@ -2587,23 +2613,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &8999092746720036191
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5996867968689258509}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a76f1af7cf6e9340a259e6bf6b1d028, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GachaPityInfoView
-  _text: {fileID: 1613203747720691657}
-  _root: {fileID: 5996867968689258509}
-  _postProcessor: {fileID: 0}
-  _gachaId: 3
-  _format: "{0}\uD68C \uBF51\uAE30 \uC2DC\uB3C4 \uC2DC \uB808\uC804\uB354\uB9AC \uD655\uC815!"
 --- !u!1 &6101056843932098625
 GameObject:
   m_ObjectHideFlags: 0
@@ -2615,7 +2624,6 @@ GameObject:
   - component: {fileID: 2600634558436713052}
   - component: {fileID: 2948395347856010054}
   - component: {fileID: 625097962211287875}
-  - component: {fileID: 2132286756408355438}
   m_Layer: 5
   m_Name: Count
   m_TagString: Untagged
@@ -2742,23 +2750,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &2132286756408355438
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6101056843932098625}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a76f1af7cf6e9340a259e6bf6b1d028, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GachaPityInfoView
-  _text: {fileID: 625097962211287875}
-  _root: {fileID: 6101056843932098625}
-  _postProcessor: {fileID: 0}
-  _gachaId: 3
-  _format: "{0}\uD68C \uBF51\uAE30 \uC2DC\uB3C4 \uC2DC \uB808\uC804\uB354\uB9AC \uD655\uC815!"
 --- !u!1 &7334485995277690282
 GameObject:
   m_ObjectHideFlags: 0
@@ -2839,7 +2830,8 @@ MonoBehaviour:
   _insufficientPopup: {fileID: 0}
   _postProcessor: {fileID: 0}
   _popupQueue: {fileID: 0}
-  _pityInfoView: {fileID: 3234652227512448342}
+  _pityInfoView: {fileID: 0}
+  _progressView: {fileID: 0}
 --- !u!1 &8113682038118612536
 GameObject:
   m_ObjectHideFlags: 0

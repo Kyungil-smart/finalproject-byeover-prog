@@ -937,6 +937,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnchantBookModel
   _enchantModel: {fileID: 0}
+--- !u!114 &2147272908 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 841456603248407848, guid: dea76765199207942829716049dd0043, type: 3}
+  m_PrefabInstance: {fileID: 4065100307696042627}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b79318a5bdbbeb648a77a2364d9298a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArtifactGachaPostProcessor
 --- !u!1001 &4065100307696042627
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1173,6 +1184,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5649539721086282948, guid: dea76765199207942829716049dd0043, type: 3}
+      propertyPath: _postProcessor
+      value: 
+      objectReference: {fileID: 2147272908}
     - target: {fileID: 5957814360094973125, guid: dea76765199207942829716049dd0043, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -0.000045776367
@@ -1249,11 +1264,26 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9163613056620073020, guid: dea76765199207942829716049dd0043, type: 3}
+      propertyPath: _progressView
+      value: 
+      objectReference: {fileID: 4065100307696042628}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dea76765199207942829716049dd0043, type: 3}
+--- !u!114 &4065100307696042628 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5649539721086282948, guid: dea76765199207942829716049dd0043, type: 3}
+  m_PrefabInstance: {fileID: 4065100307696042627}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd07c6d49dfd85a4499ce8656bd84716, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GachaProgressView
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
