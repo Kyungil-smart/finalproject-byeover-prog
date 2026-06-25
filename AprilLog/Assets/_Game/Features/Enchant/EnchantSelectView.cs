@@ -403,10 +403,26 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         return _resolvedRerollCountText;
     }
 
+    // 추가: 조규민 - 선택 카드 생성 전 필수 UI와 데이터 참조 누락을 검사한다.
     private bool HasRequiredReferences()
     {
-        if (_model != null && _navigator != null && _skipButton != null && Legacy_DataManager.Instance.CharacterRepo != null && _cardPrefab != null)
+        bool hasReferences = _model != null
+            && _modelUI != null
+            && _navigator != null
+            && _changeView != null
+            && _listView != null
+            && _choiceContainer != null
+            && _skipButton != null
+            && _cardPrefab != null
+            && Legacy_DataManager.Instance != null
+            && Legacy_DataManager.Instance.CharacterRepo != null
+            && DataManager.Instance != null
+            && DataManager.Instance.SpellRepo != null;
+
+        if (hasReferences)
+        {
             return true;
+        }
 
         Debug.LogWarning("[EnchantSelectView] 필수 참조가 비어 있어 초기화를 건너뜁니다.", this);
         return false;
