@@ -32,7 +32,8 @@ public class EnchantChangeInfoTableUI : MonoBehaviour
         
         if (_skillImage != null)
         {
-            // ToDo : 스킬 아이콘 이미지 받아오는거 확정 되면 연결
+            // 추가: 조규민 - 교체 확인 정보 테이블에도 선택 카드와 같은 인챈트 아이콘을 표시한다.
+            EnchantIconLoader.ApplyIcon(_skillImage, newData.ImageKey);
         }
     }
 }

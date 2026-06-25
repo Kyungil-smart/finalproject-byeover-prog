@@ -159,7 +159,11 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
                 Name = $"NameID: {candidate.Name_ID}", 
                 Description = candidate.Type == EnchantType.Skill ? 
                     $"데미지: {candidate.SkillData.Dmg}" : 
-                    $"수치 증가: {candidate.StatData.Variation_2}"
+                    $"수치 증가: {candidate.StatData.Variation_2}",
+                // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
+                ImageKey = candidate.Type == EnchantType.Skill ? 
+                    $"{candidate.SkillData.SkillIcon_ID}" : 
+                    $"{candidate.StatData.Image_ID}"
             };
         }
         
