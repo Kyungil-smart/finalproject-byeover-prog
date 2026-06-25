@@ -64,6 +64,9 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("GearAscensionCost", "gear_ascension_cost", "GearAscensionCostData", "GearAscensionCostTable", true),
         new DataTableSchema("GachaReward", "gacha_reward", "GachaRewardData", "GachaRewardTable", true),
         
+        new DataTableSchema("FurnitureTable", "furniture_table", "HousingFurnitureData", "HousingFurnitureTable", true),
+        new DataTableSchema("HRewardTable", "h_reward_table", "HousingRewardData", "HousingRewardTable", true),
+        
         new DataTableSchema("InLevel", "in_level", "InLevelData", "InLevelTable", true),
         new DataTableSchema("ItemMaster", "item_master", "ItemData", "ItemTable", true),
         
