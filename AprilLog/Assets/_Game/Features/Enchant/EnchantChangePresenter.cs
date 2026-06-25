@@ -1,5 +1,8 @@
 // 설명 : 인챈트 한도 초과 시, 기존 인챈트를 버리고 새 인챈트를 얻는 플로우 제어
 
+// 수정자 : 김영찬
+// 수정 내용 : 번역 데이터 연결
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +13,8 @@ public class EnchantChangePresenter
     private readonly EnchantModel _model;
     private readonly EnchantUIModel _uiModel;
     private readonly ScreenNavigator _navigator;
-    private  EnchantListPresenter _listPresenter;
+    private EnchantListPresenter _listPresenter;
+    private LocalizationManager _localizationManager;
 
     // 대기 중인(방금 뽑아서 얻으려고 하는) 인챈트 데이터
     private EnchantCandidate _pendingEnchant; 
@@ -21,6 +25,8 @@ public class EnchantChangePresenter
         _model = model;
         _uiModel = uiModel;
         _navigator = navigator;
+        
+        _localizationManager = LocalizationManager.Instance;
 
         // View의 클릭 이벤트 구독
         _view.OnDiscardConfirmed += HandleChange;
@@ -48,19 +54,44 @@ public class EnchantChangePresenter
     private void RefreshView()
     {
         // 새로 얻을 인챈트 세팅
-        var newData = new EnchantDisplayData
+        EnchantDisplayData newData;
+        
+        if(_localizationManager == null)
         {
-            EnchantId = _pendingEnchant.Specific_ID,
-            Level = _pendingEnchant.Level,
-            TypeLabel = _pendingEnchant.Type == EnchantType.Skill ? "스킬" : "스탯",
-            // ToDo : 이하 두 변수는 차후 번역 데이터 연결 할 것
-            Name = $"Name ID: {_pendingEnchant.Name_ID}",
-            Description = _pendingEnchant.Type == EnchantType.Skill ? 
-                          $"Description ID: {_pendingEnchant.SkillData.Skill_Descrip}" : $"Description ID: {_pendingEnchant.StatData.StatDescrip}",
-            // ToDo : 차후 이미지 컬럼 변경 가능성 있으며, 이미지 불러오는 방법 결정 되면 수정해야됨
-            ImageKey = _pendingEnchant.Type == EnchantType.Skill ? 
-                        $"{_pendingEnchant.SkillData.SkillIcon_ID}" : $"{_pendingEnchant.StatData.Image_ID}" 
-        };
+            Debug.LogWarning("No localization manager found. No Localization.");
+            newData = new EnchantDisplayData
+            {
+                EnchantId = _pendingEnchant.Specific_ID,
+                Level = _pendingEnchant.Level,
+                TypeLabel = _pendingEnchant.Type == EnchantType.Skill ? "스킬" : "스탯",
+                // 번역 데이터가 없음으로 ID를 출력함
+                Name = $"Name ID: {_pendingEnchant.Name_ID}",
+                Description = _pendingEnchant.Type == EnchantType.Skill
+                    ? $"Description ID: {_pendingEnchant.SkillData.Skill_Descrip}"
+                    : $"Description ID: {_pendingEnchant.StatData.StatDescrip}",
+                // ToDo : 차후 이미지 컬럼 변경 가능성 있으며, 이미지 불러오는 방법 결정 되면 수정해야됨
+                ImageKey = _pendingEnchant.Type == EnchantType.Skill
+                    ? $"{_pendingEnchant.SkillData.SkillIcon_ID}"
+                    : $"{_pendingEnchant.StatData.Image_ID}"
+            };
+        }
+        else
+        {
+            newData = new EnchantDisplayData
+            {
+                EnchantId = _pendingEnchant.Specific_ID,
+                Level = _pendingEnchant.Level,
+                TypeLabel = _pendingEnchant.Type == EnchantType.Skill ? "스킬" : "스탯",
+                Name = _localizationManager.Get(_pendingEnchant.Name_ID, LocalizingType.Enchant),
+                Description = _pendingEnchant.Type == EnchantType.Skill ? 
+                    _localizationManager.Get(_pendingEnchant.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                    _localizationManager.Get(_pendingEnchant.StatData.StatDescrip, LocalizingType.Enchant),
+                // ToDo : 차후 이미지 컬럼 변경 가능성 있으며, 이미지 불러오는 방법 결정 되면 수정해야됨
+                ImageKey = _pendingEnchant.Type == EnchantType.Skill ? 
+                    $"{_pendingEnchant.SkillData.SkillIcon_ID}" : $"{_pendingEnchant.StatData.Image_ID}" 
+            };
+        }
+        
         _view.SetNewEnchantInfo(newData);
         
         if (_listPresenter == null)
