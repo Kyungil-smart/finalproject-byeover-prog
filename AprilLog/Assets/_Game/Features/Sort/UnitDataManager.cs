@@ -36,7 +36,7 @@ public class UnitDataManager : MonoBehaviour
             ? UnitTypeToTableId[unitType]
             : 1000 + (unitType + 1);   // None(5)=1006 조커 등은 기존 규칙 유지
 
-        if (_unitDataMap.TryGetValue(realId, out data))
+        if (_unitDataMap.TryGetValue(realId, out var data))
         {
             return data;
         }
