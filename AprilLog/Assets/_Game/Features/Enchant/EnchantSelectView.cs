@@ -53,6 +53,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [SerializeField] private EnchantUIModel _modelUI;
     [SerializeField] private ScreenNavigator _navigator;
     [SerializeField] private EnchantChangeView _changeView;
+    [SerializeField] private EnchantListView _listView;
 
     [Header("UI")]
     [Tooltip("Horizontal Layout Group이 붙은 Content")]
@@ -91,6 +92,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         {
             if (!HasRequiredReferences())
                 return;
+            
+            _listView.Init();
             
             _changePresenter = new EnchantChangePresenter(_changeView, _model, _modelUI, _navigator);
             

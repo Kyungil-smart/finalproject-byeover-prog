@@ -57,7 +57,7 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
     
     public event Action<bool> OnEnabled;
 
-    private void Awake()
+    public void Init()
     {
         CacheSelectButtonStyleReferences();
 
