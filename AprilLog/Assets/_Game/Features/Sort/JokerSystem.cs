@@ -1,7 +1,8 @@
-using UnityEngine;
 using System.Collections;
-using UnityEngine.EventSystems;
 using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 
@@ -15,15 +16,24 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     [SerializeField] private RectTransform _effectSprite;
     [SerializeField] private SortModel _model;
     [SerializeField] private SortSystem _sortSystem;
-    [SerializeField] private CanvasGroup[] _tableCanvasGroups;
+    [SerializeField] private CanvasGroup[] _maskCanvasGroups;
     [SerializeField] private SortTableView _view;
     [SerializeField] private Image[] _jokerIcons;
+    [SerializeField] private Image _coolTimeImage;
+    [SerializeField] private TMP_Text _coolDownText;
+    [SerializeField] private UnitDataManager _dataManager;
 
     private JokerPatternData _activePattern;
     private int _currentIndex = 0;
     private float _lastUsedTime = -60f;
     private const float _coolDown = 60f;
     private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정
+
+    private void Start()
+    {
+        if (_coolTimeImage != null) _coolTimeImage.enabled = false;
+        if (_coolDownText != null) _coolDownText.enabled = false;
+    }
 
     public void OnPointerClick(PointerEventData eventData)
     {
@@ -47,6 +57,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         }
 
         _lastUsedTime = Time.time;
+        StartCoroutine(CooldownRoutine());
         _activePattern = _patternLibrary.patterns[Random.Range(0, _patternLibrary.patterns.Count)];
         _currentIndex = 0;
 
@@ -112,9 +123,9 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     private void HighlightTable(int targetIndex)
     {
-        for (int i = 0; i < _tableCanvasGroups.Length; i++)
+        for (int i = 0; i < _maskCanvasGroups.Length; i++)
         {
-            _tableCanvasGroups[i].alpha = (i == targetIndex) ? 0f : 0.78f;
+            _maskCanvasGroups[i].alpha = (i == targetIndex) ? 0f : 0.78f;
         }
     }
 
@@ -125,5 +136,32 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
             _currentActiveIndex++;
             _jokerIcons[_currentActiveIndex].enabled = true;
         }
+    }
+
+    private IEnumerator CooldownRoutine()
+    {
+        if (_coolTimeImage != null)
+        {
+            _coolTimeImage.enabled = true;
+            _coolTimeImage.fillAmount = 1f;
+        }
+
+        if (_coolDownText != null) _coolDownText.enabled = true;
+
+        float timer = _coolDown;
+
+        while (timer > 0)
+        {
+            timer -= Time.deltaTime;
+
+            if (_coolTimeImage != null) _coolTimeImage.fillAmount = timer / _coolDown;
+
+            if (_coolDownText != null) _coolDownText.text = Mathf.CeilToInt(timer).ToString();
+
+            yield return null;
+        }
+
+        if (_coolTimeImage != null) _coolTimeImage.enabled = false;
+        if (_coolDownText != null) _coolDownText.enabled = false;
     }
 }
