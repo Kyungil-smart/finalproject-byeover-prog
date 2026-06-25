@@ -9,7 +9,7 @@ using UnityEngine;
 //          - 결과창의 1회/10회 버튼으로 같은 박스 재추첨, 확인 버튼으로 닫기
 public class ShopGachaPresenter : MonoBehaviour
 {
-    public enum CostCurrency { Gold, Parchment }
+    public enum CostCurrency { Gold, Parchment, Diamond }
 
     [Header("시스템 참조")]
     [Tooltip("씬의 GachaManager")]
@@ -51,8 +51,12 @@ public class ShopGachaPresenter : MonoBehaviour
     [SerializeField] private ArtifactGachaPostProcessor _postProcessor;
     [Tooltip("메인 복귀 시 누적 보상 팝업을 순차 출력하는 큐(선택).")]
     [SerializeField] private ArtifactGachaPopupQueue _popupQueue;
+    [Tooltip("천장(레전더리 확정) 카운터. 레전더리 등장 시 0 리셋(기획서 6-2-1). 비우면 누적뽑기 나머지로 폴백.")]
+    [SerializeField] private ArtifactPityTracker _pityTracker;
     [Tooltip("레전더리 확정(천장) 안내 표시(Confirmed Gacha Information). 선택.")]
     [SerializeField] private GachaPityInfoView _pityInfoView;
+    [Tooltip("확정/누적 보상 진행도 표시(20Reward·CumulativeCompensation). 선택.")]
+    [SerializeField] private GachaProgressView _progressView;
 
     private const int TenDrawCount = 10;
 
@@ -78,6 +82,7 @@ public class ShopGachaPresenter : MonoBehaviour
     {
         _gachaId = gachaId;
         if (_pityInfoView != null) _pityInfoView.Refresh(_gachaId);
+        if (_progressView != null) _progressView.Refresh(_gachaId);
     }
 
     // [프리젠터 1개 공유 방식용] 버튼 OnClick 에 가챠 ID(1/2/3)를 정적 인자로 넘겨 그 가챠를 1회/10회 뽑는다.
@@ -170,6 +175,10 @@ public class ShopGachaPresenter : MonoBehaviour
         if (_pityInfoView != null)
             _pityInfoView.Refresh(_gachaId);
 
+        // 확정/누적 보상 진행도 갱신.
+        if (_progressView != null)
+            _progressView.Refresh(_gachaId);
+
         if (resultPopup != null)
             resultPopup.SetActive(true);
     }
@@ -208,23 +217,38 @@ public class ShopGachaPresenter : MonoBehaviour
             return result;
         }
 
-        // 천장(레전더리 확정) : 레전더리 박스에서 누적 N번째 뽑기마다 레전더리 확정.
-        // usePity=false(광고 무료뽑기)면 천장 적용 안 함 — 순수 확률 추첨만.
+        // 천장(레전더리 확정) : 마지막 레전더리 이후 카운트가 PityCount 에 도달하면 그 개봉에서 확정.
+        // 레전더리(자연/확정)가 나오면 카운트 0으로 리셋(기획서 6-2-1). 누적/마일리지 카운트와는 별개.
+        // usePity=false(광고 무료뽑기)면 천장 적용 안 함 — 순수 확률 추첨만(카운트도 건드리지 않음).
         bool pityBox = usePity && box.PityType == "RandomLegendary" && box.PityCount > 0;
-        int preTotal = (pityBox && _postProcessor != null) ? _postProcessor.GetDrawTotal(gachaId) : 0;
+
+        // 천장 시작 카운트 : 트래커 우선, 없으면 누적뽑기 나머지로 폴백(리셋 미동작).
+        int pity = 0;
+        if (pityBox)
+            pity = _pityTracker != null
+                ? _pityTracker.GetCount(gachaId)
+                : (_postProcessor != null ? _postProcessor.GetDrawTotal(gachaId) % box.PityCount : 0);
 
         for (int i = 0; i < count; i++)
         {
-            // 이번 뽑기의 누적 절대 횟수가 천장 배수면 레전더리 확정, 아니면 확률 추첨.
-            bool pityHit = pityBox && ((preTotal + i + 1) % box.PityCount == 0);
+            // 이번 개봉이 천장 도달(카운트+1 == PityCount)이면 레전더리 확정, 아니면 확률 추첨.
+            bool pityHit = pityBox && (pity + 1 >= box.PityCount);
             string grade = pityHit ? "Legendary" : DetermineGrade(box);
 
             int gearId = SelectRandomGearByGrade(grade);
             if (gearId == 0) continue;
 
+            // 레전더리(자연/확정) → 천장 카운트 0 리셋, 그 외 → +1.
+            if (pityBox)
+                pity = (grade == "Legendary") ? 0 : pity + 1;
+
             result.Add(gearId);
             Debug.Log($"[ShopGachaPresenter] 가챠 성공! {grade} 등급 (ID: {gearId}){(pityHit ? " [천장 확정]" : "")} 획득");
         }
+
+        // 갱신된 천장 카운트 영구 저장(트래커가 있을 때만).
+        if (pityBox && _pityTracker != null)
+            _pityTracker.SetCount(gachaId, pity);
 
         return result;
     }
@@ -285,9 +309,22 @@ public class ShopGachaPresenter : MonoBehaviour
             return true;
         }
 
-        return _costCurrency == CostCurrency.Gold
-            ? _currencyModel.SpendGold(cost)
-            : _currencyModel.SpendParchment(cost);
+        switch (_costCurrency)
+        {
+            case CostCurrency.Gold:      return _currencyModel.SpendGold(cost);
+            case CostCurrency.Parchment: return _currencyModel.SpendParchment(cost);
+            case CostCurrency.Diamond:   return SpendDiamond(cost);
+            default:                     return _currencyModel.SpendGold(cost);
+        }
+    }
+
+    // [다이아 결제] 다이아 재화는 정승우님 담당 지갑(GameManager/CurrencyModel)에 신규 추가 예정.
+    // 지갑 API 가 생기면 아래 한 줄로 교체한다 :  return _currencyModel.SpendDiamond(cost);
+    // 그 전까지는 결제 실패로 처리해 무료 뽑기로 새지 않게 한다(fail-closed).
+    private bool SpendDiamond(int cost)
+    {
+        Debug.LogWarning("[ShopGachaPresenter] 다이아 재화 미구현 — CurrencyModel.SpendDiamond 추가 후 연결 필요. 결제 실패 처리.", this);
+        return false;
     }
 
     private void ShowInsufficient()

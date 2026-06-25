@@ -18,6 +18,8 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
     [SerializeField] private ArtifactListBinder _listBinder;
     [Tooltip("누적(마일리지) 보상 진행도 추적기")]
     [SerializeField] private ArtifactMileageTracker _mileageTracker;
+    [Tooltip("천장(레전더리 확정) 카운터. 표시값을 ExecuteDraw 와 동일 소스로 맞춘다(선택).")]
+    [SerializeField] private ArtifactPityTracker _pityTracker;
 
     private ArtifactManager Manager =>
         _artifactManager != null
@@ -126,14 +128,22 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         _mileageTracker != null ? _mileageTracker.GetTotalDrawCount(gachaId) : 0;
 
     // 천장까지 남은 뽑기 횟수. 레전더리(천장) 가챠가 아니면 -1.
+    // 천장 카운트는 '레전더리 등장 시 0 리셋'이므로 누적뽑기수가 아니라 천장 트래커를 본다.
     public int RemainingToPity(int gachaId)
     {
         GachaBoxData box = Repo != null ? Repo.GetGachaBox(gachaId) : null;
         if (box == null || box.PityType != "RandomLegendary" || box.PityCount <= 0)
             return -1;
 
-        int total = GetDrawTotal(gachaId);
-        return box.PityCount - (total % box.PityCount);
+        return box.PityCount - PityCountOf(gachaId, box.PityCount);
+    }
+
+    // 천장 현재 카운트(트래커 우선, 없으면 누적뽑기 나머지 폴백). 0..PityCount-1.
+    private int PityCountOf(int gachaId, int pityMax)
+    {
+        if (_pityTracker != null)
+            return Mathf.Clamp(_pityTracker.GetCount(gachaId), 0, pityMax);
+        return GetDrawTotal(gachaId) % pityMax;
     }
 
     private void ApplyMileage(int gachaId, int drawCount, ArtifactGachaResult result)
@@ -179,24 +189,119 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
     private readonly Dictionary<int, int> _mileageCycleCache = new Dictionary<int, int>();
 
     // 현재 누적 뽑기 횟수로부터 이번에 도달한 마일리지 구간(데이터 MileageCount 키)을 계산한다.
-    // 마지막 구간을 지나면 다시 첫 구간부터 순환하므로, 누적 횟수를 1사이클 내 위치로 환산해 구간을 구한다.
+    // 첫 사이클을 지난 뒤에는 첫 구간(예:20회)을 건너뛰고 2번째 구간(예:40회)부터 순환한다.
     private int ResolveMileageMilestone(GearRepo repo, int gachaId)
     {
         int stepSize = _mileageTracker.StepSize;
         if (stepSize <= 0)
             return 0;
 
-        int cycle = GetMileageCycle(repo, gachaId, stepSize);
-        if (cycle <= 0)
+        int cycleValue = GetMileageCycle(repo, gachaId, stepSize);
+        if (cycleValue <= 0)
             return 0;
+
+        int cycleSteps = cycleValue / stepSize;                       // 정의된 구간 수(예: 20·40·60·80·100 → 5)
 
         // RegisterDraws 직후이므로 이번 뽑기가 반영된 누적 횟수다.
         int totalAfter = _mileageTracker.GetTotalDrawCount(gachaId);
         if (totalAfter <= 0)
             return 0;
 
-        int within = ((totalAfter - 1) % cycle) + 1;                  // 1..cycle (사이클 내 위치)
-        return ((within - 1) / stepSize + 1) * stepSize;              // stepSize 단위 올림 → MileageCount 키
+        int completedStep = totalAfter / stepSize;                    // 가장 최근 통과한 구간 순번(1-base)
+        return MilestoneKeyForStep(completedStep, cycleSteps, stepSize);
+    }
+
+    // 구간 순번(stepIndex, 1-base) → 마일스톤 키(데이터 MileageCount).
+    // 기획서(6-2-2-4 / R416) : 마지막 구간(100회) 보상 수령 시 카운터를 0으로 완전 리셋 →
+    // 첫 구간(20회)부터 반복한다. 예) cycleSteps=5 → 20·40·60·80·100·20·40… 순환.
+    private int MilestoneKeyForStep(int stepIndex, int cycleSteps, int stepSize)
+    {
+        if (stepIndex <= 0 || cycleSteps <= 0 || stepSize <= 0)
+            return 0;
+
+        int idx = ((stepIndex - 1) % cycleSteps) + 1;
+        return idx * stepSize;
+    }
+
+    // ---------- 진행도 표시용 public 조회 (GachaProgressView 등) ----------
+
+    // 누적(마일리지) 구간 크기(기획 : 20회). 트래커 미연결이면 0.
+    public int MileageStepSize => _mileageTracker != null ? _mileageTracker.StepSize : 0;
+
+    // 천장(Pity) 최대 카운트. 천장 가챠가 아니면 -1.
+    public int GetPityMax(int gachaId)
+    {
+        GachaBoxData box = Repo != null ? Repo.GetGachaBox(gachaId) : null;
+        if (box == null || box.PityType != "RandomLegendary" || box.PityCount <= 0)
+            return -1;
+        return box.PityCount;
+    }
+
+    // 천장 현재 진행 카운트(0..PityCount). 천장 가챠가 아니면 -1.
+    // 레전더리 등장 시 0 리셋되는 천장 트래커 값을 본다(ExecuteDraw 와 동일 소스).
+    public int GetPityCurrent(int gachaId)
+    {
+        int max = GetPityMax(gachaId);
+        if (max <= 0)
+            return -1;
+        return PityCountOf(gachaId, max);
+    }
+
+    // 누적(마일리지) 현재 진행 카운트(구간 내, 0..StepSize-1). 마일리지 가챠가 아니면 -1.
+    public int GetMileageCurrent(int gachaId)
+    {
+        if (!IsLegendaryGacha(gachaId) || MileageStepSize <= 0)
+            return -1;
+        return GetDrawTotal(gachaId) % MileageStepSize;
+    }
+
+    // 누적(마일리지) 1사이클(20~100) 내 진행 카운트(0..cycleValue-1). 마일리지 가챠가 아니면 -1.
+    // 표시 "현재/다음마일스톤"의 '현재'값. 100 도달 후 0으로 돌아가며 반복.
+    public int GetMileageCycleProgress(int gachaId)
+    {
+        GearRepo repo = Repo;
+        if (repo == null || _mileageTracker == null || !IsLegendaryGacha(gachaId))
+            return -1;
+
+        int stepSize = _mileageTracker.StepSize;
+        if (stepSize <= 0)
+            return -1;
+
+        int cycleValue = GetMileageCycle(repo, gachaId, stepSize);
+        if (cycleValue <= 0)
+            return -1;
+
+        return GetDrawTotal(gachaId) % cycleValue;
+    }
+
+    // 다음(가장 가까운 미수령) 마일스톤 회차(데이터 MileageCount, 예 40). 없으면 -1.
+    // 표시 "현재/다음마일스톤"의 '다음마일스톤(=몇 회차 보상인지)'값.
+    public int GetNextMilestoneCount(int gachaId)
+    {
+        GachaRewardData reward = GetNextMilestoneReward(gachaId);
+        return reward != null ? reward.MileageCount : -1;
+    }
+
+    // 현재 누적 기준 '다음(가장 가까운 미수령)' 마일스톤 보상 데이터. 없으면 null.
+    // 표시는 다음 구간을 보여주므로 nextStep = 누적/StepSize + 1 로 산출한다.
+    public GachaRewardData GetNextMilestoneReward(int gachaId)
+    {
+        GearRepo repo = Repo;
+        if (repo == null || _mileageTracker == null)
+            return null;
+
+        int stepSize = _mileageTracker.StepSize;
+        if (stepSize <= 0)
+            return null;
+
+        int cycleValue = GetMileageCycle(repo, gachaId, stepSize);
+        if (cycleValue <= 0)
+            return null;
+
+        int cycleSteps = cycleValue / stepSize;
+        int nextStep = GetDrawTotal(gachaId) / stepSize + 1;
+        int key = MilestoneKeyForStep(nextStep, cycleSteps, stepSize);
+        return key > 0 ? repo.GetGachaReward(gachaId, key) : null;
     }
 
     // 데이터에 정의된 마일리지 구간(stepSize 간격)을 훑어 1사이클 누적 한도(마지막 구간 = Reset 지점)를 구한다.
