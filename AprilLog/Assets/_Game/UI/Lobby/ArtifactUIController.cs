@@ -33,10 +33,6 @@ public class ArtifactUIController : MonoBehaviour
     [SerializeField] private GameObject _playerLevelTab;    // PlayerLevel
     [SerializeField] private GameObject _artifactTab;       // Artifact
 
-    [Header("상단 바 (분해 모드 시 전환)")]
-    [SerializeField] private GameObject _topBarNormal;        // TopBar_inPlayerLevel (기본 ON)
-    [SerializeField] private GameObject _topBarDecomposition; // TopBar_Decomposition (분해 진입 시 ON)
-
     [Header("Artifact 탭 구성")]
     [SerializeField] private GameObject _collection;        // Collection (Artifact 탭에서 항상 ON)
     [SerializeField] private GameObject _artifactsSlot;     // Artifacts_Slot (기본 ON, 분해 진입 시 OFF)
@@ -248,14 +244,6 @@ public class ArtifactUIController : MonoBehaviour
     private void ApplyDecompositionMode(bool enter, bool notify)
     {
         _isDecompositionMode = enter;
-
-        // 상단 바 : 기본 TopBar_inPlayerLevel / 분해 진입 시 TopBar_Decomposition
-        SetActive(_topBarNormal, !enter);
-        SetActive(_topBarDecomposition, enter);
-
-        // 슬롯 : 기본 Artifacts_Slot ON / 분해 진입 시 DecompositionArtifacts_Slot ON
-        SetActive(_artifactsSlot, !enter);
-        SetActive(_decompositionSlot, enter);
 
         CloseDecomposePopups();
 
