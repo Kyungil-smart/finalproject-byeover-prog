@@ -9,6 +9,8 @@
 
 // 수정자 : 김영찬 - GearRepo 신설
 
+// 수정자 : 김영찬 - StoryRepo 신설
+
 using System;
 using UnityEngine;
 
@@ -57,6 +59,8 @@ public class DataManager : MonoBehaviour
     [SerializeField] private ConfigRepo _configRepo;
     [SerializeField] private SpellRepo _spellRepo; //해당 부분은 아직 기획이 넘어오지 않은 Legacy DB임
     [SerializeField] private GearRepo _gearRepo;
+    [SerializeField] private StoryRepo _storyRepo;
+    [SerializeField] private HousingRepo _housingRepo;
     
     // ---------- Public ----------
     public CharacterRepo CharacterRepo => _characterRepo;
@@ -64,6 +68,8 @@ public class DataManager : MonoBehaviour
     public ConfigRepo ConfigRepo => _configRepo;
     public SpellRepo SpellRepo => _spellRepo;
     public GearRepo GearRepo => _gearRepo;
+    public StoryRepo StoryRepo => _storyRepo;
+    public HousingRepo HousingRepo => _housingRepo;
     
     private void Awake()
     {
@@ -105,6 +111,8 @@ public class DataManager : MonoBehaviour
         InitializeRepo(nameof(_configRepo), _configRepo, () => _configRepo.Initialize());
         InitializeRepo(nameof(_spellRepo), _spellRepo, () => _spellRepo.Initialize());
         InitializeRepo(nameof(_gearRepo), _gearRepo, () => _gearRepo.Initialize());
+        InitializeRepo(nameof(_storyRepo), _storyRepo, () => _storyRepo.Initialize());
+        InitializeRepo(nameof(_housingRepo), _housingRepo, () => _housingRepo.Initialize());
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");

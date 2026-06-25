@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 설명 : 기획서 - v1.04_인게임 성장 시스템_이균호 > 인첸트 시트 반영 (스킬/스탯 분리, 그룹별 보유 한도 적용), 스킬 파트 연동 이벤트 추가
 
+// 수정자 : 김영찬
+// 설명 : 새로운 인첸트 선택 로직에 필요한 변수 및 제어함수 추가
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -61,12 +64,13 @@ public class EnchantModel : MonoBehaviour
     public IReadOnlyDictionary<int, AcquiredStatData> OwnedStats => _ownedStats;
     
     // ---------- private  ----------
-    private WaitForEndOfFrame _endOfFrame;
+    // 뽑기 팝업이 뜬 총 횟수를 추적 (스킬/스탯 순서 계산용)
+    public int TotalDrawCount { get; private set; }
 
     // ---------- 초기화 ----------
     public void Initialize()
     {
-        _endOfFrame = new WaitForEndOfFrame();
+        CountReset();
         _ownedSkills.Clear();
         _ownedStats.Clear();
         // 머지 후 씬 미배선 방어: EnchantUIModel(_model)이 인스펙터에 안 꽂혀 있으면
@@ -285,5 +289,15 @@ public class EnchantModel : MonoBehaviour
             }
         }
         return null;
+    }
+
+    public void CountUpDrawCount()
+    {
+        TotalDrawCount++;
+    }
+
+    private void CountReset()
+    {
+        TotalDrawCount = 0;
     }
 }

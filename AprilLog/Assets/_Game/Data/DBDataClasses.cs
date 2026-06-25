@@ -322,6 +322,46 @@ public class GearDismantleData
 
 #endregion
 
+#region ----- H -----
+
+/// <summary>
+/// 하우징 시스템에 사용되는 데이터<br/>
+/// 생성일 : 26.06.25<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class HousingFurnitureData
+{
+    public int Furniture_ID;
+    public int Name_ID; // 가구 이름 번역 데이터 ID
+    public string Location;
+    public string Category;
+    public string Type;
+    public string ICO;
+    public string Resources;
+    public int Item_ID; // Item Table에 있는 재화의 ID
+    public int Price;
+}
+
+/// <summary>
+/// 챕터 클리어 시 하우징 시스템에서 시간당 제공하는 누적 보상<br/>
+/// 생성일 : 26.06.25<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class HousingRewardData
+{
+    public int ClearChapter;
+    public int Item_1; // Item Table에 있는 재화의 ID
+    public int Amount_1;
+    public int Item_2;
+    public int Amount_2;
+    public int Item_3;
+    public int Amount_3;
+}
+
+#endregion
+
 #region ----- I -----
 
 /// <summary>
@@ -619,6 +659,46 @@ public class StatTableData
     public string ValueType_3;
     public float Variation_3;
     public int Image_ID;
+}
+
+/// <summary>
+/// 스토리에 사용하는 캐릭터의 리소스(포트레이트 정보)<br/>
+/// 생성일 : 26.06.24<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class Story_CharacterData
+{
+    public int ID;
+    public int Resource_ID;
+}
+
+/// <summary>
+/// 스토리 대화 데이터<br/>
+/// 생성일 : 26.06.24<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class Story_TalkData
+{
+    public int ID;
+    public int GroupID;
+    public int TextBox;
+    public string name_KR;
+    public string name_EN;
+    public string Text_KR;
+    public string Text_EN;
+    public int portrait1;
+    public int direction1;
+    public int portrait2;
+    public int direction2;
+    public int portrait3;
+    public int direction3;
+    public int speaker;
+    public int BG;
+    public int CG;
+    public int BGM;
+    public int SFX;
 }
 
 #endregion

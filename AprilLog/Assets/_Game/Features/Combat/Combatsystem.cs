@@ -162,8 +162,8 @@ public class CombatSystem : MonoBehaviour
         if (_combinationModel != null)
         {
             _combinationModel.CheckIngredient(type);
-            // 한 번의 정렬로 여러 조합식이 동시에 완성될 수 있으므로 전부 발동 (최대 레시피 수만큼, 무한루프 가드)
-            for (int guard = 0; guard < 3 && _combinationModel.HasCompletedRecipe(); guard++)
+            // 기획(김현우): 한 정렬로 조합식 2개 이상이 동시에 완성되면 전부 사출. 완성된 레시피를 하나씩 모두 발사한다(MAX_RECIPES만큼 가드).
+            for (int guard = 0; guard < CombinationModel.MAX_RECIPES && _combinationModel.HasCompletedRecipe(); guard++)
             {
                 int idx = _combinationModel.GetCompletedRecipeIndex();
                 int skillId = _combinationModel.GetRecipeSkillId(idx);

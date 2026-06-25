@@ -16,7 +16,7 @@ public class FireSpirit : MonoBehaviour
     private float _castInterval;
     private float _castTimer;
 
-    private const float BurstShotInterval = 0.08f; // SkillSystem의 다발 간격과 동일
+    private const float BurstShotInterval = 0.25f; // 화염 작렬 발사 간격(QA 요청 0.25초). SkillSystem.FlameBurstShotInterval과 동일
 
     public void Init(SkillSystem skillSystem, Legacy_SkillData castSkill, float lifetime, float castInterval)
     {

@@ -159,7 +159,11 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
 
         ArtifactGrade grade = ToGrade(master.GearGrade);
 
-        if (_gradeBg != null) _gradeBg.color = ArtifactGradeInfo.SlotColor(grade);
+        if (_gradeBg != null)
+        {
+            _gradeBg.sprite = ArtifactGradeInfo.SlotSprite(grade);
+            _gradeBg.color = Color.white;
+        }
         if (_artifactIcon != null)
         {
             Sprite icon = LoadIcon(master.IconSpriteKey);

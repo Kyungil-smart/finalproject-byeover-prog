@@ -12,8 +12,8 @@ public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
 {
     [Header("공통 표시")]
     [SerializeField] protected Image _iconImage;        // 아이콘
-    [SerializeField] protected Image _gradeBackground;  // 배경 = 등급 색 (등급은 색상으로 구분)
-    [Tooltip("돌파 단계에 따라 색이 바뀌는 테두리 (기획서 3-4-2). 미돌파(0돌)는 등급 색.")]
+    [SerializeField] protected Image _gradeBackground;  // 배경 = 등급 이미지 (등급은 이미지로 구분)
+    [Tooltip("돌파 단계에 따라 색이 바뀌는 테두리 (기획서 3-4-2). 미돌파(0돌)는 숨김.")]
     [SerializeField] protected Image _ascensionBorder;  // 돌파 테두리
 
     // 슬롯 단일 클릭 → 상세 정보 팝업용 (인자 = Gear_ID)
@@ -32,7 +32,7 @@ public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
         Hex("#FF003C"), // 5돌 
     };
 
-    // 마스터 데이터 기준 표시(등급은 배경 색으로 구분). 테두리는 기본값(미돌파)=등급 색으로 초기화.
+    // 마스터 데이터 기준 표시(등급은 배경 이미지로 구분). 테두리는 기본값(미돌파)=숨김으로 초기화.
     public virtual void SetData(GearMasterData data, ArtifactGrade grade)
     {
         if (data == null)
@@ -41,21 +41,24 @@ public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
         GearId = data.Gear_ID;
         _grade = grade;
 
-        if (_gradeBackground != null) _gradeBackground.color = ArtifactGradeInfo.SlotColor(grade);
+        if (_gradeBackground != null)
+        {
+            _gradeBackground.sprite = ArtifactGradeInfo.SlotSprite(grade);
+            _gradeBackground.color = Color.white; // 이미지 원본 색 유지(틴트 제거)
+        }
         SetAscensionBorder(0);
     }
 
-    // 돌파 테두리 색 (유저 상태). 1~5돌은 단계 색, 미돌파(0돌)는 해당 아티팩트 등급 색.
+    // 돌파 테두리 색 (유저 상태). 1~5돌은 단계 색, 미돌파(0돌)는 테두리 숨김.
     public void SetAscensionBorder(int ascensionStage)
     {
         if (_ascensionBorder == null)
             return;
 
         bool ascended = ascensionStage >= 1 && ascensionStage <= AscensionBorderColors.Length;
-        _ascensionBorder.enabled = true;
-        _ascensionBorder.color = ascended
-            ? AscensionBorderColors[ascensionStage - 1]
-            : ArtifactGradeInfo.SlotColor(_grade);
+        _ascensionBorder.enabled = ascended;
+        if (ascended)
+            _ascensionBorder.color = AscensionBorderColors[ascensionStage - 1];
     }
 
     // 아이콘. 아이콘 소스 연동 시 호출.

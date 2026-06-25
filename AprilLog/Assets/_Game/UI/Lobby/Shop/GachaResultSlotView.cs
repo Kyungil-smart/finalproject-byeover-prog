@@ -3,22 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // 작성자 : 홍정옥
-// 설명   : 뽑기 결과창의 슬롯 1칸. 뽑힌 Gear_ID 하나를 받아 아이콘/등급 테두리를 표시
-//          아이콘 소스가 아직 없으면 등급 색 테두리만 보여주고, 있으면 Resources 에서 IconSprite 이름으로 로드
+// 설명   : 뽑기 결과창의 슬롯 1칸. 뽑힌 Gear_ID 하나를 받아 아이콘/등급 배경 이미지를 표시
+//          등급 구분은 ArtifactGradeInfo(Resources/ArtifactGradeAssets)의 등급별 이미지를 사용한다.
 public class GachaResultSlotView : MonoBehaviour
 {
     [Header("표시 대상")]
     [Tooltip("기어 아이콘 Image (프리팹의 Icon 오브젝트)")]
     [SerializeField] private Image _iconImage;
-    [Tooltip("등급 색을 입힐 테두리/배경 Image (없으면 비워둬도 됨)")]
+    [Tooltip("등급 이미지를 입힐 테두리/배경 Image (없으면 비워둬도 됨)")]
     [SerializeField] private Image _frameImage;
     [Tooltip("등급/이름 텍스트 (선택)")]
     [SerializeField] private TMP_Text _label;
-
-    [Header("등급 색")]
-    [SerializeField] private Color _rareColor      = new Color(0.30f, 0.55f, 1.00f);
-    [SerializeField] private Color _epicColor      = new Color(0.65f, 0.35f, 0.95f);
-    [SerializeField] private Color _legendaryColor = new Color(1.00f, 0.78f, 0.25f);
 
     [Tooltip("아이콘 Sprite 를 Resources 에서 찾을 때의 폴더 경로 (예: Resources/Icons/Gear -> \"Icons/Gear\")")]
     [SerializeField] private string _iconResourceFolder = "Icons/Gear";
@@ -39,9 +34,12 @@ public class GachaResultSlotView : MonoBehaviour
             return;
         }
 
-        // 등급 테두리 색
+        // 등급 배경 이미지
         if (_frameImage != null)
-            _frameImage.color = GradeToColor(gear.GearGrade);
+        {
+            _frameImage.sprite = ArtifactGradeInfo.SlotSprite(gear.GearGrade);
+            _frameImage.color = Color.white;
+        }
 
         // 아이콘 (소스가 준비된 경우에만)
         if (_iconImage != null)
@@ -74,15 +72,5 @@ public class GachaResultSlotView : MonoBehaviour
             : $"{_iconResourceFolder}/{iconName}";
 
         return Resources.Load<Sprite>(path);
-    }
-
-    private Color GradeToColor(string grade)
-    {
-        switch (grade)
-        {
-            case "Legendary": return _legendaryColor;
-            case "Epic":      return _epicColor;
-            default:          return _rareColor; // Rare 및 알 수 없는 등급
-        }
     }
 }

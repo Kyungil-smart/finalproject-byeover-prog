@@ -49,10 +49,20 @@ public class AdGachaController : MonoBehaviour
     [SerializeField] private string _drawLabel = "뽑기";
 
     [Header("UI - 표시")]
-    [Tooltip("남은 쿨타임 카운트다운 텍스트(HH:MM:SS).")]
+    [Tooltip("메인 표시 텍스트(Text_Button_Time). 상태에 따라 남은시간/안내문구를 모두 여기 한곳에 표시한다.")]
     [SerializeField] private TMP_Text _countdownText;
-    [Tooltip("상태 안내 텍스트")]
+    [Tooltip("(선택/레거시) 별도 상태 텍스트. 비워둬도 됨 — 안내는 메인 텍스트에 통합 표시된다.")]
     [SerializeField] private TMP_Text _statusText;
+
+    [Header("UI - 표시 문구")]
+    [Tooltip("쿨타임일 때 남은시간 앞에 붙는 문구")]
+    [SerializeField] private string _cooldownPrefix = "보상까지 남은시간 : ";
+    [Tooltip("광고 시청 가능 상태일 때 표시 문구")]
+    [SerializeField] private string _availableMessage = "광고 보고 무료 뽑기!";
+    [Tooltip("광고 시청 후 뽑기 가능 상태일 때 표시 문구")]
+    [SerializeField] private string _pendingMessage = "지금 뽑기 가능!";
+    [Tooltip("오프라인일 때 표시 문구")]
+    [SerializeField] private string _offlineMessage = "오프라인 상태입니다.";
     [Tooltip("광고 로딩 중 표시 오브젝트")]
     [SerializeField] private GameObject _loadingIndicator;
     [Tooltip("광고 로드 실패 표시 오브젝트")]
@@ -275,40 +285,37 @@ public class AdGachaController : MonoBehaviour
         if (_loadingIndicator != null) _loadingIndicator.SetActive(loading && online);
         if (_loadFailedIndicator != null) _loadFailedIndicator.SetActive(loading && !online);
 
-        // 카운트다운 텍스트
-        if (_countdownText != null)
-        {
-            if (phase == Phase.Cooldown)
-            {
-                TimeSpan t = RemainingCooldown();
-                _countdownText.text = string.Format("{0:00}:{1:00}:{2:00}",
-                    (int)t.TotalHours, t.Minutes, t.Seconds);
-                _countdownText.gameObject.SetActive(true);
-            }
-            else
-            {
-                _countdownText.gameObject.SetActive(false);
-            }
-        }
+        // 메인 텍스트 한곳에 상태별 표시(남은시간/안내문구 통합). 항상 표시 — 빈칸 안 생김.
+        SetMainText(BuildMainText(phase, online));
+    }
 
-        // 상태 텍스트
+    // 현재 상태에 맞는 메인 표시 문구를 만든다.
+    private string BuildMainText(Phase phase, bool online)
+    {
         switch (phase)
         {
-            case Phase.Available:
-                SetStatus(online ? "광고를 시청하면 무료 1회 뽑기!" : "오프라인 상태입니다.");
-                break;
-            case Phase.PendingFreeDraw:
-                SetStatus("뽑기 버튼을 눌러 보상을 받으세요!");
-                break;
             case Phase.Cooldown:
-                SetStatus("다음 무료 뽑기까지");
-                break;
+                TimeSpan t = RemainingCooldown();
+                return _cooldownPrefix + string.Format("{0:00} : {1:00} : {2:00}",
+                    (int)t.TotalHours, t.Minutes, t.Seconds);
+            case Phase.PendingFreeDraw:
+                return _pendingMessage;
+            default: // Available
+                return online ? _availableMessage : _offlineMessage;
         }
     }
 
+    // 메인 텍스트(Text_Button_Time) 갱신. 레거시 _statusText 가 있으면 함께 표시.
+    private void SetMainText(string msg)
+    {
+        if (_countdownText != null) _countdownText.text = msg;
+        if (_statusText != null) _statusText.text = msg;
+    }
+
+    // 일시적 안내(로딩/실패 등). 메인 텍스트에 잠깐 표시되며 다음 RefreshUI 때 갱신된다.
     private void SetStatus(string msg)
     {
-        if (_statusText != null) _statusText.text = msg;
+        SetMainText(msg);
     }
 
     // ---------- 저장/로드 ----------

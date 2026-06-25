@@ -1,7 +1,11 @@
 // 담당자 : 김영찬
 // 설명   : 인챈트 등장 가중치 계산 + 랜덤 선택 (기획 v1.04 반영)
 
+// 수정자 : 김영찬
+// 수정 내용 : 인첸트 리롤 시 기존 인첸트가 등장하지 않도록 수정
+
 using System.Collections.Generic;
+using UnityEngine;
 
 public class EnchantSelector
 {
@@ -11,6 +15,9 @@ public class EnchantSelector
     // 구현 완료된 원소만 인챈트 카드로 노출한다. Skill_ID 첫자리 = 원소(1=불 2=물 3=바람 4=번개 5=얼음).
     // 물(2xxxx)·얼음(5xxxx) 골격 구현 완료(데이터+발동+판정)로 노출. VFX·상태이상(슬로우/빙결)·이동장판은 폴리싱 예정.
     private static readonly HashSet<int> ImplementedSkillElements = new HashSet<int> { 1, 2, 3, 4, 5 };
+    
+    // 구현 완료된 스텟 인첸트만 인첸트 카드로 노출한다. HP회복(70201 ~ 70203)은 구현 안됨(아키텍쳐 상 킬 카운트 수집하는 기능이 없음)
+    private static readonly HashSet<int> NotImplementedStatElements = new HashSet<int> { 70201, 70202, 70203 };
 
     // 생성자에서 Config를 받도록 수정
     public EnchantSelector(SpellRepo repo, EnchantProbabilityConfig config)
@@ -19,7 +26,7 @@ public class EnchantSelector
         _config = config;
     }
 
-    public List<EnchantCandidate> GenerateChoices(EnchantModel playerModel, int pickCount = 3)
+    public List<EnchantCandidate> GenerateChoices(EnchantModel playerModel, int pickCount = 3, HashSet<int> excludedNameIds = null)
     {
         List<EnchantCandidate> finalPool = new List<EnchantCandidate>();
         
@@ -94,6 +101,9 @@ public class EnchantSelector
                 int currentLv = playerModel.GetStatLevel(chain.Stat_Name_ID);
                 var nextData = chain.GetNextLevelData(currentLv);
                 if (nextData == null) continue;
+                
+                // 미구현 스텟 인첸트는 선택에서 제외
+                if (NotImplementedStatElements.Contains(nextData.StatEnchant_ID)) continue;
 
                 var candidate = new EnchantCandidate
                 {
@@ -118,7 +128,24 @@ public class EnchantSelector
 
         for (int i = 0; i < statHeld.Count; i++) { statHeld[i].Weight = indStatHeld; finalPool.Add(statHeld[i]); }
         for (int i = 0; i < statUnheld.Count; i++) { statUnheld[i].Weight = indStatUnheld; finalPool.Add(statUnheld[i]); }
-
+        
+        // 리롤 배제 및 풀 고갈 방지 (가중치가 모두 부여된 최종 풀에서 걸러내기)
+        if (excludedNameIds != null && excludedNameIds.Count > 0)
+        {
+            // 배제할 ID가 없는 애들만 남긴 임시 풀 생성
+            var filteredPool = finalPool.FindAll(x => !excludedNameIds.Contains(x.Name_ID));
+            
+            // 남은 전체 스킬+스탯 종류가 뽑아야 할 개수(pickCount) 이상일 때만 제외 적용 (에러 방지)
+            if (filteredPool.Count >= pickCount)
+            {
+                finalPool = filteredPool;
+            }
+            else
+            {
+                Debug.LogWarning("[EnchantSelector] 남은 인챈트 풀이 부족하여 리롤 중복 배제 로직을 무시합니다.");
+            }
+        }
+        
         // pickCount만큼 뽑기
         return GetWeightedRandomPicks(finalPool, pickCount);
     }
@@ -134,7 +161,7 @@ public class EnchantSelector
             float totalWeight = 0f;
             for (int w = 0; w < tempPool.Count; w++) totalWeight += tempPool[w].Weight;
 
-            float randomVal = UnityEngine.Random.Range(0f, totalWeight);
+            float randomVal = Random.Range(0f, totalWeight);
             float cursor = 0f;
 
             for (int j = 0; j < tempPool.Count; j++)

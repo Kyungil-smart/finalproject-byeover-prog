@@ -540,8 +540,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uD604\uC7AC \uC7AC\uD654\uAC00 \uBD80\uC871\uD569\uB2C8\uB2E4. \uB3C8\uC744
-    \uBC84\uC138\uC694"
+  m_text: "\uD604\uC7AC \uC7AC\uD654\uAC00 \uBD80\uC871\uD569\uB2C8\uB2E4."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d18a9cf070eed374ab29ec4f68aa8b73, type: 2}
   m_sharedMaterial: {fileID: -2721228260951242274, guid: d18a9cf070eed374ab29ec4f68aa8b73, type: 2}
@@ -2476,11 +2475,15 @@ MonoBehaviour:
   _adGachaId: 3
   _cooldownHours: 24
   _actionButton: {fileID: 5002950195879151466}
-  _actionLabel: {fileID: 8889932216841408380}
+  _actionLabel: {fileID: 0}
   _watchLabel: "\uAD11\uACE0 \uBCF4\uACE0 \uBB34\uB8CC \uBF51\uAE30"
   _drawLabel: "\uBF51\uAE30"
   _countdownText: {fileID: 8889932216841408380}
-  _statusText: {fileID: 8889932216841408380}
+  _statusText: {fileID: 0}
+  _cooldownPrefix: "\uBCF4\uC0C1\uAE4C\uC9C0 \uB0A8\uC740\uC2DC\uAC04\\n "
+  _availableMessage: "\uAD11\uACE0 \uBCF4\uACE0 \uBB34\uB8CC \uBF51\uAE30!"
+  _pendingMessage: "\uC9C0\uAE08 \uBF51\uAE30 \uAC00\uB2A5!"
+  _offlineMessage: "\uC624\uD504\uB77C\uC778 \uC0C1\uD0DC\uC785\uB2C8\uB2E4."
   _loadingIndicator: {fileID: 6745503335558265055}
   _loadFailedIndicator: {fileID: 6745503335558265055}
 --- !u!1 &6698244552404755999
@@ -5436,6 +5439,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2458498750063664875}
     m_Modifications:
+    - target: {fileID: 1499740069433178483, guid: 4253e43098a40b54ca43c91640d5d622, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3089833660640194917, guid: 4253e43098a40b54ca43c91640d5d622, type: 3}
+      propertyPath: m_fontSize
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 3089833660640194917, guid: 4253e43098a40b54ca43c91640d5d622, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 50
+      objectReference: {fileID: 0}
     - target: {fileID: 5172962277549429021, guid: 4253e43098a40b54ca43c91640d5d622, type: 3}
       propertyPath: _popupQueue
       value: 
