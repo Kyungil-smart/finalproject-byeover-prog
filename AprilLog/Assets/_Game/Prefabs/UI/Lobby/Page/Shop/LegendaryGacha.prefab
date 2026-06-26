@@ -2807,9 +2807,13 @@ MonoBehaviour:
   _currencyModel: {fileID: 0}
   _gearTable: {fileID: 11400000, guid: 20a30195c23f49c4a9883b65fe9b55c4, type: 2}
   _gachaId: 3
+  _gachaCosts:
+  - gachaId: 3
+    currency: 2
+    costIcon: {fileID: 21300000, guid: 97fdca2e2d383234190965e2faa23f24, type: 3}
+  _costIconTargets:
+  - {fileID: 0}
   _costCurrency: 0
-  _singleCostFallback: 500
-  _tenCostFallback: 0
   _singleResultPopup: {fileID: 0}
   _singleSlots:
   - {fileID: 0}
@@ -2830,6 +2834,7 @@ MonoBehaviour:
   _insufficientPopup: {fileID: 0}
   _postProcessor: {fileID: 0}
   _popupQueue: {fileID: 0}
+  _pityTracker: {fileID: 0}
   _pityInfoView: {fileID: 0}
   _progressView: {fileID: 0}
 --- !u!1 &8113682038118612536
