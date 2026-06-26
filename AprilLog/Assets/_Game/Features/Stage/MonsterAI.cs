@@ -3,6 +3,7 @@
 
 using System;
 using UnityEngine;
+using static PixelConverter;
 
 // 수정자 : 정승우
 // 수정내용 : 몬스터 이동 속도를 MonsterStatusData.MoveSpeed 기준으로 적용하고 현재 이동 정책을 직선 이동으로 명확화.
@@ -18,6 +19,9 @@ using UnityEngine;
 
 // 수정자 : 김영찬
 // 수정 내용 : 몬스터 및 웨이브 관련 DB에 맞춰 소환 로직 최신화 및 책임 분산
+
+// 수정자 : 김영찬
+// 수정 내용 : 기획에서 거리/속도에 대한 값을 픽셀 기준으로 하여, 변환함
 
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
@@ -52,7 +56,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private float _attackInterval;
     
     private int _defense;
-    private int _range;
+    private float _range;
     public int Exp { get; private set; }
     private IMovementPattern _movement;
     private int _zigzagAmplitude;
@@ -96,7 +100,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _attackInterval = atkSpeed > 0f ? 1f / atkSpeed : 1.5f;
         
         _defense = monsterStats != null ? monsterStats.Defense : 0;
-        _range = monsterStats != null ? monsterStats.Range : 1;
+        _range = monsterStats != null ? PixelsToUnits(monsterStats.Range) : 1;
         Exp = monsterStats != null ? monsterStats.EXP : 0;
         _zigzagAmplitude = monsterStats != null ? monsterStats.ZigzagAmplitude : -1;
         
@@ -120,7 +124,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
         // 몬스터 전용 스탯의 MoveSpeed를 우선 사용하고, 데이터가 없으면 임시 기본값을 사용한다.
         float moveSpeed = monsterStats != null && monsterStats.MoveSpeed > 0f
-            ? monsterStats.MoveSpeed
+            ? PixelSpeedToUnitySpeed(monsterStats.MoveSpeed)
             : 3f;
 
         // 이동 패턴 파싱. Enum.Parse는 빈 값/오타에 예외를 던지므로 TryParse로 안전 처리.
@@ -303,11 +307,11 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         OnDeath?.Invoke(this, true, _isBoss);
     }
 
-    private void AttackTypeSelect(int range)
+    private void AttackTypeSelect(float range)
     {
         switch (range)
         {
-            case <= 0:
+            case <= 0.1f:
                 _attackType = AttackType.Kamikaze;
                 break;
             case >= 2 :
