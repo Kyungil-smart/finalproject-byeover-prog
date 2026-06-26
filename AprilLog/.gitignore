@@ -127,6 +127,12 @@ Assets/Imports/**
 /secrets/
 /[Aa]ssets/_Project/Secrets/
 
+# --- 안드로이드 서명 키스토어 (절대 커밋 금지) ---
+*.keystore
+*.jks
+user.keystore
+keystore.properties
+
 # --- Firebase EDM4U 생성물 (각 머신에서 Resolve 시 재생성) ---
 /[Aa]ssets/Plugins/Android/Firebase/m2repository/
 /[Aa]ssets/Plugins/Android/Firebase/dependencies/
