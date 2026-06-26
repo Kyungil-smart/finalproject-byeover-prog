@@ -32,6 +32,9 @@ public class StageRepo : MonoBehaviour
 
     private Dictionary<int, ChapterData> _chapters;
     private Dictionary<int, StageData> _stages;
+    // (Chapter_ID, StageOrder) -> StageData. Stage_ID 체계가 불규칙(챕터1~5=1000~1049, 챕터6~10=1100~1149)이라
+    // 산술(chapterId*100+order)로 못 구한다 → 데이터에서 역조회한다.
+    private Dictionary<(int, int), StageData> _stageByChapterOrder;
     private Dictionary<int, MonsterWavePoolData> _poolMasters;
     private Dictionary<int, List<MonsterPoolData>> _pools;
     private Dictionary<int ,List<StageWaveRuleData>> _waveRules;
@@ -49,6 +52,7 @@ public class StageRepo : MonoBehaviour
 
         _chapters = BuildDictionary(_chapterTable, nameof(_chapterTable), r => r.Chapter_ID);
         _stages = BuildDictionary(_stageTable, nameof(_stageTable), r => r.Stage_ID);
+        _stageByChapterOrder = BuildStageByChapterOrder();
         _poolMasters = BuildDictionary(_poolMasterTable, nameof(_poolMasterTable), r => r.MonsterPool_ID);
 
         // MonsterPool과 WaveRules는 ID 기준 그룹핑
@@ -89,6 +93,23 @@ public class StageRepo : MonoBehaviour
 
         Debug.LogWarning($"[StageRepo] Stage not found. Id: {id}");
         return null;
+    }
+
+    /// <summary>챕터 + 스테이지 순서(StageOrder, 1-base)로 데이터의 Stage_ID를 조회한다.
+    /// Stage_ID가 불규칙 체계라 산술 계산 대신 역조회한다. 없으면 -1.</summary>
+    public int GetStageId(int chapterId, int stageOrder)
+    {
+        if (_stageByChapterOrder == null)
+        {
+            Debug.LogWarning("[StageRepo] StageByChapterOrder cache is not initialized.");
+            return -1;
+        }
+
+        if (_stageByChapterOrder.TryGetValue((chapterId, stageOrder), out var data))
+            return data.Stage_ID;
+
+        Debug.LogWarning($"[StageRepo] Stage not found for Chapter {chapterId}, Order {stageOrder}.");
+        return -1;
     }
 
     // 특정 스테이지에 적용되는 스폰 규칙 목록
@@ -260,6 +281,26 @@ public class StageRepo : MonoBehaviour
             }
 
             result.Add(key, row);
+        }
+
+        return result;
+    }
+
+    // (Chapter_ID, StageOrder) -> StageData 역조회 맵 구성. Stage_ID가 불규칙이라 런타임은 챕터/순서로 찾는다.
+    private Dictionary<(int, int), StageData> BuildStageByChapterOrder()
+    {
+        var result = new Dictionary<(int, int), StageData>();
+        if (_stages == null) return result;
+
+        foreach (var stage in _stages.Values)
+        {
+            var key = (stage.Chapter_ID, stage.StageOrder);
+            if (result.ContainsKey(key))
+            {
+                Debug.LogWarning($"[StageRepo] 중복 (Chapter {stage.Chapter_ID}, Order {stage.StageOrder}). Stage_ID {stage.Stage_ID} 스킵, 먼저 들어온 것 유지.");
+                continue;
+            }
+            result.Add(key, stage);
         }
 
         return result;

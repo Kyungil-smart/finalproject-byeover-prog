@@ -42,8 +42,8 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private InGameGrowthSystem _growthSystem;
 
     [Header("플레이어")]
-    [Tooltip("플레이어 캐릭터의 Character_ID. CharacterRepo에서 이 ID로 공통/캐릭터 스탯을 로드한다. (기본 1)")]
-    [SerializeField] private int _playerCharacterId = 1;
+    [Tooltip("플레이어 캐릭터의 Character_ID. CharacterRepo에서 이 ID로 공통/캐릭터 스탯을 로드한다. 현재 데이터의 플레이어 캐릭터 = 5001")]
+    [SerializeField] private int _playerCharacterId = 5001;
 
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;

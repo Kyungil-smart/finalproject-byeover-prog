@@ -143,7 +143,11 @@ public class StageLoopManager : MonoBehaviour
     // ---------- 유틸 ----------
     private int GetStageId()
     {
-        return _chapterId * 100 + _currentStageIndex + 1;
+        // 데이터의 Stage_ID는 불규칙 체계(챕터1~5=1000~, 챕터6~10=1100~)라 산술(chapterId*100+...)로 못 구한다.
+        // StageRepo에서 (챕터, 순서)로 역조회. 못 찾으면 -1 → StartStage의 GetStage(-1)=null → 챕터 종료
+        // (마지막 스테이지 이후 정상 종료와 동일 경로).
+        int stageOrder = _currentStageIndex + 1;   // StageOrder는 1-base
+        return DataManager.Instance.StageRepo.GetStageId(_chapterId, stageOrder);
     }
 
     public float GetStageProgress()
