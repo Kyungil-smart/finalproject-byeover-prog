@@ -833,7 +833,38 @@ public class GameManager : MonoBehaviour
     // ---------- 로컬 세이브 (인게임) ----------
     public void SaveLocal()
     {
-        Debug.Log("[GameManager] 로컬 세이브 실행");
+        // 인게임 진행 상태를 모아 로컬 세이브에 기록한다. (백그라운드 전환/종료/스테이지 클리어 체크포인트 공용)
+        // 옛 구현은 로그만 찍는 빈 스텁이라 OnApplicationPause/Quit, StageLoopManager.ClearStage의 자동 저장이 전부 무동작이었다.
+        // 구성은 EnchantLinkButtonBoundaryPresenter.CreateCurrentProgressSaveData와 동일 — 추후 단일 빌더로 통합 권장.
+        var loop = FindFirstObjectByType<StageLoopManager>();
+        if (loop == null)
+        {
+            Debug.LogWarning("[GameManager] SaveLocal: StageLoopManager가 없어 인게임 세이브를 건너뜀(인게임 상태 아님?).");
+            return;
+        }
+
+        var playerModel = FindFirstObjectByType<PlayerModel>();
+        var growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
+        var enchantModel = FindFirstObjectByType<EnchantModel>();
+        var comboModel = FindFirstObjectByType<ComboModel>();
+
+        var data = new InGameSaveData
+        {
+            chapterId = Mathf.Max(1, loop.CurrentChapterId),
+            clearedStage = Mathf.Max(0, loop.CompletedStageCount),
+            playerHP = playerModel != null ? Mathf.Max(1, playerModel.CurrentHP) : 1,
+            currentEXP = growthSystem != null ? Mathf.Max(0, growthSystem.CurrentEXP) : 0,
+            inGameLevel = growthSystem != null ? Mathf.Max(1, growthSystem.CurrentLevel) : 1,
+            puzzleSlots = new int[0],
+            waitingSlots = new int[0],
+            acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),
+            totalDamage = RunStats.HighestDamage,
+            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0,
+            nextStageSeed = UnityEngine.Random.Range(0, int.MaxValue)
+        };
+
+        SaveLocalData(data);
+        Debug.Log($"[GameManager] 인게임 로컬 세이브 완료 (챕터{data.chapterId} 클리어{data.clearedStage} HP{data.playerHP})");
     }
 
     public void SaveLocalData(InGameSaveData data)

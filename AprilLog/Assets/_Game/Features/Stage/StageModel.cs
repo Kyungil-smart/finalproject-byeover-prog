@@ -78,7 +78,10 @@ public class StageModel
         _waveRules = waveRules;
         _rng = rng;
         _waveCount = waveRules != null ? waveRules.Count : 0;
-        _stageLevel = _stageData.Stage_ID % 100; // 101 -> 1
+        // 챕터 내 스테이지 순서(1~7)를 난이도 스케일 입력으로 쓴다.
+        // (옛 Stage_ID % 100은 구 chapterId*100 체계 가정이라 신 불규칙 Stage_ID(1000/1100 체계)에선
+        //  0으로 리셋되거나 들쭉날쭉해 스폰 가속/물량이 왜곡됐다. StageData.StageOrder가 정확한 1~7 값.)
+        _stageLevel = _stageData.StageOrder;
 
         _currentWaveIndex = 0;
         _state = WaveState.WaveTransition;
@@ -271,8 +274,10 @@ public class StageModel
     // ---------- 연산 함수 ----------
     private SpawnCommand RollDiceForMonster(StageWaveRuleData rule, SpawnType type)
     {
-        float roll = (float)(_rng.NextDouble() * 100.0);
-        string selectedType = "Normal"; 
+        // 타입 확률(NormalChance/AgileChance 등)은 데이터에서 0~1 분수다. roll도 0~1로 맞춘다.
+        // (기존 *100은 roll 0~100 vs 누적합 ~1.0 이라 거의 항상 첫 분기 실패 → 전부 Normal로 폴백됐다.)
+        float roll = (float)_rng.NextDouble();
+        string selectedType = "Normal";
         
         float cumulative = rule.NormalChance;
         if (roll <= cumulative) { selectedType = "Normal"; }
@@ -323,9 +328,10 @@ public class StageModel
         if (_currentSpecialRule.MonsterWavePool_ID > 0)
             poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(_currentSpecialRule.MonsterWavePool_ID, _currentSpecialRule.WaveType);
 
-        // 러시(2001)는 데이터에 그룹이 미지정(0) — 물량러시 기획 의도대로 일반 몬스터 풀로 폴백.
-        if (poolId < 0)
-            poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(1001, "Normal");
+        // 특수 웨이브가 그룹 미지정(MonsterWavePool_ID=0)이면 현재 정규 웨이브의 풀로 폴백한다(물량러시 의도).
+        // (옛 하드코딩 1001은 신 풀ID 체계(1000xxx/1001xxx)에 존재하지 않아 항상 -1 → 러시가 빈 웨이브로 떨어졌음.)
+        if (poolId < 0 && _currentRule != null)
+            poolId = DataManager.Instance.StageRepo.GetMonsterPoolId(_currentRule.MonsterWavePool_ID, "Normal");
 
         if (poolId < 0) return; // 그래도 못 찾으면 스폰 포기 (경고 스팸 방지)
         

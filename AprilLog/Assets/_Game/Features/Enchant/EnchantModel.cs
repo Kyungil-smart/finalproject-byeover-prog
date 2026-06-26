@@ -230,8 +230,8 @@ public class EnchantModel : MonoBehaviour
 
         foreach (var save in saves)
         {
-            int targetId = save.EnchantId; 
-            int targetLevel = save.EnchantId;
+            int targetId = save.EnchantId;
+            int targetLevel = save.Level;   // 복원 레벨은 save.Level. (옛 코드가 save.EnchantId를 넣어 레벨이 ID값으로 손상됐음)
 
             // 스킬 테이블에서 검색
             int? skillGroupId = FindSkillGroupId(targetId);

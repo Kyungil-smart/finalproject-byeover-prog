@@ -119,7 +119,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         // 사거리에 따라 공격 타입 자동 지정
         if (monsterStats != null)
         {
-            AttackTypeSelect(monsterStats.Range);
+            // _range는 PixelsToUnits 변환값(위 라인). raw 픽셀(100/300)을 넘기면 유닛 기준 임계값(>=2)과
+            // 안 맞아 근접 몬스터(Range=100=1유닛)까지 전부 원거리로 오분류된다 → 변환값 _range를 넘긴다.
+            AttackTypeSelect(_range);
         }
 
         // 몬스터 전용 스탯의 MoveSpeed를 우선 사용하고, 데이터가 없으면 임시 기본값을 사용한다.

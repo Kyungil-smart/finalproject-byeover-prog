@@ -127,11 +127,14 @@ public class InGameBootstrap : MonoBehaviour
 
         if (isResume && saveData != null)
         {
-            _playerModel.RestoreFromSave(saveData);
             _enchantModel.RestoreFromSave(saveData.acquiredEnchants);
             // 이어하기: 세이브된 인챈트 효과를 최종 레벨 누적값으로 재적용
             // (RestoreFromSave는 이벤트를 발행하지 않으므로 직접 재적용 필요)
             _enchantApplicationSystem.ReapplyFromSave(saveData.acquiredEnchants);
+
+            // ★플레이어 HP 복원은 인챈트 HP 재적용 '뒤'에. (앞에 두면 재적용이 CurrentHP에 보너스를
+            //  한 번 더 더해 과회복됨. 뒤에 두면 저장된 현재 HP로 덮어써 정확. MaxHP는 재적용으로 보정됨.)
+            _playerModel.RestoreFromSave(saveData);
 
             if (_growthSystem != null)
                 _growthSystem.RestoreFromSave(saveData.inGameLevel, saveData.currentEXP);
