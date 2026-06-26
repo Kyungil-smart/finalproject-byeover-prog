@@ -7,6 +7,16 @@ public class UnitDataManager : MonoBehaviour
 
     private Dictionary<int, UnitTableData> _unitDataMap;
 
+    private static readonly Dictionary<int, int> TypeToIdMap = new Dictionary<int, int>()
+{
+    { 0, 1001 }, // Red
+    { 1, 1002 }, // Blue
+    { 2, 1004 }, // Green
+    { 3, 1003 }, // Yellow
+    { 4, 1005 }, // White
+    { 5, 1006 }  // Joker
+};
+
     private void Awake()
     {
         _unitDataMap = new Dictionary<int, UnitTableData>();
@@ -32,16 +42,19 @@ public class UnitDataManager : MonoBehaviour
 
     public UnitTableData GetUnitData(int unitType)
     {
-        int realId = (unitType >= 0 && unitType < UnitTypeToTableId.Length)
-            ? UnitTypeToTableId[unitType]
-            : 1000 + (unitType + 1);   // None(5)=1006 조커 등은 기존 규칙 유지
+        if (unitType < 0) return null;
+
+        if (!TypeToIdMap.TryGetValue(unitType, out int realId))
+        {
+            realId = 1000 + (unitType + 1);
+        }
 
         if (_unitDataMap.TryGetValue(realId, out var data))
         {
             return data;
         }
 
-        Debug.LogWarning($"{realId} 번 데이터를 찾을 수 없습니다!");
+        Debug.LogWarning($"[UnitDataManager] {realId} 번 데이터를 찾을 수 없습니다!");
         return null;
     }
 }
