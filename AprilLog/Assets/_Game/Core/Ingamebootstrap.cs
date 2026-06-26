@@ -176,12 +176,51 @@ public class InGameBootstrap : MonoBehaviour
         RegisterFireSkills(combatSystem, isResume, saveData);
 
         // [6] 실제 웨이브 시스템 시작 (데이터 기반). 더미 테스터는 비활성화.
-        int chapterId = (isResume && saveData != null) ? saveData.chapterId : _defaultChapterId;
-        int startStageIndex = (isResume && saveData != null) ? saveData.clearedStage : 0;
+        int chapterId = ResolveStartChapterId(isResume, saveData);
+        int startStageIndex = ResolveStartStageIndex(isResume, saveData);
         DisableDummyTester();
         StartWaveSystem(chapterId, startStageIndex, seed);
 
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
+    }
+
+    private int ResolveStartChapterId(bool isResume, InGameSaveData saveData)
+    {
+        if (isResume && saveData != null)
+        {
+            return Mathf.Max(1, saveData.chapterId);
+        }
+
+        // 추가: 조규민 - 챕터 포기 후 재진입 또는 로비 선택 진입 시 저장 없이도 선택 챕터를 반영한다.
+        int selectedChapterId = GameManager.Instance != null ? GameManager.Instance.SelectedChapterId : 0;
+        if (selectedChapterId >= 100)
+        {
+            return Mathf.Max(1, selectedChapterId / 100);
+        }
+
+        if (selectedChapterId > 0)
+        {
+            return selectedChapterId;
+        }
+
+        return _defaultChapterId;
+    }
+
+    private int ResolveStartStageIndex(bool isResume, InGameSaveData saveData)
+    {
+        if (isResume && saveData != null)
+        {
+            return Mathf.Max(0, saveData.clearedStage);
+        }
+
+        int selectedStageId = GameManager.Instance != null ? GameManager.Instance.SelectedChapterId : 0;
+        if (selectedStageId < 100)
+        {
+            return 0;
+        }
+
+        int selectedStageNumber = selectedStageId % 100;
+        return Mathf.Max(0, selectedStageNumber - 1);
     }
 
     // 플레이어 사각형 비주얼 생성 + 투사체 풀 보장 + SkillSystem 발사점 연결.
