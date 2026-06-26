@@ -18,6 +18,8 @@ using System.Threading.Tasks;
 #endif
 using UnityEngine;
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 하우징 자동재화 마지막 수령 시간 저장/로드 필드 추가
 public class FirestoreService : MonoBehaviour
 {
     public event Action<UserCloudData> OnDataLoaded;
@@ -374,6 +376,7 @@ public class FirestoreService : MonoBehaviour
             { "unlockedStages", userData.unlockedStages ?? new List<int>() },
             { "gold", userData.gold },
             { "parchment", userData.parchment },
+            { "housingAutoCurrencyLastClaimAt", userData.housingAutoCurrencyLastClaimAt ?? DateTime.UtcNow.ToString("o") },
             { "hpBonus", userData.hpBonus },
             { "attackBonus", userData.attackBonus },
             { "shieldBonus", userData.shieldBonus },
@@ -456,6 +459,11 @@ public class FirestoreService : MonoBehaviour
 
         if (snapshot.TryGetValue("parchment", out int parchment))
             data.parchment = parchment;
+
+        if (snapshot.TryGetValue("housingAutoCurrencyLastClaimAt", out string housingAutoCurrencyLastClaimAt))
+            data.housingAutoCurrencyLastClaimAt = housingAutoCurrencyLastClaimAt;
+        else
+            data.housingAutoCurrencyLastClaimAt = null;
 
         if (snapshot.TryGetValue("hpBonus", out int hpBonus))
             data.hpBonus = hpBonus;
