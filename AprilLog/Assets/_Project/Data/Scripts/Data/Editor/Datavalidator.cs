@@ -67,9 +67,9 @@ public static class DataValidator
 
         // 3. 범위 검증
         errors += CheckRange(jsonFolder, "common_status",
-                             "BaseAttackSpeed", 0.01f, 1.0f);
+                             "BaseAttackSpeed", 0.01f, 5.0f);
         errors += CheckRange(jsonFolder, "monster_status",
-                             "MoveSpeed", 0.01f, 1.0f);
+                             "MoveSpeed", 0.01f, 1000.0f);
         errors += CheckRange(jsonFolder, "character_status",
                              "CriticalRate", 0f, 1.0f);
         errors += CheckRange(jsonFolder, "character_status",

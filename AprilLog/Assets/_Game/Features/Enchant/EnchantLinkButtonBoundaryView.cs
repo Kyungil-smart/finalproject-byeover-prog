@@ -5,11 +5,115 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum EnchantLinkButtonType
+{
+    None,
+    Continue,
+    ReturnLobby,
+    RestartChapter
+}
+
 /// <summary>
 /// 인챈트 링크 버튼 입력 이벤트를 전달한다.
 /// </summary>
 public class EnchantLinkButtonBoundaryView : MonoBehaviour
 {
+    [Serializable]
+    private class LinkButtonVisual
+    {
+        [SerializeField] private Image _backgroundImage;
+        [SerializeField] private Image _iconImage;
+        [SerializeField] private Sprite _defaultBackgroundSprite;
+        [SerializeField] private Sprite _selectedBackgroundSprite;
+        [SerializeField] private Sprite _defaultIconSprite;
+        [SerializeField] private Sprite _selectedIconSprite;
+
+        public void Resolve(GameObject buttonSetObject, Button fallbackButton)
+        {
+            if (_backgroundImage == null)
+            {
+                _backgroundImage = FindBackgroundImage(buttonSetObject, fallbackButton);
+            }
+
+            if (_iconImage == null)
+            {
+                _iconImage = FindIconImage(buttonSetObject, _backgroundImage);
+            }
+        }
+
+        public void Apply(bool isSelected)
+        {
+            ApplySprite(_backgroundImage, isSelected ? _selectedBackgroundSprite : _defaultBackgroundSprite);
+            ApplySprite(_iconImage, isSelected ? _selectedIconSprite : _defaultIconSprite);
+        }
+
+        private static Image FindBackgroundImage(GameObject buttonSetObject, Button fallbackButton)
+        {
+            if (fallbackButton != null && fallbackButton.targetGraphic is Image targetImage)
+            {
+                return targetImage;
+            }
+
+            if (fallbackButton != null)
+            {
+                Image buttonImage = fallbackButton.GetComponent<Image>();
+                if (buttonImage != null)
+                {
+                    return buttonImage;
+                }
+            }
+
+            if (buttonSetObject == null)
+            {
+                return null;
+            }
+
+            return buttonSetObject.GetComponentInChildren<Image>(true);
+        }
+
+        private static Image FindIconImage(GameObject buttonSetObject, Image backgroundImage)
+        {
+            if (buttonSetObject == null)
+            {
+                return null;
+            }
+
+            Image[] images = buttonSetObject.GetComponentsInChildren<Image>(true);
+            foreach (Image image in images)
+            {
+                if (image == null || image == backgroundImage)
+                {
+                    continue;
+                }
+
+                if (image.name.Contains("Image (1)"))
+                {
+                    return image;
+                }
+            }
+
+            foreach (Image image in images)
+            {
+                if (image != null && image != backgroundImage)
+                {
+                    return image;
+                }
+            }
+
+            return null;
+        }
+
+        private static void ApplySprite(Image image, Sprite sprite)
+        {
+            if (image == null || sprite == null)
+            {
+                return;
+            }
+
+            image.sprite = sprite;
+        }
+    }
+
     [Header("버튼")]
     [SerializeField] private GameObject _continueButtonSet;
     [SerializeField] private Button _continueButton;
@@ -17,6 +121,11 @@ public class EnchantLinkButtonBoundaryView : MonoBehaviour
     [SerializeField] private Button _returnLobbyButton;
     [SerializeField] private GameObject _restartChapterButtonSet;
     [SerializeField] private Button _restartChapterButton;
+
+    [Header("선택 이미지")]
+    [SerializeField] private LinkButtonVisual _continueVisual = new LinkButtonVisual();
+    [SerializeField] private LinkButtonVisual _returnLobbyVisual = new LinkButtonVisual();
+    [SerializeField] private LinkButtonVisual _restartChapterVisual = new LinkButtonVisual();
 
     [Header("참조")]
     [SerializeField] private ScreenNavigator _screenNavigator;
@@ -35,6 +144,8 @@ public class EnchantLinkButtonBoundaryView : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        ResolveVisualReferences();
+        ShowSelectedButton(EnchantLinkButtonType.None);
         BindButtons();
         CreatePresenters();
     }
@@ -83,6 +194,20 @@ public class EnchantLinkButtonBoundaryView : MonoBehaviour
         }
 
         return child.gameObject;
+    }
+
+    private void ResolveVisualReferences()
+    {
+        _continueVisual.Resolve(_continueButtonSet, _continueButton);
+        _returnLobbyVisual.Resolve(_returnLobbyButtonSet, _returnLobbyButton);
+        _restartChapterVisual.Resolve(_restartChapterButtonSet, _restartChapterButton);
+    }
+
+    public void ShowSelectedButton(EnchantLinkButtonType selectedButtonType)
+    {
+        _continueVisual.Apply(selectedButtonType == EnchantLinkButtonType.Continue);
+        _returnLobbyVisual.Apply(selectedButtonType == EnchantLinkButtonType.ReturnLobby);
+        _restartChapterVisual.Apply(selectedButtonType == EnchantLinkButtonType.RestartChapter);
     }
 
     private void CreatePresenters()
