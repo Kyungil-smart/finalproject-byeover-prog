@@ -18,6 +18,8 @@ using UnityEngine.SceneManagement;
 /// 앱 수명주기, 인증, 로컬/클라우드 저장, 씬 전환을 담당한다.
 /// 실제 Firebase 통신은 FirebaseAuthService, FirestoreService에 위임.
 /// </summary>
+// 2차 수정자 : 조규민
+// 수정 내용 : 하우징 자동재화 수령 시간 저장과 골드/양피지 지급을 한 번에 처리하는 계정 저장 API 추가
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -748,6 +750,56 @@ public class GameManager : MonoBehaviour
         CloudData.parchment = parchment;
         RaiseCurrencyChanged();
         PersistCurrency();
+    }
+
+    public DateTime EnsureHousingAutoCurrencyLastClaimUtc()
+    {
+        EnsureCurrencyData();
+
+        if (TryParseUtc(CloudData.housingAutoCurrencyLastClaimAt, out DateTime savedUtc))
+        {
+            return savedUtc;
+        }
+
+        DateTime nowUtc = DateTime.UtcNow;
+        CloudData.housingAutoCurrencyLastClaimAt = nowUtc.ToString("o");
+        SyncToCloud(CloudData);
+        return nowUtc;
+    }
+
+    public void ClaimHousingAutoCurrency(int gold, int parchment, string lastClaimAtUtc)
+    {
+        gold = Mathf.Max(0, gold);
+        parchment = Mathf.Max(0, parchment);
+        EnsureCurrencyData();
+
+        CloudData.gold = Mathf.Max(0, CloudData.gold + gold);
+        CloudData.parchment = Mathf.Max(0, CloudData.parchment + parchment);
+        CloudData.housingAutoCurrencyLastClaimAt = string.IsNullOrWhiteSpace(lastClaimAtUtc)
+            ? DateTime.UtcNow.ToString("o")
+            : lastClaimAtUtc;
+
+        Debug.Log($"[하우징 자동재화] +골드 {gold} +양피지 {parchment} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    private static bool TryParseUtc(string value, out DateTime utcTime)
+    {
+        utcTime = default;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (!DateTime.TryParse(value, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime parsedTime))
+        {
+            return false;
+        }
+
+        utcTime = parsedTime.Kind == DateTimeKind.Utc ? parsedTime : parsedTime.ToUniversalTime();
+        return true;
     }
 
     private void EnsureCurrencyData()
