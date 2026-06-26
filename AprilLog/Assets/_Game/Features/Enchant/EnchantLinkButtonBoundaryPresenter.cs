@@ -1,5 +1,6 @@
 //담당자: 조규민
 
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -37,6 +38,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void HandleContinueClicked()
     {
+        _view.ShowSelectedButton(EnchantLinkButtonType.Continue);
+
         if (_screenNavigator != null)
         {
             _screenNavigator.OnCloseButtonClick();
@@ -48,6 +51,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void HandleReturnLobbyClicked()
     {
+        _view.ShowSelectedButton(EnchantLinkButtonType.ReturnLobby);
+
         if (_confirmPopupPresenter == null)
         {
             Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] 확인 팝업이 없어 로비 복귀를 처리하지 않았습니다.");
@@ -59,6 +64,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void HandleRestartChapterClicked()
     {
+        _view.ShowSelectedButton(EnchantLinkButtonType.RestartChapter);
+
         if (_confirmPopupPresenter == null)
         {
             Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] 확인 팝업이 없어 포기하기를 처리하지 않았습니다.");
@@ -70,6 +77,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void ReturnToLobby()
     {
+        SaveCurrentProgressForResume();
+
         if (_screenNavigator != null)
         {
             _screenNavigator.ToLobbyAction();
@@ -94,7 +103,61 @@ public class EnchantLinkButtonBoundaryPresenter
             return;
         }
 
+        KeepCurrentChapterForRestart();
         GameManager.Instance.DeleteLocalSave();
         GameManager.Instance.LoadInGame();
+    }
+
+    private void SaveCurrentProgressForResume()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] GameManager가 없어 로비 복귀 저장을 처리하지 않았습니다.");
+            return;
+        }
+
+        StageLoopManager loopManager = Object.FindFirstObjectByType<StageLoopManager>();
+        if (loopManager == null)
+        {
+            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] StageLoopManager가 없어 현재 스테이지 저장을 처리하지 않았습니다.");
+            return;
+        }
+
+        InGameSaveData saveData = CreateCurrentProgressSaveData(loopManager);
+        GameManager.Instance.SaveLocalData(saveData);
+    }
+
+    private InGameSaveData CreateCurrentProgressSaveData(StageLoopManager loopManager)
+    {
+        PlayerModel playerModel = Object.FindFirstObjectByType<PlayerModel>();
+        InGameGrowthSystem growthSystem = Object.FindFirstObjectByType<InGameGrowthSystem>();
+        EnchantModel enchantModel = Object.FindFirstObjectByType<EnchantModel>();
+        ComboModel comboModel = Object.FindFirstObjectByType<ComboModel>();
+
+        return new InGameSaveData
+        {
+            chapterId = Mathf.Max(1, loopManager.CurrentChapterId),
+            clearedStage = Mathf.Max(0, loopManager.CompletedStageCount),
+            playerHP = playerModel != null ? Mathf.Max(1, playerModel.CurrentHP) : 1,
+            currentEXP = growthSystem != null ? Mathf.Max(0, growthSystem.CurrentEXP) : 0,
+            inGameLevel = growthSystem != null ? Mathf.Max(1, growthSystem.CurrentLevel) : 1,
+            puzzleSlots = new int[0],
+            waitingSlots = new int[0],
+            acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),
+            totalDamage = RunStats.HighestDamage,
+            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0,
+            nextStageSeed = Random.Range(0, int.MaxValue)
+        };
+    }
+
+    private void KeepCurrentChapterForRestart()
+    {
+        StageLoopManager loopManager = Object.FindFirstObjectByType<StageLoopManager>();
+        if (loopManager == null)
+        {
+            return;
+        }
+
+        GameManager.Instance.SelectedChapterId = Mathf.Max(1, loopManager.CurrentChapterId);
     }
 }
