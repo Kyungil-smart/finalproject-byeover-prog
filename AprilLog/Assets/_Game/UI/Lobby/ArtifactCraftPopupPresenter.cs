@@ -344,9 +344,10 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         return eff != null ? Mathf.RoundToInt(eff.BaseAmount) : 0;
     }
 
-    private static Sprite LoadIcon(string iconPath)
+    private static Sprite LoadIcon(int iconId)
     {
-        return string.IsNullOrEmpty(iconPath) ? null : Resources.Load<Sprite>(iconPath);
+        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
+        return null;
     }
 
     private static ArtifactGrade ToGrade(string gradeName)

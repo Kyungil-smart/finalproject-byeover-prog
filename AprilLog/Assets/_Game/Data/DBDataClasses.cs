@@ -222,7 +222,7 @@ public class GearMasterData
     public int AttackBaseAmount;
     public int GearName; // 기어이름 : 번역 연결용
     public int Explanation; // 기어 설명 : 번역 연결용
-    public string IconSpriteKey;
+    public int IconSpriteKey;
 }
 
 /// <summary>

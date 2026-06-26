@@ -190,8 +190,11 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         return eff != null ? Mathf.RoundToInt(eff.BaseAmount) : 0;
     }
 
-    private static Sprite LoadIcon(string iconPath)
-        => string.IsNullOrEmpty(iconPath) ? null : Resources.Load<Sprite>(iconPath);
+    private static Sprite LoadIcon(int iconId)
+    {
+        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
+        return null;
+    }
 
     private static ArtifactGrade ToGrade(string gradeName)
         => Enum.TryParse(gradeName, out ArtifactGrade grade) ? grade : ArtifactGrade.Rare;
