@@ -13,325 +13,2985 @@ MonoBehaviour:
   m_Name: StageWaveRuleTable
   m_EditorClassIdentifier: Assembly-CSharp::StageWaveRuleTable
   rows:
-  - Stage_ID: 101
+  - Stage_ID: 4999
+    WaveOrder: 1
+    WaveDuration: 60
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 2
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1000001
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500001
+  - Stage_ID: 4998
+    WaveOrder: 1
+    WaveDuration: 60
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 2
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1000002
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500002
+  - Stage_ID: 4997
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 2
+    SpawnAmount: 1
+    MonsterWavePool_ID: 0
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500003
+  - Stage_ID: 1000
     WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
+    MonsterWavePool_ID: 1001001
     NormalChance: 1
     AgileChance: 0
     TankChance: 0
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 101
+  - Stage_ID: 1000
     WaveOrder: 2
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
+    MonsterWavePool_ID: 1001000
     NormalChance: 1
     AgileChance: 0
     TankChance: 0
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 101
+  - Stage_ID: 1000
     WaveOrder: 3
     WaveDuration: 20
     WaveEndType: TimeOver
-    WaveEndAction: DespawnRemaining
+    WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.8
-    AgileChance: 0.2
-    TankChance: 0
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.9
+    AgileChance: 0
+    TankChance: 0.1
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 102
+  - Stage_ID: 1001
     WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
+    MonsterWavePool_ID: 1001000
     NormalChance: 0.8
-    AgileChance: 0.2
-    TankChance: 0
+    AgileChance: 0
+    TankChance: 0.2
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 102
+  - Stage_ID: 1001
     WaveOrder: 2
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.8
-    AgileChance: 0.2
-    TankChance: 0
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.3
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 102
+  - Stage_ID: 1001
     WaveOrder: 3
-    WaveDuration: 60
+    WaveDuration: 20
     WaveEndType: TimeOver
-    WaveEndAction: DespawnRemaining
+    WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.8
-    AgileChance: 0.2
-    TankChance: 0
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.3
     RangedChance: 0
     InfestedChance: 0
-    SpecialWave_ID: 2001
-  - Stage_ID: 103
+    SpecialWave_ID: 0
+  - Stage_ID: 1002
     WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.7
-    AgileChance: 0.15
-    TankChance: 0.15
+    MonsterWavePool_ID: 1001000
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 103
+  - Stage_ID: 1002
     WaveOrder: 2
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.7
-    AgileChance: 0.15
-    TankChance: 0.15
+    MonsterWavePool_ID: 1001000
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
     RangedChance: 0
     InfestedChance: 0
-    SpecialWave_ID: 0
-  - Stage_ID: 103
+    SpecialWave_ID: 1500005
+  - Stage_ID: 1002
     WaveOrder: 3
-    WaveDuration: 40
+    WaveDuration: 20
     WaveEndType: TimeOver
-    WaveEndAction: DespawnRemaining
+    WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.7
-    AgileChance: 0.15
-    TankChance: 0.15
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.9
+    AgileChance: 0.1
+    TankChance: 0
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 104
+  - Stage_ID: 1003
     WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1003
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.7
+    AgileChance: 0.2
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1003
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.7
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1004
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001000
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1004
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001000
     NormalChance: 0.6
     AgileChance: 0.2
     TankChance: 0.2
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 104
+  - Stage_ID: 1004
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.7
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1005
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.5
+    AgileChance: 0.3
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1005
     WaveOrder: 2
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1005
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001000
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1006
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001000
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1006
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.8
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500015
+  - Stage_ID: 1006
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001000
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1010
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1000002
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1010
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1010
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.8
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1011
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1011
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1011
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1012
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1012
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1012
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1013
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.4
+    InfestedChance: 0
+    SpecialWave_ID: 1500006
+  - Stage_ID: 1013
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1013
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.6
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1014
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.5
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1014
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.7
+    AgileChance: 0.2
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1014
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.2
+    AgileChance: 0
+    TankChance: 0.8
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1015
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0
+    AgileChance: 0.2
+    TankChance: 0.8
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1015
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0.8
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1015
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1016
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.7
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1016
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.7
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500016
+  - Stage_ID: 1016
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001003
+    NormalChance: 0.7
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1020
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1000003
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1020
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
     NormalChance: 0.6
     AgileChance: 0.2
     TankChance: 0.2
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 104
+  - Stage_ID: 1020
     WaveOrder: 3
     WaveDuration: 20
     WaveEndType: TimeOver
-    WaveEndAction: DespawnRemaining
+    WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.4
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
     AgileChance: 0.2
-    TankChance: 0.2
-    RangedChance: 0.1
-    InfestedChance: 0.1
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
     SpecialWave_ID: 0
-  - Stage_ID: 105
+  - Stage_ID: 1021
     WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.1
-    AgileChance: 0.35
-    TankChance: 0.35
-    RangedChance: 0.1
-    InfestedChance: 0.1
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 105
+  - Stage_ID: 1021
     WaveOrder: 2
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.1
-    AgileChance: 0.35
-    TankChance: 0.35
-    RangedChance: 0.1
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1021
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1022
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1022
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1022
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1023
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1023
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1023
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.9
+    AgileChance: 0.1
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500007
+  - Stage_ID: 1024
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.4
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.6
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1024
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.9
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
     InfestedChance: 0.1
     SpecialWave_ID: 0
-  - Stage_ID: 105
+  - Stage_ID: 1024
     WaveOrder: 3
-    WaveDuration: 60
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1025
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.3
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1025
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1025
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1026
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1026
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.3
+    SpecialWave_ID: 1500017
+  - Stage_ID: 1026
+    WaveOrder: 3
+    WaveDuration: 20
     WaveEndType: TimeOverOrBossKill
     WaveEndAction: DespawnRemaining
-    SpawnInterval: 5
-    SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.4
-    AgileChance: 0.2
-    TankChance: 0.2
-    RangedChance: 0.1
-    InfestedChance: 0.1
-    SpecialWave_ID: 2002
-  - Stage_ID: 106
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001006
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1030
     WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.4
-    AgileChance: 0.2
-    TankChance: 0.2
-    RangedChance: 0.1
-    InfestedChance: 0.1
+    MonsterWavePool_ID: 1000004
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
     SpecialWave_ID: 0
-  - Stage_ID: 106
+  - Stage_ID: 1030
     WaveOrder: 2
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.4
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.8
     AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1030
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1031
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1031
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1031
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1032
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.4
+    SpecialWave_ID: 0
+  - Stage_ID: 1032
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 1500008
+  - Stage_ID: 1032
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1033
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.4
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1033
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.3
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1033
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.7
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1034
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1034
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.6
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1034
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1035
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.5
+    AgileChance: 0.1
     TankChance: 0.2
     RangedChance: 0.1
     InfestedChance: 0.1
     SpecialWave_ID: 0
-  - Stage_ID: 106
+  - Stage_ID: 1035
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.5
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1035
     WaveOrder: 3
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: DespawnRemaining
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.3
-    AgileChance: 0.25
-    TankChance: 0.25
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.4
+    AgileChance: 0.1
+    TankChance: 0.3
     RangedChance: 0.1
     InfestedChance: 0.1
     SpecialWave_ID: 0
-  - Stage_ID: 107
+  - Stage_ID: 1036
     WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOver
     WaveEndAction: KeepAlive
     SpawnInterval: 5
-    SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.3
-    AgileChance: 0.25
-    TankChance: 0.25
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0.2
+    AgileChance: 0.1
+    TankChance: 0.5
     RangedChance: 0.1
     InfestedChance: 0.1
     SpecialWave_ID: 0
-  - Stage_ID: 107
+  - Stage_ID: 1036
     WaveOrder: 2
     WaveDuration: 20
-    WaveEndType: TimeOver
+    WaveEndType: TimeOverOrBossKill
     WaveEndAction: KeepAlive
-    SpawnInterval: 5
-    SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.3
-    AgileChance: 0.25
-    TankChance: 0.25
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0
+    AgileChance: 0.1
+    TankChance: 0.7
     RangedChance: 0.1
     InfestedChance: 0.1
-    SpecialWave_ID: 0
-  - Stage_ID: 107
+    SpecialWave_ID: 1500018
+  - Stage_ID: 1036
     WaveOrder: 3
     WaveDuration: 20
-    WaveEndType: TimeOver
-    WaveEndAction: KeepAlive
-    SpawnInterval: 5
-    SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.3
-    AgileChance: 0.25
-    TankChance: 0.25
-    RangedChance: 0.1
-    InfestedChance: 0.1
-    SpecialWave_ID: 0
-  - Stage_ID: 107
-    WaveOrder: 4
-    WaveDuration: 20
-    WaveEndType: TimeOver
-    WaveEndAction: KeepAlive
-    SpawnInterval: 5
-    SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.3
-    AgileChance: 0.25
-    TankChance: 0.25
-    RangedChance: 0.1
-    InfestedChance: 0.1
-    SpecialWave_ID: 0
-  - Stage_ID: 107
-    WaveOrder: 5
-    WaveDuration: 60
     WaveEndType: TimeOverOrBossKill
     WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001009
+    NormalChance: 0
+    AgileChance: 0.2
+    TankChance: 0.8
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1040
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
     SpawnInterval: 5
     SpawnAmount: 2
-    MonsterWavePool_ID: 1001
-    NormalChance: 0.3
-    AgileChance: 0.25
-    TankChance: 0.25
+    MonsterWavePool_ID: 1000005
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1040
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1040
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1041
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1041
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1041
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1042
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.3
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1042
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1042
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1043
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1043
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1043
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0
+    AgileChance: 0.5
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1044
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.3
+    SpecialWave_ID: 0
+  - Stage_ID: 1044
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1044
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.5
+    AgileChance: 0.1
+    TankChance: 0.3
+    RangedChance: 0
+    InfestedChance: 0.1
+    SpecialWave_ID: 1500009
+  - Stage_ID: 1045
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.2
+    AgileChance: 0.4
+    TankChance: 0.4
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1045
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0.2
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0.3
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1045
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0.8
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1046
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001012
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1046
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500019
+  - Stage_ID: 1046
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001012
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1100
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1000006
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1100
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1100
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.9
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1101
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1101
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1101
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.5
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1102
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1102
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1102
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 1500010
+  - Stage_ID: 1103
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1103
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.6
+    AgileChance: 0.1
+    TankChance: 0.1
     RangedChance: 0.1
     InfestedChance: 0.1
-    SpecialWave_ID: 2003
+    SpecialWave_ID: 0
+  - Stage_ID: 1103
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.4
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1104
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.3
+    AgileChance: 0.1
+    TankChance: 0.3
+    RangedChance: 0.3
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1104
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.2
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0.2
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1104
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1105
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0
+    AgileChance: 0.5
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1105
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.5
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1105
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0.5
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1106
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001015
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1106
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0.7
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500020
+  - Stage_ID: 1106
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001015
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1110
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1000007
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1110
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1110
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1111
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1111
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1111
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1112
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1112
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1112
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 1500011
+  - Stage_ID: 1113
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1113
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1113
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1114
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1114
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1114
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1115
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.3
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1115
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1115
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1116
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.1
+    AgileChance: 0.1
+    TankChance: 0.6
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1116
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0.2
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0.2
+    SpecialWave_ID: 1500021
+  - Stage_ID: 1116
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001018
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1120
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1000008
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1120
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1120
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1121
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1121
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1121
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1122
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.5
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1122
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.3
+    SpecialWave_ID: 0
+  - Stage_ID: 1122
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.3
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1123
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.3
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1123
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500012
+  - Stage_ID: 1123
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1124
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.2
+    AgileChance: 0
+    TankChance: 0.8
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1124
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.1
+    AgileChance: 0
+    TankChance: 0.8
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1124
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.2
+    AgileChance: 0.1
+    TankChance: 0.7
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1125
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.1
+    AgileChance: 0.1
+    TankChance: 0.6
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1125
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.1
+    AgileChance: 0.2
+    TankChance: 0.5
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1125
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.1
+    AgileChance: 0.2
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1126
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.3
+    AgileChance: 0.3
+    TankChance: 0.3
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1126
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500022
+  - Stage_ID: 1126
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001021
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1130
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1000009
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1130
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1130
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1131
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1131
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1131
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1132
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.4
+    SpecialWave_ID: 0
+  - Stage_ID: 1132
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1132
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 1500013
+  - Stage_ID: 1133
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.8
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1133
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1133
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.8
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1134
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1134
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1134
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1135
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1135
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0.9
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1135
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0.8
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1136
+    WaveOrder: 1
+    WaveDuration: 0
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.2
+    AgileChance: 0
+    TankChance: 0.6
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1136
+    WaveOrder: 2
+    WaveDuration: 0
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.5
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500023
+  - Stage_ID: 1136
+    WaveOrder: 3
+    WaveDuration: 0
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001024
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1140
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1000010
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1140
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1140
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.1
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1141
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1141
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1141
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1142
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.3
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1142
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.2
+    TankChance: 0
+    RangedChance: 0.2
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1142
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1143
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1143
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 0
+  - Stage_ID: 1143
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.3
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0.2
+    SpecialWave_ID: 1500014
+  - Stage_ID: 1144
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.7
+    AgileChance: 0
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1144
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1144
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.6
+    AgileChance: 0
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1145
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.7
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1145
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.6
+    AgileChance: 0.1
+    TankChance: 0.1
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 1500004
+  - Stage_ID: 1145
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 2
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.4
+    AgileChance: 0.1
+    TankChance: 0.2
+    RangedChance: 0.1
+    InfestedChance: 0.1
+    SpecialWave_ID: 0
+  - Stage_ID: 1146
+    WaveOrder: 1
+    WaveDuration: 20
+    WaveEndType: TimeOver
+    WaveEndAction: KeepAlive
+    SpawnInterval: 5
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.5
+    AgileChance: 0.5
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0
+  - Stage_ID: 1146
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: KeepAlive
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0.2
+    AgileChance: 0.2
+    TankChance: 0.2
+    RangedChance: 0.2
+    InfestedChance: 0.2
+    SpecialWave_ID: 1500024
+  - Stage_ID: 1146
+    WaveOrder: 3
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 7
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1001027
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 0

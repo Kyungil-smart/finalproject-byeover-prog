@@ -709,6 +709,21 @@ public class Story_TalkData
     public int SFX;
 }
 
+/// <summary>
+/// 챕터 도달 상황에 따라 스토리 데이터를 연결<br/>
+/// 생성일 : 26.06.26<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class StoryTriggerData
+{
+    public int StoryTrigger_ID;
+    public int Story_ID;
+    public string TargetType;
+    public int Target_ID;
+    public string TriggerType;
+}
+
 #endregion
 
 #region ----- U -----
