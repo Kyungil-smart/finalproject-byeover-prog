@@ -1,7 +1,6 @@
 //담당자: 조규민
 
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 /// <summary>
@@ -9,14 +8,12 @@ using UnityEngine;
 /// </summary>
 public class HousingPlacementController : MonoBehaviour
 {
-    private const string CATEGORY_FUNCTION = "function";
-    private const string CATEGORY_BACKGROUND = "background";
-    private const string CATEGORY_NONE = "none";
-    private const string TYPE_DECORATION = "decoration";
+    private const string _furnitureRootName = "FurnitureRoot";
 
     [Header("View")]
     [SerializeField] private HousingPlacementButtonView _buttonView;
     [SerializeField] private HousingPlacementPopupView _popupView;
+    [SerializeField] private HousingFurniturePlacementView _placementView;
 
     [Header("데이터")]
     [SerializeField] private bool _useHousingRepo = true;
@@ -24,13 +21,20 @@ public class HousingPlacementController : MonoBehaviour
     [SerializeField] private string _iconResourceFolder = "Icons/Housing";
     [SerializeField] private HousingPlacementItemData[] _items;
 
+    [Header("적용 방식")]
+    [Tooltip("적용 버튼이 아직 연결되지 않은 상태에서 테스트할 때만 켭니다. 켜면 슬롯 클릭 즉시 FurnitureRoot에 적용합니다.")]
+    [SerializeField] private bool _applyImmediatelyOnItemClick = true;
+
     private HousingPlacementModel _model;
     private HousingPlacementPresenter _presenter;
+    private HousingPlacementItemBuilder _itemBuilder;
 
     private void Awake()
     {
+        _itemBuilder = new HousingPlacementItemBuilder(_iconResourceFolder);
+        _placementView = ResolvePlacementView();
         _model = new HousingPlacementModel(BuildInitialItems());
-        _presenter = new HousingPlacementPresenter(_model, _buttonView, _popupView);
+        _presenter = new HousingPlacementPresenter(_model, _buttonView, _popupView, _placementView, _applyImmediatelyOnItemClick);
         _presenter.Initialize();
     }
 
@@ -54,7 +58,7 @@ public class HousingPlacementController : MonoBehaviour
             return _items;
         }
 
-        List<HousingPlacementItemData> _repoItems = BuildItemsFromRepo(_housingRepo);
+        List<HousingPlacementItemData> _repoItems = _itemBuilder.Build(_housingRepo);
 
         if (_repoItems.Count <= 0)
         {
@@ -65,135 +69,70 @@ public class HousingPlacementController : MonoBehaviour
         return _repoItems;
     }
 
-    private List<HousingPlacementItemData> BuildItemsFromRepo(HousingRepo _housingRepo)
+    private HousingFurniturePlacementView ResolvePlacementView()
     {
-        List<HousingPlacementItemData> _result = new();
-        HashSet<string> _addedKeys = new();
-
-        AddFurnitureList(_result, _addedKeys, _housingRepo.GetFurnitureListByType(CATEGORY_FUNCTION));
-        AddFurnitureList(_result, _addedKeys, _housingRepo.GetFurnitureListByType(CATEGORY_BACKGROUND));
-        AddFurnitureList(_result, _addedKeys, _housingRepo.GetFurnitureListByType(CATEGORY_NONE));
-
-        AddFurnitureList(_result, _addedKeys, _housingRepo.GetFurnitureListByCategory(CATEGORY_FUNCTION));
-        AddFurnitureList(_result, _addedKeys, _housingRepo.GetFurnitureListByCategory(CATEGORY_BACKGROUND));
-        AddFurnitureList(_result, _addedKeys, _housingRepo.GetFurnitureListByCategory(TYPE_DECORATION));
-
-        return _result;
-    }
-
-    private void AddFurnitureList(
-        List<HousingPlacementItemData> _target,
-        HashSet<string> _addedKeys,
-        List<HousingFurnitureData> _furnitures)
-    {
-        if (_furnitures == null)
+        if (_placementView != null)
         {
-            return;
+            return _placementView;
         }
 
-        for (int _index = 0; _index < _furnitures.Count; _index++)
-        {
-            HousingFurnitureData _furniture = _furnitures[_index];
+        Transform _furnitureRoot = FindChildRecursive(GetPageRoot(), _furnitureRootName);
 
-            if (_furniture == null)
+        if (_furnitureRoot == null)
+        {
+            Debug.LogWarning("[HousingPlacementController] FurnitureRoot를 찾지 못했습니다.", this);
+            return null;
+        }
+
+        HousingFurniturePlacementView _foundView = _furnitureRoot.GetComponent<HousingFurniturePlacementView>();
+
+        if (_foundView != null)
+        {
+            return _foundView;
+        }
+
+        return _furnitureRoot.gameObject.AddComponent<HousingFurniturePlacementView>();
+    }
+
+    private Transform GetPageRoot()
+    {
+        Transform _current = transform;
+
+        while (_current.parent != null)
+        {
+            if (_current.name == "Page_Housing")
             {
-                continue;
+                return _current;
             }
 
-            string _key = BuildFurnitureKey(_furniture);
-
-            if (_addedKeys.Contains(_key))
-            {
-                continue;
-            }
-
-            _addedKeys.Add(_key);
-            _target.Add(CreateItemData(_furniture));
+            _current = _current.parent;
         }
+
+        return _current;
     }
 
-    private HousingPlacementItemData CreateItemData(HousingFurnitureData _furniture)
+    private static Transform FindChildRecursive(Transform _parent, string _name)
     {
-        string _itemId = _furniture.Furniture_ID.ToString();
-        string _displayName = ResolveDisplayName(_furniture);
-        HousingPlacementCategory _category = ResolvePlacementCategory(_furniture);
-        Sprite _icon = LoadIcon(_furniture.ICO);
-        bool _isOwned = _furniture.Price <= 0;
-
-        return new HousingPlacementItemData(
-            _furniture.Furniture_ID,
-            _furniture.Name_ID,
-            _itemId,
-            _displayName,
-            _category,
-            _icon,
-            _furniture.ICO,
-            _isOwned,
-            true,
-            _furniture.Item_ID,
-            _furniture.Price,
-            _furniture.Location,
-            _furniture.Category,
-            _furniture.Type,
-            _furniture.Resources);
-    }
-
-    private string ResolveDisplayName(HousingFurnitureData _furniture)
-    {
-        if (_furniture.Name_ID > 0)
-        {
-            return $"Name ID: {_furniture.Name_ID}";
-        }
-
-        string _type = string.IsNullOrWhiteSpace(_furniture.Type) ? "Furniture" : _furniture.Type;
-        return $"{_type} #{_furniture.Furniture_ID}";
-    }
-
-    private HousingPlacementCategory ResolvePlacementCategory(HousingFurnitureData _furniture)
-    {
-        string _category = NormalizeKey(_furniture.Category);
-        string _type = NormalizeKey(_furniture.Type);
-
-        if (_category == CATEGORY_BACKGROUND)
-        {
-            return HousingPlacementCategory.Background;
-        }
-
-        if (_category == CATEGORY_FUNCTION)
-        {
-            return HousingPlacementCategory.Function;
-        }
-
-        if (_category == CATEGORY_NONE || _category == TYPE_DECORATION || _type == TYPE_DECORATION)
-        {
-            return HousingPlacementCategory.Decoration;
-        }
-
-        return HousingPlacementCategory.Decoration;
-    }
-
-    private Sprite LoadIcon(string _iconKey)
-    {
-        if (string.IsNullOrWhiteSpace(_iconKey))
+        if (_parent == null)
         {
             return null;
         }
 
-        string _fileNameWithoutExtension = Path.GetFileNameWithoutExtension(_iconKey);
-        string _resourcePath = string.IsNullOrWhiteSpace(_iconResourceFolder)
-            ? _fileNameWithoutExtension
-            : $"{_iconResourceFolder.TrimEnd('/')}/{_fileNameWithoutExtension}";
+        if (_parent.name == _name)
+        {
+            return _parent;
+        }
 
-        return Resources.Load<Sprite>(_resourcePath);
-    }
+        for (int _index = 0; _index < _parent.childCount; _index++)
+        {
+            Transform _found = FindChildRecursive(_parent.GetChild(_index), _name);
 
-    private static string BuildFurnitureKey(HousingFurnitureData _furniture)
-    {
-        return $"{_furniture.Furniture_ID}|{_furniture.Location}|{_furniture.Category}|{_furniture.Type}";
-    }
+            if (_found != null)
+            {
+                return _found;
+            }
+        }
 
-    private static string NormalizeKey(string _value)
-    {
-        return string.IsNullOrWhiteSpace(_value) ? string.Empty : _value.Trim().ToLowerInvariant();
+        return null;
     }
 }
