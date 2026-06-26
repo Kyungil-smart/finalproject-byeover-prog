@@ -15,7 +15,7 @@ public class ArtifactUIController : MonoBehaviour
     // 데이터 연동용 이벤트 훅
     // ------------------------------------------------------------------
     public event Action<bool> OnDecompositionModeChanged;     // true=분해 모드 진입, false=종료
-    public event Action<ArtifactGrade> OnDecomposeGradeSelected; // 일괄 등급 버튼 선택
+    public event Action<ArtifactGrade[]> OnDecomposeGradesSelected; // 일괄 등급 버튼 선택(한 번에 여러 등급)
     public event Action OnDecomposeRequested;                 // 분해 완료(DCM) 클릭 → 데이터가 단일/일괄 팝업 결정
     public event Action<int> OnDecomposeCountChanged;         // 단일 팝업 슬라이더 개수 변경
     public event Action OnSingleDecomposeConfirmed;           // 단일 팝업 '분해' 클릭
@@ -44,9 +44,9 @@ public class ArtifactUIController : MonoBehaviour
     [SerializeField] private Button _btnExitDecompose;      // TopBar_Decomposition / Button_Cancel (분해 모드 취소)
 
     [Header("일괄 등급 선택 버튼 (DecompositionArtifacts_Slot)")]
-    [SerializeField] private Button _btnRare;               // Button_Rare
-    [SerializeField] private Button _btnEpic;               // Button_Epic
-    [SerializeField] private Button _btnLegendary;          // Button_Legendary
+    [Tooltip("하나의 버튼으로 아래 등급들을 한 번에 일괄 선택한다. (기본 = 레어 + 에픽)")]
+    [SerializeField] private Button _btnBatchGradeSelect;   // Button_BatchGradeSelect (등급별 분리 X)
+    [SerializeField] private ArtifactGrade[] _batchSelectGrades = { ArtifactGrade.Rare, ArtifactGrade.Epic };
 
     [Header("단일 분해 팝업 (POPUP_Decomposition)")]
     [SerializeField] private GameObject _popupDecomposition;
@@ -102,10 +102,8 @@ public class ArtifactUIController : MonoBehaviour
         Bind(_btnDecomposeComplete, RequestDecompose, "Button_DismantlingComplete");
         Bind(_btnExitDecompose, ExitDecompositionMode, "분해 모드 취소");
 
-        // 일괄 등급 선택
-        Bind(_btnRare, () => SelectGrade(ArtifactGrade.Rare), "Button_Rare");
-        Bind(_btnEpic, () => SelectGrade(ArtifactGrade.Epic), "Button_Epic");
-        Bind(_btnLegendary, () => SelectGrade(ArtifactGrade.Legendary), "Button_Legendary");
+        // 일괄 등급 선택 (등급별 분리 X, 한 버튼으로 지정된 등급들을 일괄 선택)
+        Bind(_btnBatchGradeSelect, SelectBatchGrades, "Button_BatchGradeSelect");
 
         // 단일 분해 팝업
         Bind(_btnSingleDecompose, ConfirmSingleDecompose, "단일 분해");
@@ -251,11 +249,14 @@ public class ArtifactUIController : MonoBehaviour
             OnDecompositionModeChanged?.Invoke(enter);
     }
 
-    // 일괄 등급 선택 (DecompositionArtifacts_Slot 의 등급 버튼)
-    private void SelectGrade(ArtifactGrade grade)
+    // 일괄 등급 선택 (DecompositionArtifacts_Slot 의 단일 버튼)
+    // 등급별로 나누지 않고, _batchSelectGrades 에 지정된 등급들을 한 번에 일괄 선택한다. (기본 = 레어 + 에픽)
+    private void SelectBatchGrades()
     {
-        Debug.Log($"[ArtifactUIController] 일괄 분해 등급 선택 → {ArtifactGradeInfo.DisplayName(grade)}");
-        OnDecomposeGradeSelected?.Invoke(grade);
+        ArtifactGrade[] grades = _batchSelectGrades ?? Array.Empty<ArtifactGrade>();
+        string names = string.Join(", ", Array.ConvertAll(grades, ArtifactGradeInfo.DisplayName));
+        Debug.Log($"[ArtifactUIController] 일괄 분해 등급 선택 → {names}");
+        OnDecomposeGradesSelected?.Invoke(grades);
     }
 
     // 분해 완료(DCM) : 단일/일괄 판정은 데이터가 선택 상태를 보고 결정 → 해당 팝업 Open 메서드 호출

@@ -277,9 +277,8 @@ MonoBehaviour:
   _btnEnterDecompose: {fileID: 8900543959335986303}
   _btnDecomposeComplete: {fileID: 0}
   _btnExitDecompose: {fileID: 0}
-  _btnRare: {fileID: 0}
-  _btnEpic: {fileID: 0}
-  _btnLegendary: {fileID: 0}
+  _btnBatchGradeSelect: {fileID: 0}
+  _batchSelectGrades: 0000000001000000
   _popupDecomposition: {fileID: 5745428203533887738}
   _sliderDecompositionCount: {fileID: 5613595034175548929}
   _textDecompositionCount: {fileID: 6510665392279913369}
@@ -299,7 +298,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5028179058159082215}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e758890c45cf704fb7d7cf04aa64ce1, type: 3}
   m_Name: 
@@ -1066,6 +1065,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 865025660123984098, guid: 4a0c6d95708bd4f4c86d93f56ee6f863, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1490526570734115212, guid: 4a0c6d95708bd4f4c86d93f56ee6f863, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1340,7 +1343,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7678644333587232148, guid: 4a0c6d95708bd4f4c86d93f56ee6f863, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7764534813040703113, guid: 4a0c6d95708bd4f4c86d93f56ee6f863, type: 3}
       propertyPath: m_VerticalFit
