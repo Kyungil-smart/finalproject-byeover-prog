@@ -90,8 +90,10 @@ public static class DataTableSchemaRegistry
 
         new DataTableSchema("UnitTable", "unit_table", "UnitTableData", "UnitMasterTable", true),
         
+        // Story Data
         new DataTableSchema("3_NPCtalk", "3_npc_talk", "Story_TalkData", "Story_TalkTable", true),
         new DataTableSchema("5_Character", "5_character", "Story_CharacterData", "Story_CharacterTable", true),
+        new DataTableSchema("StoryTrigger", "story_trigger", "StoryTriggerData", "StoryTriggerTable", true),
         
         // Localizing Data
         new DataTableSchema("EnchantLocalizing", "enchant_localizing", "LocalizationData", "EnchantLocalizationTable", true),
