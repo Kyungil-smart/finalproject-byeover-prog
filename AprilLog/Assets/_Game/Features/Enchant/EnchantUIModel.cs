@@ -111,6 +111,7 @@ public class EnchantUIModel : MonoBehaviour
             {
                 if (_localizationManager == null)
                 {
+                    Debug.LogWarning("No localization manager found. No Localization.");
                     OwnedStatList.Add(new EnchantDisplayData
                     {
                         EnchantId = data.Data.StatEnchant_ID,
