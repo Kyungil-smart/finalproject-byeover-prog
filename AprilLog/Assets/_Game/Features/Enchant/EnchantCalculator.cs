@@ -9,6 +9,9 @@ public class EnchantCalculator : MonoBehaviour
     [Header("참조")]
     [SerializeField] private PlayerModel _playerModel;
     [SerializeField] private EnchantModel _enchantModel;
+
+    [Header("크리티컬 기본 배율")]
+    [SerializeField][Range(1f,5f)] private float _baseCritDamageRate = 1.4f;
     
     // ---------- private ----------
     private SpellRepo _repo;
@@ -115,7 +118,7 @@ public class EnchantCalculator : MonoBehaviour
         GetGroupDamageModifier(data, out var groupDmgBonus, out var groupCritRateBonus, out var groupCritDmgBonus);
 
         float calCritRate = critRate + skillCritRateBonus + groupCritRateBonus;
-        float calCritDmg = 1 + 0.2f * ((100 + (critDmg + groupCritDmgBonus)) / 100f);
+        float calCritDmg = _baseCritDamageRate * ((100 + (critDmg + groupCritDmgBonus)) / 100f);
 
         int baseDamage;
 
