@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56bf0a28266a88d41b16a8563c304fc4, type: 3}
+  m_Name: TutorialStepData
+  m_EditorClassIdentifier:
+  _steps:
+  - stepId: 0
+    scene: 0
+    advanceMode: 0
+    highlightTargetId: StageStartButton
+    guideText: "스테이지를 눌러 전투를 시작해보세요"
+    note: "기획 1: 최초 로비 진입 및 스테이지 시작 (홍정옥이 대상/문구 출채)"
+  - stepId: 1
+    scene: 1
+    advanceMode: 1
+    highlightTargetId: SortTable
+    guideText: "같은 색 유닛 3개를 정렬해보세요"
+    note: "기획 2: 최초 퍼즐 조작 (정렬 완성 이벤트로 다음)"
+  - stepId: 2
+    scene: 1
+    advanceMode: 0
+    highlightTargetId:
+    guideText: "정렬하면 공격이 나갑니다!"
+    note: "기획 3: 최초 공격 격발 및 경험치 획득"
