@@ -33,6 +33,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     private readonly SpellRepo _repo;
     private readonly ScreenNavigator _navigator;
     private readonly EnchantChangePresenter _changePresenter;
+    private readonly LocalizationManager _localizationManager;
     
     // 확률 생성기
     private readonly EnchantSelector _selector;
@@ -57,6 +58,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         _unlimitedReroll = rerollCount < 0;                                 // -1 = 무한(EnchantSelectView가 테스트2 씬 보고 결정)
         _baseRerollCount = _unlimitedReroll ? 0 : Mathf.Max(0, rerollCount);
         _selector = new EnchantSelector(_repo, config);
+        _localizationManager = LocalizationManager.Instance;
 
         _view.OnChoiceSelected += HandleChoice;
         _view.OnSkipSelected += HandleSkip;
@@ -148,23 +150,45 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         {
             var candidate = _currentChoices[i];
 
-            displayData[i] = new EnchantDisplayData
+            if (_localizationManager == null)
             {
-                EnchantId = candidate.Specific_ID,
-                Level = candidate.Level,
-                // 카드 상단에 스킬/스탯 텍스트 표시
-                TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                Debug.LogWarning("No localization manager found. No Localization.");
+                displayData[i] = new EnchantDisplayData
+                {
+                    EnchantId = candidate.Specific_ID,
+                    Level = candidate.Level,
+                    // 카드 상단에 스킬/스탯 텍스트 표시
+                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
                 
-                // 추후 로컬라이징 연동
-                Name = $"NameID: {candidate.Name_ID}", 
-                Description = candidate.Type == EnchantType.Skill ? 
-                    $"데미지: {candidate.SkillData.Dmg}" : 
-                    $"수치 증가: {candidate.StatData.Variation_2}",
-                // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
-                ImageKey = candidate.Type == EnchantType.Skill ? 
-                    $"{candidate.SkillData.SkillIcon_ID}" : 
-                    $"{candidate.StatData.Image_ID}"
-            };
+                    // 번역 데이터가 없음으로 ID를 출력함
+                    Name = $"NameID: {candidate.Name_ID}", 
+                    Description = candidate.Type == EnchantType.Skill ? 
+                        $"데미지: {candidate.SkillData.Dmg}" : 
+                        $"수치 증가: {candidate.StatData.Variation_2}",
+                    // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
+                    ImageKey = candidate.Type == EnchantType.Skill ? 
+                        $"{candidate.SkillData.SkillIcon_ID}" : 
+                        $"{candidate.StatData.Image_ID}"
+                };
+            }
+            else
+            {
+                displayData[i] = new EnchantDisplayData
+                {
+                    EnchantId = candidate.Specific_ID,
+                    Level = candidate.Level,
+                    // 카드 상단에 스킬/스탯 텍스트 표시
+                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                    Name = _localizationManager.Get(candidate.Name_ID, LocalizingType.Enchant), 
+                    Description = candidate.Type == EnchantType.Skill ? 
+                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                        _localizationManager.Get(candidate.StatData.StatDescrip, LocalizingType.Enchant),
+                    // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
+                    ImageKey = candidate.Type == EnchantType.Skill ? 
+                        $"{candidate.SkillData.SkillIcon_ID}" : 
+                        $"{candidate.StatData.Image_ID}"
+                };
+            }
         }
         
         _view.SetChoices(displayData);
