@@ -33,8 +33,8 @@ public static class PixelConverter
     /// <summary>
     /// 유닛(유니티 기본 단위에 따른 거리)을 픽셀(거리)로 역변환 (디버깅/기획자 전달용)
     /// </summary>
-    public static float UnitsToPixels(float pixels, float ppu = DEFAULT_PPU)
+    public static float UnitsToPixels(float units, float ppu = DEFAULT_PPU)
     {
-        return pixels * ppu;
+        return units * ppu;
     }
 }
