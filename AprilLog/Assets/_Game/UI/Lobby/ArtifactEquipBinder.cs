@@ -25,6 +25,9 @@ public class ArtifactEquipBinder : MonoBehaviour
     [Tooltip("장착 시 생성할 프리팹 (Slot_Aritfact)")]
     [SerializeField] private ArtifactEquipSlotView _equipPrefab;
 
+    [Tooltip("켜면 장착 카드를 EmptySlot 과 동일한 크기/앵커로 맞춘다")]
+    [SerializeField] private bool _matchEmptySlotSize = true;
+
     private ArtifactEquipSlotView[] _spawned;
     private Action<int>[] _slotHandlers;
 
@@ -85,6 +88,8 @@ public class ArtifactEquipBinder : MonoBehaviour
         // worldPositionStays=false 로 부모(container) 로컬 기준 생성 후, 위치/스케일을 컨테이너에 맞춰 초기화.
         ArtifactEquipSlotView view = Instantiate(_equipPrefab, slot.container, false);
         ResetRect(view.transform);
+        if (_matchEmptySlotSize)
+            MatchRectTo(view.transform as RectTransform, slot.emptySlot);
         view.SetData(data, grade);
         view.SetOwnedState(level, ascensionStage, isMaxLevel);
 
@@ -152,5 +157,21 @@ public class ArtifactEquipBinder : MonoBehaviour
         // 위치만 컨테이너 기준 0 으로(크기/앵커는 프리팹 설정 유지 → 고정 크기 카드가 찌그러지지 않음).
         if (t is RectTransform rt)
             rt.anchoredPosition3D = Vector3.zero;
+    }
+
+    // 장착 카드를 EmptySlot 의 RectTransform(앵커/피벗/크기/위치)에 그대로 맞춘다.
+    // → 같은 부모(container) 안에서 EmptySlot 과 동일한 영역을 차지하므로 크기가 동일하게 보인다.
+    private static void MatchRectTo(RectTransform target, GameObject emptySlot)
+    {
+        if (target == null || emptySlot == null)
+            return;
+        if (!(emptySlot.transform is RectTransform src))
+            return;
+
+        target.anchorMin = src.anchorMin;
+        target.anchorMax = src.anchorMax;
+        target.pivot = src.pivot;
+        target.sizeDelta = src.sizeDelta;
+        target.anchoredPosition3D = src.anchoredPosition3D;
     }
 }

@@ -32,6 +32,10 @@ public class HousingPlacementPopupView : MonoBehaviour
     [SerializeField] private HousingPlacementItemSlotView _itemSlotPrefab;
     [SerializeField] private TextMeshProUGUI _emptyText;
 
+    [Header("적용")]
+    [SerializeField] private Button _applyButton;
+    [SerializeField] private TextMeshProUGUI _selectedItemText;
+
     [Header("선택 표시")]
     [Tooltip("켜면 선택된 카테고리 텍스트 색상을 View에서 변경합니다. 직접 지정한 버튼 색상을 유지하려면 끕니다.")]
     [SerializeField] private bool _useCategorySelectionTextColor;
@@ -40,15 +44,18 @@ public class HousingPlacementPopupView : MonoBehaviour
 
     public event Action<HousingPlacementCategory> OnCategoryClicked;
     public event Action<HousingPlacementItemData> OnItemClicked;
+    public event Action OnApplyClicked;
 
     private void Awake()
     {
         BindCategories();
+        BindApplyButton();
     }
 
     private void OnDestroy()
     {
         UnbindCategories();
+        UnbindApplyButton();
         ClearItems();
     }
 
@@ -76,6 +83,24 @@ public class HousingPlacementPopupView : MonoBehaviour
             _slot.OnClicked += HandleItemClicked;
             _spawnedSlots.Add(_slot);
         }
+    }
+
+    public void SetSelectedItem(HousingPlacementItemData _itemData)
+    {
+        bool _hasSelection = _itemData != null;
+
+        if (_applyButton != null)
+        {
+            _applyButton.interactable = _hasSelection;
+        }
+
+        if (_selectedItemText == null)
+        {
+            return;
+        }
+
+        _selectedItemText.text = _hasSelection ? _itemData.DisplayName : string.Empty;
+        _selectedItemText.gameObject.SetActive(_hasSelection);
     }
 
     private void BindCategories()
@@ -119,6 +144,28 @@ public class HousingPlacementPopupView : MonoBehaviour
 
             _binding.Button.onClick.RemoveAllListeners();
         }
+    }
+
+    private void BindApplyButton()
+    {
+        if (_applyButton == null)
+        {
+            return;
+        }
+
+        _applyButton.onClick.RemoveListener(HandleApplyClicked);
+        _applyButton.onClick.AddListener(HandleApplyClicked);
+        _applyButton.interactable = false;
+    }
+
+    private void UnbindApplyButton()
+    {
+        if (_applyButton == null)
+        {
+            return;
+        }
+
+        _applyButton.onClick.RemoveListener(HandleApplyClicked);
     }
 
     private void RefreshCategoryLabels(HousingPlacementCategory _selectedCategory)
@@ -168,5 +215,10 @@ public class HousingPlacementPopupView : MonoBehaviour
     private void HandleItemClicked(HousingPlacementItemData _itemData)
     {
         OnItemClicked?.Invoke(_itemData);
+    }
+
+    private void HandleApplyClicked()
+    {
+        OnApplyClicked?.Invoke();
     }
 }

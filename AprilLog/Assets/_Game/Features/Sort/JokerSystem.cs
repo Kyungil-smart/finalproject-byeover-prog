@@ -180,4 +180,16 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
         if (_coolDownText != null) _coolDownText.enabled = false;
     }
+
+    public void RestoreJokerImages()
+    {
+        foreach (var icon in _jokerIcons)
+        {
+            if (icon != null && !icon.enabled)
+            {
+                icon.enabled = true;
+                Debug.Log("[JokerSystem] 조커 블록 1개 습득 완료");
+            }
+        }
+    }
 }

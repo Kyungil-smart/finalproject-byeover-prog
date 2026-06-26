@@ -12,13 +12,16 @@ public class HousingPlacementModel
 
     private bool _isPlacementMode;
     private HousingPlacementCategory _selectedCategory = HousingPlacementCategory.Decoration;
+    private HousingPlacementItemData _selectedItem;
 
     public event Action<bool> OnPlacementModeChanged;
     public event Action<HousingPlacementCategory> OnCategoryChanged;
+    public event Action<HousingPlacementItemData> OnSelectedItemChanged;
     public event Action OnItemsChanged;
 
     public bool IsPlacementMode => _isPlacementMode;
     public HousingPlacementCategory SelectedCategory => _selectedCategory;
+    public HousingPlacementItemData SelectedItem => _selectedItem;
 
     public HousingPlacementModel(IEnumerable<HousingPlacementItemData> _initialItems)
     {
@@ -49,7 +52,19 @@ public class HousingPlacementModel
         }
 
         _selectedCategory = _category;
+        SelectItem(null);
         OnCategoryChanged?.Invoke(_selectedCategory);
+    }
+
+    public void SelectItem(HousingPlacementItemData _itemData)
+    {
+        if (_selectedItem == _itemData)
+        {
+            return;
+        }
+
+        _selectedItem = _itemData;
+        OnSelectedItemChanged?.Invoke(_selectedItem);
     }
 
     public void SetItems(IEnumerable<HousingPlacementItemData> _newItems)
