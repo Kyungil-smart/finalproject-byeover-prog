@@ -27,8 +27,8 @@ public class CombinationView : MonoBehaviour, ICombinationView
 
     private CombinationPresenter _presenter;
     
-    // ToDo : 차후에 조합 스킬 아이콘 위치 정의되면 경로 수정 할 것.
-    private const string PATH = "Icons/";
+    // 조합 스킬 아이콘 = Resources/EnchantIcons/{SkillIcon_ID}.png (화염작렬 100151, 탄환세례 100161 등)
+    private const string PATH = "EnchantIcons/";
 
     private void Awake()
     {
