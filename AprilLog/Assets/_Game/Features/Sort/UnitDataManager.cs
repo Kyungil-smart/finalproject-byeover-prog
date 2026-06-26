@@ -41,7 +41,7 @@ public class UnitDataManager : MonoBehaviour
             return data;
         }
 
-        Debug.Log($"{realId} 번 데이터를 찾을 수 없습니다!");
+        Debug.LogWarning($"{realId} 번 데이터를 찾을 수 없습니다!");
         return null;
     }
 }

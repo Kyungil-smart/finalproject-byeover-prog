@@ -135,9 +135,12 @@ public class LocalizationManager : MonoBehaviour
                 }
                 break;
         }
-
-        Debug.LogWarning($"[Localization] {localizingType} is wrong Localizing type of this id : {id}. Return Localizing Code");
-        if(entry == null) return $"[{id}]";
+        
+        if(entry == null)
+        {
+            Debug.LogWarning($"[Localization] {localizingType} is wrong Localizing type of this id : {id}. Return Localizing Code");
+            return $"[{id}]";
+        }
         
         // 현재 언어에 맞는 텍스트 반환
         // 나중에 언어 추가할 때 여기에 case 추가하면 됨

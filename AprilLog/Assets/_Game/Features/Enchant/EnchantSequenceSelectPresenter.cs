@@ -14,6 +14,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     private readonly SpellRepo _repo;
     private readonly ScreenNavigator _navigator;
     private readonly EnchantChangePresenter _changePresenter;
+    private readonly LocalizationManager _localizationManager;
     
     // 신규 셀렉터 및 시퀀스 설정
     private readonly EnchantSequenceSelector _sequenceSelector; 
@@ -48,6 +49,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         
         // 기존 EnchantSelector 대신 신규 분리형 셀렉터 할당
         _sequenceSelector = new EnchantSequenceSelector(_repo, config); 
+        _localizationManager = LocalizationManager.Instance;
 
         _view.OnChoiceSelected += HandleChoice;
         _view.OnSkipSelected += HandleSkip;
@@ -188,20 +190,46 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         for (int i = 0; i < _currentChoices.Count; i++)
         {
             var candidate = _currentChoices[i];
-            displayData[i] = new EnchantDisplayData
+            
+            if (_localizationManager == null)
             {
-                EnchantId = candidate.Specific_ID,
-                Level = candidate.Level,
-                TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
-                Name = $"NameID: {candidate.Name_ID}", 
-                Description = candidate.Type == EnchantType.Skill ? 
-                              $"데미지: {candidate.SkillData.Dmg}" : 
-                              $"수치 증가: {candidate.StatData.Variation_2}",
-                // 추가: 조규민 - 분리형 선택 흐름에서도 인챈트 아이콘 키를 카드 UI로 전달한다.
-                ImageKey = candidate.Type == EnchantType.Skill ? 
-                    $"{candidate.SkillData.SkillIcon_ID}" : 
-                    $"{candidate.StatData.Image_ID}"
-            };
+                Debug.LogWarning("No localization manager found. No Localization.");
+                displayData[i] = new EnchantDisplayData
+                {
+                    EnchantId = candidate.Specific_ID,
+                    Level = candidate.Level,
+                    // 카드 상단에 스킬/스탯 텍스트 표시
+                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                
+                    // 번역 데이터가 없음으로 ID를 출력함
+                    Name = $"NameID: {candidate.Name_ID}", 
+                    Description = candidate.Type == EnchantType.Skill ? 
+                        $"데미지: {candidate.SkillData.Dmg}" : 
+                        $"수치 증가: {candidate.StatData.Variation_2}",
+                    // 추가: 조규민 - 분리형 선택 흐름에서도 인챈트 아이콘 키를 카드 UI로 전달한다.
+                    ImageKey = candidate.Type == EnchantType.Skill ? 
+                        $"{candidate.SkillData.SkillIcon_ID}" : 
+                        $"{candidate.StatData.Image_ID}"
+                };
+            }
+            else
+            {
+                displayData[i] = new EnchantDisplayData
+                {
+                    EnchantId = candidate.Specific_ID,
+                    Level = candidate.Level,
+                    // 카드 상단에 스킬/스탯 텍스트 표시
+                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                    Name = _localizationManager.Get(candidate.Name_ID, LocalizingType.Enchant), 
+                    Description = candidate.Type == EnchantType.Skill ? 
+                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                        _localizationManager.Get(candidate.StatData.StatDescrip, LocalizingType.Enchant),
+                    // 추가: 조규민 - 분리형 선택 흐름에서도 인챈트 아이콘 키를 카드 UI로 전달한다.
+                    ImageKey = candidate.Type == EnchantType.Skill ? 
+                        $"{candidate.SkillData.SkillIcon_ID}" : 
+                        $"{candidate.StatData.Image_ID}"
+                };
+            }
         }
         _view.SetChoices(displayData);
         // 무한(테스트2 씬)이면 항상 사용 가능 + 남은 횟수 -1(View에서 ∞ 표시).
