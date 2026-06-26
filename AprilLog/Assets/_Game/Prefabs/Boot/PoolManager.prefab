@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6223349611009145309
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2154056475224297819}
+  - component: {fileID: 3387158684526052300}
+  m_Layer: 0
+  m_Name: PoolManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2154056475224297819
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6223349611009145309}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3387158684526052300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6223349611009145309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f79cb02e1f52bad4da540dc3d5c626dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PoolManager
+  _configs:
+  - key: Monster_11
+    prefab: {fileID: 1580061858101502, guid: 4cc288806fd40b14fa4a61607951838f, type: 3}
+    initialCount: 30
+  - key: Monster_12
+    prefab: {fileID: 1580061858101502, guid: 4cc288806fd40b14fa4a61607951838f, type: 3}
+    initialCount: 30
+  - key: Monster_13
+    prefab: {fileID: 1173822541298154, guid: 20db208a3e8c1634987b9a0819ee82ca, type: 3}
+    initialCount: 30
+  - key: Monster_14
+    prefab: {fileID: 1173822541298154, guid: 20db208a3e8c1634987b9a0819ee82ca, type: 3}
+    initialCount: 30
+  - key: Monster_15
+    prefab: {fileID: 1911728796090200, guid: 5defcd8b74568954f8ced90d93da5f4a, type: 3}
+    initialCount: 30
+  - key: Monster_16
+    prefab: {fileID: 1911728796090200, guid: 5defcd8b74568954f8ced90d93da5f4a, type: 3}
+    initialCount: 30
+  - key: Monster_17
+    prefab: {fileID: 1712876586307768, guid: d315d63bbc5a40c42accfeafaa2f0f48, type: 3}
+    initialCount: 30
+  - key: Monster_18
+    prefab: {fileID: 1712876586307768, guid: d315d63bbc5a40c42accfeafaa2f0f48, type: 3}
+    initialCount: 30
+  - key: Monster_19
+    prefab: {fileID: 1567764455631376, guid: 46b993f865b21804cb01fb27d5c6cb40, type: 3}
+    initialCount: 30
+  - key: Monster_20
+    prefab: {fileID: 1567764455631376, guid: 46b993f865b21804cb01fb27d5c6cb40, type: 3}
+    initialCount: 30
+  - key: Monster_21
+    prefab: {fileID: 1670858455595532, guid: fa1183702aa3dcc428bdfa488de0d949, type: 3}
+    initialCount: 30
+  - key: Monster_22
+    prefab: {fileID: 1670858455595532, guid: fa1183702aa3dcc428bdfa488de0d949, type: 3}
+    initialCount: 30
+  - key: Monster_23
+    prefab: {fileID: 1298156805946866, guid: 025d4a8a32062ce44a376c8c234055bd, type: 3}
+    initialCount: 30
+  - key: Monster_24
+    prefab: {fileID: 1298156805946866, guid: 025d4a8a32062ce44a376c8c234055bd, type: 3}
+    initialCount: 30
+  - key: Monster_25
+    prefab: {fileID: 1099571533480960, guid: 7370721b403025147a05f1f06a1060ac, type: 3}
+    initialCount: 30
+  - key: Monster_26
+    prefab: {fileID: 1099571533480960, guid: 7370721b403025147a05f1f06a1060ac, type: 3}
+    initialCount: 30
+  - key: Monster_27
+    prefab: {fileID: 1790021878991660, guid: 37af07f2202f7164ba9675f6c4aec252, type: 3}
+    initialCount: 30
+  - key: Monster_28
+    prefab: {fileID: 1790021878991660, guid: 37af07f2202f7164ba9675f6c4aec252, type: 3}
+    initialCount: 30
