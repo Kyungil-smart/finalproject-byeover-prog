@@ -26,6 +26,7 @@ public class UserCloudData
     // ---------- 재화 ----------
     public int gold;
     public int parchment;
+    public int diamond;
 
     // ---------- 하우징 ----------
     public string housingAutoCurrencyLastClaimAt;
@@ -61,6 +62,7 @@ public class UserCloudData
             unlockedStages = new List<int> { 10001 },
             gold = 0,
             parchment = 0,
+            diamond = 0,
             housingAutoCurrencyLastClaimAt = DateTime.UtcNow.ToString("o"),
             language = "ko",
             sfxVolume = 1f,

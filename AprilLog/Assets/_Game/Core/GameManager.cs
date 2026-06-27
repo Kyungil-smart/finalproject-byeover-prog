@@ -639,7 +639,7 @@ public class GameManager : MonoBehaviour
 
         if (currencyModel != null)
         {
-            currencyModel.Initialize(CloudData.gold, CloudData.parchment);
+            currencyModel.Initialize(CloudData.gold, CloudData.parchment, CloudData.diamond);
         }
     }
 
@@ -701,6 +701,7 @@ public class GameManager : MonoBehaviour
 
     public int Gold => CloudData != null ? CloudData.gold : 0;
     public int Parchment => CloudData != null ? CloudData.parchment : 0;
+    public int Diamond => CloudData != null ? CloudData.diamond : 0;
 
     public bool CanAffordCurrency(int gold, int parchment)
     {
@@ -748,6 +749,47 @@ public class GameManager : MonoBehaviour
         if (CloudData.gold == gold && CloudData.parchment == parchment) return;
         CloudData.gold = gold;
         CloudData.parchment = parchment;
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    // ===== 다이아 API (gold/parchment와 동일 패턴. 영속 원본 = CloudData.diamond) =====
+    public bool CanAffordDiamond(int diamond)
+        => CloudData != null && CloudData.diamond >= Mathf.Max(0, diamond);
+
+    /// <summary>다이아 가산. reason은 로그·추적용.</summary>
+    public void AddDiamond(int diamond, string reason = null)
+    {
+        diamond = Mathf.Max(0, diamond);
+        if (diamond == 0) return;
+
+        EnsureCurrencyData();
+        CloudData.diamond = Mathf.Max(0, CloudData.diamond + diamond);
+        Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {CloudData.diamond}");
+
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    /// <summary>다이아 차감 시도. 부족하면 false(변경 없음).</summary>
+    public bool TrySpendDiamond(int diamond)
+    {
+        diamond = Mathf.Max(0, diamond);
+        if (!CanAffordDiamond(diamond)) return false;
+
+        CloudData.diamond -= diamond;
+        RaiseCurrencyChanged();
+        PersistCurrency();
+        return true;
+    }
+
+    /// <summary>다이아를 지정 값으로 설정 — 하이드레이션/리셋·테스트용. 값 동일하면 무시.</summary>
+    public void SetDiamond(int diamond)
+    {
+        diamond = Mathf.Max(0, diamond);
+        EnsureCurrencyData();
+        if (CloudData.diamond == diamond) return;
+        CloudData.diamond = diamond;
         RaiseCurrencyChanged();
         PersistCurrency();
     }
