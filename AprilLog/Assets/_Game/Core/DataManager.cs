@@ -11,8 +11,11 @@
 
 // 수정자 : 김영찬 - StoryRepo 신설
 
+// 수정자 : 김영찬 - ResourceRepo 신설
+
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class DataManager : MonoBehaviour
 {
@@ -61,6 +64,7 @@ public class DataManager : MonoBehaviour
     [SerializeField] private GearRepo _gearRepo;
     [SerializeField] private StoryRepo _storyRepo;
     [SerializeField] private HousingRepo _housingRepo;
+    [SerializeField] private ResourceRepo _resourceRepo;
     
     // ---------- Public ----------
     public CharacterRepo CharacterRepo => _characterRepo;
@@ -70,6 +74,7 @@ public class DataManager : MonoBehaviour
     public GearRepo GearRepo => _gearRepo;
     public StoryRepo StoryRepo => _storyRepo;
     public HousingRepo HousingRepo => _housingRepo;
+    public ResourceRepo ResourceRepo => _resourceRepo;
     
     private void Awake()
     {
@@ -113,6 +118,7 @@ public class DataManager : MonoBehaviour
         InitializeRepo(nameof(_gearRepo), _gearRepo, () => _gearRepo.Initialize());
         InitializeRepo(nameof(_storyRepo), _storyRepo, () => _storyRepo.Initialize());
         InitializeRepo(nameof(_housingRepo), _housingRepo, () => _housingRepo.Initialize());
+        InitializeRepo(nameof(_resourceRepo), _resourceRepo, () => _resourceRepo.Initialize());
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");
