@@ -1,4 +1,4 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// HousingRepo의 가구 데이터를 하우징 배치 UI 표시 데이터로 변환합니다.
 /// </summary>
-public class HousingPlacementItemBuilder
+public class HousingPlacementItemMapper
 {
     private const string _categoryFunction = "function";
     private const string _categoryBackground = "background";
@@ -16,12 +16,12 @@ public class HousingPlacementItemBuilder
 
     private readonly string _iconResourceFolder;
 
-    public HousingPlacementItemBuilder(string _iconResourceFolder)
+    public HousingPlacementItemMapper(string _iconResourceFolder)
     {
         this._iconResourceFolder = NormalizeResourceFolder(_iconResourceFolder);
     }
 
-    public List<HousingPlacementItemData> Build(HousingRepo _housingRepo)
+    public List<HousingPlacementItemData> Map(HousingRepo _housingRepo)
     {
         List<HousingPlacementItemData> _items = new();
 

@@ -1,4 +1,4 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 #if UNITY_EDITOR
 using System;
@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// <summary>
 /// Page_Housing 프리팹의 FurnitureRoot에 고정 배치 슬롯을 구성합니다.
 /// </summary>
-public static class HousingFurnitureRootSlotInstaller
+public static class HousingFurnitureSlotPrefabInstaller
 {
     private const string _prefabPath = "Assets/_Game/Prefabs/UI/Lobby/Page/Housing/Page_Housing.prefab";
     private const string _furnitureRootName = "FurnitureRoot";
@@ -86,13 +86,13 @@ public static class HousingFurnitureRootSlotInstaller
 
             if (_furnitureRoot == null)
             {
-                Debug.LogError($"[HousingFurnitureRootSlotInstaller] {_furnitureRootName}를 찾지 못했습니다.");
+                Debug.LogError($"[HousingFurnitureSlotPrefabInstaller] {_furnitureRootName}를 찾지 못했습니다.");
                 return;
             }
 
             EnsureFurnitureRootLayout(_furnitureRoot);
-            HousingFurniturePlacementView _placementView = EnsurePlacementView(_furnitureRoot);
-            SerializedObject _serializedView = new SerializedObject(_placementView);
+            HousingFurnitureSlotView _slotView = EnsureSlotView(_furnitureRoot);
+            SerializedObject _serializedView = new SerializedObject(_slotView);
             SerializedProperty _bindings = _serializedView.FindProperty("_locationBindings");
             _bindings.arraySize = _slotDefinitions.Length;
 
@@ -112,7 +112,7 @@ public static class HousingFurnitureRootSlotInstaller
 
             _serializedView.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(_prefabRoot, _prefabPath);
-            Debug.Log("[HousingFurnitureRootSlotInstaller] FurnitureRoot Location 슬롯 구성을 완료했습니다.");
+            Debug.Log("[HousingFurnitureSlotPrefabInstaller] FurnitureRoot Location 슬롯 구성을 완료했습니다.");
         }
         finally
         {
@@ -120,16 +120,16 @@ public static class HousingFurnitureRootSlotInstaller
         }
     }
 
-    private static HousingFurniturePlacementView EnsurePlacementView(Transform _furnitureRoot)
+    private static HousingFurnitureSlotView EnsureSlotView(Transform _furnitureRoot)
     {
-        HousingFurniturePlacementView _placementView = _furnitureRoot.GetComponent<HousingFurniturePlacementView>();
+        HousingFurnitureSlotView _slotView = _furnitureRoot.GetComponent<HousingFurnitureSlotView>();
 
-        if (_placementView != null)
+        if (_slotView != null)
         {
-            return _placementView;
+            return _slotView;
         }
 
-        return _furnitureRoot.gameObject.AddComponent<HousingFurniturePlacementView>();
+        return _furnitureRoot.gameObject.AddComponent<HousingFurnitureSlotView>();
     }
 
     private static void EnsureFurnitureRootLayout(Transform _furnitureRoot)

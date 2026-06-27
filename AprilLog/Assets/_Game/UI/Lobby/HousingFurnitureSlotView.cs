@@ -1,4 +1,4 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using System;
 using System.IO;
@@ -6,9 +6,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 하우징 가구 데이터를 FurnitureRoot의 고정 위치 이미지에 적용합니다.
+/// 하우징 가구 데이터를 방 안의 고정 슬롯 이미지에 적용합니다.
 /// </summary>
-public class HousingFurniturePlacementView : MonoBehaviour
+public class HousingFurnitureSlotView : MonoBehaviour
 {
     [Serializable]
     public class LocationBinding
@@ -62,7 +62,7 @@ public class HousingFurniturePlacementView : MonoBehaviour
 
         if (_targetImage == null)
         {
-            Debug.LogWarning($"[HousingFurniturePlacementView] 배치 위치를 찾지 못했습니다. Location: {_itemData.Location}", this);
+            Debug.LogWarning($"[HousingFurnitureSlotView] 배치 위치를 찾지 못했습니다. Location: {_itemData.Location}", this);
             return false;
         }
 
@@ -75,7 +75,7 @@ public class HousingFurniturePlacementView : MonoBehaviour
 
         if (_sprite == null)
         {
-            Debug.LogWarning($"[HousingFurniturePlacementView] 가구 이미지를 찾지 못했습니다. Furniture: {_itemData.FurnitureId}, Resource: {_itemData.ResourceKey}", this);
+            Debug.LogWarning($"[HousingFurnitureSlotView] 가구 이미지를 찾지 못했습니다. Furniture: {_itemData.FurnitureId}, Resource: {_itemData.ResourceKey}", this);
             return false;
         }
 

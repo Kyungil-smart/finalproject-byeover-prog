@@ -1,17 +1,19 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>
-/// 하우징 자동재화 MVP 객체를 Inspector 참조와 계정 저장 데이터로 초기화합니다.
+/// 하우징 시간 누적 보상 UI와 계정 저장 데이터를 연결합니다.
 /// </summary>
-public class HousingAutoCurrencyController : MonoBehaviour
+public class HousingIdleRewardController : MonoBehaviour
 {
     [Header("View 연결")]
-    [SerializeField] private HousingAutoCurrencyFurnitureView _furnitureView;
-    [SerializeField] private HousingAutoCurrencyPopupView _popupView;
+    [FormerlySerializedAs("_furnitureView")]
+    [SerializeField] private HousingIdleRewardButtonView _rewardButtonView;
+    [SerializeField] private HousingIdleRewardPopupView _popupView;
     [SerializeField] private CurrencyModel _currencyModel;
 
     [Header("보상 데이터")]
@@ -28,8 +30,8 @@ public class HousingAutoCurrencyController : MonoBehaviour
     [Tooltip("Model 상태를 확인하는 주기입니다. UI는 값이 바뀔 때만 갱신됩니다.")]
     [SerializeField] private float _refreshIntervalSeconds = 1f;
 
-    private HousingAutoCurrencyModel _model;
-    private HousingAutoCurrencyPresenter _presenter;
+    private HousingIdleRewardModel _model;
+    private HousingIdleRewardPresenter _presenter;
 
     private void Awake()
     {
@@ -54,14 +56,14 @@ public class HousingAutoCurrencyController : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (_furnitureView == null)
+        if (_rewardButtonView == null)
         {
-            _furnitureView = GetComponentInChildren<HousingAutoCurrencyFurnitureView>(true);
+            _rewardButtonView = GetComponentInChildren<HousingIdleRewardButtonView>(true);
         }
 
         if (_popupView == null)
         {
-            _popupView = GetComponentInChildren<HousingAutoCurrencyPopupView>(true);
+            _popupView = GetComponentInChildren<HousingIdleRewardPopupView>(true);
         }
 
         if (_currencyModel == null)
@@ -72,10 +74,10 @@ public class HousingAutoCurrencyController : MonoBehaviour
 
     private void InitializePresenter()
     {
-        HousingAutoCurrencyRewardTable _rewardTable = ResolveRewardTable();
+        HousingIdleRewardTable _rewardTable = ResolveRewardTable();
         DateTime _chargeStartUtc = ResolveSavedChargeStartUtc();
-        _model = new HousingAutoCurrencyModel(_maxChargeSeconds, _rewardTable, _chargeStartUtc);
-        _presenter = new HousingAutoCurrencyPresenter(_model, _popupView, _furnitureView, HandleClaimRequested);
+        _model = new HousingIdleRewardModel(_maxChargeSeconds, _rewardTable, _chargeStartUtc);
+        _presenter = new HousingIdleRewardPresenter(_model, _popupView, _rewardButtonView, HandleClaimRequested);
         _presenter.Initialize();
         ApplyFurnitureIcon();
         _popupView?.Hide();
@@ -91,7 +93,7 @@ public class HousingAutoCurrencyController : MonoBehaviour
         return DateTime.UtcNow;
     }
 
-    private HousingAutoCurrencyRewardTable ResolveRewardTable()
+    private HousingIdleRewardTable ResolveRewardTable()
     {
         if (!_useHousingRewardTable)
         {
@@ -102,11 +104,11 @@ public class HousingAutoCurrencyController : MonoBehaviour
 
         if (_rewardData == null)
         {
-            Debug.LogWarning("[HousingAutoCurrencyController] HousingRewardData를 찾지 못해 Inspector 수동 보상값을 사용합니다.", this);
+            Debug.LogWarning("[HousingIdleRewardController] HousingRewardData를 찾지 못해 Inspector 수동 보상값을 사용합니다.", this);
             return CreateManualRewardTable();
         }
 
-        return new HousingAutoCurrencyRewardTable(
+        return new HousingIdleRewardTable(
             _rewardData.Item_1,
             _rewardData.Amount_1,
             _rewardData.Item_2,
@@ -150,9 +152,9 @@ public class HousingAutoCurrencyController : MonoBehaviour
         return Mathf.Max(1, GameManager.Instance.CloudData.currentChapter);
     }
 
-    private HousingAutoCurrencyRewardTable CreateManualRewardTable()
+    private HousingIdleRewardTable CreateManualRewardTable()
     {
-        return new HousingAutoCurrencyRewardTable(
+        return new HousingIdleRewardTable(
             70001,
             _manualGoldReward,
             70002,
@@ -163,12 +165,12 @@ public class HousingAutoCurrencyController : MonoBehaviour
 
     private void ApplyFurnitureIcon()
     {
-        if (_popupView == null || _furnitureView == null)
+        if (_popupView == null || _rewardButtonView == null)
         {
             return;
         }
 
-        Image _furnitureImage = _furnitureView.GetComponent<Image>();
+        Image _furnitureImage = _rewardButtonView.GetComponent<Image>();
 
         if (_furnitureImage == null)
         {
@@ -190,26 +192,26 @@ public class HousingAutoCurrencyController : MonoBehaviour
         _presenter?.Refresh();
     }
 
-    private void HandleClaimRequested(HousingAutoCurrencyClaimResult _claimResult)
+    private void HandleClaimRequested(HousingIdleRewardClaimResult _claimResult)
     {
-        HousingAutoCurrencyState _state = _claimResult.State;
+        HousingIdleRewardState _state = _claimResult.State;
 
         if (GameManager.Instance != null)
         {
             GameManager.Instance.ClaimHousingAutoCurrency(_state.GoldReward, _state.ParchmentReward, _claimResult.ClaimedAtUtcText);
-            LogDiamondReward(_state.DiamondReward);
+            GrantDiamondReward(_state.DiamondReward);
             return;
         }
 
         GrantLocalCurrency(_state);
-        LogDiamondReward(_state.DiamondReward);
+        GrantDiamondReward(_state.DiamondReward);
     }
 
-    private void GrantLocalCurrency(HousingAutoCurrencyState _state)
+    private void GrantLocalCurrency(HousingIdleRewardState _state)
     {
         if (_currencyModel == null)
         {
-            Debug.Log($"[HousingAutoCurrencyController] CurrencyModel 미연결로 자동재화 수령을 로그 처리합니다. Gold: {_state.GoldReward}, Parchment: {_state.ParchmentReward}", this);
+            Debug.Log($"[HousingIdleRewardController] CurrencyModel 미연결로 시간 누적 보상 수령을 로그 처리합니다. Gold: {_state.GoldReward}, Parchment: {_state.ParchmentReward}", this);
             return;
         }
 
@@ -224,14 +226,20 @@ public class HousingAutoCurrencyController : MonoBehaviour
         }
     }
 
-    private void LogDiamondReward(int _diamondReward)
+    // 추가: 조규민 - 시간 누적 보상 수령 시 다이아 보상을 기존 재화 저장 흐름으로 지급한다.
+    private void GrantDiamondReward(int _diamondReward)
     {
         if (_diamondReward <= 0)
         {
             return;
         }
 
-        // TODO [2026-06-26 조규민] 다이아 재화 저장 API 확정 후 실제 지급 연동 필요
-        Debug.Log($"[HousingAutoCurrencyController] 다이아 보상은 저장 API 미확정으로 임시 처리합니다. Amount: {_diamondReward}", this);
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning($"[HousingIdleRewardController] GameManager가 없어 다이아 보상을 지급하지 못했습니다. Amount: {_diamondReward}", this);
+            return;
+        }
+
+        GameManager.Instance.AddDiamond(_diamondReward, "하우징 시간 누적 보상");
     }
 }

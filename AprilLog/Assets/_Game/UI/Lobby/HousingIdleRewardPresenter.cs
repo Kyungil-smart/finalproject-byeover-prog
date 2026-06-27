@@ -1,41 +1,41 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using System;
 using UnityEngine;
 
 /// <summary>
-/// 자동재화 가구 입력, 팝업 갱신, 수령 요청 흐름을 중재합니다.
+/// 시간 누적 보상 가구 입력, 팝업 갱신, 수령 요청 흐름을 중재합니다.
 /// </summary>
-public class HousingAutoCurrencyPresenter
+public class HousingIdleRewardPresenter
 {
-    private readonly HousingAutoCurrencyModel _model;
-    private readonly HousingAutoCurrencyPopupView _popupView;
-    private readonly HousingAutoCurrencyFurnitureView _furnitureView;
-    private readonly Action<HousingAutoCurrencyClaimResult> _onClaimRequested;
+    private readonly HousingIdleRewardModel _model;
+    private readonly HousingIdleRewardPopupView _popupView;
+    private readonly HousingIdleRewardButtonView _rewardButtonView;
+    private readonly Action<HousingIdleRewardClaimResult> _onClaimRequested;
 
     private bool _isInitialized;
 
-    public HousingAutoCurrencyPresenter(
-        HousingAutoCurrencyModel _model,
-        HousingAutoCurrencyPopupView _popupView,
-        HousingAutoCurrencyFurnitureView _furnitureView,
-        Action<HousingAutoCurrencyClaimResult> _onClaimRequested)
+    public HousingIdleRewardPresenter(
+        HousingIdleRewardModel _model,
+        HousingIdleRewardPopupView _popupView,
+        HousingIdleRewardButtonView _rewardButtonView,
+        Action<HousingIdleRewardClaimResult> _onClaimRequested)
     {
         this._model = _model;
         this._popupView = _popupView;
-        this._furnitureView = _furnitureView;
+        this._rewardButtonView = _rewardButtonView;
         this._onClaimRequested = _onClaimRequested;
     }
 
     public void Initialize()
     {
-        if (_model == null || _popupView == null || _furnitureView == null)
+        if (_model == null || _popupView == null || _rewardButtonView == null)
         {
-            Debug.LogWarning("[HousingAutoCurrencyPresenter] 자동재화 MVP 연결이 부족합니다.");
+            Debug.LogWarning("[HousingIdleRewardPresenter] 시간 누적 보상 MVP 연결이 부족합니다.");
             return;
         }
 
-        _furnitureView.OnClicked += HandleFurnitureClicked;
+        _rewardButtonView.OnClicked += HandleRewardButtonClicked;
         _popupView.OnConfirmClicked += HandleConfirmClicked;
         _popupView.OnCancelClicked += HandleCancelClicked;
         _model.OnStateChanged += HandleStateChanged;
@@ -45,9 +45,9 @@ public class HousingAutoCurrencyPresenter
 
     public void Release()
     {
-        if (_furnitureView != null)
+        if (_rewardButtonView != null)
         {
-            _furnitureView.OnClicked -= HandleFurnitureClicked;
+            _rewardButtonView.OnClicked -= HandleRewardButtonClicked;
         }
 
         if (_popupView != null)
@@ -74,7 +74,7 @@ public class HousingAutoCurrencyPresenter
         _model.Refresh();
     }
 
-    private void HandleFurnitureClicked()
+    private void HandleRewardButtonClicked()
     {
         _model.ForceNotify();
         _popupView.Show();
@@ -82,7 +82,7 @@ public class HousingAutoCurrencyPresenter
 
     private void HandleConfirmClicked()
     {
-        HousingAutoCurrencyClaimResult _claimResult = _model.Claim();
+        HousingIdleRewardClaimResult _claimResult = _model.Claim();
         _onClaimRequested?.Invoke(_claimResult);
         _popupView.Hide();
     }
@@ -92,7 +92,7 @@ public class HousingAutoCurrencyPresenter
         _popupView.Hide();
     }
 
-    private void HandleStateChanged(HousingAutoCurrencyState _state)
+    private void HandleStateChanged(HousingIdleRewardState _state)
     {
         _popupView.Refresh(_state);
     }

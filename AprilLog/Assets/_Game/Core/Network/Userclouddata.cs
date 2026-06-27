@@ -30,6 +30,8 @@ public class UserCloudData
 
     // ---------- 하우징 ----------
     public string housingAutoCurrencyLastClaimAt;
+    // 추가: 조규민 - 계정별 하우징 배치 가구 ID를 저장한다.
+    public List<int> housingPlacedFurnitureIds = new List<int>();
 
     // ---------- 아웃게임 성장 ----------
     public int hpBonus;
@@ -64,6 +66,7 @@ public class UserCloudData
             parchment = 0,
             diamond = 0,
             housingAutoCurrencyLastClaimAt = DateTime.UtcNow.ToString("o"),
+            housingPlacedFurnitureIds = new List<int>(),
             language = "ko",
             sfxVolume = 1f,
             bgmVolume = 1f,

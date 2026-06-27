@@ -1,4 +1,4 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using System;
 using UnityEngine;
@@ -6,9 +6,9 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 자동재화 가구 터치 입력을 Presenter로 전달합니다.
+/// 시간 누적 보상 가구의 클릭 입력을 Presenter로 전달합니다.
 /// </summary>
-public class HousingAutoCurrencyFurnitureView : MonoBehaviour, IPointerClickHandler
+public class HousingIdleRewardButtonView : MonoBehaviour, IPointerClickHandler
 {
     [Header("입력")]
     [Tooltip("Image의 Raycast Target이 꺼져 있으면 클릭을 받을 수 없어 자동으로 켭니다.")]

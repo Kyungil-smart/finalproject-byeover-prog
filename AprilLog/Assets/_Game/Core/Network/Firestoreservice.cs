@@ -378,6 +378,7 @@ public class FirestoreService : MonoBehaviour
             { "parchment", userData.parchment },
             { "diamond", userData.diamond },
             { "housingAutoCurrencyLastClaimAt", userData.housingAutoCurrencyLastClaimAt ?? DateTime.UtcNow.ToString("o") },
+            { "housingPlacedFurnitureIds", userData.housingPlacedFurnitureIds ?? new List<int>() },
             { "hpBonus", userData.hpBonus },
             { "attackBonus", userData.attackBonus },
             { "shieldBonus", userData.shieldBonus },
@@ -468,6 +469,10 @@ public class FirestoreService : MonoBehaviour
             data.housingAutoCurrencyLastClaimAt = housingAutoCurrencyLastClaimAt;
         else
             data.housingAutoCurrencyLastClaimAt = null;
+
+        // 추가: 조규민 - Firestore에 저장된 하우징 배치 가구 ID 목록을 복원한다.
+        if (snapshot.TryGetValue("housingPlacedFurnitureIds", out object housingPlacedFurnitureIds))
+            data.housingPlacedFurnitureIds = ConvertIntList(housingPlacedFurnitureIds);
 
         if (snapshot.TryGetValue("hpBonus", out int hpBonus))
             data.hpBonus = hpBonus;
