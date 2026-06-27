@@ -93,7 +93,7 @@ public class MonsterSpawner : MonoBehaviour
     // 순차 소환 코루틴
     private IEnumerator ProcessSpawnQueue(Queue<StageModel.SpawnCommand> queue, float delay)
     {
-        Debug.Log($"{delay}초의 간격을 두고 총 {queue.Count}만큼 생산명령 접수");
+        Debug.Log($"{delay}초의 간격을 두고 총 {queue.Count}만큼 생산명령 접수.");
         while (queue.Count > 0)
         {
             var cmd = queue.Dequeue();
@@ -102,6 +102,7 @@ public class MonsterSpawner : MonoBehaviour
             bool isBoss = cmd.Type == StageModel.SpawnType.Elite || cmd.Type == StageModel.SpawnType.Boss;
             
             var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss);
+            Debug.Log($"Monster ID : {cmd.CharacterId} 소환됨");
 
             if (ai != null && cmd.ScalingData != null)
             {
