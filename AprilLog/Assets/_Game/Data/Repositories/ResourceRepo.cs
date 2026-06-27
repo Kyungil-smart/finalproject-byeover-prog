@@ -46,8 +46,7 @@ public class ResourceRepo : MonoBehaviour
         DateTime now = DateTime.Now;
         foreach (var dbData in _stamina.Values)
         {
-            // 임시: 최초 접속이라 가정하고 InitialAmount 세팅
-            // ToDo : 저장 된 값 로드하고 저장된 값이 없으면 이 내용으로 초기화 하도록 할 것. <로드 부분은 팀장님과 협의 후 수정>
+            // 최초 접속이라 가정하고 InitialAmount 세팅. 초기화 후 로드데이터 있으면 로드 함.
             int savedAmount = dbData.InitialAmount; 
             DateTime savedTime = now; 
 
