@@ -16,11 +16,15 @@ public class LobbyTopBarUI : MonoBehaviour
     [SerializeField] private TMP_Text staminaText;
     [SerializeField] private TMP_Text goldText;
     [SerializeField] private TMP_Text parchmentText;
+    [Tooltip("다이아 표시 텍스트. (탑바의 양피지 자리를 다이아로 쓰려면 그 텍스트를 여기에 연결)")]
+    [SerializeField] private TMP_Text diamondText;
 
     [Header("데이터")]
     [SerializeField] private PlayerProgressModel progressModel;
     [SerializeField] private CurrencyModel currencyModel;
     [SerializeField] private StaminaModel staminaModel;
+    [Tooltip("다이아/티켓 모델. 비우면 자동 탐색")]
+    [SerializeField] private ExtraCurrencyModel extraCurrencyModel;
 
     private const string DefaultNickname = "NICKNAME";
 
@@ -34,6 +38,9 @@ public class LobbyTopBarUI : MonoBehaviour
 
         if (staminaModel == null)
             staminaModel = FindFirstObjectByType<StaminaModel>();
+
+        if (extraCurrencyModel == null)
+            extraCurrencyModel = FindFirstObjectByType<ExtraCurrencyModel>();
     }
 
     private void OnEnable()
@@ -46,6 +53,9 @@ public class LobbyTopBarUI : MonoBehaviour
         if (staminaModel != null)
             staminaModel.OnStaminaChanged += SetStamina;
 
+        if (extraCurrencyModel != null)
+            extraCurrencyModel.OnChanged += HandleExtraChanged;
+
         Refresh();
     }
 
@@ -56,6 +66,9 @@ public class LobbyTopBarUI : MonoBehaviour
 
         if (staminaModel != null)
             staminaModel.OnStaminaChanged -= SetStamina;
+
+        if (extraCurrencyModel != null)
+            extraCurrencyModel.OnChanged -= HandleExtraChanged;
     }
 
     public void Refresh()
@@ -74,6 +87,9 @@ public class LobbyTopBarUI : MonoBehaviour
             SetStamina(staminaModel.Current, staminaModel.Max);
         else
             SetStamina(StaminaModel.TestStartStamina, StaminaModel.TestMaxStamina);
+
+        // 다이아
+        HandleExtraChanged();
     }
 
     public void SetNickname(string nickname)
@@ -106,6 +122,16 @@ public class LobbyTopBarUI : MonoBehaviour
 
         if (parchmentText != null)
             parchmentText.text = CurrencyModel.FormatAmount(parchment);
+    }
+
+    // 다이아 표시 갱신 (ExtraCurrencyModel.OnChanged 구독 + 최초 Refresh).
+    private void HandleExtraChanged()
+    {
+        if (diamondText == null)
+            return;
+
+        int diamond = extraCurrencyModel != null ? extraCurrencyModel.Diamond : 0;
+        diamondText.text = CurrencyModel.FormatAmount(diamond);
     }
 
     private string GetNickname()

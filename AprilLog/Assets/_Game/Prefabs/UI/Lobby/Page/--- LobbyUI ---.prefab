@@ -3114,6 +3114,18 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7293767795688509094, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
+      propertyPath: btnBackGoods
+      value: 
+      objectReference: {fileID: 3182747247510616670}
+    - target: {fileID: 7293767795688509094, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
+      propertyPath: staminaModel
+      value: 
+      objectReference: {fileID: 4642423598959218703}
+    - target: {fileID: 7293767795688509094, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
+      propertyPath: btnResetGoods
+      value: 
+      objectReference: {fileID: 6236106165832755278}
     - target: {fileID: 7401573275081144445, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -3147,6 +3159,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
+--- !u!114 &3182747247510616670 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2381609901846722101, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
+  m_PrefabInstance: {fileID: 947530895778679915}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!114 &4683454007927386593 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5609434337825832330, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
@@ -3168,6 +3191,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 6764395573201225153, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
   m_PrefabInstance: {fileID: 947530895778679915}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6236106165832755278 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6606032779900429349, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
+  m_PrefabInstance: {fileID: 947530895778679915}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!114 &6329597928112852032 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6553143813080055851, guid: 1546fa8e7a2841a45b780c7f84f5b260, type: 3}
@@ -3400,6 +3434,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a5a76331c9f2955479da0fddf096a0aa, type: 3}
+--- !u!114 &4642423598959218703 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7636581027256123862, guid: a5a76331c9f2955479da0fddf096a0aa, type: 3}
+  m_PrefabInstance: {fileID: 2997046945149358553}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a227a493b3bc93143898147692fb22ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaminaModel
 --- !u!224 &7609300775372434312 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4615640875951831633, guid: a5a76331c9f2955479da0fddf096a0aa, type: 3}
