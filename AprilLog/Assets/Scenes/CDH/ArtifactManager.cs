@@ -139,23 +139,30 @@ public class ArtifactManager : MonoBehaviour
         var artifact = MyArtifacts.Find(a => a.UniqueId == uniqueId);
         if (artifact == null) return;
 
-        int upgradeStoneId = 70001;
-        int cost = DataManager.Instance.GearRepo.GetGearUpgradeCost(artifact.MasterId, artifact.CurrentLevel, upgradeStoneId);
-        Debug.Log($"[디버그] ID:{artifact.MasterId} 레벨:{artifact.CurrentLevel} 비용:{cost}");
+        if (!artifact.CanLevelUp()) return;
 
-        if (cost <= 0)
+        // 레벨업 비용 = 골드(70001) + 강화석(70004). (아이템 ID는 item_master 기준)
+        const int goldItemId = 70001;
+        const int stoneItemId = 70004;
+        var repo = DataManager.Instance.GearRepo;
+        int goldCost = Mathf.Max(0, repo.GetGearUpgradeCost(artifact.MasterId, artifact.CurrentLevel, goldItemId));
+        int stoneCost = Mathf.Max(0, repo.GetGearUpgradeCost(artifact.MasterId, artifact.CurrentLevel, stoneItemId));
+
+        // 보유 검사 : 골드는 GameManager(영속 재화), 강화석은 UpgradeStone. (GameManager 없으면 골드 무시)
+        bool canGold = GameManager.Instance == null || GameManager.Instance.CanAffordCurrency(goldCost, 0);
+        if (!canGold || this.UpgradeStone < stoneCost)
         {
-            Debug.LogWarning($"강화 비용이 0입니다! 데이터 테이블(GearUpgradeCostTable)을 확인하세요.");
+            Debug.LogWarning($"[레벨업] 재화 부족. 골드 {goldCost} / 강화석 {stoneCost}");
             return;
         }
 
-        if (artifact.CanLevelUp() && this.UpgradeStone >= cost)
-        {
-            this.UpgradeStone -= cost;
-            artifact.CurrentLevel++;
-            Debug.Log($"[중요] 매니저 내부 레벨업 결과: ID {artifact.MasterId}, 레벨 {artifact.CurrentLevel}");
-            OnInventoryUpdated?.Invoke();
-        }
+        // 차감 → 레벨업
+        if (goldCost > 0 && GameManager.Instance != null)
+            GameManager.Instance.TrySpendCurrency(goldCost, 0);
+        this.UpgradeStone -= stoneCost;
+        artifact.CurrentLevel++;
+        Debug.Log($"[중요] 레벨업 완료: ID {artifact.MasterId}, 레벨 {artifact.CurrentLevel} (골드 -{goldCost}, 강화석 -{stoneCost})");
+        OnInventoryUpdated?.Invoke();
     }
 
     private int GenerateNewUniqueId() { return Random.Range(1000, 9999); }

@@ -376,6 +376,7 @@ public class FirestoreService : MonoBehaviour
             { "unlockedStages", userData.unlockedStages ?? new List<int>() },
             { "gold", userData.gold },
             { "parchment", userData.parchment },
+            { "diamond", userData.diamond },
             { "housingAutoCurrencyLastClaimAt", userData.housingAutoCurrencyLastClaimAt ?? DateTime.UtcNow.ToString("o") },
             { "hpBonus", userData.hpBonus },
             { "attackBonus", userData.attackBonus },
@@ -459,6 +460,9 @@ public class FirestoreService : MonoBehaviour
 
         if (snapshot.TryGetValue("parchment", out int parchment))
             data.parchment = parchment;
+
+        if (snapshot.TryGetValue("diamond", out int diamond))
+            data.diamond = diamond;
 
         if (snapshot.TryGetValue("housingAutoCurrencyLastClaimAt", out string housingAutoCurrencyLastClaimAt))
             data.housingAutoCurrencyLastClaimAt = housingAutoCurrencyLastClaimAt;

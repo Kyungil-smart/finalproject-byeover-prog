@@ -161,6 +161,7 @@ GameObject:
   - component: {fileID: 4868320838380301618}
   - component: {fileID: 771840385337916366}
   - component: {fileID: 752016436910435637}
+  - component: {fileID: 7423610971679210513}
   m_Layer: 5
   m_Name: Text_Dia
   m_TagString: Untagged
@@ -287,6 +288,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &7423610971679210513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 210290014858761273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59abc7cfcad41ef40a52451d873f9637, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CurrencyTextView
+  _kind: 2
+  _amountText: {fileID: 752016436910435637}
+  _iconImage: {fileID: 0}
+  _iconSprite: {fileID: 0}
+  _useShortFormat: 1
+  _prefix: 
+  _suffix: 
+  _staminaShowMax: 1
+  _currencyModel: {fileID: 0}
+  _staminaModel: {fileID: 0}
+  _extraCurrencyModel: {fileID: 0}
 --- !u!1 &1154978005690103262
 GameObject:
   m_ObjectHideFlags: 0
@@ -360,9 +384,11 @@ MonoBehaviour:
   staminaText: {fileID: 4772239691435862605}
   goldText: {fileID: 3193670881417758374}
   parchmentText: {fileID: 0}
+  diamondText: {fileID: 752016436910435637}
   progressModel: {fileID: 0}
   currencyModel: {fileID: 0}
   staminaModel: {fileID: 7636581027256123862}
+  extraCurrencyModel: {fileID: 0}
 --- !u!223 &6740833389245158596
 Canvas:
   m_ObjectHideFlags: 0
@@ -1140,6 +1166,7 @@ GameObject:
   - component: {fileID: 2940707130728709591}
   - component: {fileID: 2982070085803447241}
   - component: {fileID: 3193670881417758374}
+  - component: {fileID: 2009332736077004244}
   m_Layer: 5
   m_Name: Text_Gold
   m_TagString: Untagged
@@ -1266,6 +1293,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2009332736077004244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5782145358282211444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59abc7cfcad41ef40a52451d873f9637, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CurrencyTextView
+  _kind: 0
+  _amountText: {fileID: 3193670881417758374}
+  _iconImage: {fileID: 0}
+  _iconSprite: {fileID: 0}
+  _useShortFormat: 1
+  _prefix: 
+  _suffix: 
+  _staminaShowMax: 1
+  _currencyModel: {fileID: 0}
+  _staminaModel: {fileID: 0}
+  _extraCurrencyModel: {fileID: 0}
 --- !u!1 &6302387280118622240
 GameObject:
   m_ObjectHideFlags: 0
@@ -1278,7 +1328,7 @@ GameObject:
   - component: {fileID: 9134521961619740803}
   - component: {fileID: 4548623433969808354}
   m_Layer: 5
-  m_Name: Stamina_Icon
+  m_Name: Dia_Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1352,6 +1402,7 @@ GameObject:
   - component: {fileID: 19511693902130763}
   - component: {fileID: 5790525801293918581}
   - component: {fileID: 4772239691435862605}
+  - component: {fileID: 2514059601882713455}
   m_Layer: 5
   m_Name: Text_Stamina
   m_TagString: Untagged
@@ -1478,6 +1529,29 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2514059601882713455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6645517256962619511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59abc7cfcad41ef40a52451d873f9637, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CurrencyTextView
+  _kind: 6
+  _amountText: {fileID: 4772239691435862605}
+  _iconImage: {fileID: 0}
+  _iconSprite: {fileID: 0}
+  _useShortFormat: 0
+  _prefix: 
+  _suffix: 
+  _staminaShowMax: 1
+  _currencyModel: {fileID: 0}
+  _staminaModel: {fileID: 7636581027256123862}
+  _extraCurrencyModel: {fileID: 0}
 --- !u!1 &7359480985845459638
 GameObject:
   m_ObjectHideFlags: 0

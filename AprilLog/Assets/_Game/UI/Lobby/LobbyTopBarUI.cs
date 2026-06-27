@@ -16,6 +16,8 @@ public class LobbyTopBarUI : MonoBehaviour
     [SerializeField] private TMP_Text staminaText;
     [SerializeField] private TMP_Text goldText;
     [SerializeField] private TMP_Text parchmentText;
+    [Tooltip("다이아 표시 텍스트. (탑바의 양피지 자리를 다이아로 쓰려면 그 텍스트를 여기에 연결)")]
+    [SerializeField] private TMP_Text diamondText;
 
     [Header("데이터")]
     [SerializeField] private PlayerProgressModel progressModel;
@@ -99,6 +101,7 @@ public class LobbyTopBarUI : MonoBehaviour
             staminaText.text = $"{current}/{max}";
     }
 
+    // 골드/양피지/다이아 갱신. 다이아도 CurrencyModel 로 통합되어 OnCurrencyChanged 에서 함께 갱신한다.
     private void HandleCurrencyChanged(int gold, int parchment)
     {
         if (goldText != null)
@@ -106,6 +109,14 @@ public class LobbyTopBarUI : MonoBehaviour
 
         if (parchmentText != null)
             parchmentText.text = CurrencyModel.FormatAmount(parchment);
+
+        if (diamondText != null)
+        {
+            int diamond = currencyModel != null
+                ? currencyModel.Diamond
+                : (GameManager.Instance != null ? GameManager.Instance.Diamond : 0);
+            diamondText.text = CurrencyModel.FormatAmount(diamond);
+        }
     }
 
     private string GetNickname()
