@@ -1,4 +1,4 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using System;
 using TMPro;
@@ -6,9 +6,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 하우징 자동재화 수령 팝업의 표시와 입력 전달을 담당합니다.
+/// 하우징 시간 누적 보상 팝업의 표시와 입력 전달을 담당합니다.
 /// </summary>
-public class HousingAutoCurrencyPopupView : MonoBehaviour
+public class HousingIdleRewardPopupView : MonoBehaviour
 {
     [Header("루트")]
     [SerializeField] private GameObject _popupRoot;
@@ -76,7 +76,7 @@ public class HousingAutoCurrencyPopupView : MonoBehaviour
         }
     }
 
-    public void Refresh(HousingAutoCurrencyState _state)
+    public void Refresh(HousingIdleRewardState _state)
     {
         SetGauge(_state.Progress);
         SetProgressText(_state);
@@ -167,7 +167,7 @@ public class HousingAutoCurrencyPopupView : MonoBehaviour
         _gaugeSlider.value = _clampedProgress;
     }
 
-    private void SetProgressText(HousingAutoCurrencyState _state)
+    private void SetProgressText(HousingIdleRewardState _state)
     {
         if (_progressText == null)
         {
@@ -177,7 +177,7 @@ public class HousingAutoCurrencyPopupView : MonoBehaviour
         _progressText.text = _state.IsFull ? "FULL!" : $"{_state.ProgressPercent}%";
     }
 
-    private void SetRewardTexts(HousingAutoCurrencyState _state)
+    private void SetRewardTexts(HousingIdleRewardState _state)
     {
         SetText(_goldAmountText, FormatAmount(_state.GoldReward) + "/h");
         SetText(_parchmentAmountText, FormatAmount(_state.ParchmentReward) + "/h");
@@ -187,7 +187,7 @@ public class HousingAutoCurrencyPopupView : MonoBehaviour
         SetText(_diamondRewardText, FormatAmount(_state.DiamondReward));
     }
 
-    private void SetConfirmInteractable(HousingAutoCurrencyState _state)
+    private void SetConfirmInteractable(HousingIdleRewardState _state)
     {
         if (_confirmButton == null)
         {

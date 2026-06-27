@@ -1,4 +1,5 @@
-//담당자: 조규민
+﻿//담당자: 조규민
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,21 +11,24 @@ public class HousingPlacementPresenter
     private readonly HousingPlacementModel _model;
     private readonly HousingPlacementButtonView _buttonView;
     private readonly HousingPlacementPopupView _popupView;
-    private readonly HousingFurniturePlacementView _placementView;
+    private readonly HousingFurnitureSlotView _slotView;
     private readonly bool _applyImmediatelyOnItemClick;
+    private readonly Action<HousingPlacementItemData> _onFurnitureApplied;
 
     public HousingPlacementPresenter(
         HousingPlacementModel _model,
         HousingPlacementButtonView _buttonView,
         HousingPlacementPopupView _popupView,
-        HousingFurniturePlacementView _placementView,
-        bool _applyImmediatelyOnItemClick)
+        HousingFurnitureSlotView _slotView,
+        bool _applyImmediatelyOnItemClick,
+        Action<HousingPlacementItemData> _onFurnitureApplied = null)
     {
         this._model = _model;
         this._buttonView = _buttonView;
         this._popupView = _popupView;
-        this._placementView = _placementView;
+        this._slotView = _slotView;
         this._applyImmediatelyOnItemClick = _applyImmediatelyOnItemClick;
+        this._onFurnitureApplied = _onFurnitureApplied;
     }
 
     public void Initialize()
@@ -153,20 +157,21 @@ public class HousingPlacementPresenter
             return;
         }
 
-        if (ApplyItemToFurnitureRoot(_selectedItem))
+        if (ApplyItemToRoomSlot(_selectedItem))
         {
+            _onFurnitureApplied?.Invoke(_selectedItem);
             Debug.Log($"[HousingPlacementPresenter] 가구 적용 완료: {_selectedItem.DisplayName} / 위치: {_selectedItem.Location}");
         }
     }
 
-    private bool ApplyItemToFurnitureRoot(HousingPlacementItemData _itemData)
+    private bool ApplyItemToRoomSlot(HousingPlacementItemData _itemData)
     {
-        if (_itemData == null || _placementView == null)
+        if (_itemData == null || _slotView == null)
         {
             return false;
         }
 
-        if (!_placementView.ApplyFurniture(_itemData))
+        if (!_slotView.ApplyFurniture(_itemData))
         {
             return false;
         }

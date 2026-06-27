@@ -1,4 +1,4 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using TMPro;
 using UnityEditor;
@@ -6,17 +6,17 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Page_Housing 프리팹에 자동재화 수령 UI를 배치합니다.
+/// Page_Housing 프리팹에 시간 누적 보상 UI를 배치합니다.
 /// </summary>
-public static class HousingAutoCurrencyPrefabInstaller
+public static class HousingIdleRewardPrefabInstaller
 {
     private const string _prefabPath = "Assets/_Game/Prefabs/UI/Lobby/Page/Housing/Page_Housing.prefab";
     private const string _popupRootName = "Panel_AutoCurrencyPopup";
-    private const string _controllerRootName = "HousingAutoCurrencyRoot";
+    private const string _controllerRootName = "HousingIdleRewardRoot";
     private const string _targetFurnitureName = "Static_Furniture_02";
     private const string _circleSpritePath = "Assets/Imports/Cartoon Coffee/2D Deluxe VFX/Masks/Circle Mask 001.png";
 
-    [MenuItem("Tools/Housing/Install Auto Currency UI")]
+    [MenuItem("Tools/Housing/Install Idle Reward UI")]
     public static void Install()
     {
         GameObject _prefabRoot = PrefabUtility.LoadPrefabContents(_prefabPath);
@@ -25,7 +25,7 @@ public static class HousingAutoCurrencyPrefabInstaller
         {
             InstallToPrefab(_prefabRoot);
             PrefabUtility.SaveAsPrefabAsset(_prefabRoot, _prefabPath);
-            Debug.Log("[HousingAutoCurrencyPrefabInstaller] 자동재화 UI 설치 완료");
+            Debug.Log("[HousingIdleRewardPrefabInstaller] 시간 누적 보상 UI 설치 완료");
         }
         finally
         {
@@ -40,16 +40,16 @@ public static class HousingAutoCurrencyPrefabInstaller
 
         if (_furnitureTransform == null)
         {
-            Debug.LogError($"[HousingAutoCurrencyPrefabInstaller] {_targetFurnitureName}를 찾지 못했습니다.");
+            Debug.LogError($"[HousingIdleRewardPrefabInstaller] {_targetFurnitureName}를 찾지 못했습니다.");
             return;
         }
 
-        HousingAutoCurrencyFurnitureView _furnitureView = EnsureComponent<HousingAutoCurrencyFurnitureView>(_furnitureTransform.gameObject);
-        HousingAutoCurrencyPopupView _popupView = CreatePopup(_pageRoot, _furnitureTransform.GetComponent<Image>()?.sprite);
-        HousingAutoCurrencyController _controller = CreateController(_pageRoot);
+        HousingIdleRewardButtonView _rewardButtonView = EnsureComponent<HousingIdleRewardButtonView>(_furnitureTransform.gameObject);
+        HousingIdleRewardPopupView _popupView = CreatePopup(_pageRoot, _furnitureTransform.GetComponent<Image>()?.sprite);
+        HousingIdleRewardController _controller = CreateController(_pageRoot);
 
         SerializedObject _controllerObject = new SerializedObject(_controller);
-        _controllerObject.FindProperty("_furnitureView").objectReferenceValue = _furnitureView;
+        _controllerObject.FindProperty("_rewardButtonView").objectReferenceValue = _rewardButtonView;
         _controllerObject.FindProperty("_popupView").objectReferenceValue = _popupView;
         _controllerObject.FindProperty("_useHousingRewardTable").boolValue = true;
         _controllerObject.FindProperty("_defaultClearChapter").intValue = 1;
@@ -58,7 +58,7 @@ public static class HousingAutoCurrencyPrefabInstaller
         _controllerObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    private static HousingAutoCurrencyPopupView CreatePopup(Transform _pageRoot, Sprite _furnitureSprite)
+    private static HousingIdleRewardPopupView CreatePopup(Transform _pageRoot, Sprite _furnitureSprite)
     {
         bool _isNewPopup = _pageRoot.Find(_popupRootName) == null;
         GameObject _popupRoot = CreateRectObject(_popupRootName, _pageRoot, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(368f, 522f));
@@ -72,7 +72,7 @@ public static class HousingAutoCurrencyPrefabInstaller
         _backgroundImage.color = new Color(0.76f, 0.67f, 0.53f, 1f);
         _backgroundImage.raycastTarget = true;
 
-        HousingAutoCurrencyPopupView _popupView = EnsureComponent<HousingAutoCurrencyPopupView>(_popupRoot);
+        HousingIdleRewardPopupView _popupView = EnsureComponent<HousingIdleRewardPopupView>(_popupRoot);
 
         TextMeshProUGUI _statusText = CreateText("Text_Status", _popupRoot.transform, "FULL!", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -62f), new Vector2(180f, 30f), 18, TextAlignmentOptions.Center);
         _statusText.color = Color.black;
@@ -145,10 +145,10 @@ public static class HousingAutoCurrencyPrefabInstaller
         return _popupView;
     }
 
-    private static HousingAutoCurrencyController CreateController(Transform _pageRoot)
+    private static HousingIdleRewardController CreateController(Transform _pageRoot)
     {
         GameObject _controllerRoot = CreateRectObject(_controllerRootName, _pageRoot, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
-        return EnsureComponent<HousingAutoCurrencyController>(_controllerRoot);
+        return EnsureComponent<HousingIdleRewardController>(_controllerRoot);
     }
 
     private static RewardPreviewUi CreateProductionPreview(Transform _parent, string _name, Vector2 _anchoredPosition, Color _backgroundColor, Color _iconColor)
@@ -207,7 +207,7 @@ public static class HousingAutoCurrencyPrefabInstaller
 
         if (_circleSprite == null)
         {
-            Debug.LogWarning($"[HousingAutoCurrencyPrefabInstaller] 원형 게이지 Sprite를 찾지 못했습니다. Path: {_circleSpritePath}");
+            Debug.LogWarning($"[HousingIdleRewardPrefabInstaller] 원형 게이지 Sprite를 찾지 못했습니다. Path: {_circleSpritePath}");
         }
 
         return _circleSprite;
