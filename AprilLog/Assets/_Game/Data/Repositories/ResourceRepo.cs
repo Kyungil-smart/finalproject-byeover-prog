@@ -97,6 +97,16 @@ public class ResourceRepo : MonoBehaviour
             Debug.Log("[ResourceRepo] 앱 복귀 - 오프라인 스태미나 회복 계산 완료");
         }
     }
+    // ---------- Data Load ----------
+    public void LoadResourceData()
+    {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning($"[ResourceRepo] {nameof(ResourceRepo)} is not initialized. Skip.");
+            return;
+        }
+        // ToDo : 아이템 정보 로드 해야됨.  <로드 부분은 팀장님과 협의 후 수정>
+    }
     
     // ---------- 조회 API ----------
     public ItemData GetItemInfo(int id) => GetData(_items, id, nameof(GetItemInfo));
