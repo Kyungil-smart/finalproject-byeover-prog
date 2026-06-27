@@ -541,12 +541,15 @@ public class StaminaSlot
     // 포션/다이아 등으로 강제 회복 (OverCapMax까지만)
     public void Add(int amount, out int lossAmount)
     {
-        if (CurrentAmount + amount > OverCapMax)
+        int temp = CurrentAmount + amount;
+        
+        if (temp > OverCapMax)
         {
             CurrentAmount = OverCapMax;
-            lossAmount = CurrentAmount + amount - OverCapMax;
+            lossAmount = temp - OverCapMax;
         }
-        CurrentAmount += amount;
+        
+        CurrentAmount = temp;
         lossAmount = 0;
     }
     
