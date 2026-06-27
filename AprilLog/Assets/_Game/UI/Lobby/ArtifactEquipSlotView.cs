@@ -17,7 +17,7 @@ public class ArtifactEquipSlotView : ArtifactSlotView
             _levelText.text = isMaxLevel ? "Max" : $"Lv.{level}";
 
         if (_ascensionText != null)
-            _ascensionText.text = ascensionStage > 0 ? $"{ascensionStage}돌" : string.Empty;
+            _ascensionText.text = ascensionStage > 0 ? $"+{ascensionStage}" : string.Empty;
 
         SetAscensionBorder(ascensionStage);
     }
