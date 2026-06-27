@@ -386,18 +386,9 @@ public class ShopGachaPresenter : MonoBehaviour
         {
             case CostCurrency.Gold:      return _currencyModel.SpendGold(cost);
             case CostCurrency.Parchment: return _currencyModel.SpendParchment(cost);
-            case CostCurrency.Diamond:   return SpendDiamond(cost);
+            case CostCurrency.Diamond: return _currencyModel.SpendDiamond(cost);// 추가 : 홍정옥 다이아 
             default:                     return _currencyModel.SpendGold(cost);
         }
-    }
-
-    // [다이아 결제] 다이아 재화는 정승우님 담당 지갑(GameManager/CurrencyModel)에 신규 추가 예정.
-    // 지갑 API 가 생기면 아래 한 줄로 교체한다 :  return _currencyModel.SpendDiamond(cost);
-    // 그 전까지는 결제 실패로 처리해 무료 뽑기로 새지 않게 한다(fail-closed).
-    private bool SpendDiamond(int cost)
-    {
-        Debug.LogWarning("[ShopGachaPresenter] 다이아 재화 미구현 — CurrencyModel.SpendDiamond 추가 후 연결 필요. 결제 실패 처리.", this);
-        return false;
     }
 
     private void ShowInsufficient()

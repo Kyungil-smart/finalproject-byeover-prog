@@ -242,9 +242,9 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         _parchmentTween?.Kill();
         _isAnimatingCurrency = false;
 
-        // 골드/양피지 (OnCurrencyChanged 발행 → UI 자동 갱신)
+        // 골드/양피지/다이아 (OnCurrencyChanged 발행 → UI 자동 갱신)
         if (currencyModel != null)
-            currencyModel.Initialize(0, 0);
+            currencyModel.Initialize(0, 0, 0);
 
         // 강화석 / 레전더리 조각 (ArtifactManager public 필드 직접 설정)
         ArtifactManager mgr = ArtifactManager;
@@ -258,9 +258,9 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         if (staminaModel != null)
             staminaModel.Initialize(0, Mathf.Max(1, staminaModel.Max));
 
-        // 다이아 / 뽑기 티켓 (OnChanged 발행 → UI 자동 갱신)
+        // 뽑기 티켓 (OnChanged 발행 → UI 자동 갱신). 다이아는 위 currencyModel 에서 처리.
         if (extraCurrencyModel != null)
-            extraCurrencyModel.Initialize(0, 0);
+            extraCurrencyModel.Initialize(0);
 
         RefreshAllCurrencyViews();   // 이벤트 없는 강화석/조각 텍스트 강제 갱신
         Refresh();
@@ -274,9 +274,9 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         _parchmentTween?.Kill();
         _isAnimatingCurrency = false;
 
-        // 골드/양피지
+        // 골드/양피지/다이아
         if (currencyModel != null)
-            currencyModel.Initialize(resetGold, resetParchment);
+            currencyModel.Initialize(resetGold, resetParchment, restoreDiamond);
 
         // 강화석 / 레전더리 조각
         ArtifactManager mgr = ArtifactManager;
@@ -290,17 +290,17 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         if (staminaModel != null)
             staminaModel.Initialize(restoreStamina, restoreStaminaMax);
 
-        // 다이아 / 뽑기 티켓
+        // 뽑기 티켓 (다이아는 위 currencyModel 에서 처리)
         if (extraCurrencyModel != null)
-            extraCurrencyModel.Initialize(restoreDiamond, restoreTicket);
+            extraCurrencyModel.Initialize(restoreTicket);
 
         RefreshAllCurrencyViews();
         Refresh();
         ShowPopup("모든 재화를 기본값으로 복원했습니다.");
     }
 
-    // 강화석/레전더리 조각은 ArtifactManager 의 OnInventoryUpdated 이벤트를 외부에서 발행할 수 없어
-    // (CDH 담당 스크립트 미수정), 값만 바꾼 뒤 화면의 재화 텍스트(CurrencyTextView)들을 직접 다시 그린다.
+    // 강화석/레전더리 조각은 ArtifactManager 의 OnInventoryUpdated 를 외부에서 발행할 수 없어,
+    // 값만 바꾼 뒤 화면의 재화 텍스트(CurrencyTextView)들을 직접 다시 그린다.
     private void RefreshAllCurrencyViews()
     {
         CurrencyTextView[] views = FindObjectsByType<CurrencyTextView>(FindObjectsInactive.Include, FindObjectsSortMode.None);

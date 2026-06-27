@@ -1,59 +1,40 @@
 // 작성자 : 홍정옥
-// 설명   : 다이아 / 뽑기 티켓 재화 Model
+// 설명   : 뽑기 티켓 재화 Model.
+//          다이아는 CurrencyModel/GameManager 로 통합되어 더 이상 여기서 관리하지 않는다.
+//          뽑기 티켓은 아직 공용 아이템/인벤토리 저장소가 없어 이 모델이 임시로 보유한다
+//          (StaminaModel 과 동일한 로컬 보관 패턴). 추후 인벤토리 시스템으로 이관 예정.
 
 using System;
 using UnityEngine;
 
 public class ExtraCurrencyModel : MonoBehaviour
 {
-    public const int TestStartDiamond = 0;
-    public const int TestStartTicket  = 0;
+    public const int TestStartTicket = 0;
 
     // ---------- 이벤트 ----------
-    public event Action OnChanged;   // 다이아/티켓 중 하나라도 변경 시 발행
+    public event Action OnChanged;   // 티켓 변경 시 발행
 
     // ---------- 데이터 ----------
-    public int Diamond     { get; private set; }
     public int GachaTicket { get; private set; }
 
     [Header("테스트 기본값")]
     [SerializeField] private bool initializeWithTestValues = true;
-    [SerializeField] private int testStartDiamond = TestStartDiamond;
-    [SerializeField] private int testStartTicket  = TestStartTicket;
+    [SerializeField] private int testStartTicket = TestStartTicket;
 
     private bool _initialized;
 
     private void Awake()
     {
         if (initializeWithTestValues && !_initialized)
-            Initialize(testStartDiamond, testStartTicket);
+            Initialize(testStartTicket);
     }
 
     // ---------- 초기화/리셋 ----------
-    public void Initialize(int diamond, int ticket)
+    public void Initialize(int ticket)
     {
-        Diamond     = Mathf.Max(0, diamond);
         GachaTicket = Mathf.Max(0, ticket);
         _initialized = true;
         RaiseChanged();
-    }
-
-    // ---------- 다이아 ----------
-    public void AddDiamond(int amount)
-    {
-        Diamond = Mathf.Max(0, Diamond + amount);
-        RaiseChanged();
-    }
-
-    public bool CanAffordDiamond(int amount) => Diamond >= Mathf.Max(0, amount);
-
-    public bool SpendDiamond(int amount)
-    {
-        amount = Mathf.Max(0, amount);
-        if (Diamond < amount) return false;
-        Diamond -= amount;
-        RaiseChanged();
-        return true;
     }
 
     // ---------- 뽑기 티켓 ----------

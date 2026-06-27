@@ -12,8 +12,8 @@ using UnityEngine.UI;
 //           - ArtifactUpgradeStone  : ArtifactManager.UpgradeStone.   변경 시 OnInventoryUpdated 로 자동 갱신.
 //           - LegendaryShard        : ArtifactManager.LegendaryShard. 변경 시 OnInventoryUpdated 로 자동 갱신.
 //           - Stamina(행동력)       : StaminaModel.Current/Max.        변경 시 OnStaminaChanged 로 자동 갱신('현재/최대' 표시).
-//           - Diamond / GachaTicket : ExtraCurrencyModel.Diamond/GachaTicket. 변경 시 OnChanged 로 자동 갱신.
-//                                     (영속 통합은 추후 GameManager/CloudData 로 이관 예정)
+//           - Diamond               : CurrencyModel.Diamond(→ GameManager/CloudData, 영속). 변경 시 OnCurrencyChanged 로 자동 갱신.
+//           - GachaTicket           : ExtraCurrencyModel.GachaTicket. 변경 시 OnChanged 로 자동 갱신(아직 임시 보관, 인벤토리 이관 예정).
 [DisallowMultipleComponent]
 public class CurrencyTextView : MonoBehaviour
 {
@@ -87,6 +87,7 @@ public class CurrencyTextView : MonoBehaviour
         {
             case CurrencyKind.Gold:
             case CurrencyKind.Parchment:
+            case CurrencyKind.Diamond:   // 다이아도 CurrencyModel 로 통합 → 동일 이벤트로 갱신
                 if (_currencyModel != null)
                 {
                     if (on) _currencyModel.OnCurrencyChanged += HandleCurrencyChanged;
@@ -112,7 +113,6 @@ public class CurrencyTextView : MonoBehaviour
                 }
                 break;
 
-            case CurrencyKind.Diamond:
             case CurrencyKind.GachaTicket:
                 if (_extraCurrencyModel != null)
                 {
@@ -167,9 +167,8 @@ public class CurrencyTextView : MonoBehaviour
                 return ArtifactManager != null ? ArtifactManager.LegendaryShard : 0;
 
             case CurrencyKind.Diamond:
-                if (_extraCurrencyModel != null) return _extraCurrencyModel.Diamond;
-                WarnNoExtraModelOnce();
-                return 0;
+                return _currencyModel != null ? _currencyModel.Diamond
+                     : (GameManager.Instance != null ? GameManager.Instance.Diamond : 0);
 
             case CurrencyKind.GachaTicket:
                 if (_extraCurrencyModel != null) return _extraCurrencyModel.GachaTicket;
@@ -192,7 +191,7 @@ public class CurrencyTextView : MonoBehaviour
     {
         if (_warned) return;
         _warned = true;
-        Debug.LogWarning($"[CurrencyTextView] '{_kind}' 표시에 ExtraCurrencyModel 이 씬에 없어 0 으로 표시됩니다. " +
+        Debug.LogWarning($"[CurrencyTextView] '{_kind}'(뽑기 티켓) 표시에 ExtraCurrencyModel 이 씬에 없어 0 으로 표시됩니다. " +
                          "ExtraCurrencyModel 을 씬에 배치하거나 _extraCurrencyModel 에 연결하세요.", this);
     }
 }
