@@ -3,8 +3,7 @@ using UnityEngine;
 // 작성자 : 홍정옥
 // 설명   : 아티팩트 장착 / 해제 로직(UI 영역).
 //          규칙 : 최대 3개 장착, 빈 칸이 있으면 자동 장착, 가득 차면 교체할 슬롯을 선택해 교체.
-//          데이터는 CDH 담당 ArtifactManager 의 public 멤버(MyArtifacts, ArtifactInstance.IsEquipped)만
-//          사용한다. (다른 담당자 스크립트는 수정하지 않는다)
+//          데이터는 ArtifactManager 의 public 멤버(MyArtifacts, ArtifactInstance.IsEquipped)만 사용한다.
 //          - 상세 팝업(POPUP_ArtifactInfo)의 장착 버튼 클릭 → 현재 아티팩트 장착/해제(토글)
 //          - 장착칸이 가득 차면 ArtifactEquipBinder 를 슬롯 선택 모드로 전환 → 고른 슬롯과 교체
 public class ArtifactEquipController : MonoBehaviour

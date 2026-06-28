@@ -70,7 +70,32 @@ public class LobbyCharacterLevelUI : MonoBehaviour
     [SerializeField] private int maxGold = 999999;
     [Tooltip("최대치 버튼이 채울 양피지")]
     [SerializeField] private int maxParchment = 999999;
+
+    [Header("[임시] 전체 재화 리셋 / 복원 (모든 재화)")]
+    [Tooltip("모든 재화를 0 으로 만드는 테스트 버튼 (배포 전 삭제). 자동 바인딩: Button_ResetGoods")]
+    [SerializeField] private Button btnResetGoods;
+    [Tooltip("모든 재화를 기본값으로 복원하는 테스트 버튼 (배포 전 삭제). 자동 바인딩: Button_BackGoods")]
+    [SerializeField] private Button btnBackGoods;
+    [Tooltip("행동력(스태미나) 모델. 비우면 자동 탐색")]
+    [SerializeField] private StaminaModel staminaModel;
+    [Tooltip("복원 시 채울 강화석(아티팩트 업그레이드 재화)")]
+    [SerializeField] private int restoreUpgradeStone = 9999;
+    [Tooltip("복원 시 채울 레전더리 조각")]
+    [SerializeField] private int restoreLegendaryShard = 9999;
+    [Tooltip("복원 시 채울 행동력(현재값)")]
+    [SerializeField] private int restoreStamina = StaminaModel.TestStartStamina;
+    [Tooltip("복원 시 채울 행동력(최대값)")]
+    [SerializeField] private int restoreStaminaMax = StaminaModel.TestMaxStamina;
+    [Tooltip("다이아/티켓 모델. 비우면 자동 탐색")]
+    [SerializeField] private ExtraCurrencyModel extraCurrencyModel;
+    [Tooltip("복원 시 채울 다이아")]
+    [SerializeField] private int restoreDiamond = 9999;
+    [Tooltip("복원 시 채울 뽑기 티켓")]
+    [SerializeField] private int restoreTicket = 99;
     // =====================================
+
+    private ArtifactManager ArtifactManager =>
+        GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
 
     private Coroutine _popupCoroutine;
 
@@ -112,6 +137,13 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         if (btnSetMax != null)
             btnSetMax.onClick.AddListener(SetCurrencyMaxForTest);
 
+        // [임시] 전체 재화 0 / 복원 버튼
+        if (btnResetGoods != null)
+            btnResetGoods.onClick.AddListener(ResetAllGoodsForTest);
+
+        if (btnBackGoods != null)
+            btnBackGoods.onClick.AddListener(RestoreAllGoodsForTest);
+
         Refresh();
     }
 
@@ -137,6 +169,13 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         // [임시] 재화 최대 버튼
         if (btnSetMax != null)
             btnSetMax.onClick.RemoveListener(SetCurrencyMaxForTest);
+
+        // [임시] 전체 재화 0 / 복원 버튼
+        if (btnResetGoods != null)
+            btnResetGoods.onClick.RemoveListener(ResetAllGoodsForTest);
+
+        if (btnBackGoods != null)
+            btnBackGoods.onClick.RemoveListener(RestoreAllGoodsForTest);
 
         // 탭 전환 등으로 비활성화될 때 진행 중인 팝업 코루틴이 끊겨
         // 팝업이 켜진 채 남는 문제 방지 -> 강제로 닫는다.
@@ -194,6 +233,82 @@ public class LobbyCharacterLevelUI : MonoBehaviour
 
         Refresh();
         ShowPopup("재화를 최대치로 설정했습니다.");
+    }
+
+    /// <summary>모든 재화를 0 으로 만든다. (Button_ResetGoods)</summary>
+    private void ResetAllGoodsForTest()
+    {
+        _goldTween?.Kill();
+        _parchmentTween?.Kill();
+        _isAnimatingCurrency = false;
+
+        // 골드/양피지/다이아 (OnCurrencyChanged 발행 → UI 자동 갱신)
+        if (currencyModel != null)
+            currencyModel.Initialize(0, 0, 0);
+
+        // 강화석 / 레전더리 조각 (ArtifactManager public 필드 직접 설정)
+        ArtifactManager mgr = ArtifactManager;
+        if (mgr != null)
+        {
+            mgr.UpgradeStone = 0;
+            mgr.LegendaryShard = 0;
+        }
+
+        // 행동력 (OnStaminaChanged 발행 → UI 자동 갱신). 최대치는 유지.
+        if (staminaModel != null)
+            staminaModel.Initialize(0, Mathf.Max(1, staminaModel.Max));
+
+        // 뽑기 티켓 (OnChanged 발행 → UI 자동 갱신). 다이아는 위 currencyModel 에서 처리.
+        if (extraCurrencyModel != null)
+            extraCurrencyModel.Initialize(0);
+
+        RefreshAllCurrencyViews();   // 이벤트 없는 강화석/조각 텍스트 강제 갱신
+        Refresh();
+        ShowPopup("모든 재화를 0 으로 설정했습니다.");
+    }
+
+    /// <summary>모든 재화를 기본값으로 복원한다. (Button_BackGoods)</summary>
+    private void RestoreAllGoodsForTest()
+    {
+        _goldTween?.Kill();
+        _parchmentTween?.Kill();
+        _isAnimatingCurrency = false;
+
+        // 골드/양피지/다이아
+        if (currencyModel != null)
+            currencyModel.Initialize(resetGold, resetParchment, restoreDiamond);
+
+        // 강화석 / 레전더리 조각
+        ArtifactManager mgr = ArtifactManager;
+        if (mgr != null)
+        {
+            mgr.UpgradeStone = restoreUpgradeStone;
+            mgr.LegendaryShard = restoreLegendaryShard;
+        }
+
+        // 행동력 (현재/최대)
+        if (staminaModel != null)
+            staminaModel.Initialize(restoreStamina, restoreStaminaMax);
+
+        // 뽑기 티켓 (다이아는 위 currencyModel 에서 처리)
+        if (extraCurrencyModel != null)
+            extraCurrencyModel.Initialize(restoreTicket);
+
+        RefreshAllCurrencyViews();
+        Refresh();
+        ShowPopup("모든 재화를 기본값으로 복원했습니다.");
+    }
+
+    // 강화석/레전더리 조각은 ArtifactManager 의 OnInventoryUpdated 를 외부에서 발행할 수 없어,
+    // 값만 바꾼 뒤 화면의 재화 텍스트(CurrencyTextView)들을 직접 다시 그린다.
+    private void RefreshAllCurrencyViews()
+    {
+        CurrencyTextView[] views = FindObjectsByType<CurrencyTextView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (CurrencyTextView view in views)
+        {
+            if (view != null)
+                view.Refresh();
+        }
     }
     // =====================================
 
@@ -437,6 +552,10 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         btnReset = btnReset != null ? btnReset : FindComponentByName<Button>("Button_Reset"); // [임시] 테스트용
         btnSetZero = btnSetZero != null ? btnSetZero : FindComponentByName<Button>("Button_SetZero"); // [임시] 테스트용
         btnSetMax = btnSetMax != null ? btnSetMax : FindComponentByName<Button>("Button_SetMax"); // [임시] 테스트용
+        btnResetGoods = btnResetGoods != null ? btnResetGoods : FindComponentByName<Button>("Button_ResetGoods"); // [임시] 전체 재화 0
+        btnBackGoods = btnBackGoods != null ? btnBackGoods : FindComponentByName<Button>("Button_BackGoods"); // [임시] 전체 재화 복원
+        if (staminaModel == null) staminaModel = FindFirstObjectByType<StaminaModel>();
+        if (extraCurrencyModel == null) extraCurrencyModel = FindFirstObjectByType<ExtraCurrencyModel>();
         charNextLvInfo = charNextLvInfo != null ? charNextLvInfo : FindGameObject("CharNextLvInfo");
 
         textCurrentHP = textCurrentHP != null ? textCurrentHP : FindText("Text_CurrentHP");

@@ -706,13 +706,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1410099954598110}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 157.665, z: 0}
   m_LocalScale: {x: 1.2592657, y: 1.2592657, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4494051420672916}
-  m_Father: {fileID: 4762631525527236}
+  m_Father: {fileID: 8480387347930525034}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!137 &137821896160723568
 SkinnedMeshRenderer:
@@ -1432,6 +1432,7 @@ GameObject:
   - component: {fileID: 4762631525527236}
   - component: {fileID: 5145136724250246105}
   - component: {fileID: -4294470491640770832}
+  - component: {fileID: -4904061737179478841}
   m_Layer: 0
   m_Name: 1T_Thank
   m_TagString: Untagged
@@ -1452,7 +1453,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4685295010466224}
+  - {fileID: 8480387347930525034}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5145136724250246105
@@ -1513,8 +1514,25 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 1.25, y: 1.25}
   m_EdgeRadius: 0
+--- !u!114 &-4904061737179478841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1911728796090200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f5e2127f89700d4a95cc65153739606, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VisualWrapperFitter
+  visualTarget: {fileID: 4685295010466224}
+  targetCollider: {fileID: -4294470491640770832}
+  scaleFactor: 0.00125
+  alignToBottom: 1
+  manualOffset: {x: 0, y: -0.05}
 --- !u!1 &1969893707559356
 GameObject:
   m_ObjectHideFlags: 0
@@ -1697,3 +1715,35 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &5710430446624834843
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8480387347930525034}
+  m_Layer: 0
+  m_Name: Visual_Wrapper
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8480387347930525034
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5710430446624834843}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.675, z: 0}
+  m_LocalScale: {x: 0.00125, y: 0.00125, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4685295010466224}
+  m_Father: {fileID: 4762631525527236}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

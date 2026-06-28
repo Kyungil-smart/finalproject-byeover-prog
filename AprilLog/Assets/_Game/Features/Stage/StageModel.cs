@@ -238,7 +238,8 @@ public class StageModel
 
             // 일반 웨이브 룰 불러오기
             _currentRule = _waveRules[_currentWaveIndex];
-            
+            Debug.Log($"{_currentRule.Stage_ID}의 {_currentRule.WaveOrder} 웨이브룰 삽입. 웨이브 풀 ID : {_currentRule.MonsterWavePool_ID}");
+
             // 일반 웨이브 상태 초기화
             _waveTimer = 0f;
             int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
@@ -251,6 +252,7 @@ public class StageModel
             // 특수 웨이브 상태 초기화
             if (_currentSpecialRule != null)
             {
+                Debug.Log($"적용된 Special Rule ID : {_currentSpecialRule.SpecialWave_ID}. 추가 웨이브 풀 ID : {_currentSpecialRule.MonsterWavePool_ID}");
                 float spawnInterval = (_currentSpecialRule.WaveType == "Rush") ? _currentSpecialRule.SpecialSpawnInterval : 3.0f; 
                 _specialSpawnTimer = spawnInterval;
             }

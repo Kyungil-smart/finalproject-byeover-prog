@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 하우징 자동재화 마지막 수령 시간 저장 필드 추가
+
 [Serializable]
 public class UserCloudData
 {
@@ -23,6 +26,12 @@ public class UserCloudData
     // ---------- 재화 ----------
     public int gold;
     public int parchment;
+    public int diamond;
+
+    // ---------- 하우징 ----------
+    public string housingAutoCurrencyLastClaimAt;
+    // 추가: 조규민 - 계정별 하우징 배치 가구 ID를 저장한다.
+    public List<int> housingPlacedFurnitureIds = new List<int>();
 
     // ---------- 아웃게임 성장 ----------
     public int hpBonus;
@@ -55,6 +64,9 @@ public class UserCloudData
             unlockedStages = new List<int> { 10001 },
             gold = 0,
             parchment = 0,
+            diamond = 0,
+            housingAutoCurrencyLastClaimAt = DateTime.UtcNow.ToString("o"),
+            housingPlacedFurnitureIds = new List<int>(),
             language = "ko",
             sfxVolume = 1f,
             bgmVolume = 1f,

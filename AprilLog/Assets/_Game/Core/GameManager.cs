@@ -18,6 +18,8 @@ using UnityEngine.SceneManagement;
 /// 앱 수명주기, 인증, 로컬/클라우드 저장, 씬 전환을 담당한다.
 /// 실제 Firebase 통신은 FirebaseAuthService, FirestoreService에 위임.
 /// </summary>
+// 2차 수정자 : 조규민
+// 수정 내용 : 하우징 자동재화 수령 시간 저장과 골드/양피지 지급을 한 번에 처리하는 계정 저장 API 추가
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -637,7 +639,7 @@ public class GameManager : MonoBehaviour
 
         if (currencyModel != null)
         {
-            currencyModel.Initialize(CloudData.gold, CloudData.parchment);
+            currencyModel.Initialize(CloudData.gold, CloudData.parchment, CloudData.diamond);
         }
     }
 
@@ -699,6 +701,7 @@ public class GameManager : MonoBehaviour
 
     public int Gold => CloudData != null ? CloudData.gold : 0;
     public int Parchment => CloudData != null ? CloudData.parchment : 0;
+    public int Diamond => CloudData != null ? CloudData.diamond : 0;
 
     public bool CanAffordCurrency(int gold, int parchment)
     {
@@ -748,6 +751,97 @@ public class GameManager : MonoBehaviour
         CloudData.parchment = parchment;
         RaiseCurrencyChanged();
         PersistCurrency();
+    }
+
+    // ===== 다이아 API (gold/parchment와 동일 패턴. 영속 원본 = CloudData.diamond) =====
+    public bool CanAffordDiamond(int diamond)
+        => CloudData != null && CloudData.diamond >= Mathf.Max(0, diamond);
+
+    /// <summary>다이아 가산. reason은 로그·추적용.</summary>
+    public void AddDiamond(int diamond, string reason = null)
+    {
+        diamond = Mathf.Max(0, diamond);
+        if (diamond == 0) return;
+
+        EnsureCurrencyData();
+        CloudData.diamond = Mathf.Max(0, CloudData.diamond + diamond);
+        Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {CloudData.diamond}");
+
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    /// <summary>다이아 차감 시도. 부족하면 false(변경 없음).</summary>
+    public bool TrySpendDiamond(int diamond)
+    {
+        diamond = Mathf.Max(0, diamond);
+        if (!CanAffordDiamond(diamond)) return false;
+
+        CloudData.diamond -= diamond;
+        RaiseCurrencyChanged();
+        PersistCurrency();
+        return true;
+    }
+
+    /// <summary>다이아를 지정 값으로 설정 — 하이드레이션/리셋·테스트용. 값 동일하면 무시.</summary>
+    public void SetDiamond(int diamond)
+    {
+        diamond = Mathf.Max(0, diamond);
+        EnsureCurrencyData();
+        if (CloudData.diamond == diamond) return;
+        CloudData.diamond = diamond;
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    public DateTime EnsureHousingAutoCurrencyLastClaimUtc()
+    {
+        EnsureCurrencyData();
+
+        if (TryParseUtc(CloudData.housingAutoCurrencyLastClaimAt, out DateTime savedUtc))
+        {
+            return savedUtc;
+        }
+
+        DateTime nowUtc = DateTime.UtcNow;
+        CloudData.housingAutoCurrencyLastClaimAt = nowUtc.ToString("o");
+        SyncToCloud(CloudData);
+        return nowUtc;
+    }
+
+    public void ClaimHousingAutoCurrency(int gold, int parchment, string lastClaimAtUtc)
+    {
+        gold = Mathf.Max(0, gold);
+        parchment = Mathf.Max(0, parchment);
+        EnsureCurrencyData();
+
+        CloudData.gold = Mathf.Max(0, CloudData.gold + gold);
+        CloudData.parchment = Mathf.Max(0, CloudData.parchment + parchment);
+        CloudData.housingAutoCurrencyLastClaimAt = string.IsNullOrWhiteSpace(lastClaimAtUtc)
+            ? DateTime.UtcNow.ToString("o")
+            : lastClaimAtUtc;
+
+        Debug.Log($"[하우징 자동재화] +골드 {gold} +양피지 {parchment} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
+        RaiseCurrencyChanged();
+        PersistCurrency();
+    }
+
+    private static bool TryParseUtc(string value, out DateTime utcTime)
+    {
+        utcTime = default;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (!DateTime.TryParse(value, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime parsedTime))
+        {
+            return false;
+        }
+
+        utcTime = parsedTime.Kind == DateTimeKind.Utc ? parsedTime : parsedTime.ToUniversalTime();
+        return true;
     }
 
     private void EnsureCurrencyData()

@@ -1,10 +1,11 @@
-//담당자: 조규민
+﻿//담당자: 조규민
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
-/// 하우징 배치 MVP 객체를 연결합니다.
+/// 하우징 배치 UI, 표시 데이터, 저장된 가구 배치를 연결합니다.
 /// </summary>
 public class HousingPlacementController : MonoBehaviour
 {
@@ -13,7 +14,8 @@ public class HousingPlacementController : MonoBehaviour
     [Header("View")]
     [SerializeField] private HousingPlacementButtonView _buttonView;
     [SerializeField] private HousingPlacementPopupView _popupView;
-    [SerializeField] private HousingFurniturePlacementView _placementView;
+    [FormerlySerializedAs("_placementView")]
+    [SerializeField] private HousingFurnitureSlotView _slotView;
 
     [Header("데이터")]
     [SerializeField] private bool _useHousingRepo = true;
@@ -27,15 +29,18 @@ public class HousingPlacementController : MonoBehaviour
 
     private HousingPlacementModel _model;
     private HousingPlacementPresenter _presenter;
-    private HousingPlacementItemBuilder _itemBuilder;
+    private HousingPlacementItemMapper _itemMapper;
+    private List<HousingPlacementItemData> _placementItems;
 
     private void Awake()
     {
-        _itemBuilder = new HousingPlacementItemBuilder(_iconResourceFolder);
-        _placementView = ResolvePlacementView();
-        _model = new HousingPlacementModel(BuildInitialItems());
-        _presenter = new HousingPlacementPresenter(_model, _buttonView, _popupView, _placementView, _applyImmediatelyOnItemClick);
+        _itemMapper = new HousingPlacementItemMapper(_iconResourceFolder);
+        _slotView = ResolveSlotView();
+        _placementItems = new List<HousingPlacementItemData>(BuildInitialItems());
+        _model = new HousingPlacementModel(_placementItems);
+        _presenter = new HousingPlacementPresenter(_model, _buttonView, _popupView, _slotView, _applyImmediatelyOnItemClick, HandleFurnitureApplied);
         _presenter.Initialize();
+        RestoreSavedPlacements();
     }
 
     private void OnDestroy()
@@ -58,7 +63,7 @@ public class HousingPlacementController : MonoBehaviour
             return _items;
         }
 
-        List<HousingPlacementItemData> _repoItems = _itemBuilder.Build(_housingRepo);
+        List<HousingPlacementItemData> _repoItems = _itemMapper.Map(_housingRepo);
 
         if (_repoItems.Count <= 0)
         {
@@ -69,11 +74,115 @@ public class HousingPlacementController : MonoBehaviour
         return _repoItems;
     }
 
-    private HousingFurniturePlacementView ResolvePlacementView()
+    private void RestoreSavedPlacements()
     {
-        if (_placementView != null)
+        if (_slotView == null || GameManager.Instance == null || GameManager.Instance.CloudData == null)
         {
-            return _placementView;
+            return;
+        }
+
+        List<int> _placedFurnitureIds = GameManager.Instance.CloudData.housingPlacedFurnitureIds;
+
+        if (_placedFurnitureIds == null)
+        {
+            return;
+        }
+
+        for (int _index = 0; _index < _placedFurnitureIds.Count; _index++)
+        {
+            HousingPlacementItemData _itemData = FindItemByFurnitureId(_placedFurnitureIds[_index]);
+
+            if (_itemData == null)
+            {
+                continue;
+            }
+
+            _slotView.ApplyFurniture(_itemData);
+        }
+    }
+
+    private void HandleFurnitureApplied(HousingPlacementItemData _itemData)
+    {
+        if (_itemData == null || _itemData.FurnitureId <= 0 || GameManager.Instance == null)
+        {
+            return;
+        }
+
+        UserCloudData _cloudData = GameManager.Instance.CloudData ?? UserCloudData.CreateDefault();
+
+        if (_cloudData.housingPlacedFurnitureIds == null)
+        {
+            _cloudData.housingPlacedFurnitureIds = new List<int>();
+        }
+
+        RemovePlacedFurnitureInSameLocation(_cloudData.housingPlacedFurnitureIds, _itemData);
+
+        if (!_cloudData.housingPlacedFurnitureIds.Contains(_itemData.FurnitureId))
+        {
+            _cloudData.housingPlacedFurnitureIds.Add(_itemData.FurnitureId);
+        }
+
+        GameManager.Instance.SyncToCloud(_cloudData);
+    }
+
+    private void RemovePlacedFurnitureInSameLocation(List<int> _placedFurnitureIds, HousingPlacementItemData _newItemData)
+    {
+        string _newLocation = NormalizeKey(_newItemData.Location);
+
+        for (int _index = _placedFurnitureIds.Count - 1; _index >= 0; _index--)
+        {
+            HousingPlacementItemData _savedItemData = FindItemByFurnitureId(_placedFurnitureIds[_index]);
+
+            if (_savedItemData == null)
+            {
+                continue;
+            }
+
+            if (_savedItemData.FurnitureId == _newItemData.FurnitureId)
+            {
+                _placedFurnitureIds.RemoveAt(_index);
+                continue;
+            }
+
+            if (NormalizeKey(_savedItemData.Location) != _newLocation)
+            {
+                continue;
+            }
+
+            _placedFurnitureIds.RemoveAt(_index);
+        }
+    }
+
+    private HousingPlacementItemData FindItemByFurnitureId(int _furnitureId)
+    {
+        if (_placementItems == null)
+        {
+            return null;
+        }
+
+        for (int _index = 0; _index < _placementItems.Count; _index++)
+        {
+            HousingPlacementItemData _itemData = _placementItems[_index];
+
+            if (_itemData != null && _itemData.FurnitureId == _furnitureId)
+            {
+                return _itemData;
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeKey(string _value)
+    {
+        return string.IsNullOrWhiteSpace(_value) ? string.Empty : _value.Trim().ToLowerInvariant();
+    }
+
+    private HousingFurnitureSlotView ResolveSlotView()
+    {
+        if (_slotView != null)
+        {
+            return _slotView;
         }
 
         Transform _furnitureRoot = FindChildRecursive(GetPageRoot(), _furnitureRootName);
@@ -84,14 +193,14 @@ public class HousingPlacementController : MonoBehaviour
             return null;
         }
 
-        HousingFurniturePlacementView _foundView = _furnitureRoot.GetComponent<HousingFurniturePlacementView>();
+        HousingFurnitureSlotView _foundView = _furnitureRoot.GetComponent<HousingFurnitureSlotView>();
 
         if (_foundView != null)
         {
             return _foundView;
         }
 
-        return _furnitureRoot.gameObject.AddComponent<HousingFurniturePlacementView>();
+        return _furnitureRoot.gameObject.AddComponent<HousingFurnitureSlotView>();
     }
 
     private Transform GetPageRoot()

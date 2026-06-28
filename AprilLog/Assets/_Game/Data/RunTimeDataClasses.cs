@@ -362,3 +362,215 @@ public enum CalFormula
 }
 
 #endregion
+
+#region SupplyRepo 지원
+
+[Serializable]
+public class ItemContainer
+{
+    private Dictionary<int, int> _inventory = new (); // Item_ID, 현재 보유량
+
+    public int GetItemCount(int itemId) => GetData(_inventory, itemId);
+    
+    public void AddItem(int itemId, int amount)
+    {
+        if (amount <= 0)
+        {
+            Debug.LogError($"[ResourceRepo] Wrong Amount. No Add. Amount : {amount}");
+            return;
+        }
+        
+        if (!_inventory.TryAdd(itemId, amount))
+        {
+            _inventory[itemId] += amount;
+        }
+        Debug.Log($"[ResourceRepo] Item ID : {itemId}. Add Amount : {amount}");
+    }
+    
+    public bool UseItem(int itemId, int amount)
+    {
+        int currentAmount = GetItemCount(itemId);
+        
+        if (amount == 0)
+        {
+            Debug.Log($"[ResourceRepo] Item ID : {itemId}. {amount} Use Success. Current Amount : {_inventory[itemId]}");
+            return true;
+        }
+        
+        if (amount < 0) 
+        {
+            Debug.LogError($"[ResourceRepo] Wrong Amount. Return False. Amount: {amount}");
+            return false; 
+        }
+        
+        if (currentAmount >= amount)
+        {
+            _inventory[itemId] -= amount;
+            Debug.Log($"[ResourceRepo] Item ID : {itemId}. {amount} Use Success. Current Amount : {_inventory[itemId]}");
+            return true;
+        }
+        
+        Debug.Log($"[ResourceRepo] Item ID : {itemId}. {amount} Use Failed. Current Amount : {_inventory[itemId]}");
+        return false;
+    }
+    
+    private int GetData(Dictionary<int, int> dictionary, int key)
+    {
+        if (dictionary == null)
+        {
+            Debug.LogWarning($"[ResourceRepo] Item cache is not initialized. Key: {key}. Return 0");
+            return 0;
+        }
+
+        if (dictionary.TryGetValue(key, out int data))
+            return data;
+
+        Debug.LogWarning($"[ResourceRepo] Item Key is Wrong. Key: {key}. Return 0");
+        return 0;
+    }
+}
+
+[Serializable]
+public class StaminaContainer
+{
+    private Dictionary<int, StaminaSlot> _slots = new ();
+    public Dictionary<int, StaminaSlot> Slots => _slots;
+
+    public void AddOrInitSlot(StaminaData dbData, int loadedAmount, DateTime lastSavedTime)
+    {
+        if (!_slots.ContainsKey(dbData.Stamina_ID))
+        {
+            _slots.Add(dbData.Stamina_ID, new StaminaSlot
+            {
+                StaminaID = dbData.Stamina_ID,
+                CurrentAmount = loadedAmount,
+                MaxOwned = dbData.MaxOwned,
+                OverCapMax = dbData.OverCapMax,
+                RecoveryTime = dbData.RecoveryTime,
+                RecoveryCount = dbData.RecoveryCount,
+                RemainTimer = dbData.RecoveryTime,
+                LastUpdateTime = lastSavedTime
+            });
+        }
+    }
+
+    public StaminaSlot GetSlot(int id) => GetData(_slots, id);
+    
+    private TData GetData<TData>(Dictionary<int, TData> dictionary, int key)
+        where TData : class
+    {
+        if (dictionary == null)
+        {
+            Debug.LogWarning($"[ResourceRepo] Stamina Slot cache is not initialized. Key: {key}");
+            return null;
+        }
+
+        if (dictionary.TryGetValue(key, out TData data))
+            return data;
+
+        Debug.LogWarning($"[ResourceRepo] Stamina Slot data not found. Key: {key}");
+        return null;
+    }
+}
+
+[Serializable]
+public class StaminaSlot
+{
+    public int StaminaID;
+    public int CurrentAmount;
+    
+    // DB 데이터 캐싱
+    public int MaxOwned;
+    public int OverCapMax;
+    public float RecoveryTime;
+    public int RecoveryCount;
+
+    // 런타임 데이터 (저장 필요)
+    public float RemainTimer;
+    public DateTime LastUpdateTime;
+    
+    // 오프라인 회복 (게임 시작 시 & 백그라운드 복귀 시 호출)
+    public void CalculateOfflineRecovery(DateTime now)
+    {
+        if (CurrentAmount >= MaxOwned)
+        {
+            RemainTimer = RecoveryTime;
+            LastUpdateTime = now;
+            return;
+        }
+
+        TimeSpan offlineDuration = now - LastUpdateTime;
+        float totalSecondsPassed = (float)offlineDuration.TotalSeconds + (RecoveryTime - RemainTimer);
+
+        if (totalSecondsPassed >= RecoveryTime)
+        {
+            int recoverTicks = (int)(totalSecondsPassed / RecoveryTime);
+            int recoverAmount = recoverTicks * RecoveryCount;
+
+            CurrentAmount = Mathf.Min(CurrentAmount + recoverAmount, MaxOwned);
+            RemainTimer = RecoveryTime - (totalSecondsPassed % RecoveryTime);
+        }
+        else
+        {
+            RemainTimer = RecoveryTime - totalSecondsPassed;
+        }
+
+        LastUpdateTime = now;
+    }
+
+    // 온라인 실시간 회복 (Update에서 매 프레임 호출)
+    public bool TickOnline(float deltaTime)
+    {
+        if (CurrentAmount >= MaxOwned)
+        {
+            RemainTimer = RecoveryTime;
+            return false;
+        }
+
+        RemainTimer -= deltaTime;
+        if (RemainTimer <= 0)
+        {
+            CurrentAmount = Mathf.Min(CurrentAmount + RecoveryCount, MaxOwned);
+            RemainTimer += RecoveryTime; 
+            LastUpdateTime = DateTime.Now; 
+            return true; // 회복 발생
+        }
+        return false;
+    }
+
+    // 포션/다이아 등으로 강제 회복 (OverCapMax까지만)
+    public void Add(int amount, out int lossAmount)
+    {
+        int temp = CurrentAmount + amount;
+        
+        if (temp > OverCapMax)
+        {
+            CurrentAmount = OverCapMax;
+            lossAmount = temp - OverCapMax;
+        }
+        
+        CurrentAmount = temp;
+        lossAmount = 0;
+    }
+    
+    public bool UseStamina(int amount)
+    {
+        if (amount < 0)
+        {
+            Debug.LogError($"[ResourceRepo] Wrong Amount. Return False. Amount: {amount}");
+            return false;
+        }
+        
+        if (CurrentAmount >= amount)
+        {
+            CurrentAmount -= amount;
+            Debug.Log($"[ResourceRepo] Stamina Id {StaminaID} : {amount} Use Success. {CurrentAmount} / {MaxOwned}");
+            return true;
+        }
+        
+        Debug.Log($"[ResourceRepo] Stamina Id {StaminaID} : {amount} Use Failed. {CurrentAmount} / {MaxOwned}");
+        return false;
+    }
+}
+
+#endregion

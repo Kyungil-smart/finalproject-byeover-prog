@@ -83,6 +83,7 @@ Transform:
   - {fileID: 7625400932578170336}
   - {fileID: 1877090889797705916}
   - {fileID: 6996678967064865477}
+  - {fileID: 2138230572868579359}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2686668722264016636
@@ -104,6 +105,7 @@ MonoBehaviour:
   _gearRepo: {fileID: 5817649387064816332}
   _storyRepo: {fileID: 8095329745793383508}
   _housingRepo: {fileID: 8532843619235127298}
+  _resourceRepo: {fileID: 2093969266679941240}
 --- !u!1 &1239554882421372277
 GameObject:
   m_ObjectHideFlags: 0
@@ -155,6 +157,52 @@ MonoBehaviour:
   _waveRuleTable: {fileID: 11400000, guid: 41c6d80f761b15647b886271db22a116, type: 2}
   _specialRuleTable: {fileID: 11400000, guid: 5bf9d861b6a0e78429a4dbe20728e406, type: 2}
   _scalingTable: {fileID: 11400000, guid: ce80a3dce09ac43498f3479e14c03406, type: 2}
+--- !u!1 &2076686450215917661
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2138230572868579359}
+  - component: {fileID: 2093969266679941240}
+  m_Layer: 0
+  m_Name: ResourceRepo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2138230572868579359
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2076686450215917661}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6732585189422164533}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2093969266679941240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2076686450215917661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff173e189a1e72542805517620fb64fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SupplyRepo
+  _itemTable: {fileID: 11400000, guid: 2b6f6a45e656b084f99669953d2f340e, type: 2}
+  _staminaTable: {fileID: 11400000, guid: 9d6b752f7710dd44db3be327423a3575, type: 2}
 --- !u!1 &2258602171489712735
 GameObject:
   m_ObjectHideFlags: 0
@@ -357,8 +405,6 @@ MonoBehaviour:
   _achievementTable: {fileID: 11400000, guid: 7ff563ba66de41bfa11a27b592354c1d, type: 2}
   _changeRewardTable: {fileID: 11400000, guid: 0f79afb42e5249e44996d689df8599ac, type: 2}
   _battleRewardTable: {fileID: 11400000, guid: d9e95eb9ce55ea641ae115baee189021, type: 2}
-  _staminaTable: {fileID: 11400000, guid: 9d6b752f7710dd44db3be327423a3575, type: 2}
-  _itemTable: {fileID: 11400000, guid: 2b6f6a45e656b084f99669953d2f340e, type: 2}
 --- !u!1 &8025937306101436034
 GameObject:
   m_ObjectHideFlags: 0

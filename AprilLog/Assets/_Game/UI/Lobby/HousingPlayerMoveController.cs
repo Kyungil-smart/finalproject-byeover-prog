@@ -45,12 +45,15 @@ public class HousingPlayerMoveController : MonoBehaviour
     private float _idleTimer;
     private float _playerVisualBaseScaleX = 1f;
     private float[] _nonFlipBaseScaleXs;
+    private Vector3 _playerStartLocalPosition;
+    private bool _isMovementPaused;
 
     private void Awake()
     {
         ResolveMoveArea();
         ResolvePlayerVisual();
         CacheFlipBaseScales();
+        CachePlayerStartPosition();
     }
 
     private void Update()
@@ -65,8 +68,31 @@ public class HousingPlayerMoveController : MonoBehaviour
         ResetIdleTimer();
     }
 
+    // 추가: 조규민 - 가구 상호작용 중 자동 순찰을 일시 정지하고 종료 시 시작 위치에서 재개한다.
+    public void PauseMovement()
+    {
+        _isMovementPaused = true;
+        StopMove();
+    }
+
+    public void ResumeMovement(bool _restoreStartPosition)
+    {
+        if (_player != null && _restoreStartPosition)
+        {
+            _player.localPosition = _playerStartLocalPosition;
+        }
+
+        _isMovementPaused = false;
+        StopMove();
+    }
+
     private void MovePlayer()
     {
+        if (_isMovementPaused)
+        {
+            return;
+        }
+
         if (_hasTarget == false)
         {
             return;
@@ -105,6 +131,11 @@ public class HousingPlayerMoveController : MonoBehaviour
 
     private void UpdateAutoPatrol()
     {
+        if (_isMovementPaused)
+        {
+            return;
+        }
+
         if (_hasTarget)
         {
             return;
@@ -228,6 +259,16 @@ public class HousingPlayerMoveController : MonoBehaviour
         }
 
         _playerVisual = _player;
+    }
+
+    private void CachePlayerStartPosition()
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        _playerStartLocalPosition = _player.localPosition;
     }
 
     private void ResolveMoveArea()
