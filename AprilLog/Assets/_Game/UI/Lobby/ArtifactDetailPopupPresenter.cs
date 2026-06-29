@@ -117,6 +117,17 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     private void HandleEquipClicked()
     {
         OnEquipRequested?.Invoke(CurrentGearId);
+        NotifyTutorialEquip();
+    }
+
+    // 튜토리얼 아티팩트 장착 단계면 장착으로 다음 단계 진행
+    private void NotifyTutorialEquip()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        if (tm == null || !tm.IsRunning) return;
+        TutorialStep step = tm.CurrentStep;
+        if (step != null && step.advanceMode == TutorialAdvanceMode.GameAction && step.gameAction == TutorialGameAction.ArtifactEquip)
+            tm.AdvanceStep();
     }
 
     private void Awake()
@@ -152,6 +163,17 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         RefreshOwnedState(gearId);
 
         OnPopupOpened?.Invoke(gearId);
+        NotifyTutorialArtifactOpen();
+    }
+
+    // 튜토리얼 아티팩트 선택 단계면 상세창 열림으로 다음 단계 진행
+    private void NotifyTutorialArtifactOpen()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        if (tm == null || !tm.IsRunning) return;
+        TutorialStep step = tm.CurrentStep;
+        if (step != null && step.advanceMode == TutorialAdvanceMode.GameAction && step.gameAction == TutorialGameAction.ArtifactOpen)
+            tm.AdvanceStep();
     }
 
     // 보유 여부에 따른 버튼 활성/라벨 + 레벨·스탯·비용 표시를 갱신한다.
