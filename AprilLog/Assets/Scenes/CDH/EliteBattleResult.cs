@@ -2,14 +2,15 @@ using UnityEngine;
 
 public class EliteBattleResult : MonoBehaviour
 {
+    public EliteRewardEffect rewardEffect;
     public EliteMonsterReward rewardSystem;
     public EnchantPopupManager popupManager;
     public JokerSystem jokerSystem;
 
     public void StartRewardProcess()
     {
-        gameObject.SetActive(false);
-
+        rewardEffect.PlayRewardEffect(() =>
+        {
         if (jokerSystem != null)
         {
             jokerSystem.RestoreJokerImages();
@@ -19,5 +20,8 @@ public class EliteBattleResult : MonoBehaviour
         {
             popupManager.StartRewardSequence();
         }
+
+            gameObject.SetActive(false);
+        });
     }
 }
