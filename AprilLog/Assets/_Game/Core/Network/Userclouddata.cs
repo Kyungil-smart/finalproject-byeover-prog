@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : Firestore에 저장되는 유저 데이터 구조
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 하우징 자동재화 마지막 수령 시간 저장 필드 추가,하우징 구매 보유 가구 ID 저장 필드 추가
+
 using System;
 using System.Collections.Generic;
 
@@ -39,7 +42,9 @@ public class UserCloudData
     // ---------- 하우징 ----------
     public string housingAutoCurrencyLastClaimAt;
     // 추가: 조규민 - 계정별 하우징 배치 가구 ID를 저장한다.
-    public List<int> housingPlacedFurnitureIds = new ();
+    public List<int> housingPlacedFurnitureIds = new List<int>();
+    // 추가: 조규민 - 구매 완료된 하우징 가구 ID를 계정 저장 데이터에 보관한다.
+    public List<int> housingOwnedFurnitureIds = new List<int>();
 
     // ---------- 아웃게임 성장 ----------
     public int hpBonus;
@@ -85,6 +90,7 @@ public class UserCloudData
             // 하우징
             housingAutoCurrencyLastClaimAt = DateTime.UtcNow.ToString("o"),
             housingPlacedFurnitureIds = new List<int>(),
+            housingOwnedFurnitureIds = new List<int>(),
             
             // 설정
             language = "ko",

@@ -21,6 +21,11 @@ public class TutorialManager : MonoBehaviour
 
     [SerializeField] private TutorialStepData _stepData;
 
+#if UNITY_EDITOR
+    [Tooltip("0 이상이면 Start에서 그 단계부터 시작한다(에디터 테스트용).")]
+    [SerializeField] private int _debugStartIndex = -1;
+#endif
+
     private const string DONE_KEY = "Tutorial_Completed";
 
     private int _currentIndex = -1;     // -1 = 진행 중 아님
@@ -40,6 +45,13 @@ public class TutorialManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
+
+#if UNITY_EDITOR
+    private void Start()
+    {
+        if (_debugStartIndex >= 0) StartAt(_debugStartIndex);
+    }
+#endif
 
     // ---------- 시작/진행 ----------
 
@@ -127,6 +139,15 @@ public class TutorialManager : MonoBehaviour
     }
 
     // ---------- 테스트/디버그 ----------
+
+    /// <summary>지정 단계부터 시작한다(테스트/디버그용).</summary>
+    public void StartAt(int index)
+    {
+        if (_stepData == null || index < 0 || index >= _stepData.Count) return;
+        _currentIndex = index;
+        Debug.Log($"[Tutorial] 디버그 시작: {index}단계");
+        RefreshView();
+    }
 
     /// <summary>완료 플래그 초기화(테스트용). 다음 새 게임에서 튜토리얼 다시 실행됨.</summary>
     [ContextMenu("Reset Tutorial Flag")]

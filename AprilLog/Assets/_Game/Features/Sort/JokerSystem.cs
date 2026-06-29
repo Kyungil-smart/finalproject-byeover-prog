@@ -31,8 +31,8 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     private JokerPatternData _activePattern;
     private int _currentIndex = 0;
-    private float _lastUsedTime = -60f;
-    private const float _coolDown = 60f;
+    private float _lastUsedTime = -5f;
+    private const float _coolDown = 5f;
     private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정
 
     private void Start()
@@ -191,12 +191,10 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     {
         foreach (var icon in _jokerIcons)
         {
-            if (icon != null && !icon.enabled)
-            {
-                icon.enabled = true;
-                Debug.Log("[JokerSystem] 조커 블록 1개 습득 완료");
-            }
+            if (icon != null) icon.enabled = true;
         }
+
+        _currentActiveIndex = _jokerIcons.Length - 1;
     }
     
     

@@ -33,8 +33,8 @@ public class TutorialGameActionHook : MonoBehaviour
         if (tm == null || !tm.IsRunning) return;
 
         TutorialStep step = tm.CurrentStep;
-        // GameAction 단계(예: '정렬을 완성해보세요')일 때만 정렬 완성으로 진행. 다른 단계면 무시.
-        if (step != null && step.advanceMode == TutorialAdvanceMode.GameAction)
+        // 정렬로 진행하는 단계(gameAction==Sort)일 때만 진행. 다른 GameAction 단계는 무시.
+        if (step != null && step.advanceMode == TutorialAdvanceMode.GameAction && step.gameAction == TutorialGameAction.Sort)
             tm.AdvanceStep();
     }
 }

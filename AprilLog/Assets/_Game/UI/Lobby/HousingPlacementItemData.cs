@@ -4,6 +4,26 @@ using System;
 using UnityEngine;
 
 /// <summary>
+/// 하우징 가구 슬롯에 표시할 상태입니다.
+/// </summary>
+public enum HousingPlacementItemState
+{
+    Equipped,
+    Owned,
+    Price,
+    Locked
+}
+
+/// <summary>
+/// 구매 가격 앞에 표시할 재화 종류입니다.
+/// </summary>
+public enum HousingPlacementPriceCurrency
+{
+    Gold,
+    Diamond
+}
+
+/// <summary>
 /// 하우징 배치 UI에 표시할 가구 항목 데이터입니다.
 /// </summary>
 [Serializable]
@@ -24,6 +44,7 @@ public class HousingPlacementItemData
     [Header("구매 정보")]
     [SerializeField] private int _itemTableId;
     [SerializeField] private int _price;
+    [SerializeField] private HousingPlacementPriceCurrency _priceCurrency = HousingPlacementPriceCurrency.Gold;
 
     [Header("DB 분류")]
     [SerializeField] private int _nameId;
@@ -42,6 +63,7 @@ public class HousingPlacementItemData
     public bool IsUnlocked => _isUnlocked;
     public int ItemTableId => _itemTableId;
     public int Price => _price;
+    public HousingPlacementPriceCurrency PriceCurrency => _priceCurrency;
     public int NameId => _nameId;
     public string Location => _location;
     public string SourceCategory => _sourceCategory;
@@ -55,7 +77,8 @@ public class HousingPlacementItemData
         Sprite _icon,
         bool _isOwned,
         bool _isUnlocked,
-        int _price)
+        int _price,
+        HousingPlacementPriceCurrency _priceCurrency = HousingPlacementPriceCurrency.Gold)
     {
         this._furnitureId = 0;
         this._itemId = _itemId;
@@ -67,6 +90,7 @@ public class HousingPlacementItemData
         this._isUnlocked = _isUnlocked;
         this._itemTableId = 0;
         this._price = _price;
+        this._priceCurrency = _priceCurrency;
         this._nameId = 0;
         this._location = null;
         this._sourceCategory = null;
@@ -89,7 +113,8 @@ public class HousingPlacementItemData
         string _location,
         string _sourceCategory,
         string _sourceType,
-        string _resourceKey)
+        string _resourceKey,
+        HousingPlacementPriceCurrency _priceCurrency = HousingPlacementPriceCurrency.Gold)
     {
         this._furnitureId = _furnitureId;
         this._nameId = _nameId;
@@ -102,6 +127,7 @@ public class HousingPlacementItemData
         this._isUnlocked = _isUnlocked;
         this._itemTableId = _itemTableId;
         this._price = _price;
+        this._priceCurrency = _priceCurrency;
         this._location = _location;
         this._sourceCategory = _sourceCategory;
         this._sourceType = _sourceType;

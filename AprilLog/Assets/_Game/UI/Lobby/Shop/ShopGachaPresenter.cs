@@ -63,6 +63,14 @@ public class ShopGachaPresenter : MonoBehaviour
     [Header("재화 부족 팝업")]
     [SerializeField] private GameObject _insufficientPopup;
 
+    [Header("튜토리얼")]
+    [Tooltip("튜토리얼 뽑기에서 고정 지급할 기어 ID(수습 마법사의 인장)")]
+    [SerializeField] private int _tutorialSealGearId;
+    [Tooltip("튜토리얼 강화용 골드 지급량")]
+    [SerializeField] private int _tutorialGrantGold = 5000;
+    [Tooltip("튜토리얼 강화용 강화석 지급량")]
+    [SerializeField] private int _tutorialGrantStone = 100;
+
     [Header("뽑기 후처리 / 결과 팝업")]
     [Tooltip("획득 반영·등급별 한도·자동 분해·누적 보상 처리를 담당. 비우면 폴백으로 단순 보유 추가만 한다.")]
     [SerializeField] private ArtifactGachaPostProcessor _postProcessor;
@@ -213,6 +221,13 @@ public class ShopGachaPresenter : MonoBehaviour
 
     private void TryDraw(int count, GameObject resultPopup, GachaResultSlotView[] slots, GachaDecomposeRewardView decomposeView)
     {
+        // 튜토리얼 뽑기는 비용 없이 마법사 인장 고정 지급
+        if (IsTutorialGacha())
+        {
+            DrawTutorialFixed(resultPopup, slots, decomposeView);
+            return;
+        }
+
         int cost = GetCost(count);
 
         // 재화 체크 & 차감 (비용 0 이면 항상 통과)
@@ -248,6 +263,50 @@ public class ShopGachaPresenter : MonoBehaviour
 
         if (resultPopup != null)
             resultPopup.SetActive(true);
+    }
+
+    // 튜토리얼 가챠 단계(GachaButton 강조)인지
+    private bool IsTutorialGacha()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        if (tm == null || !tm.IsRunning) return false;
+        TutorialStep step = tm.CurrentStep;
+        return step != null && step.highlightTargetId == "GachaButton";
+    }
+
+    // 튜토리얼 전용 : 비용·천장·마일리지 없이 마법사 인장 1개 고정 지급
+    private void DrawTutorialFixed(GameObject resultPopup, GachaResultSlotView[] slots, GachaDecomposeRewardView decomposeView)
+    {
+        if (_tutorialSealGearId <= 0)
+        {
+            Debug.LogWarning("[ShopGachaPresenter] 튜토리얼 인장 Gear_ID가 설정되지 않았습니다.", this);
+            return;
+        }
+
+        var drawn = new List<int> { _tutorialSealGearId };
+        FillSlots(slots, drawn);
+
+        ArtifactGachaResult post = ProcessDraw(_gachaId, drawn, countMileage: false);
+        if (decomposeView != null)
+            decomposeView.Show(post.TotalStone, post.TotalShard);
+
+        GrantTutorialUpgradeMaterials();
+
+        if (resultPopup != null)
+            resultPopup.SetActive(true);
+    }
+
+    // 튜토리얼 강화·돌파에 필요한 재료를 지급한다(강화석/골드/돌파용 중복 인장)
+    private void GrantTutorialUpgradeMaterials()
+    {
+        ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+        if (mgr != null)
+        {
+            mgr.UpgradeStone += _tutorialGrantStone;   // 레벨업용 강화석
+            mgr.AddArtifact(_tutorialSealGearId);       // 돌파용 중복 인장
+        }
+        if (GameManager.Instance != null && _tutorialGrantGold > 0)
+            GameManager.Instance.AddCurrency(_tutorialGrantGold, 0, "튜토리얼 아티팩트 강화");
     }
 
     // 뽑힌 Gear_ID 목록을 유저 데이터에 반영하고 자동분해/누적보상 결과를 돌려준다.
