@@ -376,7 +376,7 @@ public class ItemContainer
     {
         if (amount <= 0)
         {
-            Debug.LogError($"[ResourceRepo] Wrong Amount. No Add. Amount : {amount}");
+            Debug.LogError($"[ResourceRepo] Wrong Amount. No Add Item ID : {itemId}. Amount : {amount}");
             return;
         }
         
@@ -384,6 +384,7 @@ public class ItemContainer
         {
             _inventory[itemId] += amount;
         }
+        
         Debug.Log($"[ResourceRepo] Item ID : {itemId}. Add Amount : {amount}");
     }
     
@@ -541,6 +542,13 @@ public class StaminaSlot
     // 포션/다이아 등으로 강제 회복 (OverCapMax까지만)
     public void Add(int amount, out int lossAmount)
     {
+        if (amount <= 0)
+        {
+            Debug.LogError($"[ResourceRepo] Wrong Amount. No Add StaminaID {StaminaID}. Amount : {amount}");
+            lossAmount = 0;
+            return;
+        }
+        
         int temp = CurrentAmount + amount;
         
         if (temp > OverCapMax)
@@ -551,6 +559,8 @@ public class StaminaSlot
         
         CurrentAmount = temp;
         lossAmount = 0;
+        
+        Debug.Log($"[ResourceRepo] Stamina Id {StaminaID} : {amount} Add Success. Loss Amount : {lossAmount}. {CurrentAmount} / {MaxOwned}");
     }
     
     public bool UseStamina(int amount)
