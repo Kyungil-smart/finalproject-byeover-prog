@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 #region 인챈트 시스템 세이브 데이터
 
@@ -31,17 +32,30 @@ public class AcquiredEnchantSaveData
 [Serializable]
 public class InGameSaveData
 {
+    // 스테이지
     public int chapterId;
     public int clearedStage;
+
+    // 플레이어
     public int playerHP;
     public int currentEXP;
     public int inGameLevel;
-    public int[] puzzleSlots = Array.Empty<int>();
-    public int[] waitingSlots = Array.Empty<int>();
-    public List<AcquiredEnchantSaveData> acquiredEnchants = new ();
-    public int totalDamage;
-    public int maxCombo;
+    
+    // 퍼즐
+    public int[] puzzleSlots;
+    public int[] waitingSlots;
+    public int jokerCount; 
+    public float jokerRemainingCooldown;
     public int nextStageSeed;
+    
+    // 인첸트
+    public List<AcquiredEnchantSaveData> acquiredEnchants;
+    
+    // 기록
+    public int totalDamage;
+    public int highestDamage;
+    public Dictionary<int, int> MaxBySkill;
+    public int maxCombo;
 }
 
 #endregion
