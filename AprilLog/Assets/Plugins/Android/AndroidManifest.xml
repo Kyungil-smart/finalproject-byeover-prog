@@ -4,14 +4,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
   <application>
     <!-- 추가: 조규민 - Unity 기본 런처 Activity의 화면 방향을 Android Manifest 병합 단계에서 portrait로 고정한다. -->
-    <!-- 추가: Android 12+ 에서 intent-filter 보유 컴포넌트는 android:exported 명시 필수 (LAUNCHER 이므로 true) -->
-    <activity android:name="com.develrocket.Aprilogueunity3d.player.UnityPlayerActivity" android:exported="true" android:screenOrientation="portrait" android:resizeableActivity="false" tools:replace="android:screenOrientation,android:resizeableActivity">
-      <!-- 추가: 홍정옥 - Build And Run 자동 실행을 위해 MAIN/LAUNCHER intent-filter 추가 -->
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
-    </activity>
+    <activity android:name="com.develrocket.Aprilogueunity3d.player.UnityPlayerActivity" android:screenOrientation="portrait" android:resizeableActivity="false" tools:replace="android:screenOrientation,android:resizeableActivity" />
     <!-- 추가: 조규민 - Unity 6000 GameActivity 사용 빌드에서도 동일하게 portrait를 강제한다. -->
     <activity android:name="com.develrocket.Aprilogueunity3d.player.UnityPlayerGameActivity" android:screenOrientation="portrait" android:resizeableActivity="false" tools:replace="android:screenOrientation,android:resizeableActivity" />
   </application>
