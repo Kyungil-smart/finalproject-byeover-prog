@@ -6,6 +6,8 @@
 // 수정자 : 정승우
 // 설명 : 스킬(인챈트)별 단일타격 최고뎀을 스킬ID(StandardID) 키로 기록. MonsterAI.TakeDamage(dmg, skillId)에서 누적.
 //        정산창 '인챈트별 데미지 최고치'용. 기존 HighestEnchantDamage1~3(미사용 死변수) 제거 → TopSkillsByDamage로 대체.
+// 수정자 : 김영찬
+// 수정 내용 : 세이브/로드 시 인첸트별 최고치 정보 또한 갱신 하도록 수정
 
 using System.Collections.Generic;
 
@@ -19,13 +21,21 @@ public static class RunStats
     public static int HighestDamage { get; private set; }   // 전체 단일타격 최고뎀
 
     // 스킬(StandardID)별 단일타격 최고뎀. 정산창 '인챈트별 최고치'용.
-    private static readonly Dictionary<int, int> _maxBySkill = new Dictionary<int, int>();
+    private static Dictionary<int, int> _maxBySkill = new ();
+    public static Dictionary<int, int> MaxBySkill => _maxBySkill;
 
     public static void Reset()
     {
         TotalDamage = 0;
         HighestDamage = 0;
         _maxBySkill.Clear();
+    }
+
+    public static void RestoreFromSave(int totalDamage, int highestDamage, Dictionary<int, int> maxBySkill)
+    {
+        TotalDamage = totalDamage;
+        HighestDamage = highestDamage;
+        _maxBySkill = maxBySkill;
     }
 
     public static void AddDamage(int amount) => AddDamage(amount, 0);

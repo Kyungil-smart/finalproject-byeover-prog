@@ -226,7 +226,7 @@ public class EnchantModel : MonoBehaviour
     public void RestoreFromSave(List<AcquiredEnchantSaveData> saves)
     {
         Initialize(); 
-        if (saves == null) return;
+        if (saves == null || saves.Count == 0) return;
 
         foreach (var save in saves)
         {
@@ -237,15 +237,29 @@ public class EnchantModel : MonoBehaviour
             int? skillGroupId = FindSkillGroupId(targetId);
             if (skillGroupId.HasValue)
             {
-                _ownedSkills[targetId] = new AcquiredSkillData { Level = targetLevel, GroupID = skillGroupId.Value };
-                continue; 
+                var chain = DataManager.Instance.SpellRepo.GetSkillChainByName(skillGroupId.Value, targetId);
+                var data = chain.GetNextLevelData(targetLevel - 1); 
+
+                _ownedSkills[targetId] = new AcquiredSkillData { 
+                    Level = targetLevel, 
+                    GroupID = skillGroupId.Value,
+                    Data = data
+                };
             }
 
             // 스탯 테이블에서 검색
             int? statGroupId = FindStatGroupId(targetId);
             if (statGroupId.HasValue)
             {
-                _ownedStats[targetId] = new AcquiredStatData { Level = targetLevel, GroupID = statGroupId.Value };
+                var chain = DataManager.Instance.SpellRepo.GetStatChainByName(statGroupId.Value, targetId);
+                var data = chain.GetNextLevelData(targetLevel - 1);
+
+                _ownedStats[targetId] = new AcquiredStatData
+                {
+                    Level = targetLevel,
+                    GroupID = statGroupId.Value,
+                    Data = data
+                };
                 continue;
             }
 

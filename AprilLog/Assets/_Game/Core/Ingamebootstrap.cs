@@ -22,6 +22,9 @@
 // 7차 수정자 : 김영찬
 // SaveData 관련 Class Legacy 처리한 내용들을 SaveDataClasses.cs 신설 하면서 클래스명이 변화 한것 반영함
 
+// 8차 수정자 : 김영찬
+// 데이터 로드 개선
+
 using UnityEngine;
 // 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
@@ -138,6 +141,13 @@ public class InGameBootstrap : MonoBehaviour
 
             if (_growthSystem != null)
                 _growthSystem.RestoreFromSave(saveData.inGameLevel, saveData.currentEXP);
+            
+            RunStats.RestoreFromSave(saveData.totalDamage, saveData.highestDamage, saveData.MaxBySkill);
+            
+            if (_comboModel != null)
+            {
+                _comboModel.RestoreFromSave(saveData.maxCombo);
+            }
         }
         else if (_growthSystem != null)
         {
@@ -167,7 +177,24 @@ public class InGameBootstrap : MonoBehaviour
             _sortSystem = gameObject.AddComponent<SortSystem>();
             Debug.LogWarning("[InGameBootstrap] SortSystem이 씬에 없어 런타임에 생성했습니다.");
         }
-        _sortSystem.Initialize(seed);
+        
+        if (isResume && saveData != null)
+        {
+            // 이어하기 : 퍼즐의 상태와 조커의 상태를 복구한다.
+            // 퍼즐 보드 및 대기열 복구
+            _sortSystem.RestoreFromSave(seed, saveData.puzzleSlots, saveData.waitingSlots);
+
+            // 조커 상태 복구
+            var jokerSystem = FindFirstObjectByType<JokerSystem>();
+            if (jokerSystem != null)
+            {
+                jokerSystem.RestoreFromSave(saveData.jokerCount, saveData.jokerRemainingCooldown);
+            }
+        }
+        else
+        {
+            _sortSystem.Initialize(seed);
+        }
 
         // CombatSystem은 OnEnable(씬 로드) 시점엔 아직 없던 SortSystem 구독을 놓쳤을 수 있으므로,
         // SortSystem 생성/초기화 직후 명시적으로 바인딩한다 (→ 정렬 성공 시 공격 발동).

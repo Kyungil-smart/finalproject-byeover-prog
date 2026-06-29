@@ -120,11 +120,6 @@ public class HousingPlacementItemMapper
 
     private string ResolveDisplayName(HousingFurnitureData _furniture)
     {
-        if (_furniture.Name_ID > 0)
-        {
-            return $"Name ID: {_furniture.Name_ID}";
-        }
-
         string _typeName = ResolveTypeName(_furniture.Type);
         return $"{_typeName} #{_furniture.Furniture_ID}";
     }

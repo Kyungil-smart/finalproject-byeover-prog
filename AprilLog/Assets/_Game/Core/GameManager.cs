@@ -6,6 +6,9 @@
 
 // 추가: 조규민 - 로그인 계정의 아웃게임 모델과 정산 결과를 UserCloudData로 저장하는 공용 진입점 추가
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 세이브 개선
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -801,6 +804,98 @@ public class GameManager : MonoBehaviour
         PersistCurrency();
     }
 
+    // 추가: 조규민 - 하우징 가구 구매는 재화 차감과 보유 등록을 한 번의 영속 데이터 변경으로 처리한다.
+    public bool TryPurchaseHousingFurniture(int _furnitureId, int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_furnitureId <= 0)
+        {
+            Debug.LogWarning($"[하우징 구매] 유효하지 않은 가구 ID입니다. Furniture: {_furnitureId}");
+            return false;
+        }
+
+        EnsureCurrencyData();
+        EnsureHousingOwnedFurnitureData();
+
+        if (IsHousingFurnitureOwned(_furnitureId))
+        {
+            return true;
+        }
+
+        int _safePrice = Mathf.Max(0, _price);
+
+        if (!CanAffordHousingPurchase(_safePrice, _currency))
+        {
+            Debug.LogWarning($"[하우징 구매] 재화가 부족합니다. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+            return false;
+        }
+
+        SpendHousingPurchaseCurrency(_safePrice, _currency);
+        CloudData.housingOwnedFurnitureIds.Add(_furnitureId);
+        Debug.Log($"[하우징 구매] 가구 구매 완료. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+
+        RaiseCurrencyChanged();
+        SyncToCloud(CloudData);
+        return true;
+    }
+
+    public bool IsHousingFurnitureOwned(int _furnitureId)
+    {
+        if (_furnitureId <= 0 || CloudData == null)
+        {
+            return false;
+        }
+
+        EnsureHousingOwnedFurnitureData();
+        return CloudData.housingOwnedFurnitureIds.Contains(_furnitureId);
+    }
+
+    private bool CanAffordHousingPurchase(int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_price <= 0)
+        {
+            return true;
+        }
+
+        switch (_currency)
+        {
+            case HousingPlacementPriceCurrency.Diamond:
+                return CloudData.diamond >= _price;
+            default:
+                return CloudData.gold >= _price;
+        }
+    }
+
+    private void SpendHousingPurchaseCurrency(int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_price <= 0)
+        {
+            return;
+        }
+
+        switch (_currency)
+        {
+            case HousingPlacementPriceCurrency.Diamond:
+                CloudData.diamond = Mathf.Max(0, CloudData.diamond - _price);
+                break;
+            default:
+                CloudData.gold = Mathf.Max(0, CloudData.gold - _price);
+                break;
+        }
+    }
+
+    private void EnsureHousingOwnedFurnitureData()
+    {
+        if (CloudData == null)
+        {
+            return;
+        }
+
+        if (CloudData.housingOwnedFurnitureIds == null)
+        {
+            CloudData.housingOwnedFurnitureIds = new List<int>();
+        }
+    }
+
     public DateTime EnsureHousingAutoCurrencyLastClaimUtc()
     {
         EnsureCurrencyData();
@@ -948,30 +1043,47 @@ public class GameManager : MonoBehaviour
         var growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
         var enchantModel = FindFirstObjectByType<EnchantModel>();
         var comboModel = FindFirstObjectByType<ComboModel>();
+        var sortModel = FindFirstObjectByType<SortModel>();
+        var sortSystem = FindFirstObjectByType<SortSystem>();
+        var jokerSystem = FindFirstObjectByType<JokerSystem>();
 
         var data = new InGameSaveData
         {
+            // 스테이지
             chapterId = Mathf.Max(1, loop.CurrentChapterId),
             clearedStage = Mathf.Max(0, loop.CompletedStageCount),
+            
+            // 플레이어
             playerHP = playerModel != null ? Mathf.Max(1, playerModel.CurrentHP) : 1,
             currentEXP = growthSystem != null ? Mathf.Max(0, growthSystem.CurrentEXP) : 0,
             inGameLevel = growthSystem != null ? Mathf.Max(1, growthSystem.CurrentLevel) : 1,
-            puzzleSlots = new int[0],
-            waitingSlots = new int[0],
+            
+            // 퍼즐
+            puzzleSlots = sortModel != null ? sortModel.ExportPuzzleSlots() : Array.Empty<int>(),
+            waitingSlots = sortModel != null ? sortModel.ExportWaitingSlots() : Array.Empty<int>(),
+            jokerCount = jokerSystem != null ? jokerSystem.GetJokerCount() : 2,
+            jokerRemainingCooldown = jokerSystem != null ? jokerSystem.GetRemainingCooldown() : 0f,
+            nextStageSeed = sortSystem != null ? sortSystem.GetCurrentSeedForSave() : UnityEngine.Random.Range(0, int.MaxValue),
+            
+            // 인첸트
             acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),
+            
+            // 기록
             totalDamage = RunStats.HighestDamage,
-            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0,
-            nextStageSeed = UnityEngine.Random.Range(0, int.MaxValue)
+            highestDamage =  RunStats.HighestDamage,
+            MaxBySkill = RunStats.MaxBySkill,
+            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0
         };
 
         SaveLocalData(data);
         Debug.Log($"[GameManager] 인게임 로컬 세이브 완료 (챕터{data.chapterId} 클리어{data.clearedStage} HP{data.playerHP})");
     }
 
-    public void SaveLocalData(InGameSaveData data)
+    private void SaveLocalData(InGameSaveData data)
     {
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetInGameSavePath(), json);
+        Debug.Log($"[세이브 경로] {Application.persistentDataPath}");
     }
 
     public bool HasLocalSave()

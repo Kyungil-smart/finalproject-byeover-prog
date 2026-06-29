@@ -15,6 +15,12 @@ public static class HousingPlacementSceneInstaller
 {
     private const string ScenePath = "Assets/Scenes/JGM/JGM_Lobby.unity";
     private const string RootName = "HousingPlacementRoot";
+    private const string DefaultPreviewFramePath = "Assets/Imports/NewResource/Frame_Type2_01.Png";
+    private const string EquippedPreviewFramePath = "Assets/Imports/NewResource/Frame_Type2_02.Png";
+    private const string GreenStateButtonPath = "Assets/Imports/NewResource/Button_01_Mian_s_Bg_Green.Png";
+    private const string RedStateButtonPath = "Assets/Imports/NewResource/Button_01_Mian_s_Bg_Red.Png";
+    private const string GoldPriceIconPath = "Assets/Imports/NewResource/Icon_128_Coin_01.png";
+    private const string DiamondPriceIconPath = "Assets/Imports/NewResource/Icon_128_Gem_03.png";
 
     [MenuItem("Tools/Housing/Install Placement UI To JGM Lobby")]
     public static void InstallJgmLobby()
@@ -148,8 +154,8 @@ public static class HousingPlacementSceneInstaller
         _contentRect.sizeDelta = new Vector2(0f, 0f);
 
         GridLayoutGroup _grid = _content.AddComponent<GridLayoutGroup>();
-        _grid.cellSize = new Vector2(132f, 172f);
-        _grid.spacing = new Vector2(14f, 14f);
+        _grid.cellSize = new Vector2(200f, 260f);
+        _grid.spacing = new Vector2(18f, 18f);
         _grid.padding = new RectOffset(0, 0, 0, 16);
         _grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         _grid.constraintCount = 4;
@@ -164,57 +170,93 @@ public static class HousingPlacementSceneInstaller
 
     private static HousingPlacementItemSlotView CreateSlotTemplate(Transform _parent)
     {
+        // 추가: 조규민 - 배치 슬롯을 실제 프리팹과 동일한 프레임, 이름, 상태 버튼 계층으로 생성한다.
         GameObject _slot = CreateRectObject("Template_ItemSlot", _parent, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero);
         RectTransform _slotRect = _slot.GetComponent<RectTransform>();
-        _slotRect.sizeDelta = new Vector2(132f, 172f);
+        _slotRect.sizeDelta = new Vector2(200f, 260f);
         Image _slotImage = _slot.AddComponent<Image>();
-        _slotImage.color = new Color(0.17f, 0.18f, 0.20f, 1f);
+        _slotImage.color = new Color(1f, 1f, 1f, 0f);
         Button _slotButton = _slot.AddComponent<Button>();
         HousingPlacementItemSlotView _slotView = _slot.AddComponent<HousingPlacementItemSlotView>();
+        LayoutElement _slotLayout = _slot.AddComponent<LayoutElement>();
+        _slotLayout.preferredWidth = 200f;
+        _slotLayout.preferredHeight = 260f;
+        _slotLayout.flexibleWidth = 0f;
+        _slotLayout.flexibleHeight = 0f;
 
-        VerticalLayoutGroup _slotLayout = _slot.AddComponent<VerticalLayoutGroup>();
-        _slotLayout.padding = new RectOffset(10, 10, 12, 10);
-        _slotLayout.spacing = 8f;
-        _slotLayout.childAlignment = TextAnchor.UpperCenter;
-        _slotLayout.childControlWidth = true;
-        _slotLayout.childControlHeight = true;
-        _slotLayout.childForceExpandWidth = true;
-        _slotLayout.childForceExpandHeight = false;
+        GameObject _previewFrame = CreateRectObject("PreviewFrame_Image", _slot.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -8f));
+        RectTransform _previewFrameRect = _previewFrame.GetComponent<RectTransform>();
+        _previewFrameRect.sizeDelta = new Vector2(170f, 160f);
+        Image _previewFrameImage = _previewFrame.AddComponent<Image>();
+        Sprite _defaultPreviewFrameSprite = AssetDatabase.LoadAssetAtPath<Sprite>(DefaultPreviewFramePath);
+        Sprite _equippedPreviewFrameSprite = AssetDatabase.LoadAssetAtPath<Sprite>(EquippedPreviewFramePath);
+        Sprite _greenStateButtonSprite = AssetDatabase.LoadAssetAtPath<Sprite>(GreenStateButtonPath);
+        Sprite _redStateButtonSprite = AssetDatabase.LoadAssetAtPath<Sprite>(RedStateButtonPath);
+        Sprite _goldPriceIconSprite = AssetDatabase.LoadAssetAtPath<Sprite>(GoldPriceIconPath);
+        Sprite _diamondPriceIconSprite = AssetDatabase.LoadAssetAtPath<Sprite>(DiamondPriceIconPath);
+        _previewFrameImage.sprite = _defaultPreviewFrameSprite;
+        _previewFrameImage.color = Color.white;
+        _previewFrameImage.raycastTarget = false;
 
-        GameObject _icon = CreateRectObject("PreviewIcon_Image", _slot.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero);
+        GameObject _icon = CreateRectObject("PreviewIcon_Image", _previewFrame.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero);
         RectTransform _iconRect = _icon.GetComponent<RectTransform>();
-        _iconRect.sizeDelta = new Vector2(82f, 82f);
+        _iconRect.sizeDelta = new Vector2(136f, 126f);
         Image _iconImage = _icon.AddComponent<Image>();
         _iconImage.color = new Color(0.85f, 0.87f, 0.89f, 1f);
         _iconImage.preserveAspect = true;
-        LayoutElement _iconLayout = _icon.AddComponent<LayoutElement>();
-        _iconLayout.preferredWidth = 82f;
-        _iconLayout.preferredHeight = 82f;
-        _iconLayout.flexibleWidth = 0f;
-        _iconLayout.flexibleHeight = 0f;
 
         TextMeshProUGUI _nameText = CreateText("ItemName_Text", _slot.transform, "가구", 18, TextAlignmentOptions.Center);
         RectTransform _nameRect = _nameText.GetComponent<RectTransform>();
-        _nameRect.sizeDelta = new Vector2(0f, 28f);
-        _nameText.enableWordWrapping = false;
+        _nameRect.anchorMin = new Vector2(0.5f, 1f);
+        _nameRect.anchorMax = new Vector2(0.5f, 1f);
+        _nameRect.pivot = new Vector2(0.5f, 0.5f);
+        _nameRect.anchoredPosition = new Vector2(0f, -184f);
+        _nameRect.sizeDelta = new Vector2(180f, 36f);
+        _nameText.textWrappingMode = TextWrappingModes.NoWrap;
         _nameText.overflowMode = TextOverflowModes.Ellipsis;
-        LayoutElement _nameLayout = _nameText.gameObject.AddComponent<LayoutElement>();
-        _nameLayout.preferredHeight = 28f;
-        _nameLayout.flexibleHeight = 0f;
 
-        TextMeshProUGUI _stateText = CreateText("OwnershipOrPrice_Text", _slot.transform, "보유중", 17, TextAlignmentOptions.Center);
+        GameObject _stateButton = CreateRectObject("StateButton_Image", _slot.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 8f));
+        RectTransform _stateButtonRect = _stateButton.GetComponent<RectTransform>();
+        _stateButtonRect.sizeDelta = new Vector2(170f, 44f);
+        Image _stateButtonImage = _stateButton.AddComponent<Image>();
+        _stateButtonImage.sprite = _greenStateButtonSprite;
+        _stateButtonImage.type = Image.Type.Sliced;
+        _stateButtonImage.color = Color.white;
+        _stateButtonImage.raycastTarget = false;
+
+        GameObject _currencyIcon = CreateRectObject("CurrencyIcon_Image", _stateButton.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-62f, 0f));
+        RectTransform _currencyIconRect = _currencyIcon.GetComponent<RectTransform>();
+        _currencyIconRect.sizeDelta = new Vector2(24f, 24f);
+        Image _currencyIconImage = _currencyIcon.AddComponent<Image>();
+        _currencyIconImage.sprite = _goldPriceIconSprite;
+        _currencyIconImage.color = Color.white;
+        _currencyIconImage.preserveAspect = true;
+        _currencyIconImage.raycastTarget = false;
+        _currencyIcon.SetActive(false);
+
+        TextMeshProUGUI _stateText = CreateText("OwnershipOrPrice_Text", _stateButton.transform, "보유중", 17, TextAlignmentOptions.Center);
         RectTransform _stateRect = _stateText.GetComponent<RectTransform>();
-        _stateRect.sizeDelta = new Vector2(0f, 26f);
-        _stateText.enableWordWrapping = false;
+        _stateRect.anchorMin = Vector2.zero;
+        _stateRect.anchorMax = Vector2.one;
+        _stateRect.anchoredPosition = new Vector2(12f, 0f);
+        _stateRect.sizeDelta = new Vector2(-42f, 0f);
+        _stateText.textWrappingMode = TextWrappingModes.NoWrap;
         _stateText.overflowMode = TextOverflowModes.Ellipsis;
-        LayoutElement _stateLayout = _stateText.gameObject.AddComponent<LayoutElement>();
-        _stateLayout.preferredHeight = 26f;
-        _stateLayout.flexibleHeight = 0f;
 
         SerializedObject _serializedSlot = new SerializedObject(_slotView);
+        _serializedSlot.FindProperty("_previewFrameImage").objectReferenceValue = _previewFrameImage;
         _serializedSlot.FindProperty("_iconImage").objectReferenceValue = _iconImage;
         _serializedSlot.FindProperty("_nameText").objectReferenceValue = _nameText;
+        _serializedSlot.FindProperty("_stateButtonImage").objectReferenceValue = _stateButtonImage;
+        _serializedSlot.FindProperty("_currencyIconImage").objectReferenceValue = _currencyIconImage;
         _serializedSlot.FindProperty("_stateText").objectReferenceValue = _stateText;
+        _serializedSlot.FindProperty("_equippedPreviewFrameSprite").objectReferenceValue = _equippedPreviewFrameSprite;
+        _serializedSlot.FindProperty("_defaultPreviewFrameSprite").objectReferenceValue = _defaultPreviewFrameSprite;
+        _serializedSlot.FindProperty("_equippedStateSprite").objectReferenceValue = _greenStateButtonSprite;
+        _serializedSlot.FindProperty("_ownedStateSprite").objectReferenceValue = _greenStateButtonSprite;
+        _serializedSlot.FindProperty("_priceStateSprite").objectReferenceValue = _redStateButtonSprite;
+        _serializedSlot.FindProperty("_goldPriceIconSprite").objectReferenceValue = _goldPriceIconSprite;
+        _serializedSlot.FindProperty("_diamondPriceIconSprite").objectReferenceValue = _diamondPriceIconSprite;
         _serializedSlot.FindProperty("_slotButton").objectReferenceValue = _slotButton;
         _serializedSlot.ApplyModifiedPropertiesWithoutUndo();
 

@@ -5,6 +5,8 @@
 // 3차 수정자 : 조규민
 // 수정 내용 : UserCloudData 직접 저장 대신 Firestore Dictionary 변환 저장으로 직렬화 오류 수정
 
+// 수정 내용 : 하우징 구매 보유 가구 ID를 Firestore 저장/로드에 포함
+
 #if FIREBASE_ENABLED
 using Firebase.Firestore;
 #endif
@@ -379,6 +381,7 @@ public class FirestoreService : MonoBehaviour
             { "diamond", userData.diamond },
             { "housingAutoCurrencyLastClaimAt", userData.housingAutoCurrencyLastClaimAt ?? DateTime.UtcNow.ToString("o") },
             { "housingPlacedFurnitureIds", userData.housingPlacedFurnitureIds ?? new List<int>() },
+            { "housingOwnedFurnitureIds", userData.housingOwnedFurnitureIds ?? new List<int>() },
             { "hpBonus", userData.hpBonus },
             { "attackBonus", userData.attackBonus },
             { "shieldBonus", userData.shieldBonus },
@@ -473,6 +476,10 @@ public class FirestoreService : MonoBehaviour
         // 추가: 조규민 - Firestore에 저장된 하우징 배치 가구 ID 목록을 복원한다.
         if (snapshot.TryGetValue("housingPlacedFurnitureIds", out object housingPlacedFurnitureIds))
             data.housingPlacedFurnitureIds = ConvertIntList(housingPlacedFurnitureIds);
+
+        // 추가: 조규민 - 계정에 저장된 하우징 구매 보유 가구 ID 목록을 복원한다.
+        if (snapshot.TryGetValue("housingOwnedFurnitureIds", out object housingOwnedFurnitureIds))
+            data.housingOwnedFurnitureIds = ConvertIntList(housingOwnedFurnitureIds);
 
         if (snapshot.TryGetValue("hpBonus", out int hpBonus))
             data.hpBonus = hpBonus;

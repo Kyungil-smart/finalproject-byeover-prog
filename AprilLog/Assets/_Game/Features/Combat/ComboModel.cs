@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 콤보 데미지를 합연산이 아닌 곱연산 처리 한다고 해서 수정함
 
+// 수정자 : 김영찬
+// 수정 내용 : 세이브/로드 정비
+
 using System;
 using UnityEngine;
 
@@ -93,5 +96,11 @@ public class ComboModel : MonoBehaviour
         CurrentCombo = 0;
         MaxComboThisRun = 0;
         _isActive = false;
+    }
+    
+    // ---------- 세이브 / 로드 (추가) ----------
+    public void RestoreFromSave(int savedMaxCombo)
+    {
+        MaxComboThisRun = savedMaxCombo;
     }
 }
