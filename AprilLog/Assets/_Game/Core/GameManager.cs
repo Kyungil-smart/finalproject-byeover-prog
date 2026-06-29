@@ -804,6 +804,98 @@ public class GameManager : MonoBehaviour
         PersistCurrency();
     }
 
+    // 추가: 조규민 - 하우징 가구 구매는 재화 차감과 보유 등록을 한 번의 영속 데이터 변경으로 처리한다.
+    public bool TryPurchaseHousingFurniture(int _furnitureId, int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_furnitureId <= 0)
+        {
+            Debug.LogWarning($"[하우징 구매] 유효하지 않은 가구 ID입니다. Furniture: {_furnitureId}");
+            return false;
+        }
+
+        EnsureCurrencyData();
+        EnsureHousingOwnedFurnitureData();
+
+        if (IsHousingFurnitureOwned(_furnitureId))
+        {
+            return true;
+        }
+
+        int _safePrice = Mathf.Max(0, _price);
+
+        if (!CanAffordHousingPurchase(_safePrice, _currency))
+        {
+            Debug.LogWarning($"[하우징 구매] 재화가 부족합니다. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+            return false;
+        }
+
+        SpendHousingPurchaseCurrency(_safePrice, _currency);
+        CloudData.housingOwnedFurnitureIds.Add(_furnitureId);
+        Debug.Log($"[하우징 구매] 가구 구매 완료. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+
+        RaiseCurrencyChanged();
+        SyncToCloud(CloudData);
+        return true;
+    }
+
+    public bool IsHousingFurnitureOwned(int _furnitureId)
+    {
+        if (_furnitureId <= 0 || CloudData == null)
+        {
+            return false;
+        }
+
+        EnsureHousingOwnedFurnitureData();
+        return CloudData.housingOwnedFurnitureIds.Contains(_furnitureId);
+    }
+
+    private bool CanAffordHousingPurchase(int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_price <= 0)
+        {
+            return true;
+        }
+
+        switch (_currency)
+        {
+            case HousingPlacementPriceCurrency.Diamond:
+                return CloudData.diamond >= _price;
+            default:
+                return CloudData.gold >= _price;
+        }
+    }
+
+    private void SpendHousingPurchaseCurrency(int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_price <= 0)
+        {
+            return;
+        }
+
+        switch (_currency)
+        {
+            case HousingPlacementPriceCurrency.Diamond:
+                CloudData.diamond = Mathf.Max(0, CloudData.diamond - _price);
+                break;
+            default:
+                CloudData.gold = Mathf.Max(0, CloudData.gold - _price);
+                break;
+        }
+    }
+
+    private void EnsureHousingOwnedFurnitureData()
+    {
+        if (CloudData == null)
+        {
+            return;
+        }
+
+        if (CloudData.housingOwnedFurnitureIds == null)
+        {
+            CloudData.housingOwnedFurnitureIds = new List<int>();
+        }
+    }
+
     public DateTime EnsureHousingAutoCurrencyLastClaimUtc()
     {
         EnsureCurrencyData();

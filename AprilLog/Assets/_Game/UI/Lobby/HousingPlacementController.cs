@@ -1,5 +1,7 @@
 ﻿//담당자: 조규민
 
+// 수정 내용 : 저장된 구매 보유 가구 목록을 배치 UI 상태에 반영하고 구매 요청을 GameManager로 위임
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -38,7 +40,9 @@ public class HousingPlacementController : MonoBehaviour
         _slotView = ResolveSlotView();
         _placementItems = new List<HousingPlacementItemData>(BuildInitialItems());
         _model = new HousingPlacementModel(_placementItems);
-        _presenter = new HousingPlacementPresenter(_model, _buttonView, _popupView, _slotView, _applyImmediatelyOnItemClick, HandleFurnitureApplied);
+        _model.SetEquippedFurnitureIds(GetSavedFurnitureIds());
+        _model.SetOwnedFurnitureIds(GetSavedOwnedFurnitureIds());
+        _presenter = new HousingPlacementPresenter(_model, _buttonView, _popupView, _slotView, _applyImmediatelyOnItemClick, HandleFurnitureApplied, HandleFurniturePurchaseRequested);
         _presenter.Initialize();
         RestoreSavedPlacements();
     }
@@ -99,6 +103,45 @@ public class HousingPlacementController : MonoBehaviour
 
             _slotView.ApplyFurniture(_itemData);
         }
+    }
+
+    private IEnumerable<int> GetSavedFurnitureIds()
+    {
+        if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
+        {
+            return null;
+        }
+
+        return GameManager.Instance.CloudData.housingPlacedFurnitureIds;
+    }
+
+    private IEnumerable<int> GetSavedOwnedFurnitureIds()
+    {
+        if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
+        {
+            return null;
+        }
+
+        return GameManager.Instance.CloudData.housingOwnedFurnitureIds;
+    }
+
+    private bool HandleFurniturePurchaseRequested(HousingPlacementItemData _itemData)
+    {
+        if (_itemData == null || _itemData.FurnitureId <= 0)
+        {
+            return false;
+        }
+
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("[HousingPlacementController] GameManager가 없어 하우징 구매를 저장할 수 없습니다.", this);
+            return false;
+        }
+
+        return GameManager.Instance.TryPurchaseHousingFurniture(
+            _itemData.FurnitureId,
+            _itemData.Price,
+            _itemData.PriceCurrency);
     }
 
     private void HandleFurnitureApplied(HousingPlacementItemData _itemData)
