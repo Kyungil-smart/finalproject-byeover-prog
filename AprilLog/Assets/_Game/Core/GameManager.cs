@@ -972,6 +972,7 @@ public class GameManager : MonoBehaviour
     {
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetInGameSavePath(), json);
+        Debug.Log($"[세이브 경로] {Application.persistentDataPath}");
     }
 
     public bool HasLocalSave()

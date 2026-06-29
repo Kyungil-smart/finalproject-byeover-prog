@@ -26,7 +26,7 @@ public class AcquiredEnchantSaveData
 /// <summary>
 /// 인게임 세이브 데이터<br/>
 /// (기존 Legacy_InGameSaveData 였으나, 정식 세이브 데이터로 승격됨)<br/>
-/// 최종 수정일 : 26.06.12
+/// 최종 수정일 : 26.06.29
 /// </summary>
 [Serializable]
 public class InGameSaveData
@@ -36,9 +36,9 @@ public class InGameSaveData
     public int playerHP;
     public int currentEXP;
     public int inGameLevel;
-    public int[] puzzleSlots;
-    public int[] waitingSlots;
-    public List<AcquiredEnchantSaveData> acquiredEnchants;
+    public int[] puzzleSlots = Array.Empty<int>();
+    public int[] waitingSlots = Array.Empty<int>();
+    public List<AcquiredEnchantSaveData> acquiredEnchants = new ();
     public int totalDamage;
     public int maxCombo;
     public int nextStageSeed;
