@@ -20,6 +20,15 @@ public enum TutorialAdvanceMode
     GameAction,     // 정렬/인챈트 선택 등 실제 게임 동작이 일어나면 다음 (게임 이벤트 훅이 TutorialManager.AdvanceStep 호출)
 }
 
+/// <summary>GameAction 단계가 무엇으로 진행되는가.</summary>
+public enum TutorialGameAction
+{
+    None,
+    Sort,           // 정렬 완성
+    ArtifactEquip,  // 아티팩트 장착
+    ArtifactOpen,   // 아티팩트 상세창 열림
+}
+
 /// <summary>튜토리얼 한 단계의 정의.</summary>
 [System.Serializable]
 public class TutorialStep
@@ -32,6 +41,12 @@ public class TutorialStep
 
     [Tooltip("넘기는 방식: 탭 / 게임동작")]
     public TutorialAdvanceMode advanceMode = TutorialAdvanceMode.TapHighlight;
+
+    [Tooltip("GameAction일 때 무엇으로 진행하는지. TapHighlight면 무시")]
+    public TutorialGameAction gameAction = TutorialGameAction.None;
+
+    [Tooltip("딤 없이 손가락만 표시. 팝업 내용을 가리면 안 되는 단계에 사용")]
+    public bool noDim = false;
 
     [Header("UI (홍정옥 작성)")]
     [Tooltip("강조할 UI 요소 식별자. 씬의 TutorialView가 이 id로 대상을 찾아 강조한다.")]
