@@ -116,7 +116,7 @@ public class ResourceRepo : MonoBehaviour
     // ---------- 관리 API ----------
     public void AddItem(int itemId, int amount) => _itemContainer.AddItem(itemId, amount);
     public bool UseItem(int itemId, int amount) => _itemContainer.UseItem(itemId, amount);
-    public void AddStamina(int id, int amount, out int lossAmount) => _staminaContainer.GetSlot(id).Add(amount, out lossAmount);
+    public void AddStamina(int id, int amount, out int lossAmount) => GetStaminaSlot(id).Add(amount, out lossAmount);
     public bool UseStamina(int id, int amount) => GetStaminaSlot(id).UseStamina(amount);
     
     // ---------- 보조 함수 ----------
