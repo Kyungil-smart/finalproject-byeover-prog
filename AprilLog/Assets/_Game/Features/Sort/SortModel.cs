@@ -3,6 +3,10 @@
 // 수정 사항 : 보드 내 모든 슬롯을 무작위 유닛으로 채우는 랜덤 배치(ShuffleBoard) 로직 구현
 // 최종 변경 일자 : 26.05.27
 
+// 수정자 : 김영찬
+// 수정 내용 : 세이브/로드 구현
+// 최종 변경 일자 : 26.06.29
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -245,5 +249,90 @@ public class SortModel : MonoBehaviour
         }
 
         Debug.Log($"[모델] 테이블 {tableIdx}의 모든 유닛을 타입 {unitType}(으)로 교체 완료");
+    }
+    
+    // ---------- 세이브 / 로드 (추가) ----------
+
+    // 퍼즐 보드 상태를 1차원 배열(27칸)로 추출
+    public int[] ExportPuzzleSlots()
+    {
+        if (_puzzleTables == null) return new int[0];
+        
+        int[] result = new int[TOTAL_SLOTS];
+        int index = 0;
+        
+        for (int t = 0; t < TABLE_COUNT; t++)
+        {
+            for (int s = 0; s < SLOTS_PER_TABLE; s++)
+            {
+                result[index++] = _puzzleTables[t][s];
+            }
+        }
+        return result;
+    }
+
+    // 대기열 상태를 1차원 배열(12칸)로 추출
+    public int[] ExportWaitingSlots()
+    {
+        if (_waitingQueue == null) return new int[0];
+        
+        int[] result = new int[WAITING_COUNT * SLOTS_PER_TABLE];
+        int index = 0;
+        
+        for (int i = 0; i < WAITING_COUNT; i++)
+        {
+            for (int s = 0; s < SLOTS_PER_TABLE; s++)
+            {
+                if (_waitingQueue[i].unitTypes != null && s < _waitingQueue[i].unitTypes.Length)
+                    result[index++] = _waitingQueue[i].unitTypes[s];
+                else
+                    result[index++] = -1; // 빈 슬롯
+            }
+        }
+        return result;
+    }
+
+    // 1차원 배열 데이터를 다시 2차원 보드와 대기열로 재조립
+    public void RestoreBoardState(int[] savedPuzzle, int[] savedWaiting)
+    {
+        Initialize(); // 빈 깡통으로 배열 초기화 보장
+
+        // 퍼즐 테이블 복구
+        if (savedPuzzle != null && savedPuzzle.Length == TOTAL_SLOTS)
+        {
+            int index = 0;
+            for (int t = 0; t < TABLE_COUNT; t++)
+            {
+                for (int s = 0; s < SLOTS_PER_TABLE; s++)
+                {
+                    int unit = savedPuzzle[index++];
+                    _puzzleTables[t][s] = unit;
+                    OnSlotChanged?.Invoke(t, s, unit); // UI 즉시 갱신
+                }
+            }
+        }
+
+        // 대기열 복구
+        if (savedWaiting != null && savedWaiting.Length == WAITING_COUNT * SLOTS_PER_TABLE)
+        {
+            int index = 0;
+            for (int i = 0; i < WAITING_COUNT; i++)
+            {
+                var combo = new WaitingCombo
+                {
+                    unitTypes = new int[SLOTS_PER_TABLE],
+                    // 난이도는 로드 시 UI나 로직에 영향을 주지 않으므로 임의로 Low로 세팅 (버그 방지)
+                    difficulty = WaitingDifficulty.Low 
+                };
+                
+                for (int s = 0; s < SLOTS_PER_TABLE; s++)
+                {
+                    combo.unitTypes[s] = savedWaiting[index++];
+                }
+                
+                _waitingQueue[i] = combo;
+                OnWaitingUpdated?.Invoke(i, combo); // UI 즉시 갱신
+            }
+        }
     }
 }

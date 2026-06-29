@@ -123,31 +123,7 @@ public class EnchantLinkButtonBoundaryPresenter
             return;
         }
 
-        InGameSaveData saveData = CreateCurrentProgressSaveData(loopManager);
-        GameManager.Instance.SaveLocalData(saveData);
-    }
-
-    private InGameSaveData CreateCurrentProgressSaveData(StageLoopManager loopManager)
-    {
-        PlayerModel playerModel = Object.FindFirstObjectByType<PlayerModel>();
-        InGameGrowthSystem growthSystem = Object.FindFirstObjectByType<InGameGrowthSystem>();
-        EnchantModel enchantModel = Object.FindFirstObjectByType<EnchantModel>();
-        ComboModel comboModel = Object.FindFirstObjectByType<ComboModel>();
-
-        return new InGameSaveData
-        {
-            chapterId = Mathf.Max(1, loopManager.CurrentChapterId),
-            clearedStage = Mathf.Max(0, loopManager.CompletedStageCount),
-            playerHP = playerModel != null ? Mathf.Max(1, playerModel.CurrentHP) : 1,
-            currentEXP = growthSystem != null ? Mathf.Max(0, growthSystem.CurrentEXP) : 0,
-            inGameLevel = growthSystem != null ? Mathf.Max(1, growthSystem.CurrentLevel) : 1,
-            puzzleSlots = new int[0],
-            waitingSlots = new int[0],
-            acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),
-            totalDamage = RunStats.HighestDamage,
-            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0,
-            nextStageSeed = Random.Range(0, int.MaxValue)
-        };
+        GameManager.Instance.SaveLocal();
     }
 
     private void KeepCurrentChapterForRestart()

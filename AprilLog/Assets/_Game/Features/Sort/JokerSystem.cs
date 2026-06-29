@@ -1,3 +1,9 @@
+// 담당자 : 최동훈
+// 조커 시스템
+
+// 수정자 : 김영찬
+// 수정 내용 : 세이브/로드 구현
+
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -190,6 +196,42 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
                 icon.enabled = true;
                 Debug.Log("[JokerSystem] 조커 블록 1개 습득 완료");
             }
+        }
+    }
+    
+    
+    // ---------- 세이브 / 로드 (추가) ----------
+    
+    // 현재 조커 보유량 반환 (Index + 1)
+    public int GetJokerCount() => _currentActiveIndex + 1;
+    
+    public float GetRemainingCooldown()
+    {
+        float elapsed = Time.time - _lastUsedTime;
+        return elapsed >= _coolDown ? 0f : _coolDown - elapsed;
+    }
+
+    // 세이브된 보유량을 바탕으로 시스템 복구
+    public void RestoreFromSave(int savedJokerCount, float savedRemainingCooldown)
+    {
+        _currentActiveIndex = savedJokerCount - 1;
+        
+        for (int i = 0; i < _jokerIcons.Length; i++)
+        {
+            if (_jokerIcons[i] != null)
+            {
+                _jokerIcons[i].enabled = (i < savedJokerCount);
+            }
+        }
+        
+        if (savedRemainingCooldown > 0)
+        {
+            _lastUsedTime = Time.time - (_coolDown - savedRemainingCooldown);
+            StartCoroutine(CooldownRoutine());
+        }
+        else
+        {
+            _lastUsedTime = -_coolDown;
         }
     }
 }

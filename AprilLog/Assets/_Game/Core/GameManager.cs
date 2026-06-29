@@ -6,6 +6,9 @@
 
 // 추가: 조규민 - 로그인 계정의 아웃게임 모델과 정산 결과를 UserCloudData로 저장하는 공용 진입점 추가
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 세이브 개선
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -948,27 +951,43 @@ public class GameManager : MonoBehaviour
         var growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
         var enchantModel = FindFirstObjectByType<EnchantModel>();
         var comboModel = FindFirstObjectByType<ComboModel>();
+        var sortModel = FindFirstObjectByType<SortModel>();
+        var sortSystem = FindFirstObjectByType<SortSystem>();
+        var jokerSystem = FindFirstObjectByType<JokerSystem>();
 
         var data = new InGameSaveData
         {
+            // 스테이지
             chapterId = Mathf.Max(1, loop.CurrentChapterId),
             clearedStage = Mathf.Max(0, loop.CompletedStageCount),
+            
+            // 플레이어
             playerHP = playerModel != null ? Mathf.Max(1, playerModel.CurrentHP) : 1,
             currentEXP = growthSystem != null ? Mathf.Max(0, growthSystem.CurrentEXP) : 0,
             inGameLevel = growthSystem != null ? Mathf.Max(1, growthSystem.CurrentLevel) : 1,
-            puzzleSlots = new int[0],
-            waitingSlots = new int[0],
+            
+            // 퍼즐
+            puzzleSlots = sortModel != null ? sortModel.ExportPuzzleSlots() : Array.Empty<int>(),
+            waitingSlots = sortModel != null ? sortModel.ExportWaitingSlots() : Array.Empty<int>(),
+            jokerCount = jokerSystem != null ? jokerSystem.GetJokerCount() : 2,
+            jokerRemainingCooldown = jokerSystem != null ? jokerSystem.GetRemainingCooldown() : 0f,
+            nextStageSeed = sortSystem != null ? sortSystem.GetCurrentSeedForSave() : UnityEngine.Random.Range(0, int.MaxValue),
+            
+            // 인첸트
             acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),
+            
+            // 기록
             totalDamage = RunStats.HighestDamage,
-            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0,
-            nextStageSeed = UnityEngine.Random.Range(0, int.MaxValue)
+            highestDamage =  RunStats.HighestDamage,
+            MaxBySkill = RunStats.MaxBySkill,
+            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0
         };
 
         SaveLocalData(data);
         Debug.Log($"[GameManager] 인게임 로컬 세이브 완료 (챕터{data.chapterId} 클리어{data.clearedStage} HP{data.playerHP})");
     }
 
-    public void SaveLocalData(InGameSaveData data)
+    private void SaveLocalData(InGameSaveData data)
     {
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetInGameSavePath(), json);
