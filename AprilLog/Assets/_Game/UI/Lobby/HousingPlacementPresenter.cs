@@ -1,4 +1,5 @@
 ﻿//담당자: 조규민
+// 수정 내용 : 가구 배치 팝업을 하위 카테고리 섹션 단위로 갱신, 미보유 가구 구매 흐름 추가
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,6 +15,7 @@ public class HousingPlacementPresenter
     private readonly HousingFurnitureSlotView _slotView;
     private readonly bool _applyImmediatelyOnItemClick;
     private readonly Action<HousingPlacementItemData> _onFurnitureApplied;
+    private readonly Func<HousingPlacementItemData, bool> _onFurniturePurchaseRequested;
 
     public HousingPlacementPresenter(
         HousingPlacementModel _model,
@@ -21,7 +23,8 @@ public class HousingPlacementPresenter
         HousingPlacementPopupView _popupView,
         HousingFurnitureSlotView _slotView,
         bool _applyImmediatelyOnItemClick,
-        Action<HousingPlacementItemData> _onFurnitureApplied = null)
+        Action<HousingPlacementItemData> _onFurnitureApplied = null,
+        Func<HousingPlacementItemData, bool> _onFurniturePurchaseRequested = null)
     {
         this._model = _model;
         this._buttonView = _buttonView;
@@ -29,6 +32,7 @@ public class HousingPlacementPresenter
         this._slotView = _slotView;
         this._applyImmediatelyOnItemClick = _applyImmediatelyOnItemClick;
         this._onFurnitureApplied = _onFurnitureApplied;
+        this._onFurniturePurchaseRequested = _onFurniturePurchaseRequested;
     }
 
     public void Initialize()
@@ -138,8 +142,8 @@ public class HousingPlacementPresenter
 
     private void RefreshItems()
     {
-        List<HousingPlacementItemData> _items = _model.GetItems(_model.SelectedCategory);
-        _popupView.RefreshItems(_items, _model.SelectedCategory);
+        List<HousingPlacementSectionData> _sections = _model.GetSections(_model.SelectedCategory);
+        _popupView.RefreshSections(_sections, _model.SelectedCategory, ResolveItemState);
     }
 
     private void ApplySelectedItem()
@@ -151,17 +155,67 @@ public class HousingPlacementPresenter
             return;
         }
 
-        if (!_selectedItem.IsUnlocked)
+        HousingPlacementItemState _state = ResolveItemState(_selectedItem);
+
+        if (_state == HousingPlacementItemState.Locked)
         {
             Debug.LogWarning($"[HousingPlacementPresenter] 해금되지 않은 가구입니다. Furniture: {_selectedItem.FurnitureId}");
             return;
         }
 
+        if (_state == HousingPlacementItemState.Price)
+        {
+            TryPurchaseSelectedItem(_selectedItem);
+            return;
+        }
+
         if (ApplyItemToRoomSlot(_selectedItem))
         {
+            _model.EquipItem(_selectedItem);
             _onFurnitureApplied?.Invoke(_selectedItem);
             Debug.Log($"[HousingPlacementPresenter] 가구 적용 완료: {_selectedItem.DisplayName} / 위치: {_selectedItem.Location}");
         }
+    }
+
+    private HousingPlacementItemState ResolveItemState(HousingPlacementItemData _itemData)
+    {
+        if (_itemData == null)
+        {
+            return HousingPlacementItemState.Locked;
+        }
+
+        if (_model.IsEquipped(_itemData.FurnitureId))
+        {
+            return HousingPlacementItemState.Equipped;
+        }
+
+        if (_model.IsOwned(_itemData))
+        {
+            return HousingPlacementItemState.Owned;
+        }
+
+        return _itemData.IsUnlocked
+            ? HousingPlacementItemState.Price
+            : HousingPlacementItemState.Locked;
+    }
+
+    private void TryPurchaseSelectedItem(HousingPlacementItemData _itemData)
+    {
+        if (_onFurniturePurchaseRequested == null)
+        {
+            Debug.LogWarning($"[HousingPlacementPresenter] 하우징 구매 처리기가 연결되지 않았습니다. Furniture: {_itemData.FurnitureId}");
+            return;
+        }
+
+        if (!_onFurniturePurchaseRequested.Invoke(_itemData))
+        {
+            Debug.LogWarning($"[HousingPlacementPresenter] 가구 구매에 실패했습니다. Furniture: {_itemData.FurnitureId}");
+            return;
+        }
+
+        _model.OwnItem(_itemData);
+        _popupView.SetSelectedItem(_itemData);
+        Debug.Log($"[HousingPlacementPresenter] 가구 구매 완료: {_itemData.DisplayName} / Furniture: {_itemData.FurnitureId}");
     }
 
     private bool ApplyItemToRoomSlot(HousingPlacementItemData _itemData)
