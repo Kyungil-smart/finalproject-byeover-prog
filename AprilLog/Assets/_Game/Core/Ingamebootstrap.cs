@@ -175,6 +175,14 @@ public class InGameBootstrap : MonoBehaviour
         if (combatSystem != null)
             combatSystem.BindSortSystem(_sortSystem);
 
+        // 튜토리얼 GameAction 훅: 정렬 완성 시 현재 단계가 GameAction이면 TutorialManager가 다음 단계로 진행.
+        // (SortSystem : ISortNotifier. 씬 배선 없이 런타임 연결.)
+        if (_sortSystem != null)
+        {
+            var tutorialHook = gameObject.AddComponent<TutorialGameActionHook>();
+            tutorialHook.Bind(_sortSystem);
+        }
+
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();
 

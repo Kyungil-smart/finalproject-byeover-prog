@@ -1,0 +1,81 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56bf0a28266a88d41b16a8563c304fc4, type: 3}
+  m_Name: TutorialStepData
+  m_EditorClassIdentifier:
+  _steps:
+  - stepId: 0
+    scene: 1
+    advanceMode: 1
+    highlightTargetId: SortTable
+    guideText: "유닛을 드래그해 같은 책 3권을 정렬해보세요"
+    note: "기획 2-3-2: 인트로/스폰 후 지정 두 타일에 드래그 화살표 출력, 드래그로 정렬 완성하면 진행. (시나리오 100026, 비대상 타일 딤/일시정지는 시퀀스 디렉터 담당). 섹션1(인트로 100001~100018→인게임 진입, 보드잠금)은 시작트리거+시나리오가 처리."
+  - stepId: 1
+    scene: 1
+    advanceMode: 1
+    highlightTargetId:
+    guideText: "정렬하면 공격이 나갑니다! 몬스터를 처치해 경험치를 모으세요"
+    note: "기획 3: 최초 공격 격발 + 경험치 획득 연습. 반복 정렬로 진행. (시나리오 100027~100029, 콤보 UI 가이드)"
+  - stepId: 2
+    scene: 1
+    advanceMode: 0
+    highlightTargetId: EnchantCard
+    guideText: "인챈트 카드를 선택하세요"
+    note: "기획 4: 최초 레벨업 즉시 일시정지 + 인챈트 팝업(고정 3카드: 자동공격/조합형/콤보형). 시나리오 100030~100034. 레벨업 격발=GameAction이나 카드 선택은 탭. 팝업/일시정지 제어=시퀀스 디렉터."
+  - stepId: 3
+    scene: 1
+    advanceMode: 1
+    highlightTargetId:
+    guideText: "조합·콤보 스킬로 특수웨이브를 막아보세요"
+    note: "기획 5: 인챈트 후 1웨이브 뒤 특수웨이브 몬스터 러시 → 강제 패배(HP0). 시나리오 100036~100039 후 로비 복귀(로비 단계1 세팅). 강제패배 연출=시퀀스 디렉터."
+  - stepId: 4
+    scene: 0
+    advanceMode: 0
+    highlightTargetId: CharacterGrowthButton
+    guideText: "캐릭터 성장으로 더 강해지세요"
+    note: "기획 6: 강제패배 후 로비 복귀. 하단바 + 성장/전투 버튼만 노출(로비 단계1, 그 외 잠금). 시나리오 100041~100043."
+  - stepId: 5
+    scene: 0
+    advanceMode: 0
+    highlightTargetId: LevelUpButton
+    guideText: "레벨업 버튼을 눌러 능력치를 올리세요"
+    note: "기획 6-3-2: 레벨업 버튼 가이드. 시나리오 100045~100051."
+  - stepId: 6
+    scene: 0
+    advanceMode: 0
+    highlightTargetId: ShopButton
+    guideText: "상점으로 이동해보세요"
+    note: "기획 7-3-1: 아티팩트 상점 진입. 시나리오 100052~100055. 튜토용 뽑기권 1개 지급."
+  - stepId: 7
+    scene: 0
+    advanceMode: 0
+    highlightTargetId: GachaButton
+    guideText: "아티팩트를 뽑아보세요"
+    note: "기획 7-3-2: 뽑기. 시나리오 100056~100057 후 성장 버튼 딤+손가락 가이드."
+  - stepId: 8
+    scene: 0
+    advanceMode: 0
+    highlightTargetId: ArtifactGrowthButton
+    guideText: "아티팩트를 5레벨까지 강화하고 돌파하세요"
+    note: "기획 7-3-3: 캐릭터성장→아티팩트→상세팝업, 레벨업 5번+돌파+장착. 시나리오 100058~100067. 수습 마법사의 인장 1개 지급."
+  - stepId: 9
+    scene: 0
+    advanceMode: 0
+    highlightTargetId: StageStartButton
+    guideText: "다시 전투를 시작해 성장을 체감하세요"
+    note: "기획 8: 성장 완료 후 0-1챕터 재진입(유저에겐 같은 0챕터, 튜토 설명 없는 버전). 특수웨이브 극복=아웃게임 성장 중요성 학습."
+  - stepId: 10
+    scene: 1
+    advanceMode: 1
+    highlightTargetId:
+    guideText: "보스를 처치하고 0챕터를 클리어하세요!"
+    note: "기획 9: 보스 스테이지 정상 진행 → 보스 클리어 + 승리 보상. 핵심 플레이 루프 완결. (기획 10·11 도전과제/일퀘·출첵 = 로비 단계3 UI 해금, 별도)"

@@ -260,6 +260,13 @@ public class GameManager : MonoBehaviour
         StartCoroutine(LoadSceneCoroutine("_InGame")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
     }
 
+    // 추가: 정승우 - 최초 실행 튜토리얼 인트로 시나리오 씬으로 진입.
+    // 시나리오 종료 시 그 씬의 흐름(TempStoryToGameFlow 등)이 인게임으로 넘긴다.
+    public void LoadScenarioIntro()
+    {
+        StartCoroutine(LoadSceneCoroutine("_Story")); // 시나리오 재생 씬(_Boot/_Lobby/_InGame/_Story 규칙)
+    }
+
     private IEnumerator LoadSceneCoroutine(string sceneName)
     {
         var op = SceneManager.LoadSceneAsync(sceneName);

@@ -169,7 +169,17 @@ public class Bootstrap : MonoBehaviour
         // [7] 로비 진입 전 로딩 애니메이션
         yield return StartCoroutine(PlayLobbyLoadingVideo());
 
-        // [8] 로비 진입
+        // [8] 진입 분기.
+        // 최초 실행(튜토리얼 미완료)이면 인트로 시나리오 → (씬 흐름이) 인게임으로. 로비 안 거침(기획 v1.04 튜토 1-3).
+        // 그 외(튜토 완료/재실행)는 평소대로 로비.
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
+        {
+            Debug.Log("[Bootstrap] === 최초 실행 감지 — 튜토리얼 인트로 시나리오로 진입 ===");
+            TutorialManager.Instance.TryStart();           // 튜토 단계 무장(씬별 TutorialView가 받아 그림)
+            GameManager.Instance.LoadScenarioIntro();      // 인트로 시나리오 씬 → 끝나면 인게임
+            yield break;
+        }
+
         Debug.Log("[Bootstrap] === 초기화 완료. Lobby로 이동 ===");
         GameManager.Instance.LoadLobby();
     }
