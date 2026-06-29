@@ -1,6 +1,9 @@
 ﻿//담당자: 조규민
 
 // 수정 내용 : 저장된 구매 보유 가구 목록을 배치 UI 상태에 반영하고 구매 요청을 GameManager로 위임
+// 수정 내용 : 하우징 아이콘을 Resources 폴더가 아닌 Inspector에 연결된 Imports Sprite 참조에서 찾도록 변경
+// 수정 내용 : GameManager 없는 단독 하우징 테스트에서 CurrencyModel 재화 차감으로 구매 흐름을 확인할 수 있도록 보조
+// 수정 내용 : 저장된 배치가 없는 기본 가구도 배치 팝업에서 장착됨으로 표시되도록 초기 장착 상태 보정
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -21,13 +24,18 @@ public class HousingPlacementController : MonoBehaviour
 
     [Header("데이터")]
     [SerializeField] private bool _useHousingRepo = true;
-    [Tooltip("Resources 기준 하우징 아이콘 폴더입니다. 비워두면 DB의 ICO 값을 그대로 사용합니다.")]
-    [SerializeField] private string _iconResourceFolder = "Icons/Housing";
+    [Tooltip("DB ICO 값과 연결할 Imports/OutUI/Housing 아이콘 Sprite 목록입니다.")]
+    [SerializeField] private HousingSpriteBinding[] _iconSprites;
     [SerializeField] private HousingPlacementItemData[] _items;
 
     [Header("적용 방식")]
     [Tooltip("적용 버튼이 아직 연결되지 않은 상태에서 테스트할 때만 켭니다. 켜면 슬롯 클릭 즉시 FurnitureRoot에 적용합니다.")]
     [SerializeField] private bool _applyImmediatelyOnItemClick = true;
+
+    [Header("단독 테스트")]
+    [Tooltip("GameManager가 없는 테스트 씬에서만 CurrencyModel 재화로 구매 성공 처리를 허용합니다.")]
+    [SerializeField] private bool _allowLocalPurchaseWithoutGameManager = true;
+    [SerializeField] private CurrencyModel _currencyModel;
 
     private HousingPlacementModel _model;
     private HousingPlacementPresenter _presenter;
@@ -36,11 +44,11 @@ public class HousingPlacementController : MonoBehaviour
 
     private void Awake()
     {
-        _itemMapper = new HousingPlacementItemMapper(_iconResourceFolder);
+        _itemMapper = new HousingPlacementItemMapper(_iconSprites);
         _slotView = ResolveSlotView();
         _placementItems = new List<HousingPlacementItemData>(BuildInitialItems());
         _model = new HousingPlacementModel(_placementItems);
-        _model.SetEquippedFurnitureIds(GetSavedFurnitureIds());
+        _model.SetEquippedFurnitureIds(BuildInitialEquippedFurnitureIds());
         _model.SetOwnedFurnitureIds(GetSavedOwnedFurnitureIds());
         _presenter = new HousingPlacementPresenter(_model, _buttonView, _popupView, _slotView, _applyImmediatelyOnItemClick, HandleFurnitureApplied, HandleFurniturePurchaseRequested);
         _presenter.Initialize();
@@ -125,6 +133,83 @@ public class HousingPlacementController : MonoBehaviour
         return GameManager.Instance.CloudData.housingOwnedFurnitureIds;
     }
 
+    private IEnumerable<int> BuildInitialEquippedFurnitureIds()
+    {
+        List<int> _equippedFurnitureIds = new();
+        HashSet<string> _occupiedLocations = new();
+
+        AddSavedEquippedFurnitureIds(_equippedFurnitureIds, _occupiedLocations);
+        AddDefaultEquippedFurnitureIds(_equippedFurnitureIds, _occupiedLocations);
+
+        return _equippedFurnitureIds;
+    }
+
+    private void AddSavedEquippedFurnitureIds(List<int> _equippedFurnitureIds, HashSet<string> _occupiedLocations)
+    {
+        IEnumerable<int> _savedFurnitureIds = GetSavedFurnitureIds();
+
+        if (_savedFurnitureIds == null)
+        {
+            return;
+        }
+
+        foreach (int _furnitureId in _savedFurnitureIds)
+        {
+            HousingPlacementItemData _itemData = FindItemByFurnitureId(_furnitureId);
+
+            if (_itemData == null || _itemData.FurnitureId <= 0)
+            {
+                continue;
+            }
+
+            _equippedFurnitureIds.Add(_itemData.FurnitureId);
+            string _locationKey = NormalizeKey(_itemData.Location);
+
+            if (!string.IsNullOrWhiteSpace(_locationKey))
+            {
+                _occupiedLocations.Add(_locationKey);
+            }
+        }
+    }
+
+    private void AddDefaultEquippedFurnitureIds(List<int> _equippedFurnitureIds, HashSet<string> _occupiedLocations)
+    {
+        if (_placementItems == null)
+        {
+            return;
+        }
+
+        for (int _index = 0; _index < _placementItems.Count; _index++)
+        {
+            HousingPlacementItemData _itemData = _placementItems[_index];
+
+            if (!IsDefaultEquippedItem(_itemData))
+            {
+                continue;
+            }
+
+            string _locationKey = NormalizeKey(_itemData.Location);
+
+            if (string.IsNullOrWhiteSpace(_locationKey) || _occupiedLocations.Contains(_locationKey))
+            {
+                continue;
+            }
+
+            _equippedFurnitureIds.Add(_itemData.FurnitureId);
+            _occupiedLocations.Add(_locationKey);
+        }
+    }
+
+    private static bool IsDefaultEquippedItem(HousingPlacementItemData _itemData)
+    {
+        if (_itemData == null || _itemData.FurnitureId <= 0)
+        {
+            return false;
+        }
+
+        return _itemData.IsOwned && _itemData.Price <= 0;
+    }
+
     private bool HandleFurniturePurchaseRequested(HousingPlacementItemData _itemData)
     {
         if (_itemData == null || _itemData.FurnitureId <= 0)
@@ -134,14 +219,55 @@ public class HousingPlacementController : MonoBehaviour
 
         if (GameManager.Instance == null)
         {
-            Debug.LogWarning("[HousingPlacementController] GameManager가 없어 하우징 구매를 저장할 수 없습니다.", this);
-            return false;
+            return TryPurchaseFurnitureForLocalTest(_itemData);
         }
 
         return GameManager.Instance.TryPurchaseHousingFurniture(
             _itemData.FurnitureId,
             _itemData.Price,
             _itemData.PriceCurrency);
+    }
+
+    private bool TryPurchaseFurnitureForLocalTest(HousingPlacementItemData _itemData)
+    {
+        if (!_allowLocalPurchaseWithoutGameManager)
+        {
+            Debug.LogWarning("[HousingPlacementController] GameManager가 없어 하우징 구매를 저장할 수 없습니다.", this);
+            return false;
+        }
+
+        CurrencyModel _resolvedCurrencyModel = ResolveCurrencyModel();
+
+        if (_resolvedCurrencyModel == null)
+        {
+            Debug.LogWarning("[HousingPlacementController] GameManager와 CurrencyModel이 없어 단독 테스트 구매를 처리할 수 없습니다.", this);
+            return false;
+        }
+
+        int _safePrice = Mathf.Max(0, _itemData.Price);
+        bool _isPurchased = _itemData.PriceCurrency == HousingPlacementPriceCurrency.Diamond
+            ? _resolvedCurrencyModel.SpendDiamond(_safePrice)
+            : _resolvedCurrencyModel.SpendGold(_safePrice);
+
+        if (!_isPurchased)
+        {
+            Debug.LogWarning($"[HousingPlacementController] 단독 테스트 재화가 부족합니다. Furniture: {_itemData.FurnitureId}, Price: {_safePrice}, Currency: {_itemData.PriceCurrency}", this);
+            return false;
+        }
+
+        Debug.Log($"[HousingPlacementController] 단독 테스트 가구 구매 완료. Furniture: {_itemData.FurnitureId}, Price: {_safePrice}, Currency: {_itemData.PriceCurrency}", this);
+        return true;
+    }
+
+    private CurrencyModel ResolveCurrencyModel()
+    {
+        if (_currencyModel != null)
+        {
+            return _currencyModel;
+        }
+
+        _currencyModel = FindFirstObjectByType<CurrencyModel>(FindObjectsInactive.Include);
+        return _currencyModel;
     }
 
     private void HandleFurnitureApplied(HousingPlacementItemData _itemData)

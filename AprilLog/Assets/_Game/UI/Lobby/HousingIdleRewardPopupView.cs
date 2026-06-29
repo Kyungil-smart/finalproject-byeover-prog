@@ -151,8 +151,9 @@ public class HousingIdleRewardPopupView : MonoBehaviour
 
         if (_circleFillRect != null)
         {
-            _circleFillRect.anchorMin = Vector2.zero;
-            _circleFillRect.anchorMax = new Vector2(1f, _clampedProgress);
+            float _fillEndX = Mathf.Lerp(0.06f, 0.94f, _clampedProgress);
+            _circleFillRect.anchorMin = new Vector2(0.06f, 0.2f);
+            _circleFillRect.anchorMax = new Vector2(_fillEndX, 0.8f);
             _circleFillRect.offsetMin = Vector2.zero;
             _circleFillRect.offsetMax = Vector2.zero;
         }
@@ -174,7 +175,7 @@ public class HousingIdleRewardPopupView : MonoBehaviour
             return;
         }
 
-        _progressText.text = _state.IsFull ? "FULL!" : $"{_state.ProgressPercent}%";
+        _progressText.text = $"{_state.ProgressPercent}%";
     }
 
     private void SetRewardTexts(HousingIdleRewardState _state)

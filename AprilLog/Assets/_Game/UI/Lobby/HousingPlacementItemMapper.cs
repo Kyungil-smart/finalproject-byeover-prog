@@ -1,7 +1,8 @@
 ﻿//담당자: 조규민
 
+// 수정 내용 : 하우징 아이콘을 Resources 폴더가 아닌 Inspector에 연결된 Imports Sprite 참조에서 찾도록 변경
+
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 /// <summary>
@@ -14,11 +15,11 @@ public class HousingPlacementItemMapper
     private const string _categoryNone = "none";
     private const string _typeDecoration = "decoration";
 
-    private readonly string _iconResourceFolder;
+    private readonly IReadOnlyList<HousingSpriteBinding> _iconSprites;
 
-    public HousingPlacementItemMapper(string _iconResourceFolder)
+    public HousingPlacementItemMapper(IReadOnlyList<HousingSpriteBinding> _iconSprites)
     {
-        this._iconResourceFolder = NormalizeResourceFolder(_iconResourceFolder);
+        this._iconSprites = _iconSprites;
     }
 
     public List<HousingPlacementItemData> Map(HousingRepo _housingRepo)
@@ -154,24 +155,7 @@ public class HousingPlacementItemMapper
             return null;
         }
 
-        string _fileNameWithoutExtension = Path.GetFileNameWithoutExtension(_iconKey);
-
-        if (string.IsNullOrWhiteSpace(_fileNameWithoutExtension))
-        {
-            return null;
-        }
-
-        if (!string.IsNullOrWhiteSpace(_iconResourceFolder))
-        {
-            Sprite _folderIcon = Resources.Load<Sprite>($"{_iconResourceFolder}/{_fileNameWithoutExtension}");
-
-            if (_folderIcon != null)
-            {
-                return _folderIcon;
-            }
-        }
-
-        return Resources.Load<Sprite>(_fileNameWithoutExtension);
+        return HousingSpriteBinding.FindSprite(_iconSprites, _iconKey);
     }
 
     private static string ResolveTypeName(string _type)
@@ -198,16 +182,6 @@ public class HousingPlacementItemMapper
     private static string BuildFurnitureKey(HousingFurnitureData _furniture)
     {
         return $"{_furniture.Furniture_ID}|{NormalizeText(_furniture.Location)}|{NormalizeKey(_furniture.Category)}|{NormalizeKey(_furniture.Type)}";
-    }
-
-    private static string NormalizeResourceFolder(string _value)
-    {
-        if (string.IsNullOrWhiteSpace(_value))
-        {
-            return string.Empty;
-        }
-
-        return _value.Trim().Trim('/');
     }
 
     private static string NormalizeFileKey(string _value)
