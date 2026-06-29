@@ -631,10 +631,7 @@ public class GameManager : MonoBehaviour
 
     public void ApplyCloudDataToOutGameModels(PlayerProgressModel progressModel, CurrencyModel currencyModel)
     {
-        if (CloudData == null)
-        {
-            CloudData = UserCloudData.CreateDefault();
-        }
+        CloudData ??= UserCloudData.CreateDefault();
 
         EnsureCloudIdentity(CloudData);
 
@@ -651,9 +648,23 @@ public class GameManager : MonoBehaviour
         {
             currencyModel.Initialize(CloudData.gold, CloudData.parchment, CloudData.diamond);
         }
+        
+        if (DataManager.Instance != null && DataManager.Instance.ResourceRepo != null)
+        {
+            DataManager.Instance.ResourceRepo.LoadResourceData();
+        }
     }
 
-    public void SaveOutGameProgress(PlayerProgressModel progressModel, CurrencyModel currencyModel)
+    public void ApplyCloudDataToArtifactManager(ArtifactManager manager)
+    {
+        CloudData ??= UserCloudData.CreateDefault();
+
+        EnsureCloudIdentity(CloudData);
+        
+        manager.LoadData();
+    }
+
+    public void SaveOutGameProgress(PlayerProgressModel progressModel)
     {
         if (!IsLoggedIn)
         {
@@ -703,6 +714,16 @@ public class GameManager : MonoBehaviour
         SyncToCloud(data);
         RaiseCurrencyChanged();   // 단계②: 전투 보상이 View(로비 등)에 전파되도록 단일 이벤트 발행
     }
+    
+    public void SaveArtifact(List<ArtifactInstance> myArtifacts)
+    {
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+        
+        data.myArtifacts = myArtifacts;
+
+        SyncToCloud(data);
+    }
 
     // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) — 영속 원본 = CloudData.gold/parchment =====
     // 단계 a(재화 관리 통일): 전투 보상·업적·로그인 보상·상점/레벨업 소비를 전부 이 API로 모은다.
@@ -712,6 +733,10 @@ public class GameManager : MonoBehaviour
     public int Gold => CloudData != null ? CloudData.gold : 0;
     public int Parchment => CloudData != null ? CloudData.parchment : 0;
     public int Diamond => CloudData != null ? CloudData.diamond : 0;
+    
+    private const int GoldId = 70001;
+    private const int ParchmentId = 70002;
+    private const int DiamondId = 70003;
 
     public bool CanAffordCurrency(int gold, int parchment)
     {
@@ -727,40 +752,55 @@ public class GameManager : MonoBehaviour
         parchment = Mathf.Max(0, parchment);
         if (gold == 0 && parchment == 0) return;
 
-        EnsureCurrencyData();
-        CloudData.gold = Mathf.Max(0, CloudData.gold + gold);
-        CloudData.parchment = Mathf.Max(0, CloudData.parchment + parchment);
-        Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {CloudData.gold} / 양피지 {CloudData.parchment}");
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            if (gold > 0) repo.AddItem(GoldId, gold);
+            if (parchment > 0) repo.AddItem(ParchmentId, parchment);
+        }
 
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {Gold} / 양피지 {Parchment}");
+        SyncAndSaveResourceCloudData();
     }
 
     /// <summary>재화 차감 시도 — 상점/레벨업 등 소비 공통 진입점. 부족하면 false(변경 없음).</summary>
     public bool TrySpendCurrency(int gold, int parchment)
     {
-        gold = Mathf.Max(0, gold);
-        parchment = Mathf.Max(0, parchment);
         if (!CanAffordCurrency(gold, parchment)) return false;
 
-        CloudData.gold -= gold;
-        CloudData.parchment -= parchment;
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            bool goldSuccess = (gold <= 0) || repo.UseItem(GoldId, gold);
+            bool parchmentSuccess = (parchment <= 0) || repo.UseItem(ParchmentId, parchment);
+            
+            if (goldSuccess && !parchmentSuccess && gold > 0) 
+                repo.AddItem(GoldId, gold);
+            
+            if (!goldSuccess && parchmentSuccess && parchment > 0) 
+                repo.AddItem(ParchmentId, parchment);
+            
+            if (!goldSuccess || !parchmentSuccess)
+            {
+                Debug.LogError($"[GameManager] 재화 차감 실패! (CanAfford는 통과했으나 UseItem에서 거부됨) - Gold:{goldSuccess}, Parchment:{parchmentSuccess}");
+                return false; 
+            }
+        }
+
+        SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>재화를 지정 값으로 설정 — 하이드레이션/리셋·테스트용(가산 아님). 값 동일하면 무시.</summary>
     public void SetCurrency(int gold, int parchment)
     {
-        gold = Mathf.Max(0, gold);
-        parchment = Mathf.Max(0, parchment);
-        EnsureCurrencyData();
-        if (CloudData.gold == gold && CloudData.parchment == parchment) return;
-        CloudData.gold = gold;
-        CloudData.parchment = parchment;
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            repo.SetItemCount(GoldId, Mathf.Max(0, gold));
+            repo.SetItemCount(ParchmentId, Mathf.Max(0, parchment));
+        }
+        SyncAndSaveResourceCloudData();
     }
 
     // ===== 다이아 API (gold/parchment와 동일 패턴. 영속 원본 = CloudData.diamond) =====
@@ -773,37 +813,58 @@ public class GameManager : MonoBehaviour
         diamond = Mathf.Max(0, diamond);
         if (diamond == 0) return;
 
-        EnsureCurrencyData();
-        CloudData.diamond = Mathf.Max(0, CloudData.diamond + diamond);
-        Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {CloudData.diamond}");
-
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        DataManager.Instance?.ResourceRepo?.AddItem(DiamondId, diamond);
+        Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {Diamond}");
+        SyncAndSaveResourceCloudData();
     }
 
     /// <summary>다이아 차감 시도. 부족하면 false(변경 없음).</summary>
     public bool TrySpendDiamond(int diamond)
     {
-        diamond = Mathf.Max(0, diamond);
         if (!CanAffordDiamond(diamond)) return false;
-
-        CloudData.diamond -= diamond;
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            bool success = (diamond <= 0) || repo.UseItem(DiamondId, diamond);
+            if (!success)
+            {
+                Debug.LogError("[GameManager] 다이아 차감 실패! (UseItem에서 거부됨)");
+                return false;
+            }
+        }
+        
+        SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>다이아를 지정 값으로 설정 — 하이드레이션/리셋·테스트용. 값 동일하면 무시.</summary>
     public void SetDiamond(int diamond)
     {
-        diamond = Mathf.Max(0, diamond);
-        EnsureCurrencyData();
-        if (CloudData.diamond == diamond) return;
-        CloudData.diamond = diamond;
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        DataManager.Instance?.ResourceRepo?.SetItemCount(DiamondId, Mathf.Max(0, diamond));
+        SyncAndSaveResourceCloudData();
     }
-
+    
+    // ResourceRepo의 최신 상태를 CloudData로 복사 및 저장
+    public void SyncAndSaveResourceCloudData()
+    {
+        EnsureCurrencyData();
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            CloudData.gold = repo.GetItemCount(GoldId);
+            CloudData.parchment = repo.GetItemCount(ParchmentId);
+            CloudData.diamond = repo.GetItemCount(DiamondId);
+            CloudData.inventory = repo.ExportInventory();
+            CloudData.staminaData = repo.ExportStaminaData();
+        }
+        
+        RaiseCurrencyChanged();
+        
+        // 유저 데이터를 실제 서버/로컬에 굽는 기존 함수 호출
+        PersistCurrency(); 
+    }
+    
     public DateTime EnsureHousingAutoCurrencyLastClaimUtc()
     {
         EnsureCurrencyData();

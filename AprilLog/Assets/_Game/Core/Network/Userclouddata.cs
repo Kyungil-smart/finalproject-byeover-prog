@@ -7,6 +7,9 @@ using System.Collections.Generic;
 // 2차 수정자 : 조규민
 // 수정 내용 : 하우징 자동재화 마지막 수령 시간 저장 필드 추가
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 재화 및 스태미너와 아티펙트 관련 데이터 저장 필드 추가
+
 [Serializable]
 public class UserCloudData
 {
@@ -21,17 +24,22 @@ public class UserCloudData
     public int characterLevel = 1;
     public int currentChapter = 1;
     public int currentStage = 1;
-    public List<int> unlockedStages = new List<int>();
+    public List<int> unlockedStages = new ();
 
-    // ---------- 재화 ----------
+    // ---------- 재화 및 스태미너 ----------
     public int gold;
     public int parchment;
     public int diamond;
-
+    public List<ItemSaveEntry> inventory = new ();
+    public List<StaminaSaveEntry> staminaData = new ();
+    
+    // ---------- 아티펙트 ----------
+    public List<ArtifactInstance> myArtifacts = new ();
+    
     // ---------- 하우징 ----------
     public string housingAutoCurrencyLastClaimAt;
     // 추가: 조규민 - 계정별 하우징 배치 가구 ID를 저장한다.
-    public List<int> housingPlacedFurnitureIds = new List<int>();
+    public List<int> housingPlacedFurnitureIds = new ();
 
     // ---------- 아웃게임 성장 ----------
     public int hpBonus;
@@ -39,10 +47,10 @@ public class UserCloudData
     public int shieldBonus;
 
     // ---------- 업적 ----------
-    public List<AchievementSaveEntry> achievements = new List<AchievementSaveEntry>();
+    public List<AchievementSaveEntry> achievements = new ();
 
     // ---------- 인챈트 도감 ----------
-    public List<int> enchantBookOwned = new List<int>();
+    public List<int> enchantBookOwned = new ();
 
     // ---------- 설정 ----------
     public string language = "ko";
@@ -58,18 +66,32 @@ public class UserCloudData
     {
         return new UserCloudData
         {
+            // 진행 상황
             characterLevel = 1,
             currentChapter = 1,
             currentStage = 1,
             unlockedStages = new List<int> { 10001 },
+            
+            // 재화 및 스태미너
             gold = 0,
             parchment = 0,
             diamond = 0,
+            inventory = new List<ItemSaveEntry>(),
+            staminaData = new List<StaminaSaveEntry>(),
+            
+            // 아티펙트
+            myArtifacts = new List<ArtifactInstance>(),
+            
+            // 하우징
             housingAutoCurrencyLastClaimAt = DateTime.UtcNow.ToString("o"),
             housingPlacedFurnitureIds = new List<int>(),
+            
+            // 설정
             language = "ko",
             sfxVolume = 1f,
             bgmVolume = 1f,
+            
+            // 메타
             lastLoginAt = DateTime.UtcNow.ToString("o"),
             createdAt = DateTime.UtcNow.ToString("o")
         };
@@ -82,4 +104,19 @@ public class AchievementSaveEntry
     public int achievementId;
     public bool unlocked;
     public int progress;
+}
+
+[Serializable]
+public class ItemSaveEntry
+{
+    public int itemId;
+    public int amount;
+}
+
+[Serializable]
+public class StaminaSaveEntry
+{
+    public int staminaId;
+    public int currentAmount;
+    public string lastUpdateTime; // 오프라인 회복 계산을 위한 마지막 접속(저장) 시간
 }

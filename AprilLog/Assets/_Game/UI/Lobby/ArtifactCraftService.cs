@@ -2,6 +2,10 @@ using UnityEngine;
 
 // 작성자 : 홍정옥
 // 설명   : 아티팩트 "제작(레전더리 조각 5개)" 과 "조각 돌파(레전더리 조각 3개)" 의 데이터 처리 로직.
+
+// 수정자 : 김영찬
+// 수정 내용 : 실제 재화에 반영 하는 부분을 ArtifactManager에서 담당하도록 수정
+
 public class ArtifactCraftService
 {
     public const int DefaultCraftCost = 5;         // 제작 소모 조각 수 (기획서)
@@ -75,7 +79,7 @@ public class ArtifactCraftService
             return false;
         }
 
-        mgr.LegendaryShard -= _craftCost;   // 1) 조각 차감
+        mgr.UseShard(_craftCost);           // 1) 조각 차감
         mgr.AddArtifact(gearId);            // 2) 보유 추가(수량 1, OnInventoryUpdated 발행 → 리스트 자동 갱신)
         Debug.Log($"[ArtifactCraftService] 제작 성공. Gear_ID: {gearId}, 잔여 조각: {mgr.LegendaryShard}");
         return true;

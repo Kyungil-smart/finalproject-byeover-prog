@@ -104,18 +104,99 @@ public class ResourceRepo : MonoBehaviour
             Debug.LogWarning($"[ResourceRepo] {nameof(ResourceRepo)} is not initialized. Skip.");
             return;
         }
-        // ToDo : 아이템 정보 로드 해야됨.  <로드 부분은 팀장님과 협의 후 수정>
+        
+        if (GameManager.Instance != null && GameManager.Instance.CloudData != null)
+        {
+            var data = GameManager.Instance.CloudData;
+            SetItemCount(70001, data.gold);      // 골드
+            SetItemCount(70002, data.parchment); // 양피지
+            SetItemCount(70003, data.diamond);   // 다이아
+            
+            if (data.inventory != null)
+            {
+                foreach (var item in data.inventory)
+                {
+                    SetItemCount(item.itemId, item.amount);
+                }
+            }
+            
+            if (data.staminaData != null)
+            {
+                foreach (var savedStamina in data.staminaData)
+                {
+                    if (!_stamina.TryGetValue(savedStamina.staminaId, out var dbData)) continue;
+                    
+                    // 저장된 시간(문자열)을 DateTime으로 변환
+                    if (!DateTime.TryParse(savedStamina.lastUpdateTime, null,
+                            System.Globalization.DateTimeStyles.RoundtripKind, out DateTime savedTime)) continue;
+                    
+                    _staminaContainer.AddOrInitSlot(dbData, savedStamina.currentAmount, savedTime);
+                    GetStaminaSlot(dbData.Stamina_ID).CalculateOfflineRecovery(DateTime.Now);
+                    OnStaminaRecovered?.Invoke(dbData.Stamina_ID);
+                }
+            }
+            
+            Debug.Log("[ResourceRepo] 클라우드 재화 및 스태미나 연동 완료!");
+        }
+    }
+    
+    // ---------- Data Export ----------
+    public List<ItemSaveEntry> ExportInventory()
+    {
+        var list = new List<ItemSaveEntry>();
+        if (_itemContainer == null) return list;
+
+        foreach (var kvp in _itemContainer.GetAllItems())
+        {
+            // 골드, 양피지, 다이아는 CloudData에 전용 변수가 따로 있으므로(데이터 절약) 리스트에서 제외
+            if (kvp.Key == 70001 || kvp.Key == 70002 || kvp.Key == 70003) 
+                continue; 
+            
+            // 보유량이 0인 아이템은 제외 (용량 최적화)
+            if (kvp.Value <= 0) 
+                continue;
+
+            list.Add(new ItemSaveEntry { itemId = kvp.Key, amount = kvp.Value });
+        }
+        return list;
+    }
+    
+    public List<StaminaSaveEntry> ExportStaminaData()
+    {
+        var list = new List<StaminaSaveEntry>();
+        if (_staminaContainer == null) return list;
+
+        string currentTimeString = DateTime.UtcNow.ToString("o"); // 현재 시간을 ISO 규격 문자로 변환
+
+        foreach (var slot in _staminaContainer.Slots.Values)
+        {
+            list.Add(new StaminaSaveEntry
+            {
+                staminaId = slot.StaminaID,
+                currentAmount = slot.CurrentAmount,
+                lastUpdateTime = currentTimeString 
+            });
+        }
+        return list;
     }
     
     // ---------- 조회 API ----------
+    // Item
     public ItemData GetItemInfo(int id) => GetData(_items, id, nameof(GetItemInfo));
     public int GetItemCount(int itemId) => _itemContainer.GetItemCount(itemId);
+    
+    // Stamina
+    public StaminaSlot GetStaminaSlot(int id) => _staminaContainer.GetSlot(id);
     public int GetStaminaAmount(int id) => GetStaminaSlot(id).CurrentAmount;
     public float GetStaminaTimer(int id) => GetStaminaSlot(id).RemainTimer;
     
     // ---------- 관리 API ----------
+    // Item
     public void AddItem(int itemId, int amount) => _itemContainer.AddItem(itemId, amount);
     public bool UseItem(int itemId, int amount) => _itemContainer.UseItem(itemId, amount);
+    public void SetItemCount(int itemId, int amount) => _itemContainer.SetItemCount(itemId, amount);
+    
+    // Stamina
     public void AddStamina(int id, int amount, out int lossAmount) => GetStaminaSlot(id).Add(amount, out lossAmount);
     public bool UseStamina(int id, int amount) => GetStaminaSlot(id).UseStamina(amount);
     
@@ -177,6 +258,4 @@ public class ResourceRepo : MonoBehaviour
         Debug.LogWarning($"[ResourceRepo] {methodName} data not found. Key: {key}");
         return null;
     }
-    
-    private StaminaSlot GetStaminaSlot(int id) => _staminaContainer.GetSlot(id);
 }

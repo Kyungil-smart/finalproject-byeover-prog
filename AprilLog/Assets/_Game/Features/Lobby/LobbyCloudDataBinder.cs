@@ -139,6 +139,6 @@ public class LobbyCloudDataBinder : MonoBehaviour
         }
 
         _saveCoroutine = null;
-        GameManager.Instance.SaveOutGameProgress(_progressModel, _currencyModel);
+        GameManager.Instance.SaveOutGameProgress(_progressModel);
     }
 }
