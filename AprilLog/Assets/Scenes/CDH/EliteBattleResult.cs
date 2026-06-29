@@ -6,21 +6,18 @@ public class EliteBattleResult : MonoBehaviour
     public EnchantPopupManager popupManager;
     public JokerSystem jokerSystem;
 
-    private void OnDisable()
+    public void StartRewardProcess()
     {
-        if (popupManager != null)
-        {
-            popupManager.StartRewardSequence();
-        }
+        gameObject.SetActive(false);
 
         if (jokerSystem != null)
         {
             jokerSystem.RestoreJokerImages();
         }
-    }
 
-    public void OnEliteMonsterDefeated()
-    {
-        rewardSystem.OpenEnchantPopup();
+        if (popupManager != null)
+        {
+            popupManager.StartRewardSequence();
+        }
     }
 }
