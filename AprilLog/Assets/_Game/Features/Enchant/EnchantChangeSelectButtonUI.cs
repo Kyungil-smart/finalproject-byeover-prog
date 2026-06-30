@@ -2,6 +2,10 @@
 // 버튼을 누르면 인첸트 교체 후보가 Before창 테이블에 표기되도록 연결하는 스크립트
 // ToDo : UI 참조만 걸려있음으로 스크립트는 인첸트 담당자가 작성해야됨
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 보유 인챈트 목록에서 선택된 인챈트 데이터를 Presenter로 전달하고 정보 테이블 미연결 시 NullReference 방지
+//           선택 버튼 참조가 비어 있으면 같은 오브젝트의 Button을 사용하도록 방어
+
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,26 +23,37 @@ public class EnchantChangeSelectButtonUI : MonoBehaviour
     private EnchantDisplayData _enchantDisplayData;
 
     public event Action<int> OnEnchantSelected;
+    public event Action<EnchantDisplayData> OnEnchantDisplaySelected;
+
+    public EnchantChangeInfoTableUI InfoTableUI => _infoTableUI;
 
     private void OnEnable()
     {
-        if(_selectButton != null)
+        Button _button = GetSelectButton();
+        if(_button != null)
         {
-            _selectButton.onClick.AddListener(OnSelectButtonClick);
+            _button.onClick.AddListener(OnSelectButtonClick);
         }
     }
 
     private void OnDisable()
     {
-        if(_selectButton != null)
+        Button _button = GetSelectButton();
+        if(_button != null)
         {
-            _selectButton.onClick.RemoveListener(OnSelectButtonClick);
+            _button.onClick.RemoveListener(OnSelectButtonClick);
         }
     }
 
-    public void SetInfo(EnchantDisplayData enchantDisplayData)
+    public void SetInfo(EnchantDisplayData _enchantDisplayData)
     {
-        _enchantDisplayData = enchantDisplayData;
+        this._enchantDisplayData = _enchantDisplayData;
+        if (this._enchantDisplayData == null)
+        {
+            ClearInfo();
+            return;
+        }
+
         if(_skillLevelText != null)
         {
             _skillLevelText.text = _enchantDisplayData.Level.ToString();
@@ -51,10 +66,42 @@ public class EnchantChangeSelectButtonUI : MonoBehaviour
         }
     }
 
+    public void ClearInfo()
+    {
+        _enchantDisplayData = null;
+
+        if (_skillLevelText != null)
+        {
+            _skillLevelText.text = string.Empty;
+        }
+
+        if (_skillImage != null)
+        {
+            _skillImage.sprite = null;
+            _skillImage.enabled = false;
+        }
+    }
+
     private void OnSelectButtonClick()
     {
         if(_enchantDisplayData == null) return;
-        _infoTableUI.SetInfo(_enchantDisplayData);
+        if (_infoTableUI != null)
+        {
+            _infoTableUI.SetInfo(_enchantDisplayData);
+        }
+
         OnEnchantSelected?.Invoke(_enchantDisplayData.EnchantId);
+        OnEnchantDisplaySelected?.Invoke(_enchantDisplayData);
+    }
+
+    private Button GetSelectButton()
+    {
+        if (_selectButton != null)
+        {
+            return _selectButton;
+        }
+
+        _selectButton = GetComponent<Button>();
+        return _selectButton;
     }
 }
