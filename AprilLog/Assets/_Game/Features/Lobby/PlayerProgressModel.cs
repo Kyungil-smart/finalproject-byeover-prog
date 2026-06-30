@@ -27,7 +27,7 @@ public class PlayerProgressModel : MonoBehaviour
     // ---------- 초기화 ----------
     public void Initialize(int charLevel, int chapter, int stage, List<int> unlocked)
     {
-        CharacterLevel = Mathf.Clamp(charLevel, StartLevel, MaxLevel);
+        SetCharacterLevel(charLevel);
         CurrentChapter = chapter;
         CurrentStage = stage;
         UnlockedStages = unlocked ?? new List<int>();

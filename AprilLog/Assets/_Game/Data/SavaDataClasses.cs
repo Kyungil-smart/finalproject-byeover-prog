@@ -54,8 +54,15 @@ public class InGameSaveData
     // 기록
     public int totalDamage;
     public int highestDamage;
-    public Dictionary<int, int> MaxBySkill;
+    public List<MaxBySkillSaveData> MaxBySkill;
     public int maxCombo;
+}
+
+[Serializable]
+public class MaxBySkillSaveData
+{
+   public int skillId;
+   public int maxDamage;
 }
 
 #endregion

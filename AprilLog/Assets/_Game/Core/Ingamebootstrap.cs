@@ -385,6 +385,13 @@ public class InGameBootstrap : MonoBehaviour
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
         // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.
         DisablePlayerInputOnGameEnd();
+        
+        // 정산창이 뜨면 게임 진행 상황을 모두 지우고 새롭게 재시작해야된다. (기획팀 이형진 확인)
+        if (GameManager.Instance != null)
+        {
+            bool hasSaveData = GameManager.Instance.HasLocalSave();
+            if (hasSaveData) GameManager.Instance.DeleteLocalSave();
+        }
     }
 
     // 게임 종료(승/패) 시 퍼즐 입력을 차단해 더 이상 조작/공격이 일어나지 않게 한다. (기획 1-3-1)
@@ -634,7 +641,11 @@ public class InGameBootstrap : MonoBehaviour
     private int GetCharacterLevel()
     {
         if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
+        {
+            Debug.LogWarning("[InGameBootstrap] 클라우드 데이터를 찾을 수 없음. 아웃 게임 레벨 1");
             return 1;
+        }
+        Debug.Log($"[InGameBootstrap] 클라우드 데이터를 찾음. 아웃 게임 레벨 {GameManager.Instance.CloudData.characterLevel}");
         return GameManager.Instance.CloudData.characterLevel;
     }
 }
