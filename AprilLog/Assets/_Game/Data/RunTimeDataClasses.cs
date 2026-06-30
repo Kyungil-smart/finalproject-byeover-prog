@@ -368,9 +368,10 @@ public enum CalFormula
 [Serializable]
 public class ItemContainer
 {
-    private Dictionary<int, int> _inventory = new (); // Item_ID, 현재 보유량
+    private Dictionary<int, ObscuredInt> _inventory = new (); // Item_ID, 현재 보유량
 
     public int GetItemCount(int itemId) => GetData(_inventory, itemId);
+    public Dictionary<int, ObscuredInt> GetAllItems() => _inventory;
     
     public void AddItem(int itemId, int amount)
     {
@@ -415,7 +416,13 @@ public class ItemContainer
         return false;
     }
     
-    private int GetData(Dictionary<int, int> dictionary, int key)
+    public void SetItemCount(int itemId, int amount)
+    {
+        _inventory ??= new Dictionary<int, ObscuredInt>();
+        _inventory[itemId] = Mathf.Max(0, amount);
+    }
+    
+    private int GetData(Dictionary<int, ObscuredInt> dictionary, int key)
     {
         if (dictionary == null)
         {
@@ -423,7 +430,7 @@ public class ItemContainer
             return 0;
         }
 
-        if (dictionary.TryGetValue(key, out int data))
+        if (dictionary.TryGetValue(key, out ObscuredInt data))
             return data;
 
         Debug.LogWarning($"[ResourceRepo] Item Key is Wrong. Key: {key}. Return 0");
@@ -478,11 +485,11 @@ public class StaminaContainer
 public class StaminaSlot
 {
     public int StaminaID;
-    public int CurrentAmount;
+    public ObscuredInt CurrentAmount;
     
     // DB 데이터 캐싱
     public int MaxOwned;
-    public int OverCapMax;
+    public ObscuredInt OverCapMax;
     public float RecoveryTime;
     public int RecoveryCount;
 
@@ -580,6 +587,42 @@ public class StaminaSlot
         
         Debug.Log($"[ResourceRepo] Stamina Id {StaminaID} : {amount} Use Failed. {CurrentAmount} / {MaxOwned}");
         return false;
+    }
+    
+    public void SetStamina(int amount, int max)
+    {
+        if(amount < 0 || max <= 0) return;
+        
+        CurrentAmount = amount;
+        OverCapMax = max;
+    }
+}
+
+/// <summary>
+/// int 타입 변수 암호화 (아이템 및 스태미너 저장소에서 사용, 위변조 방지)
+/// </summary>
+public struct ObscuredInt
+{
+    private readonly int _currentKey;
+    private readonly int _hiddenValue;
+
+    // int를 ObscuredInt로 만들 때 (암호화)
+    private ObscuredInt(int value)
+    {
+        _currentKey = UnityEngine.Random.Range(1, int.MaxValue); // 랜덤 키 생성
+        _hiddenValue = value ^ _currentKey;           // 데이터 숨기기
+    }
+
+    // ObscuredInt를 일반 int처럼 읽으려고 할 때 (자동 복호화)
+    public static implicit operator int(ObscuredInt obscured)
+    {
+        return obscured._hiddenValue ^ obscured._currentKey; 
+    }
+
+    // 일반 int를 ObscuredInt 변수에 집어넣으려고 할 때 (자동 암호화)
+    public static implicit operator ObscuredInt(int value)
+    {
+        return new ObscuredInt(value);
     }
 }
 

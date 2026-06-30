@@ -8,6 +8,10 @@ using UnityEngine.UI;
 //          - 제작 버튼은 바로 제작하지 않고 공용 확인 팝업(POPUP_CraftBreakthroughConfirm)을 먼저 띄운다.
 //          - 확인 시 ArtifactCraftService 가 조각 5개를 차감하고 아티팩트를 보유 상태로 만든다.
 //          - 조각 돌파 진입점(RequestBreakthroughWithShard)도 같은 확인 팝업을 재사용한다.
+
+// 수정자 : 김영찬
+// 수정 내용 : 실제 재화에 반영 하는 부분을 ArtifactManager에서 담당하도록 수정
+
 public class ArtifactCraftPopupPresenter : MonoBehaviour
 {
     [Header("제작 팝업 (POPUP_ArtifactCraft)")]
@@ -358,13 +362,14 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
     
     // 테스트용 버튼 — 버튼 클릭으로 조각 지급/초기화
     
+    
     // 버튼 클릭 시 레전더리 조각 100개 지급
     public void Test_GiveShards()
     {
         ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
         if (mgr == null) { Debug.LogWarning("[ArtifactCraftPopup] ArtifactManager 없음."); return; }
 
-        mgr.LegendaryShard += _testGiveAmount;
+        mgr.AddShard(_testGiveAmount);
         Debug.Log($"[ArtifactCraftPopup] 테스트: 조각 +{_testGiveAmount} → 현재 {mgr.LegendaryShard}");
         Refresh();
     }
@@ -375,7 +380,7 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
         if (mgr == null) { Debug.LogWarning("[ArtifactCraftPopup] ArtifactManager 없음."); return; }
 
-        mgr.LegendaryShard = 0;
+        mgr.SetShard(0);
         Debug.Log("[ArtifactCraftPopup] 테스트: 조각 0개로 초기화");
         Refresh();
     }

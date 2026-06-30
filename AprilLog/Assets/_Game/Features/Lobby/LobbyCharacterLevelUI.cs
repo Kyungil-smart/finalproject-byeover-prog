@@ -250,8 +250,8 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         ArtifactManager mgr = ArtifactManager;
         if (mgr != null)
         {
-            mgr.UpgradeStone = 0;
-            mgr.LegendaryShard = 0;
+            mgr.SetStone(0);
+            mgr.SetShard(0);
         }
 
         // 행동력 (OnStaminaChanged 발행 → UI 자동 갱신). 최대치는 유지.
@@ -282,8 +282,8 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         ArtifactManager mgr = ArtifactManager;
         if (mgr != null)
         {
-            mgr.UpgradeStone = restoreUpgradeStone;
-            mgr.LegendaryShard = restoreLegendaryShard;
+            mgr.SetStone(restoreUpgradeStone);
+            mgr.SetShard(restoreLegendaryShard);
         }
 
         // 행동력 (현재/최대)

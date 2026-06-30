@@ -10,12 +10,16 @@ using UnityEngine;
 public class ExtraCurrencyModel : MonoBehaviour
 {
     public const int TestStartTicket = 0;
+    private const int GachaTicketId = 70006;
 
     // ---------- 이벤트 ----------
     public event Action OnChanged;   // 티켓 변경 시 발행
 
     // ---------- 데이터 ----------
-    public int GachaTicket { get; private set; }
+    private int _localTicket;
+    public int GachaTicket => GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null
+        ? DataManager.Instance.ResourceRepo.GetItemCount(GachaTicketId) 
+        : _localTicket;
 
     [Header("테스트 기본값")]
     [SerializeField] private bool initializeWithTestValues = true;
@@ -28,32 +32,66 @@ public class ExtraCurrencyModel : MonoBehaviour
         if (initializeWithTestValues && !_initialized)
             Initialize(testStartTicket);
     }
+    
+    private void OnEnable()
+    {
+        if (GameManager.Instance != null) GameManager.Instance.OnCurrencyChanged += HandleInventoryChanged;
+        RaiseChanged();
+    }
+
+    private void OnDisable()
+    {
+        if (GameManager.Instance != null) GameManager.Instance.OnCurrencyChanged -= HandleInventoryChanged;
+    }
 
     // ---------- 초기화/리셋 ----------
     public void Initialize(int ticket)
     {
-        GachaTicket = Mathf.Max(0, ticket);
-        _initialized = true;
-        RaiseChanged();
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            DataManager.Instance.ResourceRepo.SetItemCount(GachaTicketId, Mathf.Max(0, ticket));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+        }
+        else
+        {
+            _localTicket = Mathf.Max(0, ticket);
+            RaiseChanged();
+        }
     }
 
     // ---------- 뽑기 티켓 ----------
     public void AddTicket(int amount)
     {
-        GachaTicket = Mathf.Max(0, GachaTicket + amount);
-        RaiseChanged();
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            DataManager.Instance.ResourceRepo.AddItem(GachaTicketId, Mathf.Max(0, amount));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+        }
+        else
+        {
+            _localTicket += Mathf.Max(0, amount);
+            RaiseChanged();
+        }
     }
 
     public bool CanAffordTicket(int amount) => GachaTicket >= Mathf.Max(0, amount);
 
     public bool SpendTicket(int amount)
     {
-        amount = Mathf.Max(0, amount);
-        if (GachaTicket < amount) return false;
-        GachaTicket -= amount;
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            if (GachaTicket < amount) return false;
+            if (!DataManager.Instance.ResourceRepo.UseItem(GachaTicketId, Mathf.Max(0, amount))) return false;
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+            return true;
+        }
+        
+        if (_localTicket < amount) return false;
+        _localTicket -= amount;
         RaiseChanged();
         return true;
     }
 
     private void RaiseChanged() => OnChanged?.Invoke();
+    private void HandleInventoryChanged(int gold, int parchment) => RaiseChanged();
 }
