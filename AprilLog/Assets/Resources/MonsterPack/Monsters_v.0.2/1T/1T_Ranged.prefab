@@ -1930,7 +1930,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.75, y: 0.75}
   m_EdgeRadius: 0
 --- !u!114 &2419764991215815920
 MonoBehaviour:
@@ -1946,9 +1946,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VisualWrapperFitter
   visualTarget: {fileID: 4458985968616064}
   targetCollider: {fileID: -9157462812451033254}
-  scaleFactor: 0.001
+  scaleFactor: 0.00075
   alignToBottom: 1
-  manualOffset: {x: 0, y: -0.02}
+  manualOffset: {x: 0, y: -0.05}
 --- !u!1 &1730933439778838
 GameObject:
   m_ObjectHideFlags: 0
@@ -2530,8 +2530,8 @@ Transform:
   m_GameObject: {fileID: 3281608177295161512}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.5, z: 0}
-  m_LocalScale: {x: 0.00085, y: 0.00085, z: 1}
+  m_LocalPosition: {x: 0, y: -0.425, z: 0}
+  m_LocalScale: {x: 0.00075, y: 0.00075, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4458985968616064}
