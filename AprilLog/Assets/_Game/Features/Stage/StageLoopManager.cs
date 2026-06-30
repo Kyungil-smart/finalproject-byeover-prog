@@ -132,6 +132,11 @@ public class StageLoopManager : MonoBehaviour
         if (_bootstrapper != null)
             _bootstrapper.StopStage();
 
+        // 전투 종료 시 진행 중 스킬 루틴 정지 + 잔존 VFX 일괄 정리.
+        // (정산 팝업이 Time.timeScale=0으로 뜨면 held VFX 루틴이 WaitForSeconds에 멈춰 자체 Destroy에 도달 못 해
+        //  방전 구슬·벽, 하이드로펌프·파도 빔, 파이어브레스 수정구 등이 정산 화면에 남던 문제 해소.)
+        FindFirstObjectByType<SkillSystem>()?.ClearActiveSkillVfx();
+
         OnChapterEnd?.Invoke(isVictory);
     }
 
