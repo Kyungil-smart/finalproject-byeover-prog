@@ -563,7 +563,10 @@ public class GameManager : MonoBehaviour
             if (!deleted)
             {
                 Debug.LogWarning("[GameManager] Firebase 계정 삭제 실패.");
-                // 실패해도 로컬은 초기화 후 로그인 화면으로
+                // 익명 세션은 recent-login 만료로 삭제가 거부될 수 있다.
+                // 이때 세션을 끊지 않으면 _Boot 재진입 시 같은 계정으로 자동 재로그인되어
+                // 무한 로딩에 빠지므로, 삭제 실패 시 로컬 세션을 강제로 정리한다.
+                _authService.SignOut();
             }
         }
 
@@ -657,11 +660,20 @@ public class GameManager : MonoBehaviour
 
     public void ApplyCloudDataToArtifactManager(ArtifactManager manager)
     {
+        if (manager == null)
+        {
+            return;
+        }
+
         CloudData ??= UserCloudData.CreateDefault();
 
         EnsureCloudIdentity(CloudData);
-        
-        manager.LoadData();
+
+        // CloudData에 저장된 아티팩트를 매니저로 복원한다.
+        // (manager.LoadData()를 다시 부르면 LoadData ↔ Apply 무한 재귀로 StackOverflow가 난다.)
+        manager.MyArtifacts = CloudData.myArtifacts != null
+            ? new List<ArtifactInstance>(CloudData.myArtifacts)
+            : new List<ArtifactInstance>();
     }
 
     public void SaveOutGameProgress(PlayerProgressModel progressModel)
