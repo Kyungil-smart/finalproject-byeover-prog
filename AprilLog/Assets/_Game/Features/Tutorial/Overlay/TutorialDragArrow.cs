@@ -33,7 +33,8 @@ public class TutorialDragArrow : MonoBehaviour
     private void Awake()
     {
         _rt = (RectTransform)transform;
-        _parentRt = _rt.parent as RectTransform;
+        // The parent can be a small grouping rect, so use this full-screen arrow rect for coordinate conversion.
+        _parentRt = _rt;
         _canvas = GetComponentInParent<Canvas>();
         _group = GetComponent<CanvasGroup>();
         if (_group == null) _group = gameObject.AddComponent<CanvasGroup>();

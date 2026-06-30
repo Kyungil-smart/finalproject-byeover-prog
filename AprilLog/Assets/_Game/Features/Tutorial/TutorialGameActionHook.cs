@@ -27,6 +27,9 @@ public class TutorialGameActionHook : MonoBehaviour
         _notifier = null;
     }
 
+    private int _sortCount;
+    private int _countedStepId = -1;
+
     private void HandleSortCompleted(UnitType _)
     {
         TutorialManager tm = TutorialManager.Instance;
@@ -34,7 +37,17 @@ public class TutorialGameActionHook : MonoBehaviour
 
         TutorialStep step = tm.CurrentStep;
         // 정렬로 진행하는 단계(gameAction==Sort)일 때만 진행. 다른 GameAction 단계는 무시.
-        if (step != null && step.advanceMode == TutorialAdvanceMode.GameAction && step.gameAction == TutorialGameAction.Sort)
+        if (step == null || step.advanceMode != TutorialAdvanceMode.GameAction || step.gameAction != TutorialGameAction.Sort)
+            return;
+
+        // 단계가 바뀌면 카운트 초기화. 같은 단계에서 requiredSortCount 만큼 정렬해야 진행.
+        if (_countedStepId != step.stepId) { _countedStepId = step.stepId; _sortCount = 0; }
+
+        _sortCount++;
+        if (_sortCount >= Mathf.Max(1, step.requiredSortCount))
+        {
+            _sortCount = 0;
             tm.AdvanceStep();
+        }
     }
 }
