@@ -1,5 +1,7 @@
 // 수정자 : 조규민
-// 수정 내용 : 저장된 인챈트 복원 후 교체 창 목록이 비어 보이지 않도록 UI 표시 목록 갱신 경로 추가
+// 수정 내용 :
+// 저장된 인챈트 복원 후 교체 창 목록이 비어 보이지 않도록 UI 표시 목록 갱신 경로 추가
+// 보유 인챈트 목록의 스킬·스탯 레벨을 테이블 행이 아닌 실제 획득 상태 기준으로 표시
 
 using System;
 using System.Collections.Generic;
@@ -102,7 +104,7 @@ public class EnchantUIModel : MonoBehaviour
                     OwnedSkillList.Add(new EnchantDisplayData
                     {
                         EnchantId = pair.Key,
-                        Level = data.Data.Level,
+                        Level = data.Level,
                         TypeLabel = "스킬",
                         Name = $"Skill_ID: {data.Data.Name}",
                         Description = $"Description_ID: {data.Data.Skill_Descrip}",
@@ -114,7 +116,7 @@ public class EnchantUIModel : MonoBehaviour
                     OwnedSkillList.Add(new EnchantDisplayData
                     {
                         EnchantId = pair.Key,
-                        Level = data.Data.Level,
+                        Level = data.Level,
                         TypeLabel = "스킬",
                         Name = _localizationManager.Get(data.Data.Name, LocalizingType.Enchant),
                         Description = _localizationManager.Get(data.Data.Skill_Descrip, LocalizingType.Enchant),
@@ -143,7 +145,7 @@ public class EnchantUIModel : MonoBehaviour
                     OwnedStatList.Add(new EnchantDisplayData
                     {
                         EnchantId = pair.Key,
-                        Level = data.Data.StatLevel,
+                        Level = data.Level,
                         TypeLabel = "스텟",
                         Name = $"Skill_ID: {data.Data.StatName}",
                         Description = $"Description_ID: {data.Data.StatDescrip}",
@@ -155,7 +157,7 @@ public class EnchantUIModel : MonoBehaviour
                     OwnedStatList.Add(new EnchantDisplayData
                     {
                         EnchantId = pair.Key,
-                        Level = data.Data.StatLevel,
+                        Level = data.Level,
                         TypeLabel = "스텟",
                         Name = _localizationManager.Get(data.Data.StatName, LocalizingType.Enchant),
                         Description = _localizationManager.Get(data.Data.StatDescrip, LocalizingType.Enchant),
