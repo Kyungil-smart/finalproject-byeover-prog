@@ -107,8 +107,8 @@ public class StageLoopManager : MonoBehaviour
     {
         _state = State.StageClear;
 
-        if (GameManager.Instance != null)
-            GameManager.Instance.SaveLocal();
+        // 스테이지 클리어 자동 체크포인트 저장 제거(기획 #300): 한 판 도중 이어하기 가능한 세이브를 남기지 않는다.
+        // 강제종료/크래시로도 이어하기 안 되게. 이어하기 세이브는 '로비로' 버튼(SaveCurrentProgressForResume)에서만 기록.
 
         OnStageClearSaved?.Invoke();
 

@@ -131,17 +131,18 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 모바일: 백그라운드 전환 시 즉시 세이브
+    // 모바일: 전투 중 백그라운드 전환/종료 = '포기'(인게임 세이브 삭제) → 재진입 시 새 판.
+    // (기획 #300: 종료로 죽음/손해를 회피하는 세이브스컴 차단. 의도적 이어하기는 '로비로' 버튼으로만.)
     private void OnApplicationPause(bool isPaused)
     {
         if (isPaused && _currentState == GameState.InGame)
-            SaveLocal();
+            DeleteLocalSave();
     }
 
     private void OnApplicationQuit()
     {
         if (_currentState == GameState.InGame)
-            SaveLocal();
+            DeleteLocalSave();
     }
 
     // ---------- 이벤트 핸들러 ----------

@@ -799,6 +799,9 @@ public class SkillSystem : MonoBehaviour
 
         // ① 타겟 발밑에 수정구 생성 → 시퀀스 끝까지 루프 유지 (기획 4-1-4 #1)
         GameObject crystal = SpawnVfx(lib != null ? lib.fireBreathCrystal : null, center, crystalScale, 53);
+        // 안전망(#305): 루틴이 중간에 끊겨도(스테이지/챕터 종료 시 StopAllCoroutines 등) 수정구가 화면에 남지 않도록
+        // 최대 수명 후 무조건 자동 삭제한다. 정상 종료 시엔 아래 ⑤의 즉시 Destroy가 먼저 처리(이중 Destroy는 무해).
+        if (crystal != null) Destroy(crystal, flameCount * flameInterval + 2f);
 
         for (int n = 0; n < flameCount; n++)
         {
