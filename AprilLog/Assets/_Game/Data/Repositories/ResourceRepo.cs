@@ -2,6 +2,7 @@
 // 내용 : 재화와 스태미나 데이터 조회 및 관리
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -39,26 +40,35 @@ public class ResourceRepo : MonoBehaviour
 
         _items = BuildDictionary(_itemTable, nameof(_itemTable), r => r.Item_ID);
         _stamina = BuildDictionary(_staminaTable, nameof(_staminaTable), r => r.Stamina_ID);
-        
+
         _itemContainer = new ItemContainer();
         _staminaContainer = new StaminaContainer();
         
-        DateTime now = DateTime.Now;
-        foreach (var dbData in _stamina.Values)
-        {
-            // 최초 접속이라 가정하고 InitialAmount 세팅. 초기화 후 로드데이터 있으면 로드 함.
-            int savedAmount = dbData.InitialAmount; 
-            DateTime savedTime = now; 
-
-            _staminaContainer.AddOrInitSlot(dbData, savedAmount, savedTime);
-            
-            // 최초 기동 시 오프라인 회복 1회 계산
-            GetStaminaSlot(dbData.Stamina_ID).CalculateOfflineRecovery(now);
-        }
+        InitializeContainer(nameof(_itemContainer), _itemContainer, () => _itemContainer.Initialize(_items));
+        InitializeContainer(nameof(_staminaContainer), _staminaContainer, () => _staminaContainer.Initialize(_stamina));
         
         _isInitialized = true;
         Debug.Log($"[ResourceRepo] 초기화 완료. Item : {_items.Count}, Stamina: {_stamina.Count}");
     }
+
+    private void InitializeContainer(string containerName, object container, Action initializeAction)
+    {
+        if (container == null)
+        {
+            Debug.LogError($"[ResourceRepo] {containerName} is not assigned. Repository initialization skipped.");
+            return;
+        }
+
+        try
+        {
+            initializeAction.Invoke();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"[ResourceRepo] {containerName} initialization failed.\n{exception}");
+        }
+    }
+    
     // ---------- Unity Life Cycle ----------
     private void Update()
     {
@@ -80,9 +90,7 @@ public class ResourceRepo : MonoBehaviour
 
         if (pauseStatus)
         {
-            // 앱이 백그라운드로 내려감 -> 데이터 저장
-            // TODO: _itemContainer와 _staminaContainer의 내용을 JSON 등으로 기기/서버에 저장. <저장 부분은 팀장님과 협의 후 결정>
-            Debug.Log("[ResourceRepo] 앱 일시정지 - 재화 및 스태미나 타임스탬프 저장 필요");
+            SaveResourceData();
         }
         else
         {
@@ -96,6 +104,23 @@ public class ResourceRepo : MonoBehaviour
             Debug.Log("[ResourceRepo] 앱 복귀 - 오프라인 스태미나 회복 계산 완료");
         }
     }
+    
+    private void OnApplicationQuit()
+    {
+        if (!_isInitialized || _staminaContainer == null) return;
+        
+        SaveResourceData();
+    }
+    
+    private void SaveResourceData()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.CloudData != null)
+        {
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+            Debug.Log("[ResourceRepo] 재화 및 스태미나 타임스탬프 저장 실행!");
+        }
+    }
+    
     // ---------- Data Load ----------
     public void LoadResourceData()
     {
