@@ -1,3 +1,6 @@
+// 수정자 : 조규민
+// 수정 내용 : 저장된 인챈트 복원 후 교체 창 목록이 비어 보이지 않도록 UI 표시 목록 갱신 경로 추가
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -34,12 +37,33 @@ public class EnchantUIModel : MonoBehaviour
         
         _localizationManager = LocalizationManager.Instance;
 
+        UnbindModelEvents();
         _model.OnSkillAcquired += HandleSkillRefresh;
         _model.OnSkillLevelUp += HandleSkillRefresh;
         _model.OnSkillRemoved += HandleSkillRefresh;
         _model.OnStatAcquired += HandleStatRefresh;
         _model.OnStatLevelUp += HandleStatRefresh;
         _model.OnStatRemoved += HandleStatRefresh;
+    }
+
+    public void RefreshAll()
+    {
+        EnsureLists();
+
+        if (_model == null)
+        {
+            _model = GetComponent<EnchantModel>();
+        }
+
+        if (_model == null)
+        {
+            Debug.LogError("[EnchantUIModel] Enchant Model Not Found. Refresh Failed.");
+            return;
+        }
+
+        _localizationManager = LocalizationManager.Instance;
+        RefreshSkillView();
+        RefreshStatView();
     }
     
     // ---------- 이벤트 핸들러 ----------
@@ -65,17 +89,19 @@ public class EnchantUIModel : MonoBehaviour
     
     private void RefreshSkillView()
     {
+        EnsureLists();
         OwnedSkillList.Clear();
 
         if (_model.OwnedSkills.Count > 0)
         {
-            foreach (var data in _model.OwnedSkills.Values)
+            foreach (var pair in _model.OwnedSkills)
             {
+                var data = pair.Value;
                 if (_localizationManager == null)
                 {
                     OwnedSkillList.Add(new EnchantDisplayData
                     {
-                        EnchantId = data.Data.Skill_ID,
+                        EnchantId = pair.Key,
                         Level = data.Data.Level,
                         TypeLabel = "스킬",
                         Name = $"Skill_ID: {data.Data.Name}",
@@ -87,7 +113,7 @@ public class EnchantUIModel : MonoBehaviour
                 {
                     OwnedSkillList.Add(new EnchantDisplayData
                     {
-                        EnchantId = data.Data.Skill_ID,
+                        EnchantId = pair.Key,
                         Level = data.Data.Level,
                         TypeLabel = "스킬",
                         Name = _localizationManager.Get(data.Data.Name, LocalizingType.Enchant),
@@ -103,18 +129,20 @@ public class EnchantUIModel : MonoBehaviour
 
     private void RefreshStatView()
     {
+        EnsureLists();
         OwnedStatList.Clear();
         
         if (_model.OwnedStats.Count > 0)
         {
-            foreach (var data in _model.OwnedStats.Values)
+            foreach (var pair in _model.OwnedStats)
             {
+                var data = pair.Value;
                 if (_localizationManager == null)
                 {
                     Debug.LogWarning("No localization manager found. No Localization.");
                     OwnedStatList.Add(new EnchantDisplayData
                     {
-                        EnchantId = data.Data.StatEnchant_ID,
+                        EnchantId = pair.Key,
                         Level = data.Data.StatLevel,
                         TypeLabel = "스텟",
                         Name = $"Skill_ID: {data.Data.StatName}",
@@ -126,7 +154,7 @@ public class EnchantUIModel : MonoBehaviour
                 {
                     OwnedStatList.Add(new EnchantDisplayData
                     {
-                        EnchantId = data.Data.StatEnchant_ID,
+                        EnchantId = pair.Key,
                         Level = data.Data.StatLevel,
                         TypeLabel = "스텟",
                         Name = _localizationManager.Get(data.Data.StatName, LocalizingType.Enchant),
@@ -142,7 +170,29 @@ public class EnchantUIModel : MonoBehaviour
 
     public void Discard()
     {
-        if (_model == null) return;
+        if (_model == null)
+        {
+            return;
+        }
+
+        UnbindModelEvents();
+    }
+
+    private void EnsureLists()
+    {
+        if (OwnedSkillList == null)
+        {
+            OwnedSkillList = new List<EnchantDisplayData>();
+        }
+
+        if (OwnedStatList == null)
+        {
+            OwnedStatList = new List<EnchantDisplayData>();
+        }
+    }
+
+    private void UnbindModelEvents()
+    {
         _model.OnSkillAcquired -= HandleSkillRefresh;
         _model.OnSkillLevelUp -= HandleSkillRefresh;
         _model.OnSkillRemoved -= HandleSkillRefresh;

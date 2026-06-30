@@ -1,11 +1,9 @@
 ﻿//담당자: 조규민
+//팝업의 시간당 생산량과 현재 수령 가능 수량이 섞이지 않도록 생산량 상태를 분리
 
 using System;
 using UnityEngine;
 
-/// <summary>
-/// 하우징 시간 누적 보상의 충전 상태와 수령 가능 수량을 계산합니다.
-/// </summary>
 public class HousingIdleRewardModel
 {
     private readonly int _maxChargeSeconds;
@@ -67,9 +65,22 @@ public class HousingIdleRewardModel
             Mathf.FloorToInt(_rewardTable.MaxGoldReward * _progress),
             Mathf.FloorToInt(_rewardTable.MaxParchmentReward * _progress),
             Mathf.FloorToInt(_rewardTable.MaxDiamondReward * _progress),
+            CalculateRewardPerHour(_rewardTable.MaxGoldReward),
+            CalculateRewardPerHour(_rewardTable.MaxParchmentReward),
+            CalculateRewardPerHour(_rewardTable.MaxDiamondReward),
             _rewardTable.GoldItemId,
             _rewardTable.ParchmentItemId,
             _rewardTable.DiamondItemId);
+    }
+
+    private int CalculateRewardPerHour(int _maxReward)
+    {
+        if (_maxReward <= 0)
+        {
+            return 0;
+        }
+
+        return Mathf.FloorToInt(_maxReward * 3600f / _maxChargeSeconds);
     }
 
     private static DateTime EnsureUtc(DateTime _dateTime)
@@ -131,6 +142,9 @@ public readonly struct HousingIdleRewardState
     public int GoldReward { get; }
     public int ParchmentReward { get; }
     public int DiamondReward { get; }
+    public int GoldPerHour { get; }
+    public int ParchmentPerHour { get; }
+    public int DiamondPerHour { get; }
     public int GoldItemId { get; }
     public int ParchmentItemId { get; }
     public int DiamondItemId { get; }
@@ -142,6 +156,9 @@ public readonly struct HousingIdleRewardState
         int _goldReward,
         int _parchmentReward,
         int _diamondReward,
+        int _goldPerHour,
+        int _parchmentPerHour,
+        int _diamondPerHour,
         int _goldItemId,
         int _parchmentItemId,
         int _diamondItemId)
@@ -151,6 +168,9 @@ public readonly struct HousingIdleRewardState
         GoldReward = Mathf.Max(0, _goldReward);
         ParchmentReward = Mathf.Max(0, _parchmentReward);
         DiamondReward = Mathf.Max(0, _diamondReward);
+        GoldPerHour = Mathf.Max(0, _goldPerHour);
+        ParchmentPerHour = Mathf.Max(0, _parchmentPerHour);
+        DiamondPerHour = Mathf.Max(0, _diamondPerHour);
         GoldItemId = _goldItemId;
         ParchmentItemId = _parchmentItemId;
         DiamondItemId = _diamondItemId;
@@ -161,6 +181,9 @@ public readonly struct HousingIdleRewardState
         return ProgressPercent == _other.ProgressPercent
             && GoldReward == _other.GoldReward
             && ParchmentReward == _other.ParchmentReward
-            && DiamondReward == _other.DiamondReward;
+            && DiamondReward == _other.DiamondReward
+            && GoldPerHour == _other.GoldPerHour
+            && ParchmentPerHour == _other.ParchmentPerHour
+            && DiamondPerHour == _other.DiamondPerHour;
     }
 }

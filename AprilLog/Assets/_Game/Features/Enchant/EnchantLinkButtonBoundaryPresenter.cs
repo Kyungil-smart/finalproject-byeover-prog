@@ -1,6 +1,6 @@
 //담당자: 조규민
+//포기하기 확인 시 인게임을 재시작하지 않고 진행 세이브를 삭제한 뒤 로비로 복귀하도록 변경
 
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -9,7 +9,7 @@ using UnityEngine;
 public class EnchantLinkButtonBoundaryPresenter
 {
     private const string _returnLobbyMessage = "로비로 돌아가시겠습니까?\n게임은 자동 저장됩니다.";
-    private const string _restartChapterMessage = "게임을 포기하시겠습니까?\n진행 중인 게임은 저장되지 않습니다.";
+    private const string _restartChapterMessage = "게임을 포기하고 로비로 돌아가시겠습니까?\n진행 중인 게임은 저장되지 않습니다.";
 
     private readonly EnchantLinkButtonBoundaryView _view;
     private readonly ScreenNavigator _screenNavigator;
@@ -97,15 +97,25 @@ public class EnchantLinkButtonBoundaryPresenter
     {
         Time.timeScale = 1f;
 
-        if (GameManager.Instance == null)
+        if (GameManager.Instance != null)
         {
-            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] GameManager가 없어 포기하기를 처리하지 않았습니다.");
+            GameManager.Instance.DeleteLocalSave();
+        }
+        else
+        {
+            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] GameManager가 없어 포기하기 세이브 삭제를 처리하지 못했습니다.");
+        }
+
+        if (_screenNavigator != null)
+        {
+            _screenNavigator.ToLobbyAction();
             return;
         }
 
-        KeepCurrentChapterForRestart();
-        GameManager.Instance.DeleteLocalSave();
-        GameManager.Instance.LoadInGame();
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.LoadLobby();
+        }
     }
 
     private void SaveCurrentProgressForResume()
@@ -126,14 +136,4 @@ public class EnchantLinkButtonBoundaryPresenter
         GameManager.Instance.SaveLocal();
     }
 
-    private void KeepCurrentChapterForRestart()
-    {
-        StageLoopManager loopManager = Object.FindFirstObjectByType<StageLoopManager>();
-        if (loopManager == null)
-        {
-            return;
-        }
-
-        GameManager.Instance.SelectedChapterId = Mathf.Max(1, loopManager.CurrentChapterId);
-    }
 }
