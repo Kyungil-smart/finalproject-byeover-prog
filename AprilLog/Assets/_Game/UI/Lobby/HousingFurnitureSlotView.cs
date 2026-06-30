@@ -1,7 +1,8 @@
 ﻿//담당자: 조규민
 
+// 수정 내용 : 하우징 가구 이미지를 Resources 폴더가 아닌 Inspector에 연결된 Imports Sprite 참조에서 찾도록 변경
+
 using System;
-using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -47,9 +48,9 @@ public class HousingFurnitureSlotView : MonoBehaviour
     [Header("가구 위치 연결")]
     [SerializeField] private LocationBinding[] _locationBindings;
 
-    [Header("리소스 경로")]
-    [Tooltip("Resources 기준 가구 배치 이미지 폴더입니다. 비워두면 DB의 Resources 파일명만 사용합니다.")]
-    [SerializeField] private string _resourceFolder = "Icons/Housing";
+    [Header("가구 이미지 연결")]
+    [Tooltip("DB Resources 값과 연결할 Imports/OutUI/Housing 가구 Sprite 목록입니다.")]
+    [SerializeField] private HousingSpriteBinding[] _furnitureSprites;
 
     public bool ApplyFurniture(HousingPlacementItemData _itemData)
     {
@@ -152,24 +153,7 @@ public class HousingFurnitureSlotView : MonoBehaviour
             return null;
         }
 
-        string _fileName = Path.GetFileNameWithoutExtension(_resourceKey);
-
-        if (string.IsNullOrWhiteSpace(_fileName))
-        {
-            return null;
-        }
-
-        if (!string.IsNullOrWhiteSpace(_resourceFolder))
-        {
-            Sprite _folderSprite = Resources.Load<Sprite>($"{_resourceFolder.Trim().TrimEnd('/')}/{_fileName}");
-
-            if (_folderSprite != null)
-            {
-                return _folderSprite;
-            }
-        }
-
-        return Resources.Load<Sprite>(_fileName);
+        return HousingSpriteBinding.FindSprite(_furnitureSprites, _resourceKey);
     }
 
     private static string FindDefaultObjectName(string _locationKey)
