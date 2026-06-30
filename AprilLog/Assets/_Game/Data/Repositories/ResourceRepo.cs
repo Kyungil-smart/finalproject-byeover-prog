@@ -90,6 +90,10 @@ public class ResourceRepo : MonoBehaviour
 
         if (pauseStatus)
         {
+            // 전투/정산 중(InGame)엔 자동 저장하지 않는다. '전투 중 종료=포기'(기획 #300) 정책상
+            // 런 진행 중 CloudData(재화 등)를 강제 저장하면 포기해도 런 결과가 남아 정책이 깨진다.
+            // (정산 보상은 SaveChapterResult가 통제된 시점에 이미 저장. InGame 밖에서만 자동 저장.)
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.InGame) return;
             SaveResourceData();
         }
         else
@@ -108,7 +112,9 @@ public class ResourceRepo : MonoBehaviour
     private void OnApplicationQuit()
     {
         if (!_isInitialized || _staminaContainer == null) return;
-        
+
+        // 전투/정산 중(InGame) 종료는 '포기'라 저장하지 않는다(기획 #300, OnApplicationPause와 동일 정책).
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.InGame) return;
         SaveResourceData();
     }
     
