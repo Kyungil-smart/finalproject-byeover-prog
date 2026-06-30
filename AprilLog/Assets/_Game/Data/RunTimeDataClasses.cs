@@ -369,12 +369,29 @@ public enum CalFormula
 public class ItemContainer
 {
     private Dictionary<int, ObscuredInt> _inventory = new (); // Item_ID, 현재 보유량
+    private bool _isInitialized;
 
     public int GetItemCount(int itemId) => GetData(_inventory, itemId);
     public Dictionary<int, ObscuredInt> GetAllItems() => _inventory;
+
+    public void Initialize(Dictionary<int, ItemData> itemInfos)
+    {
+        foreach (var data in itemInfos.Values)
+        {
+            SetItemCount(data.Item_ID, 0);
+        }
+        
+        _isInitialized = true;
+    }
     
     public void AddItem(int itemId, int amount)
     {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning($"[ResourceRepo] {nameof(ItemContainer)} is not initialized. Skip.");
+            return;
+        }
+        
         if (amount <= 0)
         {
             Debug.LogError($"[ResourceRepo] Wrong Amount. No Add Item ID : {itemId}. Amount : {amount}");
@@ -391,6 +408,12 @@ public class ItemContainer
     
     public bool UseItem(int itemId, int amount)
     {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning($"[ResourceRepo] {nameof(ItemContainer)} is not initialized. Skip.");
+            return false;
+        }
+        
         int currentAmount = GetItemCount(itemId);
         
         if (amount == 0)
@@ -444,8 +467,24 @@ public class StaminaContainer
     private Dictionary<int, StaminaSlot> _slots = new ();
     public Dictionary<int, StaminaSlot> Slots => _slots;
 
+    public void Initialize(Dictionary<int, StaminaData> staminaInfos)
+    {
+        DateTime now = DateTime.Now;
+        foreach (var dbData in staminaInfos.Values)
+        {
+            int savedAmount = dbData.InitialAmount; 
+            DateTime savedTime = now; 
+
+            AddOrInitSlot(dbData, savedAmount, savedTime);
+            
+            GetSlot(dbData.Stamina_ID).CalculateOfflineRecovery(now);
+        }
+    }
+    
     public void AddOrInitSlot(StaminaData dbData, int loadedAmount, DateTime lastSavedTime)
     {
+        _slots??= new Dictionary<int, StaminaSlot>();
+        
         if (!_slots.ContainsKey(dbData.Stamina_ID))
         {
             _slots.Add(dbData.Stamina_ID, new StaminaSlot
