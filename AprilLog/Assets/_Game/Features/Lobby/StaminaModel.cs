@@ -97,6 +97,11 @@ public class StaminaModel : MonoBehaviour
         if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
         {
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
+            if (slot == null)
+            {
+                lossAmount = 0;
+                return;
+            }
             DataManager.Instance.ResourceRepo.AddStamina(StaminaId, Mathf.Max(0, amount), out lossAmount);
             GameManager.Instance.SyncAndSaveResourceCloudData();
             HandleStaminaEvent(StaminaId);
