@@ -81,6 +81,7 @@ public class StaminaModel : MonoBehaviour
         {
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
             slot.SetStamina(Mathf.Max(0, current), Mathf.Max(0, max));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
             return;
         }
         
@@ -97,6 +98,7 @@ public class StaminaModel : MonoBehaviour
         {
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
             DataManager.Instance.ResourceRepo.AddStamina(StaminaId, Mathf.Max(0, amount), out lossAmount);
+            GameManager.Instance.SyncAndSaveResourceCloudData();
             HandleStaminaEvent(StaminaId);
             return;
         }
@@ -114,6 +116,7 @@ public class StaminaModel : MonoBehaviour
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
             if (slot == null) return false;
             if(!DataManager.Instance.ResourceRepo.UseStamina(StaminaId, Mathf.Max(0, amount))) return false;
+            GameManager.Instance.SyncAndSaveResourceCloudData();
             HandleStaminaEvent(StaminaId);
             return true;
         }
@@ -132,7 +135,8 @@ public class StaminaModel : MonoBehaviour
         if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
         {
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
-            slot.SetStamina(Mathf.Max(Current, Max), Mathf.Max(0, Max));
+            slot.SetStamina(Mathf.Clamp(Current, 0, Max), Mathf.Max(1, max));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
             HandleStaminaEvent(StaminaId);
             return;
         }
