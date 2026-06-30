@@ -21,13 +21,14 @@ public static class RunStats
     public static int HighestDamage { get; private set; }   // 전체 단일타격 최고뎀
 
     // 스킬(StandardID)별 단일타격 최고뎀. 정산창 '인챈트별 최고치'용.
-    private static Dictionary<int, int> _maxBySkill = new ();
+    private static Dictionary<int, int> _maxBySkill;
     public static Dictionary<int, int> MaxBySkill => _maxBySkill;
 
     public static void Reset()
     {
         TotalDamage = 0;
         HighestDamage = 0;
+        _maxBySkill ??= new Dictionary<int, int>();
         _maxBySkill.Clear();
     }
 
@@ -35,6 +36,7 @@ public static class RunStats
     {
         TotalDamage = totalDamage;
         HighestDamage = highestDamage;
+        _maxBySkill ??= new Dictionary<int, int>();
         _maxBySkill = maxBySkill;
     }
 
