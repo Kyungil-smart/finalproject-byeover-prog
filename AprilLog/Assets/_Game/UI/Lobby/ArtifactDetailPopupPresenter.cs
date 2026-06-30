@@ -185,8 +185,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
         // 미보유(비활성) 아티팩트는 상세 정보는 보되 장착/레벨업은 할 수 없다.
         if (_equipButton != null) _equipButton.interactable = owned;
-        // 레벨업은 보유 + 최대 레벨 미만일 때만.
-        if (_levelUpButton != null) _levelUpButton.interactable = owned && inst.CanLevelUp();
+        // 레벨업 버튼은 강화(상한 미만) 또는 돌파(상한 도달) 가능할 때 활성.
+        if (_levelUpButton != null) _levelUpButton.interactable = owned && (inst.CanLevelUp() || inst.CanAscend());
 
         // 장착 버튼 라벨 : 이미 장착된 아티팩트면 '해제', 아니면 '장착'.
         if (_equipButtonLabel != null)
@@ -195,15 +195,19 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         PopulateLevelStats(gearId, inst);
     }
 
-    // 레벨업 버튼 클릭 → 현재 아티팩트를 1레벨 올리고(매니저가 비용/한도 검사) 표시를 갱신한다.
+    // 레벨업 버튼 클릭 → 상한 미만이면 1레벨 강화, 상한 도달이면 돌파(같은 장비 소모). 표시를 갱신한다.
     private void HandleLevelUpClicked()
     {
         ArtifactManager mgr = Manager;
         ArtifactInstance inst = FindInstance(CurrentGearId);
         if (mgr == null || inst == null) return;
 
-        mgr.RequestUpgrade(inst.UniqueId);   // 강화석 부족/최대 레벨이면 매니저가 무시
-        RefreshOwnedState(CurrentGearId);    // 레벨/스탯/비용/버튼 상태 다시 표시
+        if (inst.CanLevelUp())
+            mgr.RequestUpgrade(inst.UniqueId);   // 강화석 부족이면 매니저가 무시
+        else if (inst.CanAscend())
+            mgr.AscendArtifact(inst);            // 상한 도달 → 돌파(같은 장비 1개 소모)
+
+        RefreshOwnedState(CurrentGearId);        // 레벨/스탯/비용/버튼 상태 다시 표시
     }
 
     private ArtifactInstance FindInstance(int gearId)
