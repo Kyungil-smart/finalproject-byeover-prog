@@ -2,12 +2,9 @@
 // 설명   : Sort 퍼즐 View -- 슬롯 표시 + 드래그 피드백
 
 using DG.Tweening;
-using System;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.Rendering.DebugUI;
-using System.Collections;
 
 /// <summary>
 /// 퍼즐 테이블과 대기열의 시각적 표시를 담당한다. 로직 없음.
@@ -152,20 +149,36 @@ public class SortTableView : MonoBehaviour, ISortTableView
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
         if (idx >= _puzzleSlots.Length) return;
 
-        var img = _puzzleSlots[idx];
+        var sortParent = _puzzleSlots[idx].transform;
         var unitData = _unitDataManager.GetUnitData(unitType);
-       
-        if (img != null && unitData != null)
+
+        var unitImg = sortParent.Find("UnitImage")?.GetComponent<Image>();
+        var border = sortParent.Find("Border")?.GetComponent<Image>();
+
+        if (unitData != null)
         {
             // Debug.Log($"[뷰] {tableIdx}, {slotIdx}에 유닛 {unitType} 배치!");
-            img.sprite = unitData.UnitSprite;
-            img.enabled = true;
-            img.color = Color.white;
+            unitImg.sprite = unitData.UnitSprite;
+            unitImg.enabled = true;
+            unitImg.color = Color.white;
+
+            if (border != null)
+            {
+                border.enabled = true;
+            }
         }
-        
+
         else
         {
-            img.enabled = false;
+            if (unitImg != null)
+            {
+                unitImg.enabled = false;
+            }
+
+            if (border != null)
+            {
+                border.enabled = false;
+            }
         }
     }
 
@@ -174,13 +187,18 @@ public class SortTableView : MonoBehaviour, ISortTableView
         int idx = tableIdx * SortModel.SLOTS_PER_TABLE + slotIdx;
         if (idx >= _puzzleSlots.Length) return;
 
-        var img = _puzzleSlots[idx];
-        if (img != null)
+        var parent = _puzzleSlots[idx].transform;
+        var unitImg = parent.Find("UnitImage")?.GetComponent<Image>();
+        var border = parent.Find("Border")?.GetComponent<Image>();
+
+        if (unitImg != null)
         {
-            // Debug.Log($"[뷰] {tableIdx}, {slotIdx} 삭제! (sr.enabled = false)");
-            img.sprite = null;
-            img.color = Color.clear;
-            img.enabled = false;
+            unitImg.enabled = false;
+        }
+
+        if (border != null)
+        {
+            border.enabled = false;
         }
     }
 
@@ -189,19 +207,24 @@ public class SortTableView : MonoBehaviour, ISortTableView
         int idx = fromTable * SortModel.SLOTS_PER_TABLE + fromSlot;
         if (idx >= _puzzleSlots.Length) return;
 
-        var originalImg = _puzzleSlots[idx];
-        if (originalImg == null || !originalImg.enabled) return;
+        var parent = _puzzleSlots[idx].transform;
+        var unitImg = parent.Find("UnitImage")?.GetComponent<Image>();
+        var border = parent.Find("Border")?.GetComponent<Image>();
 
-        Color color = originalImg.color;
-        color.a = 0.3f;
-        originalImg.color = color;
+        if (unitImg == null) return;
 
-        if (_dragFeedbackImg != null)
-        {
-            _dragFeedbackImg.sprite = originalImg.sprite;
-            Color feedbackColor = Color.white;
-            _dragFeedbackImg.enabled = true;
-        }
+        Color originalColor = unitImg.color;
+        originalColor.a = 1.0f;
+
+        _dragFeedbackImg.sprite = unitImg.sprite;
+        _dragFeedbackImg.color = originalColor;
+        _dragFeedbackImg.enabled = true;
+
+        if (border != null) border.enabled = false;
+
+        Color transparentColor = originalColor;
+        transparentColor.a = 0.3f;
+        unitImg.color = transparentColor;
 
         UpdateDragFeedbackPosition(dragPos);
     }
@@ -220,11 +243,21 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
         foreach (var slot in _puzzleSlots)
         {
-            if (slot != null && slot.enabled)
+            if (slot == null) continue;
+
+            var unitImg = slot.transform.Find("UnitImage")?.GetComponent<Image>();
+            var border = slot.transform.Find("Border")?.GetComponent<Image>();
+
+            if (unitImg != null)
             {
-                Color c = slot.color;
+                Color c = unitImg.color;
                 c.a = 1.0f;
-                slot.color = c;
+                unitImg.color = c;
+
+                if (border != null && unitImg.enabled)
+                {
+                    border.enabled = true;
+                }
             }
         }
     }
@@ -242,20 +275,40 @@ public class SortTableView : MonoBehaviour, ISortTableView
             int slotIdx = baseSlotIdx + i;
             if (slotIdx < 0 || slotIdx >= _waitingSlots.Length) continue;
             //Debug.Log($"[매칭확인] 모델 대기열 {waitingIdx}번의 {i}번 유닛(타입:{combo.unitTypes[i]}) -> 뷰 슬롯 {slotIdx}번으로 배치");
-            var img = _waitingSlots[slotIdx];
-            if (img == null) continue;
+            var wtSortSlot = _waitingSlots[slotIdx];
+            if (wtSortSlot == null) continue;
+
+            var unitImg = wtSortSlot.transform.Find("UnitImage")?.GetComponent<Image>();
+            var border = wtSortSlot.transform.Find("Border")?.GetComponent<Image>();
 
             int unitType = combo.unitTypes[i];
             var unitData = _unitDataManager.GetUnitData(unitType);
 
-            if (unitType >= 0 && unitData.UnitSprite !=null)
+            if (unitType >= 0 && unitData != null && unitData.UnitSprite != null)
             {
-                img.sprite = unitData.UnitSprite;
-                img.enabled = true;
+                if (unitImg != null)
+                {
+                    unitImg.sprite = unitData.UnitSprite;
+                    unitImg.enabled = true;
+                }
+
+                if (border != null)
+                {
+                    border.enabled = true;
+                }
             }
+
             else
             {
-                img.enabled = false;
+                if (unitImg != null)
+                {
+                    unitImg.enabled = false;
+                }
+
+                if (border != null)
+                {
+                    border.enabled = false;
+                }
             }
         }
     }
@@ -284,7 +337,7 @@ public class SortTableView : MonoBehaviour, ISortTableView
 
     public void ShowWaitingHint()
     {
-       if (_isHintBlocked) return;
+        if (_isHintBlocked) return;
 
         foreach (var slot in _waitingSlots)
         {
