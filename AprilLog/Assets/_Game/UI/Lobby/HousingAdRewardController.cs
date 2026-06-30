@@ -250,7 +250,7 @@ public class HousingAdRewardController : MonoBehaviour
             return;
         }
 
-        _staminaModel.Recover(_safeRewardStamina);
+        _staminaModel.Recover(_safeRewardStamina, out var lossamount);
     }
 
     private void GrantDiamondReward()
