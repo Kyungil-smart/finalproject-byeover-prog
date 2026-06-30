@@ -53,6 +53,11 @@ public class ShopGachaPresenter : MonoBehaviour
     [Tooltip("POPUP_OnceGacha 의 자동 분해 보상 표시(RewardPreviewSlot). 선택.")]
     [SerializeField] private GachaDecomposeRewardView _singleDecomposeView;
 
+    [Tooltip("1회 결과창의 추가 뽑기(1회 더/10회 더) 버튼 묶음. 무료/튜토 뽑기에선 숨긴다.")]
+    [SerializeField] private GameObject _singleRedrawGroup;
+    [Tooltip("1회 결과창 확인 버튼. 추가 뽑기를 숨길 때 가운데로 옮겨 대칭을 맞춘다.")]
+    [SerializeField] private RectTransform _singleConfirmRect;
+
     [Header("10회 결과창")]
     [SerializeField] private GameObject _tenResultPopup;
     [Tooltip("미리 배치해 둔 10회 결과 슬롯(10칸)")]
@@ -194,6 +199,8 @@ public class ShopGachaPresenter : MonoBehaviour
         if (_singleDecomposeView != null)
             _singleDecomposeView.Show(post.TotalStone, post.TotalShard);
 
+        ConfigureSingleResult(hideRedraw: true);   // 무료 뽑기는 추가 뽑기 숨김 + 확인 가운데
+
         if (_singleResultPopup != null)
             _singleResultPopup.SetActive(true);
 
@@ -230,7 +237,15 @@ public class ShopGachaPresenter : MonoBehaviour
 
         int cost = GetCost(count);
 
-        // 재화 체크 & 차감 (비용 0 이면 항상 통과)
+        // 비용 0(무료/광고 전용 상자)은 일반 뽑기로 뽑을 수 없다. 무료 뽑기는 광고/쿨타임 흐름(FreeDrawSingle) 전용.
+        // (이게 없으면 결과창 '1회 더'/상점 '1회 뽑기'로 무료 상자를 무한 뽑을 수 있다 — 이슈 #198)
+        if (cost <= 0)
+        {
+            Debug.LogWarning($"[ShopGachaPresenter] 무료/비용 미설정 가챠(id:{_gachaId})는 일반 뽑기로 뽑을 수 없습니다. 광고/쿨타임 전용.", this);
+            return;
+        }
+
+        // 재화 체크 & 차감
         if (!TrySpend(cost))
         {
             ShowInsufficient();
@@ -248,6 +263,10 @@ public class ShopGachaPresenter : MonoBehaviour
         // 자동 분해 보상 → 이 결과 팝업의 RewardPreviewSlot 에 표시(없으면 슬롯 전부 끔).
         if (decomposeView != null)
             decomposeView.Show(post.TotalStone, post.TotalShard);
+
+        // 유료 뽑기는 추가 뽑기 버튼을 보이고 확인 버튼을 원위치로(무료 뽑기에서 바뀐 상태 복구).
+        if (resultPopup == _singleResultPopup)
+            ConfigureSingleResult(hideRedraw: false);
 
         // 누적 보상 → 결과 확인 후 메인 복귀 시점에 별도 팝업으로 출력하도록 큐에 적재.
         if (_popupQueue != null)
@@ -292,8 +311,32 @@ public class ShopGachaPresenter : MonoBehaviour
 
         GrantTutorialUpgradeMaterials();
 
+        ConfigureSingleResult(hideRedraw: true);   // 튜토 뽑기도 추가 뽑기 숨김 + 확인 가운데
+
         if (resultPopup != null)
             resultPopup.SetActive(true);
+    }
+
+    // 1회 결과창의 추가 뽑기 버튼 표시/숨김 + 확인 버튼 위치(가운데 정렬) 전환.
+    private bool _confirmXCached;
+    private float _confirmDefaultX;
+
+    private void ConfigureSingleResult(bool hideRedraw)
+    {
+        if (_singleRedrawGroup != null)
+            _singleRedrawGroup.SetActive(!hideRedraw);
+
+        if (_singleConfirmRect != null)
+        {
+            if (!_confirmXCached)
+            {
+                _confirmDefaultX = _singleConfirmRect.anchoredPosition.x;
+                _confirmXCached = true;
+            }
+            Vector2 p = _singleConfirmRect.anchoredPosition;
+            p.x = hideRedraw ? 0f : _confirmDefaultX;
+            _singleConfirmRect.anchoredPosition = p;
+        }
     }
 
     // 튜토리얼 강화·돌파에 필요한 재료를 지급한다(강화석/골드/돌파용 중복 인장)
