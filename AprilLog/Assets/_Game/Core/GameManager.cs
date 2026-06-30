@@ -1145,7 +1145,7 @@ public class GameManager : MonoBehaviour
             // 기록
             totalDamage = RunStats.HighestDamage,
             highestDamage =  RunStats.HighestDamage,
-            MaxBySkill = RunStats.MaxBySkill,
+            MaxBySkill = RunStats.ExportMaxBySkill(),
             maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0
         };
 

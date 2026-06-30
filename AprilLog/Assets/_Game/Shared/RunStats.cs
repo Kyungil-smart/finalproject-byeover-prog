@@ -21,7 +21,7 @@ public static class RunStats
     public static int HighestDamage { get; private set; }   // 전체 단일타격 최고뎀
 
     // 스킬(StandardID)별 단일타격 최고뎀. 정산창 '인챈트별 최고치'용.
-    private static Dictionary<int, int> _maxBySkill;
+    private static Dictionary<int, int> _maxBySkill = new ();
     public static Dictionary<int, int> MaxBySkill => _maxBySkill;
 
     public static void Reset()
@@ -32,12 +32,12 @@ public static class RunStats
         _maxBySkill.Clear();
     }
 
-    public static void RestoreFromSave(int totalDamage, int highestDamage, Dictionary<int, int> maxBySkill)
+    public static void RestoreFromSave(int totalDamage, int highestDamage, List<MaxBySkillSaveData> maxBySkill)
     {
         TotalDamage = totalDamage;
         HighestDamage = highestDamage;
         _maxBySkill ??= new Dictionary<int, int>();
-        _maxBySkill = maxBySkill;
+        _maxBySkill = LoadMaxBySkill(maxBySkill);
     }
 
     public static void AddDamage(int amount) => AddDamage(amount, 0);
@@ -52,6 +52,7 @@ public static class RunStats
 
         if (skillId != 0)
         {
+            _maxBySkill ??= new Dictionary<int, int>();
             if (!_maxBySkill.TryGetValue(skillId, out int cur) || amount > cur)
                 _maxBySkill[skillId] = amount;
         }
@@ -64,10 +65,44 @@ public static class RunStats
     /// <summary>최고뎀 상위 count개를 (skillId, maxDamage) 내림차순으로 반환. 정산 인챈트별 표시용.</summary>
     public static List<KeyValuePair<int, int>> TopSkillsByDamage(int count)
     {
+        if(_maxBySkill == null ||_maxBySkill.Count == 0) 
+            return new List<KeyValuePair<int, int>>();
+        
         var list = new List<KeyValuePair<int, int>>(_maxBySkill);
         list.Sort((a, b) => b.Value.CompareTo(a.Value));
         if (count >= 0 && list.Count > count)
             list.RemoveRange(count, list.Count - count);
+        return list;
+    }
+
+    private static Dictionary<int, int> LoadMaxBySkill(List<MaxBySkillSaveData> saveData)
+    {
+        if(saveData.Count <= 0) return new Dictionary<int, int>();
+        
+        var dict = new Dictionary<int, int>();
+        foreach (var data in saveData)
+        {
+            dict.TryAdd(data.skillId, data.maxDamage);
+        }
+        
+        return dict;
+    }
+    
+    public static List<MaxBySkillSaveData> ExportMaxBySkill()
+    {
+        if (_maxBySkill == null || _maxBySkill.Count == 0) return new List<MaxBySkillSaveData>();
+
+        var list = new List<MaxBySkillSaveData>();
+        foreach (var data in _maxBySkill)
+        {
+            var temp = new MaxBySkillSaveData
+            {
+                skillId = data.Key,
+                maxDamage = data.Value
+            };
+            list.Add(temp);
+        }
+        
         return list;
     }
 }
