@@ -5,6 +5,7 @@
 // 2차 수정자 : 조규민
 // 수정 내용 : 보유 인챈트 목록에서 선택된 인챈트 데이터를 Presenter로 전달하고 정보 테이블 미연결 시 NullReference 방지
 //           선택 버튼 참조가 비어 있으면 같은 오브젝트의 Button을 사용하도록 방어
+//           스킬·스탯 보유 인챈트의 레벨 TMP를 자동 복구하고 Lv.n 형식으로 표시
 
 using System;
 using UnityEngine;
@@ -13,8 +14,9 @@ using TMPro;
 
 public class EnchantChangeSelectButtonUI : MonoBehaviour
 {
-    [Header("UI Elements")]
+    [Header("UI 요소")]
     [SerializeField] private Image _skillImage;
+    [Tooltip("보유 인챈트의 현재 레벨을 표시할 텍스트")]
     [SerializeField] private TextMeshProUGUI _skillLevelText;
     [SerializeField] private Button _selectButton;
     [Tooltip("정보를 넘겨줄 정보테이블 UI")]
@@ -54,10 +56,7 @@ public class EnchantChangeSelectButtonUI : MonoBehaviour
             return;
         }
 
-        if(_skillLevelText != null)
-        {
-            _skillLevelText.text = _enchantDisplayData.Level.ToString();
-        }
+        SetLevelText(_enchantDisplayData.Level);
 
         if (_skillImage != null)
         {
@@ -70,9 +69,10 @@ public class EnchantChangeSelectButtonUI : MonoBehaviour
     {
         _enchantDisplayData = null;
 
-        if (_skillLevelText != null)
+        TextMeshProUGUI _levelText = GetLevelText();
+        if (_levelText != null)
         {
-            _skillLevelText.text = string.Empty;
+            _levelText.text = string.Empty;
         }
 
         if (_skillImage != null)
@@ -103,5 +103,35 @@ public class EnchantChangeSelectButtonUI : MonoBehaviour
 
         _selectButton = GetComponent<Button>();
         return _selectButton;
+    }
+
+    private void SetLevelText(int _level)
+    {
+        TextMeshProUGUI _levelText = GetLevelText();
+        if (_levelText == null)
+        {
+            Debug.LogWarning("[EnchantChangeSelectButtonUI] 레벨 Text (TMP) 참조를 찾을 수 없습니다.", this);
+            return;
+        }
+
+        if (!_levelText.gameObject.activeSelf)
+        {
+            _levelText.gameObject.SetActive(true);
+        }
+
+        _levelText.enabled = true;
+        _levelText.canvasRenderer.SetAlpha(1f);
+        _levelText.SetText("Lv.{0}", Mathf.Max(1, _level));
+    }
+
+    private TextMeshProUGUI GetLevelText()
+    {
+        if (_skillLevelText != null)
+        {
+            return _skillLevelText;
+        }
+
+        _skillLevelText = GetComponentInChildren<TextMeshProUGUI>(true);
+        return _skillLevelText;
     }
 }
