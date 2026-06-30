@@ -300,6 +300,10 @@ public class ArtifactManager : MonoBehaviour
         OnInventoryUpdated?.Invoke();
     }
 
+    /// <summary>
+    /// 레전더리 조각 증가 - 이거 쓰세요. 이제 직접 증감 안됩니다.
+    /// </summary>
+    /// <param name="amount"></param>
     public void AddShard(int amount)
     {
         var repo = DataManager.Instance.ResourceRepo;
@@ -315,6 +319,10 @@ public class ArtifactManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 레전더리 조각 소모 - 이거 쓰세요. 이제 직접 증감 안됩니다.
+    /// </summary>
+    /// <param name="amount"></param>
     public void UseShard(int amount)
     {
         var repo = DataManager.Instance.ResourceRepo;
@@ -330,6 +338,10 @@ public class ArtifactManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 강화석 증가 - 이거 쓰세요. 이제 직접 증감 안됩니다.
+    /// </summary>
+    /// <param name="amount"></param>
     public void AddStone(int amount)
     {
         var repo = DataManager.Instance.ResourceRepo;
@@ -344,7 +356,30 @@ public class ArtifactManager : MonoBehaviour
             _localUpgradeStones += Mathf.Max(0, amount);
         }
     }
+
+    /// <summary>
+    /// 강화석 소모 - 이거 쓰세요. 이제 직접 증감 안됩니다.
+    /// </summary>
+    /// <param name="amount"></param>
+    public void UseStone(int amount)
+    {
+        var repo = DataManager.Instance.ResourceRepo;
+        
+        if (DataManager.Instance != null)
+        {
+            repo.UseItem(UpgradeStoneId, Mathf.Max(0, amount));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+        }
+        else
+        {
+            _localUpgradeStones -= Mathf.Max(0, amount);
+        }
+    }
     
+    /// <summary>
+    /// 레전더리 조각 설정 - 이거 쓰세요. 이제 직접 증감 안됩니다.
+    /// </summary>
+    /// <param name="amount"></param>
     public void SetShard(int amount)
     {
         if(DataManager.Instance != null)
@@ -355,6 +390,23 @@ public class ArtifactManager : MonoBehaviour
         else
         {
             _localLegendaryShard = Mathf.Max(0, amount);
+        }
+    }
+    
+    /// <summary>
+    /// 강화석 설정 - 이거 쓰세요. 이제 직접 증감 안됩니다.
+    /// </summary>
+    /// <param name="amount"></param>
+    public void SetStone(int amount)
+    {
+        if(DataManager.Instance != null)
+        {
+            DataManager.Instance.ResourceRepo.SetItemCount(UpgradeStoneId, Mathf.Max(0, amount));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+        }
+        else
+        {
+            _localUpgradeStones = Mathf.Max(0, amount);
         }
     }
 }

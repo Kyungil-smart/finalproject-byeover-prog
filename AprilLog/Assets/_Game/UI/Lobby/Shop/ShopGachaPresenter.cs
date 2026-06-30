@@ -302,7 +302,7 @@ public class ShopGachaPresenter : MonoBehaviour
         ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
         if (mgr != null)
         {
-            mgr.UpgradeStone += _tutorialGrantStone;   // 레벨업용 강화석
+            mgr.AddStone(_tutorialGrantStone);          // 레벨업용 강화석
             mgr.AddArtifact(_tutorialSealGearId);       // 돌파용 중복 인장
         }
         if (GameManager.Instance != null && _tutorialGrantGold > 0)
