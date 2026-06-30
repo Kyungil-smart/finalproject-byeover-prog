@@ -1,6 +1,9 @@
 // 생성자 : 김영찬
 // 인첸트 교체 UI를 구동하기 위한 스크립트 -- View
 
+// 수정자 : 조규민
+// 수정 내용 : 보유 인챈트 목록 복원 후 교체 슬롯이 비거나 버튼 수보다 목록이 적을 때 이전 표시/인덱스 오류가 남지 않도록 수정
+
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -32,13 +35,21 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
 
     private void Awake()
     {
-        _confirmButton.onClick.AddListener(() => 
+        if (_confirmButton != null)
         {
-            if (_selectedDiscardNameId != -1)
-                OnDiscardConfirmed?.Invoke(_selectedDiscardNameId);
-        });
+            _confirmButton.onClick.AddListener(() => 
+            {
+                if (_selectedDiscardNameId != -1)
+                {
+                    OnDiscardConfirmed?.Invoke(_selectedDiscardNameId);
+                }
+            });
+        }
 
-        _cancelButton.onClick.AddListener(() => OnCancelClicked?.Invoke());
+        if (_cancelButton != null)
+        {
+            _cancelButton.onClick.AddListener(() => OnCancelClicked?.Invoke());
+        }
     }
 
     // Presenter가 새 인챈트 정보를 줄 때
@@ -50,31 +61,36 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
     // Presenter가 보유 중인 인챈트 목록을 줄 때
     public void SetOwnedEnchantList(List<EnchantDisplayData> ownedList)
     {
+        _selectedDiscardNameId = -1;
+
         if(_changeSkillSelectButtons == null)
         {
             Debug.LogWarning("ChangeSkillSelectButtons Not Serialized");
             return;
         }
-        
-        if(ownedList.Count <= 0)
-        {
-            Debug.LogWarning("Owned List is Empty");
-            return;
-        }
 
         for (int i = 0; i < _changeSkillSelectButtons.Length; i++)
         {
-            _changeSkillSelectButtons[i].interactable = ownedList[i] != null;
-            if(_changeSkillSelectButtons[i].gameObject.activeInHierarchy)
+            EnchantDisplayData _ownedData = ownedList != null && i < ownedList.Count ? ownedList[i] : null;
+            Button _button = _changeSkillSelectButtons[i];
+            if (_button == null)
             {
-                var buttonUI = _changeSkillSelectButtons[i].GetComponent<EnchantChangeSelectButtonUI>();
-                buttonUI.SetInfo(ownedList[i]);
-                buttonUI.OnEnchantSelected += SetDiscardName;
+                continue;
             }
-            else
+
+            EnchantChangeSelectButtonUI _buttonUI = _button.GetComponent<EnchantChangeSelectButtonUI>();
+            if (_buttonUI != null)
             {
-                var buttonUI = _changeSkillSelectButtons[i].GetComponent<EnchantChangeSelectButtonUI>();
-                buttonUI.OnEnchantSelected -= SetDiscardName;
+                _buttonUI.OnEnchantSelected -= SetDiscardName;
+                _buttonUI.SetInfo(_ownedData);
+            }
+
+            _button.interactable = _ownedData != null;
+            _button.gameObject.SetActive(_ownedData != null);
+
+            if (_ownedData != null && _buttonUI != null)
+            {
+                _buttonUI.OnEnchantSelected += SetDiscardName;
             }
         }
     }

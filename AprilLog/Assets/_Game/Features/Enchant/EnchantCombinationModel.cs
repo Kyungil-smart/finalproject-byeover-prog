@@ -1,6 +1,9 @@
 // 작성자 : 김영찬
 // 내용 : 인첸트 모델의 스킬 선택 목록을 보고 해당 데이터 중 조합 스킬에 대한 처리를 담당함
 
+// 수정자 : 조규민
+// 수정 내용 : 이어하기 복원 중 EnchantModel 재초기화 시 조합 인챈트 이벤트가 중복 구독되지 않도록 수정
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -34,6 +37,7 @@ public class EnchantCombinationModel : MonoBehaviour
             return; // 그래도 없으면 이벤트 구독 스킵 (크래시 방지)
         }
         
+        UnbindModelEvents();
         _model.OnSkillAcquired += HandleSkillAcquired;
         _model.OnSkillLevelUp += HandleSkillLevelUp;
         _model.OnSkillRemoved += HandleSkillRemoved;
@@ -41,8 +45,16 @@ public class EnchantCombinationModel : MonoBehaviour
 
     public void Discard()
     {
-        if(_model != null) return;
-        
+        if(_model == null)
+        {
+            return;
+        }
+
+        UnbindModelEvents();
+    }
+
+    private void UnbindModelEvents()
+    {
         _model.OnSkillAcquired -= HandleSkillAcquired;
         _model.OnSkillLevelUp -= HandleSkillLevelUp;
         _model.OnSkillRemoved -= HandleSkillRemoved;

@@ -2,7 +2,10 @@
 // 인첸트 목록 UI를 구동하기 위한 스크립트 -- View
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 선택된 인챈트 목록 탭 버튼의 배경과 텍스트 색상을 상태에 맞게 갱신
+// 수정 내용 :
+// 선택된 인챈트 목록 탭 버튼의 배경과 텍스트 색상을 상태에 맞게 갱신
+// 보유 인챈트 선택 시 상세 정보 테이블이 갱신되도록 선택 이벤트와 빈 슬롯 방어 추가
+// 보유 인챈트 설명 영역인 EnchantChangeGuideText도 선택된 인챈트 설명으로 갱신
 
 using System;
 using System.Collections.Generic;
@@ -33,10 +36,18 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
     [Header("Skill Panel")]
     [Tooltip("인첸트 변경때 사용한 버튼과 구성이 동일")]
     [SerializeField] Button[] _skillChangeButtons;
+    [Tooltip("스킬 인챈트 선택 시 이름, 타입, 설명, 아이콘을 표시할 정보 테이블")]
+    [SerializeField] private EnchantChangeInfoTableUI _skillInfoTable;
+    [Tooltip("스킬 인챈트 선택 시 설명을 표시할 안내 텍스트")]
+    [SerializeField] private TMP_Text _skillGuideText;
     
     [Header("Stat Panel")]
     [Tooltip("인첸트 변경때 사용한 버튼과 구성이 동일")]
     [SerializeField] Button[] _statChangeButtons;
+    [Tooltip("스탯 인챈트 선택 시 이름, 타입, 설명, 아이콘을 표시할 정보 테이블")]
+    [SerializeField] private EnchantChangeInfoTableUI _statInfoTable;
+    [Tooltip("스탯 인챈트 선택 시 설명을 표시할 안내 텍스트")]
+    [SerializeField] private TMP_Text _statGuideText;
 
     [Header("참조")] 
     [Tooltip("옵션 버튼의 활성화를 위함 : 스킬 선택창에서 넘어오면 이 UI가 활성화 > 정지 버튼을 눌러서 진입한것이 아니게 됨")]
@@ -50,12 +61,15 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
     private Image _statSelectButtonImage;
     private TMP_Text _skillSelectButtonText;
     private TMP_Text _statSelectButtonText;
+    private const string _emptyGuideText = "인챈트를 선택하세요";
     private bool _isSkillTabSelected = true;
     
     private bool _isInitialized;
     public bool IsInitialized => _isInitialized;
     
     public event Action<bool> OnEnabled;
+    public event Action<EnchantDisplayData> OnSkillEnchantSelected;
+    public event Action<EnchantDisplayData> OnStatEnchantSelected;
 
     public void Init()
     {
@@ -199,41 +213,207 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
         }
     }
     
-    public void SetOwnedSkillList(List<EnchantDisplayData> ownedSkillList)
+    public void SetOwnedSkillList(List<EnchantDisplayData> _ownedSkillList)
     {
-        if(_skillChangeButtons == null || _statChangeButtons == null)
+        if(_skillChangeButtons == null)
         {
             Debug.LogWarning("SkillSelectButtons Not Serialized");
             return;
         }
 
-        if (ownedSkillList.Count > 0)
+        _skillInfoTable = ResolveInfoTable(_skillInfoTable, _skillPanel, _skillChangeButtons);
+        _skillGuideText = ResolveGuideText(_skillGuideText, _skillPanel);
+        SetOwnedEnchantList(_skillChangeButtons, _ownedSkillList, HandleSkillEnchantSelected);
+    }
+
+    public void SetOwnedStatList(List<EnchantDisplayData> _ownedStatList)
+    {
+        if(_statChangeButtons == null)
         {
-            for (int i = 0; i < _skillChangeButtons.Length; i++)
+            Debug.LogWarning("StatSelectButtons Not Serialized");
+            return;
+        }
+
+        _statInfoTable = ResolveInfoTable(_statInfoTable, _statPanel, _statChangeButtons);
+        _statGuideText = ResolveGuideText(_statGuideText, _statPanel);
+        SetOwnedEnchantList(_statChangeButtons, _ownedStatList, HandleStatEnchantSelected);
+    }
+
+    public void SetSelectedSkillEnchantInfo(EnchantDisplayData _selectedData)
+    {
+        if (_selectedData == null)
+        {
+            ClearSelectedSkillEnchantInfo();
+            return;
+        }
+
+        _skillInfoTable = ResolveInfoTable(_skillInfoTable, _skillPanel, _skillChangeButtons);
+        _skillGuideText = ResolveGuideText(_skillGuideText, _skillPanel);
+        SetSelectedEnchantInfo(_skillInfoTable, _selectedData, "SkillInfoTable Not Serialized");
+        SetGuideText(_skillGuideText, _selectedData.Description);
+    }
+
+    public void SetSelectedStatEnchantInfo(EnchantDisplayData _selectedData)
+    {
+        if (_selectedData == null)
+        {
+            ClearSelectedStatEnchantInfo();
+            return;
+        }
+
+        _statInfoTable = ResolveInfoTable(_statInfoTable, _statPanel, _statChangeButtons);
+        _statGuideText = ResolveGuideText(_statGuideText, _statPanel);
+        SetSelectedEnchantInfo(_statInfoTable, _selectedData, "StatInfoTable Not Serialized");
+        SetGuideText(_statGuideText, _selectedData.Description);
+    }
+
+    public void ClearSelectedSkillEnchantInfo()
+    {
+        _skillInfoTable = ResolveInfoTable(_skillInfoTable, _skillPanel, _skillChangeButtons);
+        _skillGuideText = ResolveGuideText(_skillGuideText, _skillPanel);
+        _skillInfoTable?.ClearInfo();
+        SetGuideText(_skillGuideText, _emptyGuideText);
+    }
+
+    public void ClearSelectedStatEnchantInfo()
+    {
+        _statInfoTable = ResolveInfoTable(_statInfoTable, _statPanel, _statChangeButtons);
+        _statGuideText = ResolveGuideText(_statGuideText, _statPanel);
+        _statInfoTable?.ClearInfo();
+        SetGuideText(_statGuideText, _emptyGuideText);
+    }
+
+    private void SetOwnedEnchantList(Button[] _buttons, List<EnchantDisplayData> _ownedList, Action<EnchantDisplayData> _onSelected)
+    {
+        int _ownedCount = _ownedList == null ? 0 : _ownedList.Count;
+
+        for (int _index = 0; _index < _buttons.Length; _index++)
+        {
+            Button _button = _buttons[_index];
+            if (_button == null)
             {
-                _skillChangeButtons[i].interactable = ownedSkillList.Count > i;
-                if(_skillChangeButtons[i].gameObject.activeInHierarchy)
-                {
-                    var buttonUI = _skillChangeButtons[i].GetComponent<EnchantChangeSelectButtonUI>();
-                    buttonUI.SetInfo(ownedSkillList[i]);
-                }
+                continue;
             }
+
+            EnchantChangeSelectButtonUI _buttonUI = _button.GetComponent<EnchantChangeSelectButtonUI>();
+            if (_buttonUI == null)
+            {
+                _button.interactable = false;
+                continue;
+            }
+
+            _buttonUI.OnEnchantDisplaySelected -= _onSelected;
+
+            bool _hasData = _index < _ownedCount && _ownedList[_index] != null;
+            _button.interactable = _hasData;
+            if (!_hasData)
+            {
+                _buttonUI.ClearInfo();
+                continue;
+            }
+
+            _buttonUI.SetInfo(_ownedList[_index]);
+            _buttonUI.OnEnchantDisplaySelected += _onSelected;
         }
     }
 
-    public void SetOwnedStatList(List<EnchantDisplayData> ownedStatList)
+    private EnchantChangeInfoTableUI ResolveInfoTable(EnchantChangeInfoTableUI _currentTable, GameObject _panel, Button[] _buttons)
     {
-        if (ownedStatList.Count > 0)
+        if (_currentTable != null)
         {
-            for (int i = 0; i < _statChangeButtons.Length; i++)
+            return _currentTable;
+        }
+
+        if (_panel != null)
+        {
+            EnchantChangeInfoTableUI _panelTable = _panel.GetComponentInChildren<EnchantChangeInfoTableUI>(true);
+            if (_panelTable != null)
             {
-                _skillChangeButtons[i].interactable = ownedStatList.Count > i;
-                if(_skillChangeButtons[i].gameObject.activeInHierarchy)
-                {
-                    var buttonUI = _skillChangeButtons[i].GetComponent<EnchantChangeSelectButtonUI>();
-                    buttonUI.SetInfo(ownedStatList[i]);
-                }
+                return _panelTable;
             }
         }
+
+        return GetInfoTableFromButtons(_buttons);
+    }
+
+    private EnchantChangeInfoTableUI GetInfoTableFromButtons(Button[] _buttons)
+    {
+        if (_buttons == null)
+        {
+            return null;
+        }
+
+        for (int _index = 0; _index < _buttons.Length; _index++)
+        {
+            Button _button = _buttons[_index];
+            if (_button == null)
+            {
+                continue;
+            }
+
+            EnchantChangeSelectButtonUI _buttonUI = _button.GetComponent<EnchantChangeSelectButtonUI>();
+            if (_buttonUI != null && _buttonUI.InfoTableUI != null)
+            {
+                return _buttonUI.InfoTableUI;
+            }
+        }
+
+        return null;
+    }
+
+    private TMP_Text ResolveGuideText(TMP_Text _currentText, GameObject _panel)
+    {
+        if (_currentText != null)
+        {
+            return _currentText;
+        }
+
+        if (_panel == null)
+        {
+            return null;
+        }
+
+        TMP_Text[] _texts = _panel.GetComponentsInChildren<TMP_Text>(true);
+        for (int _index = 0; _index < _texts.Length; _index++)
+        {
+            TMP_Text _text = _texts[_index];
+            if (_text != null && _text.gameObject.name == "EnchantChangeGuideText (TMP)")
+            {
+                return _text;
+            }
+        }
+
+        return null;
+    }
+
+    private void SetGuideText(TMP_Text _guideText, string _text)
+    {
+        if (_guideText == null)
+        {
+            return;
+        }
+
+        _guideText.text = string.IsNullOrWhiteSpace(_text) ? _emptyGuideText : _text;
+    }
+
+    private void SetSelectedEnchantInfo(EnchantChangeInfoTableUI _infoTable, EnchantDisplayData _selectedData, string _warningMessage)
+    {
+        if (_infoTable == null)
+        {
+            Debug.LogWarning(_warningMessage);
+            return;
+        }
+
+        _infoTable.SetInfo(_selectedData);
+    }
+
+    private void HandleSkillEnchantSelected(EnchantDisplayData _selectedData)
+    {
+        OnSkillEnchantSelected?.Invoke(_selectedData);
+    }
+
+    private void HandleStatEnchantSelected(EnchantDisplayData _selectedData)
+    {
+        OnStatEnchantSelected?.Invoke(_selectedData);
     }
 }

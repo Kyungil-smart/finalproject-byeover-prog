@@ -1,13 +1,12 @@
 ﻿//담당자: 조규민
+// 하우징 시간 누적 보상 팝업의 표시와 입력 전달을 담당합니다.
+// 시간당 생산량 표시는 누적 수령량이 아닌 Model의 생산량 값을 사용하도록 변경
 
 using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// 하우징 시간 누적 보상 팝업의 표시와 입력 전달을 담당합니다.
-/// </summary>
 public class HousingIdleRewardPopupView : MonoBehaviour
 {
     [Header("루트")]
@@ -28,7 +27,7 @@ public class HousingIdleRewardPopupView : MonoBehaviour
     [SerializeField] private Image _parchmentIconImage;
     [SerializeField] private Image _diamondIconImage;
 
-    [Header("수령 가능 수량")]
+    [Header("시간당 생산량")]
     [SerializeField] private TextMeshProUGUI _goldAmountText;
     [SerializeField] private TextMeshProUGUI _parchmentAmountText;
     [SerializeField] private TextMeshProUGUI _diamondAmountText;
@@ -180,9 +179,9 @@ public class HousingIdleRewardPopupView : MonoBehaviour
 
     private void SetRewardTexts(HousingIdleRewardState _state)
     {
-        SetText(_goldAmountText, FormatAmount(_state.GoldReward) + "/h");
-        SetText(_parchmentAmountText, FormatAmount(_state.ParchmentReward) + "/h");
-        SetText(_diamondAmountText, FormatAmount(_state.DiamondReward) + "/h");
+        SetText(_goldAmountText, FormatAmount(_state.GoldPerHour) + "/h");
+        SetText(_parchmentAmountText, FormatAmount(_state.ParchmentPerHour) + "/h");
+        SetText(_diamondAmountText, FormatAmount(_state.DiamondPerHour) + "/h");
         SetText(_goldRewardText, FormatAmount(_state.GoldReward));
         SetText(_parchmentRewardText, FormatAmount(_state.ParchmentReward));
         SetText(_diamondRewardText, FormatAmount(_state.DiamondReward));

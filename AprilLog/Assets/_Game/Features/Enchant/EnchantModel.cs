@@ -7,6 +7,9 @@
 // 수정자 : 김영찬
 // 설명 : 새로운 인첸트 선택 로직에 필요한 변수 및 제어함수 추가
 
+// 수정자 : 조규민
+// 수정 내용 : 저장된 인챈트 복원 후 UIModel 표시 목록을 즉시 갱신해 인챈트 교체 창에 기존 보유 인챈트가 표시되도록 수정
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -226,25 +229,41 @@ public class EnchantModel : MonoBehaviour
     public void RestoreFromSave(List<AcquiredEnchantSaveData> saves)
     {
         Initialize(); 
-        if (saves == null || saves.Count == 0) return;
+        if (saves == null || saves.Count == 0)
+        {
+            _uiModel?.RefreshAll();
+            return;
+        }
 
         foreach (var save in saves)
         {
             int targetId = save.EnchantId;
-            int targetLevel = save.Level;   // 복원 레벨은 save.Level. (옛 코드가 save.EnchantId를 넣어 레벨이 ID값으로 손상됐음)
+            int targetLevel = Mathf.Max(1, save.Level);   // 복원 레벨은 save.Level. (옛 코드가 save.EnchantId를 넣어 레벨이 ID값으로 손상됐음)
 
             // 스킬 테이블에서 검색
             int? skillGroupId = FindSkillGroupId(targetId);
             if (skillGroupId.HasValue)
             {
                 var chain = DataManager.Instance.SpellRepo.GetSkillChainByName(skillGroupId.Value, targetId);
+                if (chain == null)
+                {
+                    Debug.LogWarning($"[EnchantModel] SkillChain restore failed. group={skillGroupId.Value}, name={targetId}");
+                    continue;
+                }
+
                 var data = chain.GetNextLevelData(targetLevel - 1); 
+                if (data == null)
+                {
+                    Debug.LogWarning($"[EnchantModel] Skill restore failed. name={targetId}, level={targetLevel}");
+                    continue;
+                }
 
                 _ownedSkills[targetId] = new AcquiredSkillData { 
                     Level = targetLevel, 
                     GroupID = skillGroupId.Value,
                     Data = data
                 };
+                continue;
             }
 
             // 스탯 테이블에서 검색
@@ -252,7 +271,18 @@ public class EnchantModel : MonoBehaviour
             if (statGroupId.HasValue)
             {
                 var chain = DataManager.Instance.SpellRepo.GetStatChainByName(statGroupId.Value, targetId);
+                if (chain == null)
+                {
+                    Debug.LogWarning($"[EnchantModel] StatChain restore failed. group={statGroupId.Value}, name={targetId}");
+                    continue;
+                }
+
                 var data = chain.GetNextLevelData(targetLevel - 1);
+                if (data == null)
+                {
+                    Debug.LogWarning($"[EnchantModel] Stat restore failed. name={targetId}, level={targetLevel}");
+                    continue;
+                }
 
                 _ownedStats[targetId] = new AcquiredStatData
                 {
@@ -265,6 +295,8 @@ public class EnchantModel : MonoBehaviour
 
             Debug.LogWarning($"[EnchantModel] 세이브 복구 실패. 삭제되었거나 유효하지 않은 인챈트 ID: {targetId}");
         }
+
+        _uiModel?.RefreshAll();
     }
 
     public List<AcquiredEnchantSaveData> ToSaveData()
