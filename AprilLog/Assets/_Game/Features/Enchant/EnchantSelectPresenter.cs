@@ -20,6 +20,9 @@
 // 4차 수정자 : 김영찬
 // 수정 내용 : 리롤 시 리롤 전 인첸트가 중복 등장하지 않도록 수정
 
+// 5수정자 : 홍정옥
+// 수정 내용 : 튜토리얼 최초 인챈트 선택 시 고정 후보 3장 표시 및 해당 튜토리얼 팝업에서만 리롤 차단
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -44,6 +47,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     private List<EnchantCandidate> _currentChoices;
     private int _rerollRemaining;
     private int _pickCount = 3;     // 리롤 시 같은 개수로 다시 뽑기 위해 보관
+    private bool _isTutorialFixedChoices;
     
     // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
     private HashSet<int> _seenEnchantIds = new HashSet<int>();
@@ -78,9 +82,18 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     {
         _pickCount = pickCount;
         _rerollRemaining = _baseRerollCount;
+        _isTutorialFixedChoices = false;
         
         _seenEnchantIds.Clear();
-        
+
+        if (TutorialFirstEnchantSelectionOverride.TryConsumeFixedChoices(_model, _repo, out _currentChoices))
+        {
+            _pickCount = _currentChoices.Count;
+            _isTutorialFixedChoices = true;
+            DisplayChoicesToView();
+            return;
+        }
+
         GenerateChoices(pickCount);
         DisplayChoicesToView();
     }
@@ -100,6 +113,8 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 EnchantSelector가 처리).
     private void HandleReroll()
     {
+        if (_isTutorialFixedChoices) return;
+
         Debug.Log($"[Reroll] HandleReroll 진입 remaining={(_unlimitedReroll ? "무한" : _rerollRemaining.ToString())}");
         if (!_unlimitedReroll)
         {
@@ -123,6 +138,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
 
     private void HandleCardReroll(int index)
     {
+        if (_isTutorialFixedChoices) return;
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
         
@@ -193,7 +209,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         
         _view.SetChoices(displayData);
         // 무한(테스트2 씬)이면 항상 사용 가능 + 남은 횟수 -1(View에서 ∞ 표시).
-        _view.SetRerollAvailable(_unlimitedReroll || _baseRerollCount > 0, _unlimitedReroll ? -1 : _rerollRemaining);
+        _view.SetRerollAvailable(!_isTutorialFixedChoices && (_unlimitedReroll || _baseRerollCount > 0), _isTutorialFixedChoices ? 0 : (_unlimitedReroll ? -1 : _rerollRemaining));
     }
 
     // ---------- 유저 클릭 처리 ----------
@@ -207,6 +223,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
             if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
             {
                 _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
+                ClearTutorialFixedChoiceState();
                 ClosePopup(); 
             }
             else
@@ -219,6 +236,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
             if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
             {
                 _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
+                ClearTutorialFixedChoiceState();
                 ClosePopup();
             }
             else
@@ -230,11 +248,20 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     
     private void HandleSkip()
     {
+        ClearTutorialFixedChoiceState();
         ClosePopup();
     }
 
     private void ClosePopup()
     {
         _navigator.OnCloseButtonClick();
+    }
+
+    private void ClearTutorialFixedChoiceState()
+    {
+        if (!_isTutorialFixedChoices) return;
+
+        _isTutorialFixedChoices = false;
+        TutorialFirstEnchantSelectionOverride.ClearFixedChoiceState();
     }
 }

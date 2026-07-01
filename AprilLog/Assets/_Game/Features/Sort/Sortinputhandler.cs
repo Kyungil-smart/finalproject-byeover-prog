@@ -50,7 +50,7 @@ public class SortInputHandler : MonoBehaviour
     private void Update()
     {
         if (!enabled) return;
-        if (Time.timeScale == 0f) return;
+        if (Time.timeScale == 0f && !TutorialInGameDirector.AllowsPausedSortInput) return;
         if (_slotPositions == null) return;
 
 #if UNITY_EDITOR
