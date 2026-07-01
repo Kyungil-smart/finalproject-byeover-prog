@@ -226,7 +226,11 @@ public class MonsterSpawner : MonoBehaviour
         string prefixed = $"Monster_{characterId}";
         if (pool != null && pool.HasPool(prefixed)) return prefixed;
 
-        return bare;   // 둘 다 없으면 bare로 시도 → Spawn이 '풀 없음' 에러를 남겨 어느 ID의 프리팹이 없는지 알려준다.
+        // 데이터 ID는 50xx·99xx 체계지만 프리팹 풀은 Monster_11~28뿐이라 끝 두 자리로 매칭한다(5011→Monster_11).
+        string byLastTwo = $"Monster_{characterId % 100}";
+        if (pool != null && pool.HasPool(byLastTwo)) return byLastTwo;
+
+        return bare;   // 셋 다 없으면 bare로 시도 → Spawn이 '풀 없음' 에러를 남겨 어느 ID의 프리팹이 없는지 알려준다.
     }
 
     private PlayerModel ResolvePlayerModel()
