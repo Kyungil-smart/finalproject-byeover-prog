@@ -3,6 +3,8 @@ using UnityEngine;
 public class EnchantPopupManager : MonoBehaviour
 {
     [SerializeField] private EliteMonsterReward _rewardSystem;
+    [SerializeField] private EliteRewardEffect _rewardEffect;
+    [SerializeField] private UnitVisualController _normalUnit;
     [SerializeField] private EnchantSelectView _view;
     private int _remainingPopups = 0;
 
@@ -31,7 +33,19 @@ public class EnchantPopupManager : MonoBehaviour
 
         Debug.Log($"[EnchantPopup] 확률 결과: {rand:F2} (0~0.1: 10%, 0.1~0.4: 30%, 0.4~1.0: 60%) | 생성된 팝업 횟수: {_remainingPopups}");
 
-        ShowNextPopup();
+        if (_rewardEffect != null)
+        {
+            _rewardEffect.SetEnchantCount(_remainingPopups);
+
+            _rewardEffect.PlayRewardEffect(() =>
+            {
+                ShowNextPopup();
+            });
+        }
+        else
+        {
+            ShowNextPopup();
+        }
     }
 
     private void HandleChoiceSelected(int index)
