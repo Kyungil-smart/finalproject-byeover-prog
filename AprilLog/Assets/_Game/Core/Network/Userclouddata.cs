@@ -35,6 +35,12 @@ public class UserCloudData
     // 키는 반드시 데이터의 실제 Stage_ID(1000~)를 쓸 것 — BuildStageId(101~)/unlockedStages 기본값(10001)과 체계가 다르니 혼용 금지.
     public List<int> firstClearRewardedStages = new ();
 
+    // ---------- 최초 진입 상태 (조규민 4차: 최초 스토리/튜토리얼 노출 제어 + 기존 계정 마이그레이션) ----------
+    // ★참조 코드(GameManager/FirestoreService)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
+    public bool _hasInitialFlowState;   // 이 스키마 필드를 가진 계정인지. false=업데이트 이전 계정 → 1회 마이그레이션 대상.
+    public bool _initialStoryStarted;   // 최초 스토리를 이미 시작했는지(재노출 방지).
+    public bool _tutorialCompleted;     // 튜토리얼 완료 여부.
+
     // ---------- 재화 및 스태미너 ----------
     public int gold;
     public int parchment;
@@ -51,6 +57,12 @@ public class UserCloudData
     public List<int> housingPlacedFurnitureIds = new List<int>();
     // 추가: 조규민 - 구매 완료된 하우징 가구 ID를 계정 저장 데이터에 보관한다.
     public List<int> housingOwnedFurnitureIds = new List<int>();
+
+    // ---------- 아웃게임 성장 (김영찬 3차) ----------
+    // ★참조 코드(FirestoreService 직렬화/복원)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
+    public int hpBonus;
+    public int attackBonus;
+    public int shieldBonus;
 
     // ---------- 업적 ----------
     public List<AchievementSaveEntry> achievements = new ();
@@ -77,6 +89,10 @@ public class UserCloudData
             currentChapter = 1,
             currentStage = 1,
             unlockedStages = new List<int> { 1000 },   // 챕터1 스테이지1의 실 Stage_ID(옛 10001은 실데이터 체계와 불일치)
+            // 신규 계정은 스키마 보유 상태 → 기존계정 마이그레이션(최초콘텐츠 스킵) 대상 아님. story/tutorial는 false로 시작해 신규 유저가 최초 스토리·튜토리얼을 보게 한다.
+            _hasInitialFlowState = true,
+            _initialStoryStarted = false,
+            _tutorialCompleted = false,
             
             // 재화 및 스태미너
             gold = 0,
