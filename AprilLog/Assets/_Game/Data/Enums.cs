@@ -140,5 +140,6 @@ public enum LocalizingType
 {
     Enchant,
     Gear,
-    UI
+    UI,
+    Housing
 }
