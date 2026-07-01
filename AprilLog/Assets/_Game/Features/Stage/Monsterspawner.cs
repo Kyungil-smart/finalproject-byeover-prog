@@ -32,6 +32,7 @@ public class MonsterSpawner : MonoBehaviour
     // ---------- 이벤트 ----------
     public event Action<MonsterAI, bool> OnMonsterDied;
     public event Action IsBossDeath;
+    public event Action RequestRewardManager;
 
     // ---------- SerializeField ----------
     [Header("고정 스폰 포인트")]
@@ -57,6 +58,8 @@ public class MonsterSpawner : MonoBehaviour
     // ---------- Private ----------
     private List<MonsterAI> _aliveMonsters = new List<MonsterAI>(32);
     private System.Random _rng;
+    private InGameRewardManager _rewardManager;
+    private Queue<int> _pendingRewards;
     
     // ---------- For Gizmo ----------
     public Transform[] SpawnPoints => _spawnPoints;
@@ -76,6 +79,12 @@ public class MonsterSpawner : MonoBehaviour
         _normalSpawnLineY = y;
         _normalSpawnLineXMin = xMin;
         _normalSpawnLineXMax = xMax;
+    }
+
+    public void SetRewardManager(InGameRewardManager rewardManager)
+    {
+        _rewardManager = rewardManager;
+        FlushPendingRewards();
     }
 
     // ---------- 스폰 ----------
@@ -108,6 +117,14 @@ public class MonsterSpawner : MonoBehaviour
             {
                 // 💡 [수정] 스케일링 데이터와 함께 '누적 횟수'도 전달!
                 ai.ApplyScaling(cmd.ScalingData, cmd.AccumulateCount);
+            }
+
+            if (cmd.IsContainBattleReward)
+            {
+                if (cmd.TriggerTargetId != 0)
+                {
+                    ai.SetBattleReward(cmd.TriggerTargetId);
+                }
             }
 
             if (delay > 0f)
@@ -157,6 +174,7 @@ public class MonsterSpawner : MonoBehaviour
             ai.Initialize(stats, monsterStats, characterId, isBoss);
             ai.SetPlayerModel(ResolvePlayerModel());
             ai.OnDeath += HandleMonsterDeath;
+            ai.OnRewardContained += HandlePrizeReward;
             _aliveMonsters.Add(ai);
         }
         return ai;
@@ -177,6 +195,7 @@ public class MonsterSpawner : MonoBehaviour
             
             // 이벤트 해제
             monster.OnDeath -= HandleMonsterDeath;
+            monster.OnRewardContained -= HandlePrizeReward;
             
             var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
             string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
@@ -250,6 +269,21 @@ public class MonsterSpawner : MonoBehaviour
         var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
         string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
         PoolManager.Instance.Despawn(poolKey, monster.gameObject);
+    }
+
+    private void HandlePrizeReward(MonsterAI monster, int triggerId)
+    {
+        monster.OnDeath -= HandleMonsterDeath;
+        if (_rewardManager == null)
+        {
+            RequestRewardManager?.Invoke();
+            _pendingRewards ??= new Queue<int>();
+            _pendingRewards.Enqueue(triggerId);
+        }
+        else
+        {
+            _rewardManager.AddBattleReward(triggerId);
+        }
     }
 
     /// <summary>
@@ -344,5 +378,14 @@ public class MonsterSpawner : MonoBehaviour
 
         // 위치 완전 동일 → 3순위: 먼저 스폰된 것 유지
         return false;
+    }
+    
+    private void FlushPendingRewards()
+    {
+        if(_pendingRewards == null || _pendingRewards.Count == 0) return;
+        while (_pendingRewards.Count > 0)
+        {
+            _rewardManager.AddBattleReward(_pendingRewards.Dequeue());
+        }
     }
 }

@@ -51,6 +51,9 @@ public class InGameSaveData
     // 인첸트
     public List<AcquiredEnchantSaveData> acquiredEnchants;
     
+    // 전투보상
+    public List<ItemSaveEntry> accumulatedRewards;
+    
     // 기록
     public int totalDamage;
     public int highestDamage;

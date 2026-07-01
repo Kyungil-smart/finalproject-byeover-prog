@@ -21,31 +21,42 @@ public class StageBootstrapper : MonoBehaviour
     [Header("참조")]
     [SerializeField] private MonsterSpawner _spawner;
     [SerializeField] private StageLoopManager _loopManager;
-    
+
     private StagePresenter _currentPresenter;
     private bool _isStageTickPaused;
-    
+
     // ---------- Event for UI ----------
     public event Action<StageModel> OnStageInitComplete;
 
     // 마지막으로 조립된 스테이지 모델. UI가 늦게 구독해도 즉시 동기화할 수 있도록 캐시한다.
     public StageModel CurrentStageModel { get; private set; }
-    
+
+    // ---------- Battle Reward ----------
+    private InGameRewardManager _rewardManager;
+    private event Action _onPresenterChange;
+    public event Action RequsetRewardManager;
+
     // ---------- 이벤트 함수 ----------
+    private void Awake()
+    {
+        _onPresenterChange += HandlePresenterChange;
+    }
+
     private void Update()
     {
         if (_isStageTickPaused) return;
 
-        if (_currentPresenter != null)
-        {
-            _currentPresenter.UpdateSystem(Time.deltaTime);
-        }
+        _currentPresenter?.UpdateSystem(Time.deltaTime);
     }
 
     private void OnDestroy()
     {
-        if (_currentPresenter != null)
+        if(_currentPresenter != null)
+        {
+            _currentPresenter.RequestRewardManager -= HandleRequestRewardManager;
             _currentPresenter.Release();
+        }
+        _onPresenterChange -= HandlePresenterChange;
     }
 
     // 챕터 종료(승/패) 시 웨이브 진행을 완전히 멈춘다.
@@ -89,19 +100,20 @@ public class StageBootstrapper : MonoBehaviour
             return;
         }
 
-        if (_currentPresenter != null)
+        if(_currentPresenter != null)
         {
+            _currentPresenter.RequestRewardManager -= HandleRequestRewardManager;
             _currentPresenter.Release();
         }
 
         var waveRuleDict = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageData.Stage_ID);
-        
+
         if (waveRuleDict == null || waveRuleDict.Count == 0)
         {
             Debug.LogError($"[StageBootstrapper] 웨이브 룰을 찾을 수 없습니다. ID: {stageData.Stage_ID}");
             return;
         }
-        
+
         List<StageWaveRuleData> waveRules = waveRuleDict.Values.ToList();
 
         // 테스트 씬 전용 튜닝: SkillTestStageTuning 컴포넌트가 "씬에 있을 때만" 스폰 간격/수량을 덮어쓴다.
@@ -112,8 +124,36 @@ public class StageBootstrapper : MonoBehaviour
 
         StageModel newModel = new StageModel(stageData, waveRules, rng, _loopManager.WaveTransitionDelay);
         _currentPresenter = new StagePresenter(newModel, _spawner, stageData, rng, onStageComplete);
+        _currentPresenter.RequestRewardManager += HandleRequestRewardManager;
+        _onPresenterChange?.Invoke();
 
         CurrentStageModel = newModel;
         OnStageInitComplete?.Invoke(newModel);
+    }
+
+    public void SetRewardManager(InGameRewardManager rewardManager)
+    {
+        _rewardManager = rewardManager;
+        _currentPresenter?.SetRewardManager(_rewardManager);
+    }
+
+    private void HandlePresenterChange()
+    {
+        if(_rewardManager != null)
+            _currentPresenter?.SetRewardManager(_rewardManager);
+    }
+
+    private void HandleRequestRewardManager()
+    {
+        if (_rewardManager == null)
+        {
+            var temp = FindFirstObjectByType<InGameRewardManager>();
+            if (temp != null)
+            {
+                _rewardManager = temp;
+            }
+        }
+
+        _currentPresenter?.SetRewardManager(_rewardManager);
     }
 }

@@ -49,10 +49,19 @@ public class HousingAdRewardPopupView : MonoBehaviour
     {
         if (!_keepInspectorTextValues)
         {
-            SetText(_messageText, _state.Message);
             SetText(_rewardTitleText, _state.RewardTitle);
             SetText(_confirmButtonText, _state.ConfirmText);
             SetText(_cancelButtonText, _state.CancelText);
+        }
+
+        string _displayMessage = string.IsNullOrWhiteSpace(_state.StatusMessage)
+            ? _state.Message
+            : _state.StatusMessage;
+        SetText(_messageText, _displayMessage);
+
+        if (_confirmButton != null)
+        {
+            _confirmButton.interactable = _state.CanConfirm;
         }
 
         SetVisible(_state.IsVisible);

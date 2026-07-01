@@ -55,7 +55,7 @@ public class ChangeRewardData
     public int ChangeReward_ID;
     public int Start_ID;
     public int End_ID;
-    public string RewardType;       // Gold, Parchment, Diamond
+    public int RewardType;       // Gold, Parchment, Diamond
     public int BaseAmount;
     public string GrowthType;       // None, Add, Rate
     public float GrowthValue;

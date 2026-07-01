@@ -15,6 +15,7 @@ public class HousingAdRewardButtonView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private bool _ensureRaycastTarget = true;
 
     private Image _targetImage;
+    private bool _isInteractable = true;
 
     public event Action OnClicked;
 
@@ -32,7 +33,22 @@ public class HousingAdRewardButtonView : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        if (!_isInteractable)
+        {
+            return;
+        }
+
         OnClicked?.Invoke();
+    }
+
+    public void SetInteractable(bool _canInteract)
+    {
+        _isInteractable = _canInteract;
+
+        if (_targetImage != null)
+        {
+            _targetImage.raycastTarget = _canInteract || _ensureRaycastTarget;
+        }
     }
 
     private void EnsureClickable()
