@@ -23,10 +23,16 @@ public class LocalizationManager : MonoBehaviour
     
     [Header("번역 테이블")]
     [SerializeField] private EnchantLocalizationTable _enchantTable;
+    [SerializeField] private GearLocalizationTable _gearTable;
+    [SerializeField] private UILocalizationTable _uiTable;
+    [SerializeField] private HousingLocalizationTable _housingTable;
 
     // ---------- Dictionary ----------
     private Dictionary<string, Legacy_LanguageEntry> _entries;
     private Dictionary<int, LocalizationData> _enchantLocalizingData;
+    private Dictionary<int, LocalizationData> _gearLocalizingData;
+    private Dictionary<int, LocalizationData> _uiLocalizingData;
+    private Dictionary<int, LocalizationData> _housingLocalizingData;
     
     // ---------- 상태 ----------
     private string _currentLang;  // "ko" or "en"
@@ -52,6 +58,9 @@ public class LocalizationManager : MonoBehaviour
     {
         _entries = BuildDictionary(_languageTable, nameof(_languageTable), r => r.Key);
         _enchantLocalizingData = BuildDictionary(_enchantTable, nameof(_enchantTable), r => r.Language_ID);
+        _gearLocalizingData = BuildDictionary(_gearTable, nameof(_gearTable), r => r.Language_ID);
+        _uiLocalizingData = BuildDictionary(_uiTable, nameof(_uiTable), r => r.Language_ID);
+        _housingLocalizingData = BuildDictionary(_housingTable, nameof(_housingTable), r => r.Language_ID);
 
         // 저장된 언어 설정 불러오기
         string saved = PlayerPrefs.GetString("Language", "");
@@ -130,7 +139,28 @@ public class LocalizationManager : MonoBehaviour
             case  LocalizingType.Enchant:
                 if (!_enchantLocalizingData.TryGetValue(id, out entry))
                 {
-                    Debug.LogWarning($"[Localization] {id} is not found. Return Localizing Code");
+                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
+                    return $"[{id}]";
+                }
+                break;
+            case LocalizingType.Gear:
+                if (!_gearLocalizingData.TryGetValue(id, out entry))
+                {
+                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
+                    return $"[{id}]";
+                }
+                break;
+            case LocalizingType.UI:
+                if (!_uiLocalizingData.TryGetValue(id, out entry))
+                {
+                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
+                    return $"[{id}]";
+                }
+                break;
+            case LocalizingType.Housing:
+                if (!_housingLocalizingData.TryGetValue(id, out entry))
+                {
+                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
                     return $"[{id}]";
                 }
                 break;
