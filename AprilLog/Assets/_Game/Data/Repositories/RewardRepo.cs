@@ -15,6 +15,9 @@ public class RewardRepo : MonoBehaviour
     private Dictionary<int, List<BattleRewardData>> _battleRewardLookup;
     
     private bool _isInitialized = false;
+    
+    // ---------- Save Reward Cache ----------
+    private ChangeRewardData _25001Data;
 
     // ---------- 초기화 ----------
     public void Initialize()
@@ -22,10 +25,12 @@ public class RewardRepo : MonoBehaviour
         if (_isInitialized) return;
 
         _changeRewards = BuildList(_changeRewardTable, nameof(_changeRewardTable));
-        
+        _battleRewards = BuildList(_battleRewardTable, nameof(_battleRewardTable));
         
         BuildChangeRewardLookup(_changeRewards);
         BuildBattleRewardLookup(_battleRewards);
+
+        _25001Data = GetChangeRewardData(25001);
 
         _isInitialized = true;
         Debug.Log($"[RewardRepo] 초기화 완료. 변동 보상 매핑: {_changeRewardLookup.Count}개, 전투 보상 매핑: {_battleRewardLookup.Count}개 트리거");
@@ -62,6 +67,12 @@ public class RewardRepo : MonoBehaviour
             if (finalAmount > 0)
             {
                 results.Add(new ItemSaveEntry { itemId = data.RewardType, amount = finalAmount });
+            }
+
+            // 반복 양피지 보상 추가(현재 로직으로는 start ID가 10101이 아니면 해당 보상을 못받음. 추후 수정)
+            if (data.Start_ID != 10101)
+            {
+                results.Add(new ItemSaveEntry { itemId = _25001Data.RewardType, amount = _25001Data.BaseAmount });
             }
         }
         return results;
@@ -105,6 +116,19 @@ public class RewardRepo : MonoBehaviour
         }
         
         return results;
+    }
+
+    private ChangeRewardData GetChangeRewardData(int changeRewardId)
+    {
+        foreach (var data in _changeRewards)
+        {
+            if(data.ChangeReward_ID == changeRewardId)
+            {
+                return data;
+            }
+        }
+        
+        return null;
     }
     
     // ---------- Build Dictionary ----------
