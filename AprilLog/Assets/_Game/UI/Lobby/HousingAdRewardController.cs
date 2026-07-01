@@ -62,12 +62,58 @@ public class HousingAdRewardController : MonoBehaviour
 
     private void OnEnable()
     {
+        SubscribeExternalEvents();
         PrepareAd();
+        RefreshAdAvailability();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeExternalEvents();
     }
 
     private void OnDestroy()
     {
+        UnsubscribeExternalEvents();
         _presenter?.Release();
+    }
+
+    private void SubscribeExternalEvents()
+    {
+        ResolveAdReferences();
+
+        if (_adService != null)
+        {
+            _adService.OnAdLoaded -= HandleAdLoaded;
+            _adService.OnAdLoaded += HandleAdLoaded;
+            _adService.OnAdLoadFailed -= HandleAdLoadFailed;
+            _adService.OnAdLoadFailed += HandleAdLoadFailed;
+        }
+
+        if (_networkChecker == null)
+        {
+            return;
+        }
+
+        _networkChecker.OnOnline -= HandleNetworkOnline;
+        _networkChecker.OnOnline += HandleNetworkOnline;
+        _networkChecker.OnOffline -= HandleNetworkOffline;
+        _networkChecker.OnOffline += HandleNetworkOffline;
+    }
+
+    private void UnsubscribeExternalEvents()
+    {
+        if (_adService != null)
+        {
+            _adService.OnAdLoaded -= HandleAdLoaded;
+            _adService.OnAdLoadFailed -= HandleAdLoadFailed;
+        }
+
+        if (_networkChecker != null)
+        {
+            _networkChecker.OnOnline -= HandleNetworkOnline;
+            _networkChecker.OnOffline -= HandleNetworkOffline;
+        }
     }
 
     private void ResolveReferences()
@@ -135,16 +181,47 @@ public class HousingAdRewardController : MonoBehaviour
 
         if (_adService == null)
         {
+            SetFailedState("광고 서비스를 찾을 수 없습니다.");
             return;
         }
 
         if (!_adService.IsInitialized)
         {
+            _presenter?.SetAdStatus(HousingAdRewardStatus.Loading, "광고 서비스를 초기화하고 있습니다.", false);
             _adService.Initialize();
             return;
         }
 
+        _presenter?.SetAdStatus(HousingAdRewardStatus.Loading, "광고를 불러오고 있습니다.", false);
         _adService.LoadAd();
+    }
+
+    private void RefreshAdAvailability()
+    {
+        if (_presenter == null || _isShowingAd)
+        {
+            return;
+        }
+
+        if (_networkChecker != null && !_networkChecker.IsOnline)
+        {
+            _presenter.SetAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
+            return;
+        }
+
+        if (_adService == null)
+        {
+            SetFailedState("광고 서비스를 찾을 수 없습니다.");
+            return;
+        }
+
+        if (_adService.IsAdReady)
+        {
+            _presenter.SetAdStatus(HousingAdRewardStatus.Ready, _message, true);
+            return;
+        }
+
+        _presenter.SetAdStatus(HousingAdRewardStatus.Loading, "광고를 불러오고 있습니다.", false);
     }
 
     private void ApplyFurnitureIcon()
@@ -182,18 +259,21 @@ public class HousingAdRewardController : MonoBehaviour
         if (_networkChecker != null && !_networkChecker.IsOnline)
         {
             Debug.LogWarning("[HousingAdRewardController] 오프라인 상태라 광고를 표시할 수 없습니다.", this);
+            _presenter?.ShowAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
             return false;
         }
 
         if (_adService == null)
         {
             Debug.LogWarning("[HousingAdRewardController] RewardedAdService가 연결되지 않았습니다.", this);
+            SetFailedState("광고 서비스를 찾을 수 없습니다.", true);
             return false;
         }
 
         if (!_adService.IsInitialized)
         {
             Debug.Log("[HousingAdRewardController] 광고 SDK 초기화를 요청했습니다. 잠시 후 다시 시도하세요.", this);
+            _presenter?.ShowAdStatus(HousingAdRewardStatus.Loading, "광고 서비스를 초기화하고 있습니다.", false);
             _adService.Initialize();
             return false;
         }
@@ -201,19 +281,27 @@ public class HousingAdRewardController : MonoBehaviour
         if (!_adService.IsAdReady)
         {
             Debug.Log("[HousingAdRewardController] 광고를 불러오는 중입니다. 잠시 후 다시 시도하세요.", this);
+            _presenter?.ShowAdStatus(HousingAdRewardStatus.Loading, "광고를 불러오고 있습니다.", false);
             _adService.LoadAd();
             return false;
         }
 
         _isShowingAd = true;
         _isRewardGrantedForCurrentAd = false;
+        _presenter?.SetAdStatus(HousingAdRewardStatus.Showing, "광고를 재생하고 있습니다.", false);
 
-        _adService.ShowAd(
+        bool _didStart = _adService.ShowAd(
             onRewardEarned: HandleRewardEarned,
             onClosed: HandleAdClosed,
             onFailed: HandleAdFailed);
 
-        return true;
+        if (_didStart)
+        {
+            return true;
+        }
+
+        _isShowingAd = false;
+        return false;
     }
 
     private void HandleRewardEarned()
@@ -250,7 +338,12 @@ public class HousingAdRewardController : MonoBehaviour
             return;
         }
 
-        _staminaModel.Recover(_safeRewardStamina, out var lossamount);
+        _staminaModel.Recover(_safeRewardStamina, out int _lossAmount);
+
+        if (_lossAmount > 0)
+        {
+            Debug.Log($"[HousingAdRewardController] 행동력 최대치로 {_lossAmount}만큼 지급되지 않았습니다.", this);
+        }
     }
 
     private void GrantDiamondReward()
@@ -280,12 +373,61 @@ public class HousingAdRewardController : MonoBehaviour
     private void HandleAdClosed()
     {
         _isShowingAd = false;
+        RefreshAdAvailability();
     }
 
     private void HandleAdFailed()
     {
         _isShowingAd = false;
         _isRewardGrantedForCurrentAd = false;
+        SetFailedState("광고 재생에 실패했습니다. 잠시 후 다시 시도해 주세요.", true);
         _onAdFailed?.Invoke();
+    }
+
+    private void HandleAdLoaded()
+    {
+        if (_isShowingAd)
+        {
+            return;
+        }
+
+        _presenter?.SetAdStatus(HousingAdRewardStatus.Ready, _message, true);
+    }
+
+    private void HandleAdLoadFailed()
+    {
+        if (_isShowingAd)
+        {
+            return;
+        }
+
+        SetFailedState("광고를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+
+    private void HandleNetworkOnline()
+    {
+        PrepareAd();
+        RefreshAdAvailability();
+    }
+
+    private void HandleNetworkOffline()
+    {
+        if (_isShowingAd)
+        {
+            return;
+        }
+
+        _presenter?.SetAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
+    }
+
+    private void SetFailedState(string _messageText, bool _showPopup = false)
+    {
+        if (_showPopup)
+        {
+            _presenter?.ShowAdStatus(HousingAdRewardStatus.Failed, _messageText, true);
+            return;
+        }
+
+        _presenter?.SetAdStatus(HousingAdRewardStatus.Failed, _messageText, true);
     }
 }

@@ -149,6 +149,7 @@ public readonly struct HousingIdleRewardState
     public int ParchmentItemId { get; }
     public int DiamondItemId { get; }
     public bool IsFull => ProgressPercent >= 100;
+    public bool HasClaimableReward => GoldReward > 0 || ParchmentReward > 0 || DiamondReward > 0;
 
     public HousingIdleRewardState(
         float _progress,
