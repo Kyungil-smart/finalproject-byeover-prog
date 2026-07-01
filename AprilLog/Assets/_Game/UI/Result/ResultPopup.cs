@@ -7,10 +7,25 @@
 // 수정자 : 김영찬
 // 설명 : Ingamebootstrap.cs 와의 연결 재 구성
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 정산 팝업 TOP3 인챈트 데미지에 스킬 아이콘을 함께 표시하고 보상 표시 갱신 안정화
+
 using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
+public readonly struct ResultEnchantEntry
+{
+    public readonly int _skillId;
+    public readonly long _damage;
+
+    public ResultEnchantEntry(int _skillId, long _damage)
+    {
+        this._skillId = _skillId;
+        this._damage = _damage;
+    }
+}
 
 public class ResultPopup : MonoBehaviour
 {
@@ -90,6 +105,21 @@ public class ResultPopup : MonoBehaviour
         Open();
     }
 
+    public void Show(bool isClear, int maxCombo, long maxDamage,
+                     ResultEnchantEntry[] topEnchantEntries,
+                     long coin, long parchment)
+    {
+        SetResult(isClear);
+        SetRecord(maxCombo, maxDamage);
+        SetEnchants(topEnchantEntries);
+        SetRewards(coin, parchment);
+
+        if (_nextChapterButton != null)
+            _nextChapterButton.interactable = isClear;
+
+        Open();
+    }
+
     public void SetResult(bool isClear)
     {
         if (_headerText != null)
@@ -108,6 +138,13 @@ public class ResultPopup : MonoBehaviour
         if (_enchantDamage1 != null) _enchantDamage1.text = FormatK(damage1);  // 예: 4.9K
         if (_enchantDamage2 != null) _enchantDamage2.text = FormatK(damage2);
         if (_enchantDamage3 != null) _enchantDamage3.text = FormatK(damage3);
+    }
+
+    public void SetEnchants(ResultEnchantEntry[] entries)
+    {
+        ApplyEnchantSlot(entries, 0, _enchantDamage1, _enchantImage1);
+        ApplyEnchantSlot(entries, 1, _enchantDamage2, _enchantImage2);
+        ApplyEnchantSlot(entries, 2, _enchantDamage3, _enchantImage3);
     }
 
     public void SetRewards(long coin, long parchment)
@@ -155,6 +192,127 @@ public class ResultPopup : MonoBehaviour
         if (value < 1000) return value.ToString();
         if (value < 1_000_000) return (value / 1000f).ToString("0.#") + "K";
         return (value / 1_000_000f).ToString("0.#") + "M";
+    }
+
+    private void ApplyEnchantSlot(ResultEnchantEntry[] entries, int index, TMP_Text damageText, Image iconImage)
+    {
+        ResultEnchantEntry _entry = GetEnchantEntry(entries, index);
+
+        if (damageText != null)
+        {
+            damageText.text = FormatK(_entry._damage);
+        }
+
+        if (iconImage == null)
+        {
+            return;
+        }
+
+        string _imageKey = ResolveEnchantImageKey(_entry._skillId);
+        EnchantIconLoader.ApplyIcon(iconImage, _imageKey);
+    }
+
+    private static ResultEnchantEntry GetEnchantEntry(ResultEnchantEntry[] entries, int index)
+    {
+        if (entries == null || index < 0 || index >= entries.Length)
+        {
+            return new ResultEnchantEntry(0, 0);
+        }
+
+        return entries[index];
+    }
+
+    private string ResolveEnchantImageKey(int skillId)
+    {
+        if (skillId <= 0)
+        {
+            return string.Empty;
+        }
+
+        if (TryGetOwnedSkillImageKey(skillId, out string _ownedImageKey))
+        {
+            return _ownedImageKey;
+        }
+
+        var _repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        if (_repo == null)
+        {
+            return string.Empty;
+        }
+
+        int _levelOneSkillId = ConvertStandardIdToSkillTableId(skillId, 1);
+        var _skillData = _repo.GetSkillData(_levelOneSkillId);
+        if (_skillData == null || _skillData.SkillIcon_ID <= 0)
+        {
+            return string.Empty;
+        }
+
+        return $"{_skillData.SkillIcon_ID}";
+    }
+
+    private static bool TryGetOwnedSkillImageKey(int skillId, out string imageKey)
+    {
+        imageKey = string.Empty;
+
+        var _enchantModel = FindFirstObjectByType<EnchantModel>();
+        if (_enchantModel == null)
+        {
+            return false;
+        }
+
+        foreach (var _pair in _enchantModel.OwnedSkills)
+        {
+            var _skillData = _pair.Value.Data;
+            if (_skillData == null || _skillData.SkillIcon_ID <= 0)
+            {
+                continue;
+            }
+
+            if (ConvertSkillTableIdToStandardId(_skillData.Skill_ID) != skillId)
+            {
+                continue;
+            }
+
+            imageKey = $"{_skillData.SkillIcon_ID}";
+            return true;
+        }
+
+        return false;
+    }
+
+    private static int ConvertSkillTableIdToStandardId(int skillTableId)
+    {
+        int _baseId = skillTableId / 10;
+        int _element = _baseId / 1000;
+        int _index = _baseId % 1000;
+
+        if (_index > 9)
+        {
+            _index %= 10;
+        }
+
+        return _element * 100 + _index;
+    }
+
+    private static int ConvertStandardIdToSkillTableId(int standardId, int level)
+    {
+        int _legacySkillId = standardId * 10 + Mathf.Clamp(level, 1, 3);
+        return MapLegacySkillIdToSkillTableId(_legacySkillId);
+    }
+
+    private static int MapLegacySkillIdToSkillTableId(int legacySkillId)
+    {
+        switch (legacySkillId)
+        {
+            case 2011:
+                return 20111;
+            case 2012:
+                return 20112;
+            case 2013:
+                return 20113;
+            default:
+                return (legacySkillId / 1000) * 10000 + (legacySkillId % 1000);
+        }
     }
 }
 
