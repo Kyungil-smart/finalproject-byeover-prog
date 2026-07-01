@@ -48,6 +48,10 @@ public class TutorialStep
     [Tooltip("딤 없이 손가락만 표시. 팝업 내용을 가리면 안 되는 단계에 사용")]
     public bool noDim = false;
 
+    [Header("진행 조건")]
+    [Tooltip("정렬 GameAction 단계에서 다음 단계로 넘어가기 위해 필요한 정렬 완료 횟수")]
+    [Min(1)] public int requiredSortCount = 1;
+
     [Header("UI (홍정옥 작성)")]
     [Tooltip("강조할 UI 요소 식별자. 씬의 TutorialView가 이 id로 대상을 찾아 강조한다.")]
     public string highlightTargetId;

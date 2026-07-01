@@ -8,6 +8,9 @@
 
 // 3차 수정자 : 김영찬
 // 수정 내용 : 세이브 개선
+//
+// 4차 수정자 : 조규민
+// 수정 내용 : 계정별 최초 진입 상태 마이그레이션과 최초 스토리 시작·튜토리얼 완료 저장 API 추가
 
 using System;
 using System.Collections;
@@ -618,6 +621,83 @@ public class GameManager : MonoBehaviour
         {
             CloudData = UserCloudData.CreateDefault();
         }
+    }
+
+    // 추가: 조규민 - 상태 필드가 없던 기존 계정은 최초 콘텐츠를 이미 경험한 계정으로 마이그레이션한다.
+    public bool ShouldStartInitialStory()
+    {
+        if (CloudData == null)
+        {
+            Debug.LogWarning("[GameManager] 최초 진입 상태를 확인할 계정 데이터가 없습니다.");
+            return false;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        return !CloudData._initialStoryStarted;
+    }
+
+    public bool IsTutorialCompleted()
+    {
+        if (CloudData == null)
+        {
+            return PlayerPrefs.GetInt("Tutorial_Completed", 0) == 1;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        return CloudData._tutorialCompleted;
+    }
+
+    public void MarkInitialStoryStarted()
+    {
+        if (CloudData == null)
+        {
+            Debug.LogWarning("[GameManager] 최초 스토리 시작 상태를 저장할 계정 데이터가 없습니다.");
+            return;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        if (CloudData._initialStoryStarted)
+        {
+            return;
+        }
+
+        CloudData._initialStoryStarted = true;
+        SyncToCloud(CloudData);
+    }
+
+    public void MarkTutorialCompleted()
+    {
+        PlayerPrefs.SetInt("Tutorial_Completed", 1);
+        PlayerPrefs.Save();
+
+        if (CloudData == null)
+        {
+            return;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        if (CloudData._tutorialCompleted)
+        {
+            return;
+        }
+
+        CloudData._tutorialCompleted = true;
+        SyncToCloud(CloudData);
+    }
+
+    private void MigrateInitialFlowStateIfNeeded()
+    {
+        if (CloudData == null || CloudData._hasInitialFlowState)
+        {
+            return;
+        }
+
+        // 새 스키마 필드가 없는 문서는 업데이트 이전부터 존재한 계정이므로 최초 콘텐츠를 재노출하지 않는다.
+        CloudData._hasInitialFlowState = true;
+        CloudData._initialStoryStarted = true;
+        CloudData._tutorialCompleted = true;
+        SyncToCloud(CloudData);
+        Debug.Log("[GameManager] 기존 계정의 최초 진입 상태 마이그레이션을 완료했습니다.");
     }
 
     public void SyncToCloud(UserCloudData data)

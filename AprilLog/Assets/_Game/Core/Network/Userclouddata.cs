@@ -12,6 +12,9 @@ using System.Collections.Generic;
 
 // 3차 수정자 : 김영찬
 // 수정 내용 : 재화 및 스태미너와 아티펙트 관련 데이터 저장 필드 추가
+//
+// 4차 수정자 : 조규민
+// 수정 내용 : 계정별 최초 스토리 시작과 튜토리얼 완료 상태 및 기존 계정 마이그레이션 상태 추가
 
 [Serializable]
 public class UserCloudData
@@ -28,6 +31,9 @@ public class UserCloudData
     public int currentChapter = 1;
     public int currentStage = 1;
     public List<int> unlockedStages = new ();
+    public bool _hasInitialFlowState;
+    public bool _initialStoryStarted;
+    public bool _tutorialCompleted;
 
     // ---------- 재화 및 스태미너 ----------
     public int gold;
@@ -71,6 +77,9 @@ public class UserCloudData
             currentChapter = 1,
             currentStage = 1,
             unlockedStages = new List<int> { 10001 },
+            _hasInitialFlowState = true,
+            _initialStoryStarted = false,
+            _tutorialCompleted = false,
             
             // 재화 및 스태미너
             gold = 0,
