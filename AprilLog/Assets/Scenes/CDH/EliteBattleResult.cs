@@ -9,19 +9,11 @@ public class EliteBattleResult : MonoBehaviour
 
     public void StartRewardProcess()
     {
-        rewardEffect.PlayRewardEffect(() =>
-        {
-        if (jokerSystem != null)
-        {
-            jokerSystem.RestoreJokerImages();
-        }
-
         if (popupManager != null)
         {
             popupManager.StartRewardSequence();
         }
 
-            gameObject.SetActive(false);
-        });
+        gameObject.SetActive(false);
     }
 }
