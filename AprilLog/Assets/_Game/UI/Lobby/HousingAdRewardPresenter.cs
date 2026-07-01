@@ -69,6 +69,18 @@ public class HousingAdRewardPresenter
         _isInitialized = false;
     }
 
+    public void SetAdStatus(HousingAdRewardStatus _status, string _message, bool _canConfirm)
+    {
+        _model?.SetAdStatus(_status, _message, _canConfirm);
+        _buttonView?.SetInteractable(_status != HousingAdRewardStatus.Showing);
+    }
+
+    public void ShowAdStatus(HousingAdRewardStatus _status, string _message, bool _canConfirm)
+    {
+        _model?.ShowStatus(_status, _message, _canConfirm);
+        _buttonView?.SetInteractable(_status != HousingAdRewardStatus.Showing);
+    }
+
     private void HandleButtonClicked()
     {
         _model.Show();
@@ -76,6 +88,11 @@ public class HousingAdRewardPresenter
 
     private void HandleConfirmClicked()
     {
+        if (!_model.CurrentState.CanConfirm)
+        {
+            return;
+        }
+
         bool _isAdStarted = _onAdWatchRequested?.Invoke() == true;
 
         if (!_isAdStarted)
