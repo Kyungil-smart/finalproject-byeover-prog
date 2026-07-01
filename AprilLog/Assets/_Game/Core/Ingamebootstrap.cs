@@ -73,6 +73,8 @@ public class InGameBootstrap : MonoBehaviour
     [Header("웨이브")]
     [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
     [SerializeField] private int _defaultChapterId = 1;
+    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 ID. 기본 98(0챕터, 스테이지 4998/4997). 99=튜토리얼(4999)로 바꿀 수 있음.")]
+    [SerializeField] private int _tutorialChapterId = 98;
 
     private GameObject _projectileTemplate;
     private bool _settlementRewardGranted;   // 단계④: 정산 보상 중복 지급(재정산 중복가산) 방지 가드
@@ -256,6 +258,14 @@ public class InGameBootstrap : MonoBehaviour
         if (selectedChapterId > 0)
         {
             return selectedChapterId;
+        }
+
+        // 튜토리얼(최초 실행) 진행 중 + 명시적 챕터 선택 없음 → 0챕터(튜토 전용 스테이지)로 진입한다.
+        // 튜토리얼은 로비를 안 거쳐 SelectedChapterId가 0이라, 여기서 _defaultChapterId(1)로 잘못 빠지던 걸 차단.
+        // (이어하기/로비 선택은 위에서 이미 처리 — 그 경로는 안 건드린다.)
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+        {
+            return _tutorialChapterId;
         }
 
         return _defaultChapterId;
