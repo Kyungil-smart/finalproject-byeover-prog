@@ -8,8 +8,10 @@
 //   유저가 동작 완료 → (탭: View가 OnStepActionCompleted 발행 / 게임동작: 게임 이벤트 훅이 AdvanceStep 호출) → 다음 단계.
 //   마지막 단계 통과 → Complete() → PlayerPrefs에 완료 저장 → 이후 TryStart 무시.
 //
-// 완료 플래그는 지금 PlayerPrefs(기기 단위). 계정 단위로 가려면 GameManager.CloudData에 필드 추가 후
-// IsCompleted(getter)/Complete() 두 곳만 교체하면 됨(조규민 도메인이라 우선 PlayerPrefs).
+// 완료 플래그는 로그인 이후 계정 데이터에 저장하고, GameManager가 없을 때만 PlayerPrefs를 대체 저장소로 사용한다.
+//
+// 1차 수정자 : 조규민
+// 수정 내용 : 로그인 계정의 클라우드 데이터에서 튜토리얼 완료 상태를 판정하고 완료 즉시 저장
 
 using System;
 using UnityEngine;
@@ -34,7 +36,9 @@ public class TutorialManager : MonoBehaviour
     private ITutorialView _view;        // 현재 씬의 오버레이(있을 때만)
     private GameObject _spawnedInGameOverlay;
 
-    public bool IsCompleted => PlayerPrefs.GetInt(DONE_KEY, 0) == 1;
+    public bool IsCompleted => GameManager.Instance != null
+        ? GameManager.Instance.IsTutorialCompleted()
+        : PlayerPrefs.GetInt(DONE_KEY, 0) == 1;
     public bool IsRunning => _currentIndex >= 0;
     public TutorialStep CurrentStep => _stepData != null ? _stepData.Get(_currentIndex) : null;
 
@@ -118,8 +122,16 @@ public class TutorialManager : MonoBehaviour
     public void Complete()
     {
         _currentIndex = -1;
-        PlayerPrefs.SetInt(DONE_KEY, 1);
-        PlayerPrefs.Save();
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.MarkTutorialCompleted();
+        }
+        else
+        {
+            PlayerPrefs.SetInt(DONE_KEY, 1);
+            PlayerPrefs.Save();
+        }
+
         if (_view != null) _view.Hide();
         Debug.Log("[Tutorial] 완료 — 저장됨(다시 안 뜸).");
     }

@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 // 3차 수정자 : 조규민
-// 수정 내용 : 하우징 자동재화 마지막 수령 시간 저장/로드 필드 추가
+// 수정 내용 : 하우징 자동재화 마지막 수령 시간 저장/로드 필드, 계정별 최초 진입 상태 저장/로드 및 기존 계정 감지 추가
 public class FirestoreService : MonoBehaviour
 {
     public event Action<UserCloudData> OnDataLoaded;
@@ -57,9 +57,11 @@ public class FirestoreService : MonoBehaviour
             yield break;
         }
 
+        // 추가: 조규민 - 네트워크 저장을 기다리는 동안 앱이 종료되어도 최초 진입 상태가 유실되지 않게 먼저 로컬에 기록한다.
+        SaveLocalBackup(data);
+
         if (string.IsNullOrEmpty(_uid))
         {
-            SaveLocalBackup(data);
             yield break;
         }
 
@@ -121,6 +123,7 @@ public class FirestoreService : MonoBehaviour
         if (task.Result.Exists)
         {
             var data = ConvertSnapshotToUserCloudData(task.Result);
+            MergeLocalInitialFlowState(data);
             SaveLocalBackup(data);
             OnDataLoaded?.Invoke(data);
         }
@@ -376,6 +379,9 @@ public class FirestoreService : MonoBehaviour
             { "currentChapter", userData.currentChapter },
             { "currentStage", userData.currentStage },
             { "unlockedStages", userData.unlockedStages ?? new List<int>() },
+            { "hasInitialFlowState", userData._hasInitialFlowState },
+            { "initialStoryStarted", userData._initialStoryStarted },
+            { "tutorialCompleted", userData._tutorialCompleted },
             { "gold", userData.gold },
             { "parchment", userData.parchment },
             { "diamond", userData.diamond },
@@ -458,6 +464,18 @@ public class FirestoreService : MonoBehaviour
 
         if (snapshot.TryGetValue("currentStage", out int currentStage))
             data.currentStage = currentStage;
+
+        // 추가: 조규민 - 상태 필드가 없는 기존 계정을 신규 계정과 구분해 GameManager에서 한 번만 마이그레이션한다.
+        if (snapshot.TryGetValue("hasInitialFlowState", out bool hasInitialFlowState))
+            data._hasInitialFlowState = hasInitialFlowState;
+        else
+            data._hasInitialFlowState = false;
+
+        if (snapshot.TryGetValue("initialStoryStarted", out bool initialStoryStarted))
+            data._initialStoryStarted = initialStoryStarted;
+
+        if (snapshot.TryGetValue("tutorialCompleted", out bool tutorialCompleted))
+            data._tutorialCompleted = tutorialCompleted;
 
         if (snapshot.TryGetValue("gold", out int gold))
             data.gold = gold;
@@ -639,6 +657,24 @@ public class FirestoreService : MonoBehaviour
             OnError?.Invoke(exception.Message);
             return null;
         }
+    }
+
+    private void MergeLocalInitialFlowState(UserCloudData cloudData)
+    {
+        if (cloudData == null)
+        {
+            return;
+        }
+
+        UserCloudData localData = LoadLocalBackup();
+        if (localData == null || !string.Equals(localData.uid, _uid, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        // 로컬의 완료 방향 상태만 병합해 네트워크 저장 직전 강제 종료로 최초 콘텐츠가 반복되는 것을 막는다.
+        cloudData._initialStoryStarted |= localData._initialStoryStarted;
+        cloudData._tutorialCompleted |= localData._tutorialCompleted;
     }
 
     public bool HasLocalBackup() => File.Exists(GetBackupPath());
