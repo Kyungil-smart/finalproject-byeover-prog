@@ -103,7 +103,13 @@ public class InGameGrowthSystem : MonoBehaviour
     {
         if (!isKamikaze)
         {
-            AddEXP(monster.Exp);
+            int exp = monster.Exp;
+            if (TutorialInGameDirector.TryGetTutorialMonsterExpOverride(out int tutorialExp))
+            {
+                exp = tutorialExp;
+            }
+
+            AddEXP(exp);
         }
     }
  

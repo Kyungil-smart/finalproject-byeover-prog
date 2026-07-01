@@ -31,6 +31,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     private List<EnchantCandidate> _currentChoices;
     private int _rerollRemaining;
     private int _pickCount = 3;
+    private bool _isTutorialFixedChoices;
     
     // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
     private HashSet<int> _seenEnchantIds = new HashSet<int>();
@@ -70,9 +71,18 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     {
         _pickCount = pickCount;
         _rerollRemaining = _baseRerollCount;
+        _isTutorialFixedChoices = false;
         
         _seenEnchantIds.Clear();
-        
+
+        if (TutorialFirstEnchantSelectionOverride.TryConsumeFixedChoices(_model, _repo, out _currentChoices))
+        {
+            _pickCount = _currentChoices.Count;
+            _isTutorialFixedChoices = true;
+            DisplayChoicesToView();
+            return;
+        }
+
         // 현재 몇 번째 뽑기인지에 따라 스킬/스탯 차례 계산
         int sequenceIndex = _model.TotalDrawCount % _sequenceConfig.DrawSequence.Count;
         _currentTurnType = _sequenceConfig.DrawSequence[sequenceIndex];
@@ -109,6 +119,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                 if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
                 {
                     _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
+                    ClearTutorialFixedChoiceState();
                     ClosePopupAndCountUp(); 
                 }
                 else
@@ -122,6 +133,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                 if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
                 {
                     _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
+                    ClearTutorialFixedChoiceState();
                     ClosePopupAndCountUp();
                 }
                 else
@@ -135,6 +147,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
 
     private void HandleSkip()
     {
+        ClearTutorialFixedChoiceState();
         ClosePopupAndCountUp();
     }
 
@@ -148,6 +161,8 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     // 전체 리롤 (현재 차례 타입 유지)
     private void HandleFullReroll()
     {
+        if (_isTutorialFixedChoices) return;
+
         Debug.Log($"[Reroll] HandleReroll 진입 remaining={(_unlimitedReroll ? "무한" : _rerollRemaining.ToString())}");
         if (!_unlimitedReroll)
         {
@@ -162,6 +177,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     // 개별 카드 리롤 (현재 차례 타입 유지)
     private void HandleCardReroll(int index)
     {
+        if (_isTutorialFixedChoices) return;
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
 
@@ -233,6 +249,16 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         }
         _view.SetChoices(displayData);
         // 무한(테스트2 씬)이면 항상 사용 가능 + 남은 횟수 -1(View에서 ∞ 표시).
-        _view.SetRerollAvailable(_unlimitedReroll || _baseRerollCount > 0, _unlimitedReroll ? -1 : _rerollRemaining);
+        bool rerollAvailable = !_isTutorialFixedChoices && (_unlimitedReroll || _baseRerollCount > 0);
+        int rerollRemaining = _isTutorialFixedChoices ? 0 : (_unlimitedReroll ? -1 : _rerollRemaining);
+        _view.SetRerollAvailable(rerollAvailable, rerollRemaining);
+    }
+
+    private void ClearTutorialFixedChoiceState()
+    {
+        if (!_isTutorialFixedChoices) return;
+
+        _isTutorialFixedChoices = false;
+        TutorialFirstEnchantSelectionOverride.ClearFixedChoiceState();
     }
 }

@@ -21,20 +21,21 @@ public class StageBootstrapper : MonoBehaviour
     [Header("참조")]
     [SerializeField] private MonsterSpawner _spawner;
     [SerializeField] private StageLoopManager _loopManager;
-    
+
     private StagePresenter _currentPresenter;
+    private bool _isStageTickPaused;
 
     // ---------- Event for UI ----------
     public event Action<StageModel> OnStageInitComplete;
 
     // 마지막으로 조립된 스테이지 모델. UI가 늦게 구독해도 즉시 동기화할 수 있도록 캐시한다.
     public StageModel CurrentStageModel { get; private set; }
-    
+
     // ---------- Battle Reward ----------
     private InGameRewardManager _rewardManager;
     private event Action _onPresenterChange;
     public event Action RequsetRewardManager;
-    
+
     // ---------- 이벤트 함수 ----------
     private void Awake()
     {
@@ -43,6 +44,8 @@ public class StageBootstrapper : MonoBehaviour
 
     private void Update()
     {
+        if (_isStageTickPaused) return;
+
         _currentPresenter?.UpdateSystem(Time.deltaTime);
     }
 
@@ -60,6 +63,8 @@ public class StageBootstrapper : MonoBehaviour
     // 스폰 정지 + 남은 몬스터 정리 + presenter Tick 중단.
     public void StopStage()
     {
+        _isStageTickPaused = false;
+
         if (_spawner != null)
         {
             _spawner.StopSpawning();
@@ -70,6 +75,16 @@ public class StageBootstrapper : MonoBehaviour
         {
             _currentPresenter.Release();
             _currentPresenter = null; // Update에서 더 이상 Tick 안 함
+        }
+    }
+
+    public void SetStageTickPaused(bool paused)
+    {
+        _isStageTickPaused = paused;
+
+        if (paused && _spawner != null)
+        {
+            _spawner.StopSpawning();
         }
     }
 
@@ -92,13 +107,13 @@ public class StageBootstrapper : MonoBehaviour
         }
 
         var waveRuleDict = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageData.Stage_ID);
-        
+
         if (waveRuleDict == null || waveRuleDict.Count == 0)
         {
             Debug.LogError($"[StageBootstrapper] 웨이브 룰을 찾을 수 없습니다. ID: {stageData.Stage_ID}");
             return;
         }
-        
+
         List<StageWaveRuleData> waveRules = waveRuleDict.Values.ToList();
 
         // 테스트 씬 전용 튜닝: SkillTestStageTuning 컴포넌트가 "씬에 있을 때만" 스폰 간격/수량을 덮어쓴다.
@@ -127,7 +142,7 @@ public class StageBootstrapper : MonoBehaviour
         if(_rewardManager != null)
             _currentPresenter?.SetRewardManager(_rewardManager);
     }
-    
+
     private void HandleRequestRewardManager()
     {
         if (_rewardManager == null)
@@ -138,7 +153,7 @@ public class StageBootstrapper : MonoBehaviour
                 _rewardManager = temp;
             }
         }
-        
+
         _currentPresenter?.SetRewardManager(_rewardManager);
     }
 }
