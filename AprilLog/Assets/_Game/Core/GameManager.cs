@@ -983,12 +983,16 @@ public class GameManager : MonoBehaviour
             return false;
         }
 
-        SpendHousingPurchaseCurrency(_safePrice, _currency);
+        if (!TrySpendHousingPurchaseCurrency(_safePrice, _currency))
+        {
+            Debug.LogError($"[하우징 구매] 재화 차감에 실패했습니다. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+            return false;
+        }
+
         CloudData.housingOwnedFurnitureIds.Add(_furnitureId);
         Debug.Log($"[하우징 구매] 가구 구매 완료. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
 
-        RaiseCurrencyChanged();
-        SyncToCloud(CloudData);
+        SyncAndSaveResourceCloudData();
         return true;
     }
 
@@ -1010,6 +1014,14 @@ public class GameManager : MonoBehaviour
             return true;
         }
 
+        var _repo = DataManager.Instance?.ResourceRepo;
+
+        if (_repo != null)
+        {
+            int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
+            return _repo.GetItemCount(_itemId) >= _price;
+        }
+
         switch (_currency)
         {
             case HousingPlacementPriceCurrency.Diamond:
@@ -1019,23 +1031,30 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void SpendHousingPurchaseCurrency(int _price, HousingPlacementPriceCurrency _currency)
+    private bool TrySpendHousingPurchaseCurrency(int _price, HousingPlacementPriceCurrency _currency)
     {
         if (_price <= 0)
         {
-            return;
+            return true;
         }
 
         // 수정 : 김영찬 -> 재화는 CloudData.diamond/gold를 직접 증/차감 하면 안되서 수정함 
-        switch (_currency)
+        var _repo = DataManager.Instance?.ResourceRepo;
+
+        if (_repo != null)
         {
-            case HousingPlacementPriceCurrency.Diamond:
-                TrySpendDiamond(_price);
-                break;
-            default:
-                TrySpendCurrency(_price, 0);
-                break;
+            int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
+            return _repo.UseItem(_itemId, _price);
         }
+
+        if (_currency == HousingPlacementPriceCurrency.Diamond)
+        {
+            CloudData.diamond -= _price;
+            return true;
+        }
+
+        CloudData.gold -= _price;
+        return true;
     }
 
     private void EnsureHousingOwnedFurnitureData()
@@ -1081,6 +1100,54 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[하우징 자동재화] +골드 {gold} +양피지 {parchment} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
         RaiseCurrencyChanged();
         PersistCurrency();
+    }
+
+    // 추가: 조규민 - 하우징 방치 보상의 모든 재화를 한 번의 저장 흐름으로 지급한다.
+    public bool ClaimHousingIdleReward(int _gold, int _parchment, int _diamond, string _lastClaimAtUtc)
+    {
+        _gold = Mathf.Max(0, _gold);
+        _parchment = Mathf.Max(0, _parchment);
+        _diamond = Mathf.Max(0, _diamond);
+
+        if (_gold == 0 && _parchment == 0 && _diamond == 0)
+        {
+            return false;
+        }
+
+        EnsureCurrencyData();
+        var _repo = DataManager.Instance?.ResourceRepo;
+
+        if (_repo != null)
+        {
+            if (_gold > 0)
+            {
+                _repo.AddItem(GoldId, _gold);
+            }
+
+            if (_parchment > 0)
+            {
+                _repo.AddItem(ParchmentId, _parchment);
+            }
+
+            if (_diamond > 0)
+            {
+                _repo.AddItem(DiamondId, _diamond);
+            }
+        }
+        else
+        {
+            CloudData.gold = Mathf.Max(0, CloudData.gold + _gold);
+            CloudData.parchment = Mathf.Max(0, CloudData.parchment + _parchment);
+            CloudData.diamond = Mathf.Max(0, CloudData.diamond + _diamond);
+        }
+
+        CloudData.housingAutoCurrencyLastClaimAt = string.IsNullOrWhiteSpace(_lastClaimAtUtc)
+            ? DateTime.UtcNow.ToString("o")
+            : _lastClaimAtUtc;
+
+        Debug.Log($"[하우징 자동 재화] +골드 {_gold} +양피지 {_parchment} +다이아 {_diamond} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
+        SyncAndSaveResourceCloudData();
+        return true;
     }
 
     private static bool TryParseUtc(string value, out DateTime utcTime)

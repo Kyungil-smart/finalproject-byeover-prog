@@ -127,7 +127,7 @@ public class HousingIdleRewardController : MonoBehaviour
         }
 
         int _currentChapter = GetCurrentChapter();
-        HousingRewardData _currentReward = _housingRepo.GetReward(_currentChapter);
+        HousingRewardData _currentReward = _housingRepo.GetRewardAtOrBelow(_currentChapter);
 
         if (_currentReward != null)
         {
@@ -198,8 +198,11 @@ public class HousingIdleRewardController : MonoBehaviour
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.ClaimHousingAutoCurrency(_state.GoldReward, _state.ParchmentReward, _claimResult.ClaimedAtUtcText);
-            GrantDiamondReward(_state.DiamondReward);
+            GameManager.Instance.ClaimHousingIdleReward(
+                _state.GoldReward,
+                _state.ParchmentReward,
+                _state.DiamondReward,
+                _claimResult.ClaimedAtUtcText);
             return;
         }
 
