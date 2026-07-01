@@ -265,7 +265,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8508130376952448389}
-  - {fileID: 8671230515750242511}
   - {fileID: 2413880576238509904}
   - {fileID: 3911302329909770525}
   m_Father: {fileID: 0}
@@ -498,60 +497,6 @@ MonoBehaviour:
   _revealDuration: 1
   _holdDuration: 0.15
   _fadeDuration: 0.25
---- !u!1 &3356983897947200841
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8671230515750242511}
-  - component: {fileID: 6728730971847879899}
-  m_Layer: 5
-  m_Name: DimTest
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &8671230515750242511
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3356983897947200841}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7097457861417313249}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &6728730971847879899
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3356983897947200841}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa66bdcb6def28343a55ef6d5788e474, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DimMaskTest
-  _dim: {fileID: 7330325755898449801}
-  _target: {fileID: 0}
-  _finger: {fileID: 6093553577111563030}
-  _arrow: {fileID: 1158976312656741133}
-  _tileFrom: {fileID: 4618552918992204109}
-  _tileTo: {fileID: 3991486284109185496}
 --- !u!1 &3627896521179515429
 GameObject:
   m_ObjectHideFlags: 0

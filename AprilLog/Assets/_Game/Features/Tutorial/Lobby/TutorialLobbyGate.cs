@@ -1,5 +1,8 @@
 // 진행 단계에 따라 로비 UI를 단계적으로 노출/잠금한다.
-//   0: 전투 진입만   1: 하단바+성장·전투   2: 상점 해제   3: 일퀘·출첵 노출
+// 0: 전투 진입만
+// 1: 하단바 + 성장·전투
+// 2: 상점 해제
+// 3: 일퀘·출첵 노출
 
 using System;
 using System.Collections.Generic;
@@ -8,95 +11,294 @@ using UnityEngine.UI;
 
 public class TutorialLobbyGate : MonoBehaviour
 {
-    // 각 UI 요소가 몇 단계에서 풀리는지 + 풀리기 전 어떻게 처리할지
     [Serializable]
     public class GatedElement
     {
         [Tooltip("구분용 이름")]
         public string label;
 
-        [Tooltip("이 단계 이상이면 해제/노출")]
+        [Tooltip("이 단계 이상이면 해제 또는 노출됩니다.")]
         public int unlockPhase = 1;
 
         [Header("처리 대상")]
-        [Tooltip("잠금 전 숨겼다가 풀리면 노출할 UI")]
+        [Tooltip("잠금 상태에서는 숨기고, 해제되면 표시할 UI입니다.")]
         public GameObject showHideTarget;
 
-        [Tooltip("보이되 잠금 전 못 누르게 할 버튼")]
+        [Tooltip("화면에는 표시하되 잠금 상태에서 입력을 막을 Selectable입니다.")]
         public Selectable lockTarget;
 
-        [Tooltip("잠금 시 스프라이트를 갈아끼울 아이콘")]
+        [Tooltip("잠금 상태에서 스프라이트를 교체할 이미지입니다.")]
         public Image iconTarget;
 
-        [Tooltip("잠겨있을 때 보여줄 잠금 스프라이트")]
+        [Tooltip("잠금 상태에 사용할 스프라이트입니다.")]
         public Sprite lockedSprite;
 
-        [NonSerialized] public Sprite normalSprite;
-        [NonSerialized] public bool cached;
+        [NonSerialized]
+        public Sprite normalSprite;
+
+        [NonSerialized]
+        public bool cached;
     }
 
     [Header("단계별 게이트 대상")]
-    [SerializeField] private List<GatedElement> _elements = new();
+    [SerializeField]
+    private List<GatedElement> _elements = new();
 
-    [Header("시작 단계(테스트용) / 시작 시 적용")]
-    [SerializeField] private int _startPhase = 0;
-    [SerializeField] private bool _applyOnStart = true;
+    [Header("시작 단계 테스트 설정")]
+    [Tooltip("외부에서 단계가 적용되지 않았을 때만 사용할 테스트용 시작 단계입니다.")]
+    [SerializeField]
+    private int _startPhase;
+
+    [Tooltip("TutorialView가 단계를 적용하지 않은 경우에만 시작 단계를 적용합니다.")]
+    [SerializeField]
+    private bool _applyOnStart = true;
+
+    [Header("디버그")]
+    [SerializeField]
+    private bool _showDebugLog = true;
 
     public int CurrentPhase { get; private set; }
 
+    /// <summary>
+    /// TutorialView 등 외부 시스템에서 한 번이라도 단계가 적용되었는지 여부입니다.
+    /// </summary>
+    public bool HasExternalPhaseApplied { get; private set; }
+
     private void Awake()
     {
-        // 아이콘 교체용 원본 스프라이트는 잠금 적용 전에 기억해둔다
-        foreach (GatedElement el in _elements)
-        {
-            if (el?.iconTarget == null) continue;
-            el.normalSprite = el.iconTarget.sprite;
-            el.cached = true;
-        }
+        CacheNormalSprites();
     }
 
     private void Start()
     {
-        if (_applyOnStart) SetPhase(_startPhase);
+        /*
+         * TutorialView.Start가 먼저 실행된 경우:
+         * 이미 SetPhase가 호출됐으므로 테스트용 _startPhase로 덮어쓰면 안 됩니다.
+         *
+         * TutorialLobbyGate.Start가 먼저 실행된 경우:
+         * 일단 _startPhase를 적용하고 이후 TutorialView가 실제 phase를 덮어씁니다.
+         */
+        if (!_applyOnStart)
+        {
+            LogDebug("시작 단계 자동 적용 비활성화.");
+            return;
+        }
+
+        if (HasExternalPhaseApplied)
+        {
+            LogDebug(
+                $"시작 단계 적용 생략. " +
+                $"외부에서 이미 Phase={CurrentPhase}가 적용되었습니다.");
+
+            return;
+        }
+
+        ApplyPhaseInternal(_startPhase, false);
+
+        LogDebug(
+            $"테스트용 시작 단계 적용. Phase={_startPhase}");
     }
 
-    /// <summary>진행 단계를 적용한다(매니저가 호출).</summary>
+    /// <summary>
+    /// TutorialView 또는 다른 외부 시스템에서 진행 단계를 적용합니다.
+    /// </summary>
     public void SetPhase(int phase)
     {
-        CurrentPhase = phase;
-        foreach (GatedElement el in _elements)
-            Apply(el, phase);
+        HasExternalPhaseApplied = true;
+        ApplyPhaseInternal(phase, true);
     }
 
-    private void Apply(GatedElement el, int phase)
+    /// <summary>
+    /// 내부에서 실제 단계 상태를 적용합니다.
+    /// </summary>
+    private void ApplyPhaseInternal(int phase, bool externalRequest)
     {
-        if (el == null) return;
-        bool unlocked = phase >= el.unlockPhase;
+        CurrentPhase = phase;
 
-        if (el.showHideTarget != null)
-            el.showHideTarget.SetActive(unlocked);
+        if (_elements == null)
+        {
+            Debug.LogWarning(
+                "[TutorialLobbyGate] Elements 리스트가 null입니다.",
+                this);
 
-        if (el.lockTarget != null)
-            el.lockTarget.interactable = unlocked;
+            return;
+        }
 
-        // 아이콘 스프라이트 교체는 원본을 잃지 않도록 플레이 중에만 (에디터 OnValidate 제외)
-        if (el.iconTarget != null && el.cached && Application.isPlaying)
-            el.iconTarget.sprite = unlocked || el.lockedSprite == null ? el.normalSprite : el.lockedSprite;
+        LogDebug(
+            $"단계 적용 시작. " +
+            $"Phase={phase}, " +
+            $"External={externalRequest}, " +
+            $"ElementCount={_elements.Count}");
+
+        for (int i = 0; i < _elements.Count; i++)
+        {
+            ApplyElement(_elements[i], phase, i);
+        }
+
+        LogDebug(
+            $"단계 적용 완료. Phase={phase}");
+    }
+
+    private void ApplyElement(
+        GatedElement element,
+        int phase,
+        int index)
+    {
+        if (element == null)
+        {
+            return;
+        }
+
+        bool unlocked = phase >= element.unlockPhase;
+
+        if (element.showHideTarget != null)
+        {
+            element.showHideTarget.SetActive(unlocked);
+        }
+
+        if (element.lockTarget != null)
+        {
+            element.lockTarget.interactable = unlocked;
+        }
+
+        if (element.iconTarget != null &&
+            element.cached &&
+            Application.isPlaying)
+        {
+            element.iconTarget.sprite =
+                unlocked || element.lockedSprite == null
+                    ? element.normalSprite
+                    : element.lockedSprite;
+        }
+
+        LogDebug(
+            $"요소 적용. " +
+            $"Index={index}, " +
+            $"Label={element.label}, " +
+            $"UnlockPhase={element.unlockPhase}, " +
+            $"CurrentPhase={phase}, " +
+            $"Unlocked={unlocked}, " +
+            $"ShowHideTarget=" +
+            $"{(element.showHideTarget != null ? element.showHideTarget.name : "NULL")}, " +
+            $"LockTarget=" +
+            $"{(element.lockTarget != null ? element.lockTarget.name : "NULL")}, " +
+            $"Interactable=" +
+            $"{(element.lockTarget != null ? element.lockTarget.interactable.ToString() : "N/A")}");
+    }
+
+    private void CacheNormalSprites()
+    {
+        if (_elements == null)
+        {
+            return;
+        }
+
+        foreach (GatedElement element in _elements)
+        {
+            if (element == null || element.iconTarget == null)
+            {
+                continue;
+            }
+
+            element.normalSprite = element.iconTarget.sprite;
+            element.cached = true;
+        }
+    }
+
+    private void LogDebug(string message)
+    {
+        if (!_showDebugLog)
+        {
+            return;
+        }
+
+        Debug.Log(
+            $"[TutorialLobbyGate] {message}",
+            this);
     }
 
 #if UNITY_EDITOR
-    // 인스펙터에서 _startPhase 바꾸면 에디터/플레이 중 바로 반영해 미리보기
+
     private void OnValidate()
     {
-        if (Application.isPlaying) return;
-        foreach (GatedElement el in _elements)
-            Apply(el, _startPhase);
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
+        CacheNormalSprites();
+
+        if (!_applyOnStart)
+        {
+            return;
+        }
+
+        if (_elements == null)
+        {
+            return;
+        }
+
+        foreach (GatedElement element in _elements)
+        {
+            ApplyElementInEditor(element, _startPhase);
+        }
     }
 
-    // 컴포넌트 우클릭 메뉴로 단계 테스트
-    [ContextMenu("단계 0")] private void _P0() => SetPhase(0);
-    [ContextMenu("단계 1")] private void _P1() => SetPhase(1);
-    [ContextMenu("단계 2")] private void _P2() => SetPhase(2);
-    [ContextMenu("단계 3")] private void _P3() => SetPhase(3);
+    private void ApplyElementInEditor(
+        GatedElement element,
+        int phase)
+    {
+        if (element == null)
+        {
+            return;
+        }
+
+        bool unlocked = phase >= element.unlockPhase;
+
+        if (element.showHideTarget != null)
+        {
+            element.showHideTarget.SetActive(unlocked);
+        }
+
+        if (element.lockTarget != null)
+        {
+            element.lockTarget.interactable = unlocked;
+        }
+    }
+
+    [ContextMenu("단계 0 적용")]
+    private void ApplyPhase0()
+    {
+        SetPhase(0);
+    }
+
+    [ContextMenu("단계 1 적용")]
+    private void ApplyPhase1()
+    {
+        SetPhase(1);
+    }
+
+    [ContextMenu("단계 2 적용")]
+    private void ApplyPhase2()
+    {
+        SetPhase(2);
+    }
+
+    [ContextMenu("단계 3 적용")]
+    private void ApplyPhase3()
+    {
+        SetPhase(3);
+    }
+
+    [ContextMenu("외부 적용 상태 초기화")]
+    private void ResetExternalPhaseState()
+    {
+        HasExternalPhaseApplied = false;
+
+        Debug.Log(
+            "[TutorialLobbyGate] 외부 단계 적용 상태를 초기화했습니다.",
+            this);
+    }
+
 #endif
 }

@@ -219,7 +219,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8508130376952448389}
   - {fileID: 2413880576238509904}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -286,6 +285,7 @@ MonoBehaviour:
   _fingerGuide: {fileID: 6093553577111563030}
   _lobbyGate: {fileID: 1057777570451791370}
   _highlightTargets: []
+  _showDebugLog: 1
 --- !u!114 &6203006129089180291
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -328,7 +328,19 @@ MonoBehaviour:
   - _slotName: sort (15)
     _unitType: 3
   _firstEnchantScenarioDriver: {fileID: 0}
+  _tutorialScenarioSourceGroupId: 3002
   _firstEnchantScenarioGroupId: 100030
+  _firstEnchantScenarioEndId: 100034
+  _step3RushWarningDelay: 38
+  _step3RushWarningScenarioStartId: 100035
+  _step3RushWarningScenarioEndId: 100035
+  _step3DefeatScenarioStartId: 100036
+  _step3DefeatScenarioEndId: 100039
+  _step3RushMonsterIds: 0b0000000c0000000d000000
+  _step3RushBatchAmount: 6
+  _step3RushSpawnInterval: 0.35
+  _step3ForcedDefeatDelay: 12
+  _growth: {fileID: 0}
 --- !u!1 &2713315403359958378
 GameObject:
   m_ObjectHideFlags: 0
@@ -552,6 +564,7 @@ MonoBehaviour:
     lockedSprite: {fileID: 21300000, guid: 1af09c7ac29ba45b6827bd65c5a53fe7, type: 3}
   _startPhase: 0
   _applyOnStart: 1
+  _showDebugLog: 1
 --- !u!1 &4274418952285231074
 GameObject:
   m_ObjectHideFlags: 0
@@ -627,50 +640,3 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &5654647673159819535
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8508130376952448389}
-  - component: {fileID: 9180231587277913518}
-  m_Layer: 0
-  m_Name: TutorialViewTester
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8508130376952448389
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5654647673159819535}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1037.7719, y: -16.138672, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7097457861417313249}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &9180231587277913518
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5654647673159819535}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9525e91a7d55fa14bb81afbb37d34602, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TutorialViewTester
-  _view: {fileID: 8783204367338214693}
-  _stepData: {fileID: 11400000, guid: b2c4e6f8a0d24c6e8f0a2c4e6f8a0d24, type: 2}
-  _index: 4
