@@ -92,6 +92,18 @@ public class StageLoopManager : MonoBehaviour
         var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
         if (stageData == null)
         {
+            // GetStageId가 -1((챕터,순서) 못 찾음)이거나 해당 Stage_ID 데이터가 없을 때.
+            // ★첫 스테이지(index 0)부터 없으면 이건 '챕터 완료'가 아니라 데이터/배선 오류다.
+            //   EndChapter(true)로 처리하면 가짜 승리 + 정산(ShowSettlement) NRE로 이어져 진짜 원인이 가려진다 → 명확히 로그하고 중단.
+            if (_currentStageIndex == 0)
+            {
+                Debug.LogError($"[StageLoopManager] 챕터 {_chapterId}의 첫 스테이지를 찾지 못했습니다(Stage_ID={stageId}). " +
+                               $"StageDataTable에 (Chapter_ID={_chapterId}, StageOrder=1) 행이 있는지 + StageRepo._stageTable 배선/Reimport를 확인하세요. 챕터 시작 중단.");
+                _state = State.Idle;
+                return;
+            }
+
+            // 중간 이후에서 못 찾음 = 마지막 스테이지를 지나 정상적으로 챕터 완료된 경로.
             EndChapter(true);
             return;
         }
