@@ -25,7 +25,11 @@
 // 8차 수정자 : 김영찬
 // 데이터 로드 개선
 
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
+
+// 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
 /// <summary>
 /// InGame 씬 로드 후 모든 시스템을 의존성 순서대로 초기화한다.
@@ -42,6 +46,9 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private Legacy_EnchantApplicationSystem _enchantApplicationSystem;
     [Tooltip("비워두면 런타임에 씬에서 탐색")]
     [SerializeField] private InGameGrowthSystem _growthSystem;
+    [FormerlySerializedAs("_inGameRewardManager")]
+    [Tooltip("비워두면 런타임에 자동 생성됨")]
+    [SerializeField] private InGameRewardManager _rewardManager;
 
     [Header("플레이어")]
     [Tooltip("플레이어 캐릭터의 Character_ID. CharacterRepo에서 이 ID로 공통/캐릭터 스탯을 로드한다. 현재 데이터의 플레이어 캐릭터 = 5001")]
@@ -222,6 +229,13 @@ public class InGameBootstrap : MonoBehaviour
         DisableDummyTester();
         StartWaveSystem(chapterId, startStageIndex, seed);
 
+        // 누적 전투 보상 로드
+        if (isResume && saveData != null)
+        {
+            if(_rewardManager != null)
+                _rewardManager.LoadRewardData(saveData.accumulatedRewards);
+        }
+
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }
 
@@ -342,6 +356,11 @@ public class InGameBootstrap : MonoBehaviour
         loop.OnChapterEnd += ShowSettlement;
 
         loop.StartChapter(chapterId, startStageIndex, seed);
+        
+        // 전투 중 보상 누적을 위함 (BattleReward DB)
+        if (_rewardManager == null)
+            _rewardManager = gameObject.AddComponent<InGameRewardManager>();
+        loop.SetRewardManager(_rewardManager);
     }
 
     // 챕터 종료 시 정산 팝업 표시 + 데이터 주입 (기획: 승패/콤보/총뎀/보상)
@@ -375,18 +394,39 @@ public class InGameBootstrap : MonoBehaviour
             topEnchantEntries[i] = new ResultEnchantEntry(topEnchants[i].Key, topEnchants[i].Value);
         }
 
-        // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
-        int gold = isVictory ? 100 : 0;
-        int parchment = isVictory ? 10 : 0;
+        // 보상
+        const int goldId = 70001;
+        const int parchmentId = 70002;
+        const int diamondId = 70003;
+        
+        int gold = 0;
+        int parchment = 0;
+        int diamond = 0;
+        
+        var battleRewards = _rewardManager != null ?
+            _rewardManager.GetAndClearAccumulatedRewards() : null;
+        if (battleRewards != null && battleRewards.Count > 0)
+        {
+            if(battleRewards.TryGetValue(goldId, out var battleGold)) gold += battleGold;
+            if(battleRewards.TryGetValue(parchmentId, out var battleParchment)) parchment += battleParchment;
+            if(battleRewards.TryGetValue(diamondId, out var battleDiamond)) diamond += battleDiamond;
+        }
 
         var loop = FindFirstObjectByType<StageLoopManager>();
         int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
         int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
+        
+        var repo = DataManager.Instance.RewardRepo;
+        var changeRewards = repo.GetCalculatedChangeRewards(chapterId, completedStageCount);
+        if (changeRewards != null && changeRewards.Count > 0)
+        {
+            
+        }
 
         // 단계④: 같은 정산이 중복 발동돼도 보상은 한 번만 지급(재정산 중복가산 방지).
         if (GameManager.Instance != null && !_settlementRewardGranted)
         {
-            GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment);
+            GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment, diamond);
             _settlementRewardGranted = true;
         }
 

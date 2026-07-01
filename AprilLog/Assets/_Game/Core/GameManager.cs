@@ -781,18 +781,13 @@ public class GameManager : MonoBehaviour
         SyncToCloud(data);
     }
 
-    public void SaveChapterResult(bool isVictory, int chapterId, int completedStageCount, int rewardGold, int rewardParchment)
+    public void SaveChapterResult(bool isVictory, int chapterId, int completedStageCount, int rewardGold, int rewardParchment, int rewardDiamond)
     {
-        if (!IsLoggedIn)
-        {
-            return;
-        }
-
         var data = CloudData ?? UserCloudData.CreateDefault();
         EnsureCloudIdentity(data);
-
-        data.gold = Mathf.Max(0, data.gold + Mathf.Max(0, rewardGold));
-        data.parchment = Mathf.Max(0, data.parchment + Mathf.Max(0, rewardParchment));
+        
+        AddCurrency(Mathf.Max(0, rewardGold), Mathf.Max(0, rewardParchment));
+        AddDiamond(Mathf.Max(0, rewardDiamond));
 
         if (isVictory)
         {
@@ -1301,6 +1296,7 @@ public class GameManager : MonoBehaviour
         var sortModel = FindFirstObjectByType<SortModel>();
         var sortSystem = FindFirstObjectByType<SortSystem>();
         var jokerSystem = FindFirstObjectByType<JokerSystem>();
+        var rewardManager = FindFirstObjectByType<InGameRewardManager>();
 
         var data = new InGameSaveData
         {
@@ -1319,6 +1315,9 @@ public class GameManager : MonoBehaviour
             jokerCount = jokerSystem != null ? jokerSystem.GetJokerCount() : 2,
             jokerRemainingCooldown = jokerSystem != null ? jokerSystem.GetRemainingCooldown() : 0f,
             nextStageSeed = sortSystem != null ? sortSystem.GetCurrentSeedForSave() : UnityEngine.Random.Range(0, int.MaxValue),
+            
+            // 전투 보상
+            accumulatedRewards = rewardManager != null ? rewardManager.ExportRewardData() : new List<ItemSaveEntry>(),
             
             // 인첸트
             acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),

@@ -37,6 +37,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     /// </summary>
     public event Action<MonsterAI, bool, bool> OnDeath;
     public event Action<int, int> OnHPChanged;
+    public event Action<MonsterAI, int> OnRewardContained;
 
     // ---------- SerializeField ----------
     [Header("설정")]
@@ -86,6 +87,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     // 플레이어 참조 (공격할 때 TakeDamage 호출용)
     private PlayerModel _playerModel;
+    
+    // 전투 보상
+    private int _rewardTriggerId;
 
     // ---------- 초기화 ----------
     public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false)
@@ -177,6 +181,11 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     public void SetPlayerModel(PlayerModel player)
     {
         _playerModel = player;
+    }
+
+    public void SetBattleReward(int triggerID)
+    {
+        _rewardTriggerId = triggerID;
     }
 
     // ---------- CC 적용 (스킬에서 호출) ----------
@@ -351,6 +360,8 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private void Die()
     {
         _state = State.Dead;
+        if(_rewardTriggerId != 0)
+            OnRewardContained?.Invoke(this ,_rewardTriggerId);
         OnDeath?.Invoke(this, false, _isBoss);
     }
 
@@ -370,6 +381,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _state = State.Dead;
         OnDeath = null;
         OnHPChanged = null;
+        OnRewardContained = null;
         _playerModel = null;
         _slowFactor = 1f; _slowEndTime = 0f;
         _knockbackVel = Vector2.zero; _knockbackEndTime = 0f;
