@@ -28,6 +28,9 @@ public class UserCloudData
     public int currentChapter = 1;
     public int currentStage = 1;
     public List<int> unlockedStages = new ();
+    // 최초 클리어 보상을 이미 지급한 스테이지의 실제 Stage_ID 집합(1회성 보상 중복지급 방지 + 최초클리어 판정).
+    // ★키는 반드시 데이터의 실제 Stage_ID(1000~)를 쓸 것 — BuildStageId(101~)/unlockedStages 기본값(10001)과 체계가 다르니 혼용 금지.
+    public List<int> firstClearRewardedStages = new ();
 
     // ---------- 재화 및 스태미너 ----------
     public int gold;
@@ -75,7 +78,7 @@ public class UserCloudData
             characterLevel = 1,
             currentChapter = 1,
             currentStage = 1,
-            unlockedStages = new List<int> { 10001 },
+            unlockedStages = new List<int> { 1000 },   // 챕터1 스테이지1의 실 Stage_ID(옛 10001은 실데이터 체계와 불일치)
             
             // 재화 및 스태미너
             gold = 0,
