@@ -26,6 +26,9 @@ public class StagePresenter
     private StageData _stageData;
     private System.Random _rng;
     private Action _onStageCompleteCallback;
+    
+    // ---------- event ----------
+    public event Action RequestRewardManager;
 
     // ---------- 생성자 ----------
     public StagePresenter(StageModel model, MonsterSpawner spawner, StageData stageData, System.Random rng, Action onComplete)
@@ -41,7 +44,14 @@ public class StagePresenter
         _model.OnStageClearTriggered += HandleStageClear;
         _model.OnSpawnRequested += HandleSpawnRequested;
         _model.OnDespawnRemainingRequested += HandleDespawnRemaining;
+        _model.RequestRewardManager += HandleRequestRewardManager;
         _spawner.IsBossDeath += HandleBossMonsterDied;
+    }
+
+    public void SetRewardManager(InGameRewardManager rewardManager)
+    {
+        _model?.SetRewardManager(rewardManager);
+        _spawner?.SetRewardManager(rewardManager);
     }
     
     // ---------- 이벤트 핸들러 ----------
@@ -85,6 +95,11 @@ public class StagePresenter
     {
         _model.NotifyBossKilled();
     }
+
+    private void HandleRequestRewardManager()
+    {
+        RequestRewardManager?.Invoke();
+    }
     
     // ---------- Update ----------
     public void UpdateSystem(float deltaTime)
@@ -106,6 +121,13 @@ public class StagePresenter
             _model.OnWaveStopped -= HandleWaveStopped;
             _model.OnStageClearTriggered -= HandleStageClear;
             _model.OnSpawnRequested -= HandleSpawnRequested;
+            _model.OnDespawnRemainingRequested -= HandleDespawnRemaining;
+            _model.RequestRewardManager -= HandleRequestRewardManager;
+        }
+        
+        if(_spawner != null)
+        {
+            _spawner.IsBossDeath -= HandleBossMonsterDied;
         }
 
         _onStageCompleteCallback = null;

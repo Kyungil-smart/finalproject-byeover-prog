@@ -46,11 +46,6 @@ public class UserCloudData
     // 추가: 조규민 - 구매 완료된 하우징 가구 ID를 계정 저장 데이터에 보관한다.
     public List<int> housingOwnedFurnitureIds = new List<int>();
 
-    // ---------- 아웃게임 성장 ----------
-    public int hpBonus;
-    public int attackBonus;
-    public int shieldBonus;
-
     // ---------- 업적 ----------
     public List<AchievementSaveEntry> achievements = new ();
 

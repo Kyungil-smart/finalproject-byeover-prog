@@ -76,6 +76,11 @@ public class StageLoopManager : MonoBehaviour
         StartStage();
     }
 
+    public void SetRewardManager(InGameRewardManager rewardManager)
+    {
+        _bootstrapper.SetRewardManager(rewardManager);
+    }
+
     private void OnDisable()
     {
         if (_playerModel != null)
