@@ -194,7 +194,7 @@ public class HousingIdleRewardPopupView : MonoBehaviour
             return;
         }
 
-        _confirmButton.interactable = _state.GoldReward > 0 || _state.ParchmentReward > 0 || _state.DiamondReward > 0;
+        _confirmButton.interactable = _state.HasClaimableReward;
     }
 
     private void SetText(TextMeshProUGUI _targetText, string _value)

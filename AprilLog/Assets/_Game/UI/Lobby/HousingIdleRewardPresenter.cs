@@ -82,6 +82,11 @@ public class HousingIdleRewardPresenter
 
     private void HandleConfirmClicked()
     {
+        if (!_model.CurrentState.HasClaimableReward)
+        {
+            return;
+        }
+
         HousingIdleRewardClaimResult _claimResult = _model.Claim();
         _onClaimRequested?.Invoke(_claimResult);
         _popupView.Hide();

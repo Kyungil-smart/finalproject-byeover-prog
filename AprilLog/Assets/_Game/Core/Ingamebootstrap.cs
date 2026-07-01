@@ -376,12 +376,23 @@ public class InGameBootstrap : MonoBehaviour
         int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
         int maxDamage = RunStats.HighestDamage;
         
-        // 스킬(인챈트)별 단일타격 최고뎀 상위 3개. RunStats가 MonsterAI.TakeDamage(dmg, skillId)로 스킬ID별 기록.
-        // (.Key=StandardID로 어떤 인챈트인지도 알 수 있음 — 정산창에 이름 표시하려면 ResultPopup.Show에 ID 추가)
-        var topEnchants = RunStats.TopSkillsByDamage(3);
-        int enchantDamage1 = topEnchants.Count > 0 ? topEnchants[0].Value : 0;
-        int enchantDamage2 = topEnchants.Count > 1 ? topEnchants[1].Value : 0;
-        int enchantDamage3 = topEnchants.Count > 2 ? topEnchants[2].Value : 0;
+        // 스킬(인챈트)별 누적 피해 상위 3개. RunStats가 MonsterAI.TakeDamage(dmg, skillId)로 스킬ID별 기록.
+        // .Key=StandardID이므로 ResultPopup에서 인챈트 아이콘을 역조회할 수 있다.
+      
+
+        // 수정 내용 : 정산 팝업에서 사용 스킬 아이콘을 표시할 수 있도록 TOP3 스킬 ID와 데미지를 함께 전달
+        var topEnchants = RunStats.TopSkillsByTotalDamage(3);
+        var topEnchantEntries = new ResultEnchantEntry[3];
+        for (int i = 0; i < topEnchantEntries.Length; i++)
+        {
+            if (i >= topEnchants.Count)
+            {
+                topEnchantEntries[i] = new ResultEnchantEntry(0, 0);
+                continue;
+            }
+
+            topEnchantEntries[i] = new ResultEnchantEntry(topEnchants[i].Key, topEnchants[i].Value);
+        }
 
         // 보상
         const int goldId = 70001;
@@ -419,7 +430,7 @@ public class InGameBootstrap : MonoBehaviour
             _settlementRewardGranted = true;
         }
 
-        view.Show(isVictory, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, gold, parchment);
+        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
         // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.

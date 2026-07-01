@@ -9,6 +9,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 세이브/로드 시 인첸트별 최고치 정보 또한 갱신 하도록 수정
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 정산 팝업 TOP3 표시용 스킬별 누적 피해 기록 추가
+
 using System.Collections.Generic;
 
 /// <summary>
@@ -23,6 +26,7 @@ public static class RunStats
     // 스킬(StandardID)별 단일타격 최고뎀. 정산창 '인챈트별 최고치'용.
     private static Dictionary<int, int> _maxBySkill = new ();
     public static Dictionary<int, int> MaxBySkill => _maxBySkill;
+    private static Dictionary<int, int> _totalBySkill = new ();
 
     public static void Reset()
     {
@@ -30,6 +34,8 @@ public static class RunStats
         HighestDamage = 0;
         _maxBySkill ??= new Dictionary<int, int>();
         _maxBySkill.Clear();
+        _totalBySkill ??= new Dictionary<int, int>();
+        _totalBySkill.Clear();
     }
 
     public static void RestoreFromSave(int totalDamage, int highestDamage, List<MaxBySkillSaveData> maxBySkill)
@@ -38,6 +44,7 @@ public static class RunStats
         HighestDamage = highestDamage;
         _maxBySkill ??= new Dictionary<int, int>();
         _maxBySkill = LoadMaxBySkill(maxBySkill);
+        _totalBySkill = new Dictionary<int, int>(_maxBySkill);
     }
 
     public static void AddDamage(int amount) => AddDamage(amount, 0);
@@ -55,6 +62,14 @@ public static class RunStats
             _maxBySkill ??= new Dictionary<int, int>();
             if (!_maxBySkill.TryGetValue(skillId, out int cur) || amount > cur)
                 _maxBySkill[skillId] = amount;
+
+            _totalBySkill ??= new Dictionary<int, int>();
+            if (!_totalBySkill.TryGetValue(skillId, out int total))
+            {
+                total = 0;
+            }
+
+            _totalBySkill[skillId] = total + amount;
         }
     }
 
@@ -69,6 +84,20 @@ public static class RunStats
             return new List<KeyValuePair<int, int>>();
         
         var list = new List<KeyValuePair<int, int>>(_maxBySkill);
+        list.Sort((a, b) => b.Value.CompareTo(a.Value));
+        if (count >= 0 && list.Count > count)
+            list.RemoveRange(count, list.Count - count);
+        return list;
+    }
+
+    public static List<KeyValuePair<int, int>> TopSkillsByTotalDamage(int count)
+    {
+        if (_totalBySkill == null || _totalBySkill.Count == 0)
+        {
+            return TopSkillsByDamage(count);
+        }
+
+        var list = new List<KeyValuePair<int, int>>(_totalBySkill);
         list.Sort((a, b) => b.Value.CompareTo(a.Value));
         if (count >= 0 && list.Count > count)
             list.RemoveRange(count, list.Count - count);

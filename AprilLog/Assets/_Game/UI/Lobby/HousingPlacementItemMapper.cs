@@ -14,6 +14,7 @@ public class HousingPlacementItemMapper
     private const string _categoryBackground = "background";
     private const string _categoryNone = "none";
     private const string _typeDecoration = "decoration";
+    private const int _diamondItemId = 70003;
 
     private readonly IReadOnlyList<HousingSpriteBinding> _iconSprites;
 
@@ -47,8 +48,7 @@ public class HousingPlacementItemMapper
         HousingRepo _housingRepo,
         string _category)
     {
-        // 현재 HousingRepo는 GetFurnitureListByType이 Category 캐시를 바라본다.
-        AddFurnitureList(_target, _addedKeys, _housingRepo.GetFurnitureListByType(_category));
+        AddFurnitureList(_target, _addedKeys, _housingRepo.GetFurnitureListByCategory(_category));
     }
 
     private void AddByCurrentRepoType(
@@ -57,8 +57,7 @@ public class HousingPlacementItemMapper
         HousingRepo _housingRepo,
         string _type)
     {
-        // 현재 HousingRepo는 GetFurnitureListByCategory가 Type 캐시를 바라본다.
-        AddFurnitureList(_target, _addedKeys, _housingRepo.GetFurnitureListByCategory(_type));
+        AddFurnitureList(_target, _addedKeys, _housingRepo.GetFurnitureListByType(_type));
     }
 
     private void AddFurnitureList(
@@ -100,6 +99,9 @@ public class HousingPlacementItemMapper
         string _iconKey = NormalizeFileKey(_furniture.ICO);
         Sprite _icon = LoadIcon(_iconKey);
         bool _isOwned = _furniture.Price <= 0;
+        HousingPlacementPriceCurrency _priceCurrency = _furniture.Item_ID == _diamondItemId
+            ? HousingPlacementPriceCurrency.Diamond
+            : HousingPlacementPriceCurrency.Gold;
 
         return new HousingPlacementItemData(
             _furniture.Furniture_ID,
@@ -116,7 +118,8 @@ public class HousingPlacementItemMapper
             NormalizeText(_furniture.Location),
             NormalizeKey(_furniture.Category),
             NormalizeKey(_furniture.Type),
-            NormalizeFileKey(_furniture.Resources));
+            NormalizeFileKey(_furniture.Resources),
+            _priceCurrency);
     }
 
     private string ResolveDisplayName(HousingFurnitureData _furniture)

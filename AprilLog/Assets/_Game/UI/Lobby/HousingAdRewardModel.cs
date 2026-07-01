@@ -15,7 +15,15 @@ public class HousingAdRewardModel
 
     public HousingAdRewardModel(string _message, string _rewardTitle, string _confirmText, string _cancelText)
     {
-        _currentState = new HousingAdRewardState(false, _message, _rewardTitle, _confirmText, _cancelText);
+        _currentState = new HousingAdRewardState(
+            false,
+            HousingAdRewardStatus.Loading,
+            _message,
+            _rewardTitle,
+            _confirmText,
+            _cancelText,
+            "광고를 준비하고 있습니다.",
+            false);
     }
 
     public void Show()
@@ -26,6 +34,20 @@ public class HousingAdRewardModel
     public void Hide()
     {
         SetVisible(false);
+    }
+
+    public void SetAdStatus(HousingAdRewardStatus _status, string _statusMessage, bool _canConfirm)
+    {
+        _currentState = _currentState.WithAdStatus(_status, _statusMessage, _canConfirm);
+        OnStateChanged?.Invoke(_currentState);
+    }
+
+    public void ShowStatus(HousingAdRewardStatus _status, string _statusMessage, bool _canConfirm)
+    {
+        _currentState = _currentState
+            .WithAdStatus(_status, _statusMessage, _canConfirm)
+            .WithVisible(true);
+        OnStateChanged?.Invoke(_currentState);
     }
 
     private void SetVisible(bool _isVisible)
@@ -40,30 +62,72 @@ public class HousingAdRewardModel
     }
 }
 
+public enum HousingAdRewardStatus
+{
+    Loading,
+    Ready,
+    Showing,
+    Offline,
+    Failed
+}
+
 public readonly struct HousingAdRewardState
 {
     public bool IsVisible { get; }
+    public HousingAdRewardStatus Status { get; }
     public string Message { get; }
     public string RewardTitle { get; }
     public string ConfirmText { get; }
     public string CancelText { get; }
+    public string StatusMessage { get; }
+    public bool CanConfirm { get; }
 
     public HousingAdRewardState(
         bool _isVisible,
+        HousingAdRewardStatus _status,
         string _message,
         string _rewardTitle,
         string _confirmText,
-        string _cancelText)
+        string _cancelText,
+        string _statusMessage,
+        bool _canConfirm)
     {
         IsVisible = _isVisible;
+        Status = _status;
         Message = string.IsNullOrWhiteSpace(_message) ? "광고를 보고 보상을 획득하시겠습니까?" : _message;
         RewardTitle = string.IsNullOrWhiteSpace(_rewardTitle) ? "Reward" : _rewardTitle;
         ConfirmText = string.IsNullOrWhiteSpace(_confirmText) ? "광고 보기" : _confirmText;
         CancelText = string.IsNullOrWhiteSpace(_cancelText) ? "취소" : _cancelText;
+        StatusMessage = _statusMessage;
+        CanConfirm = _canConfirm;
     }
 
     public HousingAdRewardState WithVisible(bool _isVisible)
     {
-        return new HousingAdRewardState(_isVisible, Message, RewardTitle, ConfirmText, CancelText);
+        return new HousingAdRewardState(
+            _isVisible,
+            Status,
+            Message,
+            RewardTitle,
+            ConfirmText,
+            CancelText,
+            StatusMessage,
+            CanConfirm);
+    }
+
+    public HousingAdRewardState WithAdStatus(
+        HousingAdRewardStatus _status,
+        string _statusMessage,
+        bool _canConfirm)
+    {
+        return new HousingAdRewardState(
+            IsVisible,
+            _status,
+            Message,
+            RewardTitle,
+            ConfirmText,
+            CancelText,
+            _statusMessage,
+            _canConfirm);
     }
 }

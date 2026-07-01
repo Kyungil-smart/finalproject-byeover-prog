@@ -802,7 +802,34 @@ public class GameManager : MonoBehaviour
         SyncToCloud(data);
         RaiseCurrencyChanged();   // 단계②: 전투 보상이 View(로비 등)에 전파되도록 단일 이벤트 발행
     }
-    
+
+    // ---------- 최초 클리어 보상 (1회성, 영속) ----------
+    // 팀 공용 canonical API. 중복방지 + 지급 + 영속만 책임진다. 보상 수치는 호출부(기획 데이터)가 정한다.
+    // 반복 클리어로 매번 주는 '변동 보상'은 이 API가 아니라 AddCurrency로 처리할 것(그건 1회성 아님).
+
+    /// <summary>해당 스테이지의 최초 클리어 보상을 이미 지급했는지. 키는 데이터의 실제 Stage_ID(1000~).</summary>
+    public bool IsStageFirstClearRewarded(int stageId)
+    {
+        return CloudData != null
+            && CloudData.firstClearRewardedStages != null
+            && CloudData.firstClearRewardedStages.Contains(stageId);
+    }
+
+    /// <summary>스테이지 최초 클리어 보상을 1회만 지급한다. 이미 지급됐거나 CloudData 없으면 아무것도 안 하고 false.
+    /// stageId는 데이터의 실제 Stage_ID(StageData.Stage_ID / StageRepo.GetStageId)를 넘길 것(BuildStageId 금지).</summary>
+    public bool TryGrantFirstClearReward(int stageId, int bonusGold, int bonusParchment)
+    {
+        if (stageId <= 0 || CloudData == null) return false;
+        if (IsStageFirstClearRewarded(stageId)) return false;   // 이미 최초보상 지급됨 → 중복 차단
+
+        if (CloudData.firstClearRewardedStages == null) CloudData.firstClearRewardedStages = new List<int>();
+        CloudData.firstClearRewardedStages.Add(stageId);        // 먼저 마킹 → 아래 지급 영속 시 함께 저장
+
+        AddCurrency(Mathf.Max(0, bonusGold), Mathf.Max(0, bonusParchment), $"최초클리어 보상 Stage {stageId}");
+        Debug.Log($"[GameManager] 최초 클리어 보상 지급: Stage {stageId} (+골드 {bonusGold} +양피지 {bonusParchment})");
+        return true;
+    }
+
     public void SaveArtifact(List<ArtifactInstance> myArtifacts)
     {
         var data = CloudData ?? UserCloudData.CreateDefault();
@@ -978,12 +1005,16 @@ public class GameManager : MonoBehaviour
             return false;
         }
 
-        SpendHousingPurchaseCurrency(_safePrice, _currency);
+        if (!TrySpendHousingPurchaseCurrency(_safePrice, _currency))
+        {
+            Debug.LogError($"[하우징 구매] 재화 차감에 실패했습니다. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+            return false;
+        }
+
         CloudData.housingOwnedFurnitureIds.Add(_furnitureId);
         Debug.Log($"[하우징 구매] 가구 구매 완료. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
 
-        RaiseCurrencyChanged();
-        SyncToCloud(CloudData);
+        SyncAndSaveResourceCloudData();
         return true;
     }
 
@@ -1005,6 +1036,14 @@ public class GameManager : MonoBehaviour
             return true;
         }
 
+        var _repo = DataManager.Instance?.ResourceRepo;
+
+        if (_repo != null)
+        {
+            int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
+            return _repo.GetItemCount(_itemId) >= _price;
+        }
+
         switch (_currency)
         {
             case HousingPlacementPriceCurrency.Diamond:
@@ -1014,23 +1053,30 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void SpendHousingPurchaseCurrency(int _price, HousingPlacementPriceCurrency _currency)
+    private bool TrySpendHousingPurchaseCurrency(int _price, HousingPlacementPriceCurrency _currency)
     {
         if (_price <= 0)
         {
-            return;
+            return true;
         }
 
         // 수정 : 김영찬 -> 재화는 CloudData.diamond/gold를 직접 증/차감 하면 안되서 수정함 
-        switch (_currency)
+        var _repo = DataManager.Instance?.ResourceRepo;
+
+        if (_repo != null)
         {
-            case HousingPlacementPriceCurrency.Diamond:
-                TrySpendDiamond(_price);
-                break;
-            default:
-                TrySpendCurrency(_price, 0);
-                break;
+            int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
+            return _repo.UseItem(_itemId, _price);
         }
+
+        if (_currency == HousingPlacementPriceCurrency.Diamond)
+        {
+            CloudData.diamond -= _price;
+            return true;
+        }
+
+        CloudData.gold -= _price;
+        return true;
     }
 
     private void EnsureHousingOwnedFurnitureData()
@@ -1076,6 +1122,54 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[하우징 자동재화] +골드 {gold} +양피지 {parchment} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
         RaiseCurrencyChanged();
         PersistCurrency();
+    }
+
+    // 추가: 조규민 - 하우징 방치 보상의 모든 재화를 한 번의 저장 흐름으로 지급한다.
+    public bool ClaimHousingIdleReward(int _gold, int _parchment, int _diamond, string _lastClaimAtUtc)
+    {
+        _gold = Mathf.Max(0, _gold);
+        _parchment = Mathf.Max(0, _parchment);
+        _diamond = Mathf.Max(0, _diamond);
+
+        if (_gold == 0 && _parchment == 0 && _diamond == 0)
+        {
+            return false;
+        }
+
+        EnsureCurrencyData();
+        var _repo = DataManager.Instance?.ResourceRepo;
+
+        if (_repo != null)
+        {
+            if (_gold > 0)
+            {
+                _repo.AddItem(GoldId, _gold);
+            }
+
+            if (_parchment > 0)
+            {
+                _repo.AddItem(ParchmentId, _parchment);
+            }
+
+            if (_diamond > 0)
+            {
+                _repo.AddItem(DiamondId, _diamond);
+            }
+        }
+        else
+        {
+            CloudData.gold = Mathf.Max(0, CloudData.gold + _gold);
+            CloudData.parchment = Mathf.Max(0, CloudData.parchment + _parchment);
+            CloudData.diamond = Mathf.Max(0, CloudData.diamond + _diamond);
+        }
+
+        CloudData.housingAutoCurrencyLastClaimAt = string.IsNullOrWhiteSpace(_lastClaimAtUtc)
+            ? DateTime.UtcNow.ToString("o")
+            : _lastClaimAtUtc;
+
+        Debug.Log($"[하우징 자동 재화] +골드 {_gold} +양피지 {_parchment} +다이아 {_diamond} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
+        SyncAndSaveResourceCloudData();
+        return true;
     }
 
     private static bool TryParseUtc(string value, out DateTime utcTime)
@@ -1158,13 +1252,19 @@ public class GameManager : MonoBehaviour
             && DataManager.Instance.StageRepo.GetStage(stageId) != null;
     }
 
+    // 실 Stage_ID는 불규칙 체계(챕터1~5=1000~, 6~10=1100~)라 산술 불가 → StageRepo에서 (챕터,순서) 역조회.
+    // 못 찾으면 -1(HasStage/AddUnlockedStage가 무시). 옛 chapterId*100(101~)은 실데이터(1000~)와 안 맞아
+    // HasStage가 항상 실패 → 다음 챕터 해금(currentChapter 상승)이 막혀 있었다(progression 버그).
     private static int BuildStageId(int chapterId, int stageNumber)
     {
-        return chapterId * 100 + Mathf.Max(1, stageNumber);
+        var repo = DataManager.Instance != null ? DataManager.Instance.StageRepo : null;
+        return repo != null ? repo.GetStageId(chapterId, Mathf.Max(1, stageNumber)) : -1;
     }
 
     private static void AddUnlockedStage(UserCloudData data, int stageId)
     {
+        if (stageId <= 0) return;   // BuildStageId가 못 찾으면 -1 → 잘못된 ID로 unlockedStages 오염 방지
+
         if (data.unlockedStages == null)
         {
             data.unlockedStages = new List<int>();

@@ -1,6 +1,9 @@
 // 작성자 : 김영찬
 // 설명 : 하우징 DB의 Dictionary 캐쉬 생성 및 조회
 
+// 1차 수정자 : 조규민
+// 수정 내용 : Type/Category 캐시 기준 정상화 및 현재 챕터 이하 최신 하우징 보상 조회 추가
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -30,8 +33,8 @@ public class HousingRepo : MonoBehaviour
         }
 
         _furnitureById = BuildDictionary(_furnitureTable, nameof(_furnitureTable), r => r.Furniture_ID);
-        _furnitureByCategory = BuildGroupedDictionary(_furnitureTable, nameof(_furnitureTable), r => r.Type);
-        _furnitureByType = BuildGroupedDictionary(_furnitureTable, nameof(_furnitureTable), r => r.Category);
+        _furnitureByType = BuildGroupedDictionary(_furnitureTable, nameof(_furnitureTable), r => r.Type);
+        _furnitureByCategory = BuildGroupedDictionary(_furnitureTable, nameof(_furnitureTable), r => r.Category);
         _rewards = BuildDictionary(_rewardTable, nameof(_rewardTable), r => r.ClearChapter);
         
         _isInitialized = true;
@@ -43,6 +46,31 @@ public class HousingRepo : MonoBehaviour
     public List<HousingFurnitureData> GetFurnitureListByType(string type) => GetData(_furnitureByType, type, nameof(GetFurnitureListByType));
     public List<HousingFurnitureData> GetFurnitureListByCategory(string category) => GetData(_furnitureByCategory, category, nameof(GetFurnitureListByCategory));
     public HousingRewardData GetReward(int id) => GetData(_rewards, id, nameof(GetReward));
+
+    public HousingRewardData GetRewardAtOrBelow(int _clearChapter)
+    {
+        if (_rewards == null)
+        {
+            Debug.LogWarning("[HousingRepo] GetRewardAtOrBelow cache is not initialized.");
+            return null;
+        }
+
+        int _bestChapter = int.MinValue;
+        HousingRewardData _bestReward = null;
+
+        foreach (KeyValuePair<int, HousingRewardData> _entry in _rewards)
+        {
+            if (_entry.Key > _clearChapter || _entry.Key <= _bestChapter)
+            {
+                continue;
+            }
+
+            _bestChapter = _entry.Key;
+            _bestReward = _entry.Value;
+        }
+
+        return _bestReward;
+    }
     
     // ---------- 보조 함수 ----------
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(

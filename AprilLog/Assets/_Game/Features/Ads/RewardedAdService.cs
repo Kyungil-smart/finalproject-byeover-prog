@@ -4,6 +4,9 @@ using GoogleMobileAds.Api;
 
 // 작성자 : 홍정옥
 // 설명   : Google Mobile Ads 보상형 광고(RewardedAd) 래퍼
+
+// 1차 수정자 : 조규민
+// 수정 내용 : 여러 광고 화면의 SDK 중복 초기화와 동시 표시 방지, 예외 발생 시 콜백 상태 복구
 public class RewardedAdService : MonoBehaviour
 {
     // 구글 보상형 광고 테스트 ID (개발/검수용)
@@ -26,9 +29,16 @@ public class RewardedAdService : MonoBehaviour
     // ---------- 상태 ----------
     public bool IsInitialized { get; private set; }
     public bool IsAdReady => _rewardedAd != null && _rewardedAd.CanShowAd();
+    public bool IsShowingAd => _isShowingAd;
 
     private RewardedAd _rewardedAd;
     private bool _isLoading;
+    private bool _isShowingAd;
+
+    private static bool _isSdkInitializationStarted;
+    private static bool _isSdkInitialized;
+    private static bool _isAnyAdShowing;
+    private static event Action<bool> OnSdkInitializationCompleted;
 
     private string AdUnitId => _useTestIds ? TestAdUnitAndroid : _androidAdUnitId;
 
@@ -41,6 +51,15 @@ public class RewardedAdService : MonoBehaviour
 
     private void OnDestroy()
     {
+        OnSdkInitializationCompleted -= HandleSdkInitializationCompleted;
+
+        if (_isShowingAd)
+        {
+            _isShowingAd = false;
+            _isAnyAdShowing = false;
+        }
+
+        ClearPending();
         DestroyAd();
     }
 
@@ -53,13 +72,53 @@ public class RewardedAdService : MonoBehaviour
             return;
         }
 
-        MobileAds.Initialize(_ =>
+        if (_isSdkInitialized)
         {
-            // 콜백은 메인스레드에서 호출됨(SDK가 보장).
-            IsInitialized = true;
-            Debug.Log("[RewardedAdService] Mobile Ads SDK 초기화 완료");
-            LoadAd();
+            CompleteInitialization();
+            return;
+        }
+
+        OnSdkInitializationCompleted -= HandleSdkInitializationCompleted;
+        OnSdkInitializationCompleted += HandleSdkInitializationCompleted;
+
+        if (_isSdkInitializationStarted)
+        {
+            return;
+        }
+
+        _isSdkInitializationStarted = true;
+
+        MobileAds.Initialize(_initializationStatus =>
+        {
+            bool _isSucceeded = _initializationStatus != null;
+            _isSdkInitialized = _isSucceeded;
+            _isSdkInitializationStarted = false;
+
+            Action<bool> _callbacks = OnSdkInitializationCompleted;
+            OnSdkInitializationCompleted = null;
+            _callbacks?.Invoke(_isSucceeded);
         });
+    }
+
+    private void HandleSdkInitializationCompleted(bool _isSucceeded)
+    {
+        OnSdkInitializationCompleted -= HandleSdkInitializationCompleted;
+
+        if (!_isSucceeded)
+        {
+            Debug.LogWarning("[RewardedAdService] Mobile Ads SDK 초기화에 실패했습니다.", this);
+            OnAdLoadFailed?.Invoke();
+            return;
+        }
+
+        CompleteInitialization();
+    }
+
+    private void CompleteInitialization()
+    {
+        IsInitialized = true;
+        Debug.Log("[RewardedAdService] Mobile Ads SDK 초기화 완료");
+        LoadAd();
     }
 
     // ---------- 로드 ----------
@@ -100,26 +159,56 @@ public class RewardedAdService : MonoBehaviour
     // ---------- 표시 ----------
     // 보상 획득 시 onRewardEarned, 광고 닫힘 시 onClosed, 표시 실패 시 onFailed 호출
     // 호출 후 다음 사용을 위해 새 광고를 자동 로드한다.
-    public void ShowAd(Action onRewardEarned, Action onClosed, Action onFailed)
+    public bool ShowAd(Action onRewardEarned, Action onClosed, Action onFailed)
     {
+        if (_isShowingAd || _isAnyAdShowing)
+        {
+            Debug.LogWarning("[RewardedAdService] 다른 보상형 광고가 이미 재생 중입니다.", this);
+            onFailed?.Invoke();
+            return false;
+        }
+
         if (!IsAdReady)
         {
             Debug.LogWarning("[RewardedAdService] 준비된 광고가 없습니다.", this);
             onFailed?.Invoke();
             LoadAd();
-            return;
+            return false;
         }
 
         _pendingReward = onRewardEarned;
         _pendingClosed = onClosed;
         _pendingFailed = onFailed;
+        _rewardEarnedThisShow = false;
+        _isShowingAd = true;
+        _isAnyAdShowing = true;
 
-        _rewardedAd.Show(_ =>
+        try
         {
-            // 보상 지급 조건 충족(광고를 끝까지 시청)
-            _rewardEarnedThisShow = true;
-            _pendingReward?.Invoke();
-        });
+            _rewardedAd.Show(_ =>
+            {
+                // 보상 지급 조건 충족(광고를 끝까지 시청)
+                if (_rewardEarnedThisShow)
+                {
+                    return;
+                }
+
+                _rewardEarnedThisShow = true;
+                _pendingReward?.Invoke();
+            });
+        }
+        catch (Exception _exception)
+        {
+            Debug.LogWarning($"[RewardedAdService] 광고 표시 요청 중 예외가 발생했습니다: {_exception.Message}", this);
+            Action _failedCallback = _pendingFailed;
+            ReleaseShowingState();
+            ClearPending();
+            _failedCallback?.Invoke();
+            LoadAd();
+            return false;
+        }
+
+        return true;
     }
 
     // 표시 1회 동안의 콜백/중복 방어 상태
@@ -138,19 +227,32 @@ public class RewardedAdService : MonoBehaviour
 
         ad.OnAdFullScreenContentClosed += () =>
         {
-            _pendingClosed?.Invoke();
+            Action _closedCallback = _pendingClosed;
+            ReleaseShowingState();
             ClearPending();
+            _closedCallback?.Invoke();
             LoadAd(); // 다음 시청을 위해 미리 로드
         };
 
         ad.OnAdFullScreenContentFailed += (AdError adError) =>
         {
             Debug.LogWarning($"[RewardedAdService] 광고 표시 실패: {adError}", this);
-            if (!_rewardEarnedThisShow)
-                _pendingFailed?.Invoke();
+            Action _failedCallback = _pendingFailed;
+            bool _shouldNotifyFailure = !_rewardEarnedThisShow;
+            ReleaseShowingState();
+
+            if (_shouldNotifyFailure)
+                _failedCallback?.Invoke();
+
             ClearPending();
             LoadAd();
         };
+    }
+
+    private void ReleaseShowingState()
+    {
+        _isShowingAd = false;
+        _isAnyAdShowing = false;
     }
 
     private void ClearPending()
