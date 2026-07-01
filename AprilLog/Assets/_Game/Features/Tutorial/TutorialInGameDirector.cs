@@ -1,14 +1,16 @@
 //작성자 : 홍정옥
 // 인게임 튜토리얼 0챕터 시퀀스를 직접 구동한다
 // 튜토리얼 진행 중일 때만 동작한다.
-// 씬에 두면 Start에서 시스템을 자가 탐색하고, 일반 웨이브를 멈춘 뒤 현재 단계 시퀀스를 시작한다.
+// 씬에 두면 Start에서 시스템을 자가 탐색하고, 현재 단계 시퀀스를 시작한다.
 
 using System.Collections;
 using UnityEngine;
 
 public class TutorialInGameDirector : MonoBehaviour
 {
-    private static readonly string[] RequiredStep0RedSlotNames = { "sort (0)", "sort (13)", "sort (16)" };
+    private static readonly string[] RequiredStep0RedSlotNames = { "sort (0)", "sort (12)", "sort (13)" };
+
+    public static bool AllowsPausedSortInput { get; private set; }
 
     [System.Serializable]
     private struct Step0BoardSlot
@@ -53,6 +55,8 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private bool _active;
     private bool _step0DragArrowHidden;
+    private bool _isGameplayPausedForGuide;
+    private float _previousTimeScale = 1f;
 
     private void Start()
     {
@@ -68,6 +72,7 @@ public class TutorialInGameDirector : MonoBehaviour
     private void OnDestroy()
     {
         if (_inputHandler != null) _inputHandler.OnDragStarted -= HandleDragStarted;
+        ResumeGameplayAfterGuide();
     }
 
     private static bool IsInGameStep(TutorialStep step)
@@ -83,18 +88,38 @@ public class TutorialInGameDirector : MonoBehaviour
         _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
     }
 
-    // 모든 Start 완료(부트스트랩의 StartChapter 포함) 뒤 일반 웨이브를 제거하고 시퀀스를 시작한다.
+    // 모든 Start 완료(부트스트랩의 StartChapter 포함) 뒤 현재 튜토리얼 시퀀스를 시작한다.
     private IEnumerator SuppressThenBegin()
     {
         yield return null;
-        SuppressNormalWaves();
+
+        // 튜토리얼 2-3 이후 단계는 실제 몬스터 스폰/공격/경험치 흐름을 전제로 한다.
+        // 여기서 StageBootstrapper.StopStage()를 호출하면 Presenter가 해제되어 이후 스폰 요청이 끊긴다.
         BeginCurrentStep();
     }
 
     private void SuppressNormalWaves()
     {
-        if (_stageBootstrapper != null) _stageBootstrapper.StopStage();
-        if (_spawner != null) _spawner.DespawnAllAliveMonsters();
+        PauseGameplayForGuide();
+    }
+
+    private void PauseGameplayForGuide()
+    {
+        if (_isGameplayPausedForGuide) return;
+
+        _previousTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+        AllowsPausedSortInput = true;
+        _isGameplayPausedForGuide = true;
+    }
+
+    private void ResumeGameplayAfterGuide()
+    {
+        if (!_isGameplayPausedForGuide) return;
+
+        Time.timeScale = _previousTimeScale;
+        AllowsPausedSortInput = false;
+        _isGameplayPausedForGuide = false;
     }
 
     // 현재 단계에 맞는 시퀀스를 시작한다.
@@ -114,6 +139,7 @@ public class TutorialInGameDirector : MonoBehaviour
     private void RunStep0()
     {
         _step0DragArrowHidden = false;
+        SuppressNormalWaves();
 
         // 대기열 준비 후 커스텀 보드로 덮어 "한 수면 정렬 완성" 보드를 만든다.
         if (_sortSystem != null) _sortSystem.Initialize(_step0Seed);
@@ -162,6 +188,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (step == null || step.stepId != 0) return;
         if (!MatchesConfiguredDragFrom(tableIdx, slotIdx)) return;
 
+        ResumeGameplayAfterGuide();
         if (_step0DragArrow != null) _step0DragArrow.Hide();
         if (_step0Finger != null) _step0Finger.Hide();
         _step0DragArrowHidden = true;
