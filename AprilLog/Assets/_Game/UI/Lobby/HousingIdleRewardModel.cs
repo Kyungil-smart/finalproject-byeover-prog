@@ -7,6 +7,8 @@ using UnityEngine;
 public class HousingIdleRewardModel
 {
     private readonly int _maxChargeSeconds;
+    private readonly int _rewardIntervalSeconds;
+    private readonly int _maxRewardCount;
     private readonly HousingIdleRewardTable _rewardTable;
 
     private DateTime _chargeStartUtc;
@@ -16,9 +18,11 @@ public class HousingIdleRewardModel
 
     public HousingIdleRewardState CurrentState => _currentState;
 
-    public HousingIdleRewardModel(int _maxChargeSeconds, HousingIdleRewardTable _rewardTable, DateTime _chargeStartUtc)
+    public HousingIdleRewardModel(int _maxChargeSeconds, int _rewardIntervalSeconds, HousingIdleRewardTable _rewardTable, DateTime _chargeStartUtc)
     {
         this._maxChargeSeconds = Mathf.Max(1, _maxChargeSeconds);
+        this._rewardIntervalSeconds = Mathf.Max(1, _rewardIntervalSeconds);
+        _maxRewardCount = Mathf.Max(1, Mathf.FloorToInt((float)this._maxChargeSeconds / this._rewardIntervalSeconds));
         this._rewardTable = _rewardTable ?? HousingIdleRewardTable.Empty;
         this._chargeStartUtc = EnsureUtc(_chargeStartUtc);
         _currentState = CalculateState(this._chargeStartUtc);
@@ -56,31 +60,34 @@ public class HousingIdleRewardModel
     private HousingIdleRewardState CalculateState(DateTime _nowUtc)
     {
         double _elapsedSeconds = Math.Max(0d, (_nowUtc - _chargeStartUtc).TotalSeconds);
-        float _progress = Mathf.Clamp01((float)(_elapsedSeconds / _maxChargeSeconds));
+        double _cappedElapsedSeconds = Math.Min(_elapsedSeconds, _maxChargeSeconds);
+        // 1시간이 완전히 지난 횟수만 보상으로 인정하고, 최대 누적 시간 이후에는 더 쌓지 않습니다.
+        int _rewardCount = Mathf.Clamp(Mathf.FloorToInt((float)(_cappedElapsedSeconds / _rewardIntervalSeconds)), 0, _maxRewardCount);
+        float _progress = Mathf.Clamp01((float)(_cappedElapsedSeconds / _maxChargeSeconds));
         int _progressPercent = Mathf.Clamp(Mathf.FloorToInt(_progress * 100f), 0, 100);
 
         return new HousingIdleRewardState(
             _progress,
             _progressPercent,
-            Mathf.FloorToInt(_rewardTable.MaxGoldReward * _progress),
-            Mathf.FloorToInt(_rewardTable.MaxParchmentReward * _progress),
-            Mathf.FloorToInt(_rewardTable.MaxDiamondReward * _progress),
-            CalculateRewardPerHour(_rewardTable.MaxGoldReward),
-            CalculateRewardPerHour(_rewardTable.MaxParchmentReward),
-            CalculateRewardPerHour(_rewardTable.MaxDiamondReward),
+            CalculateReward(_rewardTable.GoldRewardPerHour, _rewardCount),
+            CalculateReward(_rewardTable.ParchmentRewardPerHour, _rewardCount),
+            CalculateReward(_rewardTable.DiamondRewardPerHour, _rewardCount),
+            _rewardTable.GoldRewardPerHour,
+            _rewardTable.ParchmentRewardPerHour,
+            _rewardTable.DiamondRewardPerHour,
             _rewardTable.GoldItemId,
             _rewardTable.ParchmentItemId,
             _rewardTable.DiamondItemId);
     }
 
-    private int CalculateRewardPerHour(int _maxReward)
+    private int CalculateReward(int _rewardPerHour, int _rewardCount)
     {
-        if (_maxReward <= 0)
+        if (_rewardPerHour <= 0 || _rewardCount <= 0)
         {
             return 0;
         }
 
-        return Mathf.FloorToInt(_maxReward * 3600f / _maxChargeSeconds);
+        return _rewardPerHour * _rewardCount;
     }
 
     private static DateTime EnsureUtc(DateTime _dateTime)
@@ -112,26 +119,26 @@ public class HousingIdleRewardTable
     public static readonly HousingIdleRewardTable Empty = new HousingIdleRewardTable(70001, 0, 70002, 0, 70003, 0);
 
     public int GoldItemId { get; }
-    public int MaxGoldReward { get; }
+    public int GoldRewardPerHour { get; }
     public int ParchmentItemId { get; }
-    public int MaxParchmentReward { get; }
+    public int ParchmentRewardPerHour { get; }
     public int DiamondItemId { get; }
-    public int MaxDiamondReward { get; }
+    public int DiamondRewardPerHour { get; }
 
     public HousingIdleRewardTable(
         int _goldItemId,
-        int _maxGoldReward,
+        int _goldRewardPerHour,
         int _parchmentItemId,
-        int _maxParchmentReward,
+        int _parchmentRewardPerHour,
         int _diamondItemId,
-        int _maxDiamondReward)
+        int _diamondRewardPerHour)
     {
         GoldItemId = _goldItemId;
-        MaxGoldReward = Mathf.Max(0, _maxGoldReward);
+        GoldRewardPerHour = Mathf.Max(0, _goldRewardPerHour);
         ParchmentItemId = _parchmentItemId;
-        MaxParchmentReward = Mathf.Max(0, _maxParchmentReward);
+        ParchmentRewardPerHour = Mathf.Max(0, _parchmentRewardPerHour);
         DiamondItemId = _diamondItemId;
-        MaxDiamondReward = Mathf.Max(0, _maxDiamondReward);
+        DiamondRewardPerHour = Mathf.Max(0, _diamondRewardPerHour);
     }
 }
 
