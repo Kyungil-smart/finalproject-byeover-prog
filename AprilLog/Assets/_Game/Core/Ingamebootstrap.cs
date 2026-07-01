@@ -73,8 +73,8 @@ public class InGameBootstrap : MonoBehaviour
     [Header("웨이브")]
     [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
     [SerializeField] private int _defaultChapterId = 1;
-    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 ID. 기본 98(0챕터, 스테이지 4998/4997). 99=튜토리얼(4999)로 바꿀 수 있음.")]
-    [SerializeField] private int _tutorialChapterId = 98;
+    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 Chapter_ID. 재파싱 새 스킴(85c8bc0) 기준 9801(0챕터). 튜토리얼 스테이지는 9901. ★씬에 직렬화값이 있으면 인스펙터가 우선하니 _InGame에서 확인/설정.")]
+    [SerializeField] private int _tutorialChapterId = 9801;
 
     private GameObject _projectileTemplate;
     private bool _settlementRewardGranted;   // 단계④: 정산 보상 중복 지급(재정산 중복가산) 방지 가드
