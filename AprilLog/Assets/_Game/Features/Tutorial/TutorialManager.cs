@@ -27,9 +27,12 @@ public class TutorialManager : MonoBehaviour
 #endif
 
     private const string DONE_KEY = "Tutorial_Completed";
+    private const string IN_GAME_SCENE_NAME = "_InGame";
+    private const string IN_GAME_OVERLAY_RESOURCE = "Tutorial/TutorialInGameOverlay";
 
     private int _currentIndex = -1;     // -1 = 진행 중 아님
     private ITutorialView _view;        // 현재 씬의 오버레이(있을 때만)
+    private GameObject _spawnedInGameOverlay;
 
     public bool IsCompleted => PlayerPrefs.GetInt(DONE_KEY, 0) == 1;
     public bool IsRunning => _currentIndex >= 0;
@@ -44,6 +47,16 @@ public class TutorialManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
 
 #if UNITY_EDITOR
@@ -125,6 +138,27 @@ public class TutorialManager : MonoBehaviour
         if (!IsStepForActiveScene(step)) { _view.Hide(); return; }
 
         _view.ShowStep(step);
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != IN_GAME_SCENE_NAME)
+        {
+            _spawnedInGameOverlay = null;
+            return;
+        }
+
+        if (!IsRunning || _spawnedInGameOverlay != null) return;
+
+        GameObject prefab = Resources.Load<GameObject>(IN_GAME_OVERLAY_RESOURCE);
+        if (prefab == null)
+        {
+            Debug.LogWarning($"[Tutorial] 인게임 오버레이 프리팹을 찾지 못했습니다: Resources/{IN_GAME_OVERLAY_RESOURCE}");
+            return;
+        }
+
+        _spawnedInGameOverlay = Instantiate(prefab);
+        _spawnedInGameOverlay.name = prefab.name;
     }
 
     private bool IsStepForActiveScene(TutorialStep step)
