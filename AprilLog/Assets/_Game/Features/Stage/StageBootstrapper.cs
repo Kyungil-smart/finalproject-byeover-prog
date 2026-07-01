@@ -23,6 +23,7 @@ public class StageBootstrapper : MonoBehaviour
     [SerializeField] private StageLoopManager _loopManager;
     
     private StagePresenter _currentPresenter;
+    private bool _isStageTickPaused;
     
     // ---------- Event for UI ----------
     public event Action<StageModel> OnStageInitComplete;
@@ -33,6 +34,8 @@ public class StageBootstrapper : MonoBehaviour
     // ---------- 이벤트 함수 ----------
     private void Update()
     {
+        if (_isStageTickPaused) return;
+
         if (_currentPresenter != null)
         {
             _currentPresenter.UpdateSystem(Time.deltaTime);
@@ -49,6 +52,8 @@ public class StageBootstrapper : MonoBehaviour
     // 스폰 정지 + 남은 몬스터 정리 + presenter Tick 중단.
     public void StopStage()
     {
+        _isStageTickPaused = false;
+
         if (_spawner != null)
         {
             _spawner.StopSpawning();
@@ -59,6 +64,16 @@ public class StageBootstrapper : MonoBehaviour
         {
             _currentPresenter.Release();
             _currentPresenter = null; // Update에서 더 이상 Tick 안 함
+        }
+    }
+
+    public void SetStageTickPaused(bool paused)
+    {
+        _isStageTickPaused = paused;
+
+        if (paused && _spawner != null)
+        {
+            _spawner.StopSpawning();
         }
     }
 

@@ -115,6 +115,11 @@ public class StageModel
         int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
         float currentInterval = Mathf.Max(0.3f, _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) - (timeFactor * 0.1f));
         int currentAmount = Mathf.Min(5, _currentRule.SpawnAmount + Mathf.FloorToInt((_stageLevel - 1) / 2f) + timeFactor);
+        if (TutorialInGameDirector.TryGetTutorialSpawnOverride(out float tutorialInterval, out int tutorialAmount))
+        {
+            currentInterval = tutorialInterval;
+            currentAmount = tutorialAmount;
+        }
 
         // --- 몹 스폰 (제한 없이 무조건 소환) ---
         if (_spawnTimer >= currentInterval)
@@ -244,6 +249,10 @@ public class StageModel
             _waveTimer = 0f;
             int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
             float currentInterval = Mathf.Max(0.3f, _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) - (timeFactor * 0.1f));
+            if (TutorialInGameDirector.TryGetTutorialSpawnOverride(out float tutorialInterval, out _))
+            {
+                currentInterval = tutorialInterval;
+            }
             _spawnTimer = currentInterval;
 
             // 각 웨이브에 종속된 특수 웨이브 룰 불러오기
