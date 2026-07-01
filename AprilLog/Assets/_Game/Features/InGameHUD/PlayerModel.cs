@@ -63,7 +63,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
 
     public void RestoreFromSave(InGameSaveData save)
     {
-        // 저장된 현재 HP로 복원. ★인게임 부트스트랩에서 인챈트 HP 재적용 '뒤'에 호출해야
+        // 저장된 현재 HP로 복원. 인게임 부트스트랩에서 인챈트 HP 재적용 '뒤'에 호출해야
         //  인챈트 HP가 CurrentHP에 이중 가산되는 과회복을 막는다. MaxHP는 재적용으로 이미 보정됨.
         CurrentHP = Mathf.Clamp(save.playerHP, 1, MaxHP);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);

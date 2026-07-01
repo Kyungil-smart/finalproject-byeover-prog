@@ -36,7 +36,7 @@ public class UserCloudData
     public List<int> firstClearRewardedStages = new ();
 
     // ---------- 최초 진입 상태 (조규민 4차: 최초 스토리/튜토리얼 노출 제어 + 기존 계정 마이그레이션) ----------
-    // ★참조 코드(GameManager/FirestoreService)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
+    // 참조 코드(GameManager/FirestoreService)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
     public bool _hasInitialFlowState;   // 이 스키마 필드를 가진 계정인지. false=업데이트 이전 계정 → 1회 마이그레이션 대상.
     public bool _initialStoryStarted;   // 최초 스토리를 이미 시작했는지(재노출 방지).
     public bool _tutorialCompleted;     // 튜토리얼 완료 여부.
@@ -59,7 +59,7 @@ public class UserCloudData
     public List<int> housingOwnedFurnitureIds = new List<int>();
 
     // ---------- 아웃게임 성장 (김영찬 3차) ----------
-    // ★참조 코드(FirestoreService 직렬화/복원)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
+    // 참조 코드(FirestoreService 직렬화/복원)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
     public int hpBonus;
     public int attackBonus;
     public int shieldBonus;

@@ -98,7 +98,7 @@ public class StageLoopManager : MonoBehaviour
         if (stageData == null)
         {
             // GetStageId가 -1((챕터,순서) 못 찾음)이거나 해당 Stage_ID 데이터가 없을 때.
-            // ★첫 스테이지(index 0)부터 없으면 이건 '챕터 완료'가 아니라 데이터/배선 오류다.
+            // 첫 스테이지(index 0)부터 없으면 이건 '챕터 완료'가 아니라 데이터/배선 오류다.
             //   EndChapter(true)로 처리하면 가짜 승리 + 정산(ShowSettlement) NRE로 이어져 진짜 원인이 가려진다 → 명확히 로그하고 중단.
             if (_currentStageIndex == 0)
             {

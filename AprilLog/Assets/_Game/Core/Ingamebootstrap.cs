@@ -73,7 +73,7 @@ public class InGameBootstrap : MonoBehaviour
     [Header("웨이브")]
     [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
     [SerializeField] private int _defaultChapterId = 1;
-    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 Chapter_ID. 재파싱 새 스킴(85c8bc0) 기준 9801(0챕터). 튜토리얼 스테이지는 9901. ★씬에 직렬화값이 있으면 인스펙터가 우선하니 _InGame에서 확인/설정.")]
+    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 Chapter_ID. 재파싱 새 스킴(85c8bc0) 기준 9801(0챕터). 튜토리얼 스테이지는 9901. 씬에 직렬화값이 있으면 인스펙터가 우선하니 _InGame에서 확인/설정.")]
     [SerializeField] private int _tutorialChapterId = 9801;
 
     private GameObject _projectileTemplate;
@@ -143,7 +143,7 @@ public class InGameBootstrap : MonoBehaviour
             // (RestoreFromSave는 이벤트를 발행하지 않으므로 직접 재적용 필요)
             _enchantApplicationSystem.ReapplyFromSave(saveData.acquiredEnchants);
 
-            // ★플레이어 HP 복원은 인챈트 HP 재적용 '뒤'에. (앞에 두면 재적용이 CurrentHP에 보너스를
+            // 플레이어 HP 복원은 인챈트 HP 재적용 '뒤'에. (앞에 두면 재적용이 CurrentHP에 보너스를
             //  한 번 더 더해 과회복됨. 뒤에 두면 저장된 현재 HP로 덮어써 정확. MaxHP는 재적용으로 보정됨.)
             _playerModel.RestoreFromSave(saveData);
 

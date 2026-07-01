@@ -95,6 +95,9 @@ public class PoolManager : MonoBehaviour
     }
 
     // ---------- Spawn ----------
+    /// <summary>해당 키의 풀이 등록돼 있는지. 프리팹 네이밍이 혼재("5011" vs "Monster_11")할 때 어느 키로 소환할지 고를 때 쓴다.</summary>
+    public bool HasPool(string key) => _pools != null && !string.IsNullOrEmpty(key) && _pools.ContainsKey(key);
+
     public GameObject Spawn(string key, Vector3 position, Quaternion rotation)
     {
         if (!_pools.ContainsKey(key))

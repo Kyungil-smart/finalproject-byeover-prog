@@ -216,9 +216,17 @@ public class MonsterSpawner : MonoBehaviour
         if (monsterStats != null && !string.IsNullOrEmpty(monsterStats.PrefabKey))
             return monsterStats.PrefabKey;
 
-        // Resources/Monsters 프리팹 이름이 Character_ID 그대로("5011")고, EnsureMonsterPools도 prefab.name(="5011")으로 풀을 등록한다.
-        // 옛 폴백 "Monster_{id}"는 그 키와 안 맞아 PoolManager.Spawn=null → 몬스터가 안 보였다(PrefabKey는 데이터에서 전부 공란). 프리팹명과 동일하게 맞춘다.
-        return characterId.ToString();
+        // 프리팹 네이밍이 혼재한다: 일반 몬스터는 Character_ID 그대로("5011"), 튜토/구 몬스터는 "Monster_11".
+        // EnsureMonsterPools가 prefab.name으로 풀을 등록하므로 실제 등록된 풀을 우선 골라 어느 쪽이든 소환되게 한다.
+        // (MonsterStatusTable.PrefabKey가 전부 공란이라 항상 이 폴백을 탐. 옛 코드는 "Monster_{id}" 하나뿐이라 "5011"류가 미스폰됐음.)
+        var pool = PoolManager.Instance;
+        string bare = characterId.ToString();
+        if (pool != null && pool.HasPool(bare)) return bare;
+
+        string prefixed = $"Monster_{characterId}";
+        if (pool != null && pool.HasPool(prefixed)) return prefixed;
+
+        return bare;   // 둘 다 없으면 bare로 시도 → Spawn이 '풀 없음' 에러를 남겨 어느 ID의 프리팹이 없는지 알려준다.
     }
 
     private PlayerModel ResolvePlayerModel()

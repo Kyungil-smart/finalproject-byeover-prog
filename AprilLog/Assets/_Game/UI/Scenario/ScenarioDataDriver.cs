@@ -7,7 +7,7 @@
 // 흐름:
 //   Play(groupId) → StoryRepo.GetTalkGroup(groupId) → 줄 단위로 ShowLine → 끝 → OnFinished
 //
-// ★현재 데이터 상태: 3_npc_talk의 portrait/speaker/BG/CG/BGM/SFX가 전부 0.
+// 현재 데이터 상태: 3_npc_talk의 portrait/speaker/BG/CG/BGM/SFX가 전부 0.
 //   따라서 지금은 "이름 + 대사 텍스트"만 출력된다. 데이터 담당이 ID를 채우고
 //   아트가 Resources에 스프라이트를 넣으면(아래 경로 규칙) 코드 수정 없이 그림이 붙는다.
 //
@@ -144,7 +144,7 @@ public class ScenarioDataDriver : MonoBehaviour
         string speakerName = _useEnglish ? line.name_EN : line.name_KR;
         string text        = _useEnglish ? line.Text_EN : line.Text_KR;
 
-        // ★초상화 슬롯 매핑(임시 규칙): portrait1=좌 / portrait2=중 / portrait3=우.
+        // 초상화 슬롯 매핑(임시 규칙): portrait1=좌 / portrait2=중 / portrait3=우.
         //   data의 direction1/2/3(방향/배치) 의미는 기획 확정 후 반영. (현재 데이터 전부 0이라 미사용)
         Sprite pLeft   = ResolvePortrait(line.portrait1);
         Sprite pCenter = ResolvePortrait(line.portrait2);
