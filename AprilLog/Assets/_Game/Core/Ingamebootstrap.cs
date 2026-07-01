@@ -229,6 +229,13 @@ public class InGameBootstrap : MonoBehaviour
         DisableDummyTester();
         StartWaveSystem(chapterId, startStageIndex, seed);
 
+        // 누적 전투 보상 로드
+        if (isResume && saveData != null)
+        {
+            if(_rewardManager != null)
+                _rewardManager.LoadRewardData(saveData.accumulatedRewards);
+        }
+
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }
 
@@ -387,7 +394,7 @@ public class InGameBootstrap : MonoBehaviour
         
         var battleRewards = _rewardManager != null ?
             _rewardManager.GetAndClearAccumulatedRewards() : null;
-        if (battleRewards != null)
+        if (battleRewards != null && battleRewards.Count > 0)
         {
             if(battleRewards.TryGetValue(goldId, out var battleGold)) gold += battleGold;
             if(battleRewards.TryGetValue(parchmentId, out var battleParchment)) parchment += battleParchment;

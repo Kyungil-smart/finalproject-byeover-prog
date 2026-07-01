@@ -1196,6 +1196,7 @@ public class GameManager : MonoBehaviour
         var sortModel = FindFirstObjectByType<SortModel>();
         var sortSystem = FindFirstObjectByType<SortSystem>();
         var jokerSystem = FindFirstObjectByType<JokerSystem>();
+        var rewardManager = FindFirstObjectByType<InGameRewardManager>();
 
         var data = new InGameSaveData
         {
@@ -1214,6 +1215,9 @@ public class GameManager : MonoBehaviour
             jokerCount = jokerSystem != null ? jokerSystem.GetJokerCount() : 2,
             jokerRemainingCooldown = jokerSystem != null ? jokerSystem.GetRemainingCooldown() : 0f,
             nextStageSeed = sortSystem != null ? sortSystem.GetCurrentSeedForSave() : UnityEngine.Random.Range(0, int.MaxValue),
+            
+            // 전투 보상
+            accumulatedRewards = rewardManager != null ? rewardManager.ExportRewardData() : new List<ItemSaveEntry>(),
             
             // 인첸트
             acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),
