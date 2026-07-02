@@ -84,6 +84,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     private TMP_Text _resolvedRerollCountText;
     private bool _currentRerollAvailable;
     private int _currentRerollRemaining;
+    private bool[] _currentCardRerollAvailable;
     private ScrollRect _choiceScrollRect;
 
     private void OnEnable()
@@ -206,7 +207,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
                 cardUI.OnRerollClicked += () => OnCardRerollSelected?.Invoke(index);
                 cardUI.AttachRerollOverlay(_rerollOverlay);
-                cardUI.SetRerollState(_currentRerollAvailable, _currentRerollRemaining);
+                cardUI.SetRerollState(IsCardRerollAvailable(index), _currentRerollRemaining);
             }
         }
 
@@ -226,11 +227,28 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         SetLegacyRerollVisible(true);
         UpdateRerollCountText(remaining);
 
-        foreach (GameObject card in _spawnedCards)
+        for (int i = 0; i < _spawnedCards.Count; i++)
         {
+            GameObject card = _spawnedCards[i];
+
             if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
-                cardUI.SetRerollState(available, remaining);
+                cardUI.SetRerollState(IsCardRerollAvailable(i), remaining);
+            }
+        }
+    }
+
+    public void SetCardRerollAvailable(bool[] availableByIndex)
+    {
+        _currentCardRerollAvailable = availableByIndex;
+
+        for (int i = 0; i < _spawnedCards.Count; i++)
+        {
+            GameObject card = _spawnedCards[i];
+
+            if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
+            {
+                cardUI.SetRerollState(IsCardRerollAvailable(i), _currentRerollRemaining);
             }
         }
     }
@@ -253,6 +271,26 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 cardUI.SetRerollState(false, _currentRerollRemaining);
             }
         }
+    }
+
+    private bool IsCardRerollAvailable(int index)
+    {
+        if (!_currentRerollAvailable || _currentRerollRemaining == 0)
+        {
+            return false;
+        }
+
+        if (_currentCardRerollAvailable == null)
+        {
+            return true;
+        }
+
+        if (index < 0 || index >= _currentCardRerollAvailable.Length)
+        {
+            return false;
+        }
+
+        return _currentCardRerollAvailable[index];
     }
 
     private void EnsureRerollOverlay()

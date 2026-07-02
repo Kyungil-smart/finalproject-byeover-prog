@@ -26,7 +26,9 @@ public class HousingIdleRewardController : MonoBehaviour
 
     [Header("충전 설정")]
     [Tooltip("게이지가 100%까지 충전되는 시간입니다.")]
-    [SerializeField] private int _maxChargeSeconds = 3600;
+    [SerializeField] private int _maxChargeSeconds = 43200;
+    [Tooltip("재화가 1회 적립되는 시간입니다.")]
+    [SerializeField] private int _rewardIntervalSeconds = 3600;
     [Tooltip("Model 상태를 확인하는 주기입니다. UI는 값이 바뀔 때만 갱신됩니다.")]
     [SerializeField] private float _refreshIntervalSeconds = 1f;
 
@@ -76,7 +78,7 @@ public class HousingIdleRewardController : MonoBehaviour
     {
         HousingIdleRewardTable _rewardTable = ResolveRewardTable();
         DateTime _chargeStartUtc = ResolveSavedChargeStartUtc();
-        _model = new HousingIdleRewardModel(_maxChargeSeconds, _rewardTable, _chargeStartUtc);
+        _model = new HousingIdleRewardModel(_maxChargeSeconds, _rewardIntervalSeconds, _rewardTable, _chargeStartUtc);
         _presenter = new HousingIdleRewardPresenter(_model, _popupView, _rewardButtonView, HandleClaimRequested);
         _presenter.Initialize();
         ApplyFurnitureIcon();

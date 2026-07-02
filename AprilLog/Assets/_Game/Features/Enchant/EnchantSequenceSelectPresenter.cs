@@ -32,6 +32,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     private int _rerollRemaining;
     private int _pickCount = 3;
     private bool _isTutorialFixedChoices;
+    private bool[] _cardRerollUsed;
     
     // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
     private HashSet<int> _seenEnchantIds = new HashSet<int>();
@@ -79,6 +80,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         {
             _pickCount = _currentChoices.Count;
             _isTutorialFixedChoices = true;
+            ResetCardRerollState(_currentChoices.Count);
             DisplayChoicesToView();
             return;
         }
@@ -88,6 +90,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         _currentTurnType = _sequenceConfig.DrawSequence[sequenceIndex];
         
         GenerateChoicesByTurnType(pickCount);
+        ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : pickCount);
         DisplayChoicesToView();
     }
 
@@ -171,6 +174,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         }
         
         GenerateChoicesByTurnType(_pickCount);
+        ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : _pickCount);
         DisplayChoicesToView();
     }
 
@@ -180,19 +184,28 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         if (_isTutorialFixedChoices) return;
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
+        if (IsCardRerollUsed(index)) return;
 
-        var newChoice = _currentTurnType == EnchantType.Skill 
-            ? _sequenceSelector.GenerateSkillChoices(_model, 1, _seenEnchantIds)[0]
-            : _sequenceSelector.GenerateStatChoices(_model, 1, _seenEnchantIds)[0];
+        if (!_unlimitedReroll)
+        {
+            if (_rerollRemaining <= 0) return;
+        }
+
+        List<EnchantCandidate> newChoices = _currentTurnType == EnchantType.Skill 
+            ? _sequenceSelector.GenerateSkillChoices(_model, 1, _seenEnchantIds)
+            : _sequenceSelector.GenerateStatChoices(_model, 1, _seenEnchantIds);
+        if (newChoices == null || newChoices.Count == 0) return;
+
+        var newChoice = newChoices[0];
         if (newChoice == null) return;
         
         if (!_unlimitedReroll)
         {
-            if (_rerollRemaining <= 0) return;
             _rerollRemaining--;
         }
         
         _currentChoices[index] = newChoice;
+        MarkCardRerollUsed(index);
         _seenEnchantIds.Add(newChoice.Name_ID);
             
         DisplayChoicesToView();
@@ -252,6 +265,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         bool rerollAvailable = !_isTutorialFixedChoices && (_unlimitedReroll || _baseRerollCount > 0);
         int rerollRemaining = _isTutorialFixedChoices ? 0 : (_unlimitedReroll ? -1 : _rerollRemaining);
         _view.SetRerollAvailable(rerollAvailable, rerollRemaining);
+        _view.SetCardRerollAvailable(BuildCardRerollAvailability());
     }
 
     private void ClearTutorialFixedChoiceState()
@@ -260,5 +274,42 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
 
         _isTutorialFixedChoices = false;
         TutorialFirstEnchantSelectionOverride.ClearFixedChoiceState();
+    }
+
+    private void ResetCardRerollState(int count)
+    {
+        _cardRerollUsed = new bool[Mathf.Max(0, count)];
+    }
+
+    private bool IsCardRerollUsed(int index)
+    {
+        return _cardRerollUsed != null
+            && index >= 0
+            && index < _cardRerollUsed.Length
+            && _cardRerollUsed[index];
+    }
+
+    private void MarkCardRerollUsed(int index)
+    {
+        if (_cardRerollUsed == null || index < 0 || index >= _cardRerollUsed.Length)
+        {
+            return;
+        }
+
+        _cardRerollUsed[index] = true;
+    }
+
+    private bool[] BuildCardRerollAvailability()
+    {
+        int count = _currentChoices != null ? _currentChoices.Count : 0;
+        bool[] availableByIndex = new bool[count];
+        bool hasGlobalReroll = !_isTutorialFixedChoices && (_unlimitedReroll || _rerollRemaining > 0);
+
+        for (int i = 0; i < count; i++)
+        {
+            availableByIndex[i] = hasGlobalReroll && !IsCardRerollUsed(i);
+        }
+
+        return availableByIndex;
     }
 }
