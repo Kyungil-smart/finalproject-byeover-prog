@@ -389,6 +389,12 @@ public class InGameBootstrap : MonoBehaviour
         loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지
         loop.OnChapterEnd += ShowSettlement;
 
+        // 튜토리얼 마지막 단계(ChapterClear)가 챕터 승리로 진행/완료되도록 훅 연결.
+        // (이 연결이 없으면 마지막 단계가 영원히 안 끝나 매 전투가 튜토 챕터로 반복된다.)
+        var tutorialHook = GetComponent<TutorialGameActionHook>();
+        if (tutorialHook != null)
+            tutorialHook.BindChapterEnd(loop);
+
         loop.StartChapter(chapterId, startStageIndex, seed);
         
         // 전투 중 보상 누적을 위함 (BattleReward DB)

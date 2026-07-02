@@ -27,6 +27,7 @@ public enum TutorialGameAction
     Sort,           // 정렬 완성
     ArtifactEquip,  // 아티팩트 장착
     ArtifactOpen,   // 아티팩트 상세창 열림
+    ChapterClear,   // 챕터 클리어(승리) - 마지막 단계(보스 처치 후 0챕터 클리어)용
 }
 
 /// <summary>튜토리얼 한 단계의 정의.</summary>
