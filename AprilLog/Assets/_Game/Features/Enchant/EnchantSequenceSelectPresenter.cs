@@ -70,6 +70,18 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     // ---------- 작동 로직 ----------
     public void ShowSelection(int pickCount = 3)
     {
+        if (!HasValidSequenceConfiguration())
+        {
+            FailSelection("인첸트 등장 순서 설정이 비어 있어 선택 화면을 생성할 수 없습니다.");
+            return;
+        }
+
+        if (pickCount <= 0)
+        {
+            FailSelection($"선택 카드 수가 올바르지 않습니다. pickCount={pickCount}");
+            return;
+        }
+
         _pickCount = pickCount;
         _rerollRemaining = _baseRerollCount;
         _isTutorialFixedChoices = false;
@@ -78,8 +90,16 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
 
         if (TutorialFirstEnchantSelectionOverride.TryConsumeFixedChoices(_model, _repo, out _currentChoices))
         {
-            _pickCount = _currentChoices.Count;
+            _currentTurnType = EnchantType.Skill;
             _isTutorialFixedChoices = true;
+
+            if (!ValidateChoices(_currentChoices, _currentTurnType, "튜토리얼 고정 선택"))
+            {
+                FailSelection("튜토리얼 고정 선택에 스킬이 아닌 카드가 포함되어 있습니다.");
+                return;
+            }
+
+            _pickCount = _currentChoices.Count;
             ResetCardRerollState(_currentChoices.Count);
             DisplayChoicesToView();
             return;
@@ -90,6 +110,13 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         _currentTurnType = _sequenceConfig.DrawSequence[sequenceIndex];
         
         GenerateChoicesByTurnType(pickCount);
+
+        if (!ValidateChoices(_currentChoices, _currentTurnType, "일반 선택"))
+        {
+            FailSelection("현재 차례와 다른 타입의 카드가 생성되었습니다.");
+            return;
+        }
+
         ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : pickCount);
         DisplayChoicesToView();
     }
@@ -198,6 +225,11 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
 
         var newChoice = newChoices[0];
         if (newChoice == null) return;
+        if (newChoice.Type != _currentTurnType)
+        {
+            FailSelection($"개별 리롤에서 잘못된 타입이 생성되었습니다. expected={_currentTurnType}, actual={newChoice.Type}");
+            return;
+        }
         
         if (!_unlimitedReroll)
         {
@@ -215,6 +247,15 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
     // UI용 포멧으로 변환 후 전달
     private void DisplayChoicesToView()
     {
+        if (!ValidateChoices(_currentChoices, _currentTurnType, "화면 표시"))
+        {
+            FailSelection("화면 표시 직전에 선택 카드 타입 검증에 실패했습니다.");
+            return;
+        }
+
+        // 추가: 조규민 - 혼합 선택을 허용하지 않고 검증된 현재 차례 타입으로 제목을 표시한다.
+        _view.SetSelectionType(_currentTurnType);
+
         var displayData = new EnchantDisplayData[_currentChoices.Count];
         for (int i = 0; i < _currentChoices.Count; i++)
         {
@@ -266,6 +307,52 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         int rerollRemaining = _isTutorialFixedChoices ? 0 : (_unlimitedReroll ? -1 : _rerollRemaining);
         _view.SetRerollAvailable(rerollAvailable, rerollRemaining);
         _view.SetCardRerollAvailable(BuildCardRerollAvailability());
+    }
+
+    private bool HasValidSequenceConfiguration()
+    {
+        return _sequenceConfig != null
+            && _sequenceConfig.DrawSequence != null
+            && _sequenceConfig.DrawSequence.Count > 0;
+    }
+
+    private bool ValidateChoices(List<EnchantCandidate> choices, EnchantType expectedType, string context)
+    {
+        if (choices == null || choices.Count == 0)
+        {
+            Debug.LogError($"[EnchantSequenceSelectPresenter] {context} 선택지가 비어 있습니다.");
+            return false;
+        }
+
+        for (int i = 0; i < choices.Count; i++)
+        {
+            EnchantCandidate choice = choices[i];
+            if (choice == null)
+            {
+                Debug.LogError($"[EnchantSequenceSelectPresenter] {context} 선택지에 null 카드가 있습니다. index={i}");
+                return false;
+            }
+
+            if (choice.Type != expectedType)
+            {
+                Debug.LogError(
+                    $"[EnchantSequenceSelectPresenter] {context} 선택지 타입이 일치하지 않습니다. " +
+                    $"index={i}, expected={expectedType}, actual={choice.Type}, nameId={choice.Name_ID}");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void FailSelection(string reason)
+    {
+        Debug.LogError($"[EnchantSequenceSelectPresenter] 인첸트 선택 화면을 안전하게 종료합니다. reason={reason}");
+        ClearTutorialFixedChoiceState();
+        _currentChoices = null;
+        _view.SetRerollAvailable(false, 0);
+        _view.SetCardRerollAvailable(System.Array.Empty<bool>());
+        _navigator.OnCloseButtonClick();
     }
 
     private void ClearTutorialFixedChoiceState()

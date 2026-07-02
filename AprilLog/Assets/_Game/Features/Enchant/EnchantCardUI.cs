@@ -6,6 +6,8 @@
 //             리롤 버튼 Sprite 원본 색상 적용, 숫자 제거 및 버튼 중앙 리롤 아이콘 추가
 
 using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -95,11 +97,35 @@ public class EnchantCardUI : MonoBehaviour
         // 인챈트 상세 설명 반영
         if (_descriptionText != null)
         {
-            _descriptionText.text = data.Description; 
+            _descriptionText.text = RemoveDescriptionTags(data.Description);
         }
 
         // 추가: 조규민 - 인챈트 선택 카드의 ImageKey를 Resources/EnchantIcons 경로의 Sprite로 표시한다.
         EnchantIconLoader.ApplyIcon(_iconImage, data.ImageKey);
+    }
+
+    private string RemoveDescriptionTags(string _description)
+    {
+        if (string.IsNullOrWhiteSpace(_description))
+        {
+            return _description;
+        }
+
+        string[] _lines = _description.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        List<string> _descriptionLines = new List<string>();
+        for (int _index = 0; _index < _lines.Length; _index++)
+        {
+            string _lineWithoutTags = Regex.Replace(_lines[_index], @"#[^\s#]+", string.Empty);
+            _lineWithoutTags = Regex.Replace(_lineWithoutTags, @"[ \t]{2,}", " ").Trim();
+            if (string.IsNullOrWhiteSpace(_lineWithoutTags))
+            {
+                continue;
+            }
+
+            _descriptionLines.Add(_lineWithoutTags);
+        }
+
+        return string.Join("\n", _descriptionLines);
     }
 
     public void SetRerollState(bool available, int remaining)

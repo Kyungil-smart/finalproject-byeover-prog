@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -731,13 +732,14 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
         List<string> _guideLines = new List<string>();
         for (int _index = 0; _index < _lines.Length; _index++)
         {
-            string _line = _lines[_index];
-            if (IsTagLine(_line))
+            string _lineWithoutTags = Regex.Replace(_lines[_index], @"#[^\s#]+", string.Empty);
+            _lineWithoutTags = Regex.Replace(_lineWithoutTags, @"[ \t]{2,}", " ").Trim();
+            if (string.IsNullOrWhiteSpace(_lineWithoutTags))
             {
                 continue;
             }
 
-            _guideLines.Add(_line);
+            _guideLines.Add(_lineWithoutTags);
         }
 
         return string.Join("\n", _guideLines).Trim();
@@ -763,28 +765,19 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
             return _tagLines;
         }
 
-        string[] _lines = _description.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-        for (int _index = 0; _index < _lines.Length; _index++)
+        MatchCollection _tagMatches = Regex.Matches(_description, @"#([^\s#]+)");
+        for (int _index = 0; _index < _tagMatches.Count; _index++)
         {
-            string _line = _lines[_index].Trim();
-            if (!IsTagLine(_line))
+            string _tag = _tagMatches[_index].Groups[1].Value.Trim();
+            if (string.IsNullOrWhiteSpace(_tag))
             {
                 continue;
             }
 
-            string _tag = _line.Substring(1).Trim();
-            if (!string.IsNullOrWhiteSpace(_tag))
-            {
-                _tagLines.Add(_tag);
-            }
+            _tagLines.Add(_tag);
         }
 
         return _tagLines;
-    }
-
-    private bool IsTagLine(string _line)
-    {
-        return !string.IsNullOrWhiteSpace(_line) && _line.TrimStart().StartsWith("#");
     }
 
     private void SetSelectedEnchantInfo(EnchantChangeInfoTableUI _infoTable, EnchantDisplayData _selectedData, string _warningMessage)
