@@ -644,7 +644,7 @@ public class SkillSystem : MonoBehaviour
         var lib = WaterVfx;
         float baseY = _firePoint != null ? _firePoint.position.y : 0f;
         Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
-        float speed = PxToWorld(125f);     // 나미 R식: 천천히 전진하며 적을 밀기 (QA 2026-06-25: 250→125로 2배 느리게)
+        float speed = PxToWorld(125f);     // 나미 R식: 천천히 전진하며 적을 밀기 (QA 피드백으로 250→125로 감속)
         const float duration = 4.0f;       // 속도 절반이라 같은 거리 도달하도록 지속 2.0→4.0초로 보정
 
         GameObject vfx = null;
@@ -956,7 +956,7 @@ public class SkillSystem : MonoBehaviour
         if (vfx != null) Destroy(vfx);
     }
 
-    // 마칭 아이스(QA 개편 2026-06-24): 에이프릴 → 최단거리 타겟 좌표 방향으로 100x100 정사각형 N칸(=PelletCount)을
+    // 마칭 아이스(QA 개편): 에이프릴 → 최단거리 타겟 좌표 방향으로 100x100 정사각형 N칸(=PelletCount)을
     // interval마다 한 칸씩 순차 발동. 각 칸은 그 자리에 1틱 판정 + VFX 1개. 칸을 이으면 타겟으로 가는 마칭 형태.
     private System.Collections.IEnumerator MarchingIceRoutine(Legacy_SkillData data, Vector2 sizeWorld, int pulses, float interval)
     {

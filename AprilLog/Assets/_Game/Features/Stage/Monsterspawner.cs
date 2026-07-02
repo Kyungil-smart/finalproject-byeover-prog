@@ -169,6 +169,15 @@ public class MonsterSpawner : MonoBehaviour
         if (obj == null) return null;
 
         var ai = obj.GetComponent<MonsterAI>();
+        if (ai == null)
+        {
+            // 프리팹에 MonsterAI가 없으면 스폰돼도 피격/사망 처리가 불가능한 '안 죽는 유령 몬스터'가 된다.
+            // 화면에 남기지 않도록 즉시 회수하고, 어떤 프리팹인지 에러로 남긴다.
+            Debug.LogError($"[MonsterSpawner] '{poolKey}' 프리팹에 MonsterAI가 없어 소환을 취소합니다(Character_ID {characterId}). 프리팹에 MonsterAI를 붙여야 합니다(정상 예시: 5014).");
+            PoolManager.Instance.Despawn(poolKey, obj);
+            return null;
+        }
+
         if (ai != null)
         {
             ai.Initialize(stats, monsterStats, characterId, isBoss);
