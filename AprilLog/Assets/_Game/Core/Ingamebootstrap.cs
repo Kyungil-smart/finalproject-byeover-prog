@@ -455,18 +455,81 @@ public class InGameBootstrap : MonoBehaviour
         var loop = FindFirstObjectByType<StageLoopManager>();
         int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
         int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
+        int stageId = DataManager.Instance.StageRepo.GetStageId(chapterId, completedStageCount);
         
-        var repo = DataManager.Instance.RewardRepo;
-        var changeRewards = repo.GetCalculatedChangeRewards(chapterId, completedStageCount);
-        if (changeRewards != null && changeRewards.Count > 0)
+        var firstChapterList = _rewardManager.AddChangeChapterReward(chapterId, isVictory);
+        _rewardManager.AddChangeStageReward(stageId, 
+            out var firstStageList, out var repeatList);
+
+        if (repeatList != null && repeatList.Count > 0)
         {
-            
+            foreach (var data in repeatList)
+            {
+                switch (data.itemId)
+                {
+                    case goldId:
+                        gold += data.amount;
+                        break;
+                    case parchmentId:
+                        parchment += data.amount;
+                        break;
+                    case diamondId:
+                        diamond += data.amount;
+                        break;
+                }
+            }
         }
 
         // 단계④: 같은 정산이 중복 발동돼도 보상은 한 번만 지급(재정산 중복가산 방지).
         if (GameManager.Instance != null && !_settlementRewardGranted)
         {
             GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment, diamond);
+            
+            // 초회보상은 여기서 계산한다. 초회 보상 넣는 로직에 재화 증가가 포함 되어있음.
+            foreach (var list in firstChapterList)
+            {
+                if (!GameManager.Instance.TryGrantFirstClearChapterReward(list.Key, list.Value)) continue;
+                
+                // 이하는 적용 된 수치를 UI에 넣기 위해 계산
+                foreach (var data in list.Value)
+                {
+                    switch (data.itemId)
+                    {
+                        case goldId:
+                            gold += data.amount;
+                            break;
+                        case parchmentId:
+                            parchment += data.amount;
+                            break;
+                        case diamondId:
+                            diamond += data.amount;
+                            break;
+                    }
+                }
+            }
+            
+            foreach (var list in firstStageList)
+            {
+                if (!GameManager.Instance.TryGrantFirstClearStageReward(list.Key, list.Value)) continue;
+                
+                // 이하는 적용 된 수치를 UI에 넣기 위해 계산
+                foreach (var data in list.Value)
+                {
+                    switch (data.itemId)
+                    {
+                        case goldId:
+                            gold += data.amount;
+                            break;
+                        case parchmentId:
+                            parchment += data.amount;
+                            break;
+                        case diamondId:
+                            diamond += data.amount;
+                            break;
+                    }
+                }
+            }
+            
             _settlementRewardGranted = true;
         }
 

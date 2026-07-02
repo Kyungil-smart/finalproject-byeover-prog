@@ -814,25 +814,67 @@ public class GameManager : MonoBehaviour
     // 반복 클리어로 매번 주는 '변동 보상'은 이 API가 아니라 AddCurrency로 처리할 것(그건 1회성 아님).
 
     /// <summary>해당 스테이지의 최초 클리어 보상을 이미 지급했는지. 키는 데이터의 실제 Stage_ID(1000~).</summary>
-    public bool IsStageFirstClearRewarded(int stageId)
+    private bool IsStageFirstClearRewarded(int stageId)
     {
         return CloudData != null
             && CloudData.firstClearRewardedStages != null
             && CloudData.firstClearRewardedStages.Contains(stageId);
     }
+    
+    private bool IsChapterFirstClearRewarded(int chapterId)
+    {
+        return CloudData != null
+               && CloudData.firstClearRewardedChapters != null
+               && CloudData.firstClearRewardedChapters.Contains(chapterId);
+    }
 
     /// <summary>스테이지 최초 클리어 보상을 1회만 지급한다. 이미 지급됐거나 CloudData 없으면 아무것도 안 하고 false.
     /// stageId는 데이터의 실제 Stage_ID(StageData.Stage_ID / StageRepo.GetStageId)를 넘길 것(BuildStageId 금지).</summary>
-    public bool TryGrantFirstClearReward(int stageId, int bonusGold, int bonusParchment)
+    public bool TryGrantFirstClearStageReward(int stageId, List<ItemSaveEntry> rewardList)
     {
         if (stageId <= 0 || CloudData == null) return false;
         if (IsStageFirstClearRewarded(stageId)) return false;   // 이미 최초보상 지급됨 → 중복 차단
+        if (rewardList == null || rewardList.Count == 0) return false;
 
         if (CloudData.firstClearRewardedStages == null) CloudData.firstClearRewardedStages = new List<int>();
         CloudData.firstClearRewardedStages.Add(stageId);        // 먼저 마킹 → 아래 지급 영속 시 함께 저장
 
-        AddCurrency(Mathf.Max(0, bonusGold), Mathf.Max(0, bonusParchment), $"최초클리어 보상 Stage {stageId}");
-        Debug.Log($"[GameManager] 최초 클리어 보상 지급: Stage {stageId} (+골드 {bonusGold} +양피지 {bonusParchment})");
+        StringBuilder debugLog = new StringBuilder();
+        debugLog.Append($"[GameManager] 최초 클리어 보상 지급: Stage {stageId} (");
+
+        foreach (var data in rewardList)
+        {
+            AddResource(data.itemId, data.amount);
+            
+            debugLog.Append($"+ID({data.itemId}): {data.amount} ");
+        }
+        
+        debugLog.Append(")");
+        Debug.Log(debugLog.ToString());
+        return true;
+    }
+    
+    public bool TryGrantFirstClearChapterReward(int chapterId, List<ItemSaveEntry> rewardList)
+    {
+        if (chapterId <= 0 || CloudData == null) return false;
+        if (IsChapterFirstClearRewarded(chapterId)) return false;   // 이미 최초보상 지급됨 → 중복 차단
+        if (rewardList == null || rewardList.Count == 0) return false;
+
+        if (CloudData.firstClearRewardedChapters == null) CloudData.firstClearRewardedChapters = new List<int>();
+        CloudData.firstClearRewardedChapters.Add(chapterId);        // 먼저 마킹 → 아래 지급 영속 시 함께 저장
+        
+        StringBuilder debugLog = new StringBuilder();
+        debugLog.Append($"[GameManager] 최초 클리어 보상 지급: Chapter {chapterId} (");
+
+        foreach (var data in rewardList)
+        {
+            AddResource(data.itemId, data.amount);
+            
+            debugLog.Append($"+ID({data.itemId}): {data.amount} ");
+        }
+        
+        debugLog.Append(")");
+        Debug.Log(debugLog.ToString());
         return true;
     }
 
@@ -859,6 +901,50 @@ public class GameManager : MonoBehaviour
     private const int ParchmentId = 70002;
     private const int DiamondId = 70003;
 
+    // 기존의 파편화된 함수 호출과 하드코딩된 분기를 이 안으로 완전히 격리함
+    public void AddResource(int itemId, int amount)
+    {
+        if (itemId == GoldId) 
+        {
+            AddCurrency(amount, 0, "보상");
+        }
+        else if (itemId == ParchmentId) 
+        {
+            AddCurrency(0, amount, "보상");
+        }
+        else if (itemId == DiamondId) 
+        {
+            AddDiamond(amount);
+        }
+        else 
+        {
+            DataManager.Instance.ResourceRepo.AddItem(itemId, amount);
+            SyncAndSaveResourceCloudData();
+        }
+    }
+
+    public bool UseResource(int itemId, int amount)
+    {
+        if (itemId == GoldId)
+        {
+            return TrySpendCurrency(amount, 0);
+        }
+        if (itemId == ParchmentId) 
+        {
+            return TrySpendCurrency(0, amount);
+        }
+        if (itemId == DiamondId)
+        {
+            return TrySpendDiamond(amount);
+        }
+        
+        var result = DataManager.Instance.ResourceRepo.UseItem(itemId, amount);
+        if(!result) return false;
+        
+        SyncAndSaveResourceCloudData();
+        return true;
+    }
+    
     public bool CanAffordCurrency(int gold, int parchment)
     {
         return CloudData != null
@@ -1066,23 +1152,11 @@ public class GameManager : MonoBehaviour
             return true;
         }
 
-        // 수정 : 김영찬 -> 재화는 CloudData.diamond/gold를 직접 증/차감 하면 안되서 수정함 
-        var _repo = DataManager.Instance?.ResourceRepo;
+        // 수정 : 김영찬 -> 재화는 CloudData.diamond/gold를 직접 증/차감 하면 안되서 수정함 (팀장님 지시사항)
+        // 2차 수정 : 재화는 전용 획득/소모 함수를 쓰지 않으면 획득/소모 내역이 증발하니 그것을 방지하기 위해 통합 획득/소모용 함수 생성 및 적용
 
-        if (_repo != null)
-        {
-            int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
-            return _repo.UseItem(_itemId, _price);
-        }
-
-        if (_currency == HousingPlacementPriceCurrency.Diamond)
-        {
-            CloudData.diamond -= _price;
-            return true;
-        }
-
-        CloudData.gold -= _price;
-        return true;
+        int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
+        return UseResource(_itemId, _price);
     }
 
     private void EnsureHousingOwnedFurnitureData()
@@ -1131,6 +1205,7 @@ public class GameManager : MonoBehaviour
     }
 
     // 추가: 조규민 - 하우징 방치 보상의 모든 재화를 한 번의 저장 흐름으로 지급한다.
+    // 수정 : 클라우드데이터의 재화를 직접 수정하는것은 팀장님께서 금지 시켰으며, 골드/양피지/다이아몬드는 팀장님이 전용 획득/소모 함수를 사용하라고 했기 때문에 해당 부분에 대해 수정함
     public bool ClaimHousingIdleReward(int _gold, int _parchment, int _diamond, string _lastClaimAtUtc)
     {
         _gold = Mathf.Max(0, _gold);
@@ -1143,31 +1218,10 @@ public class GameManager : MonoBehaviour
         }
 
         EnsureCurrencyData();
-        var _repo = DataManager.Instance?.ResourceRepo;
 
-        if (_repo != null)
-        {
-            if (_gold > 0)
-            {
-                _repo.AddItem(GoldId, _gold);
-            }
-
-            if (_parchment > 0)
-            {
-                _repo.AddItem(ParchmentId, _parchment);
-            }
-
-            if (_diamond > 0)
-            {
-                _repo.AddItem(DiamondId, _diamond);
-            }
-        }
-        else
-        {
-            CloudData.gold = Mathf.Max(0, CloudData.gold + _gold);
-            CloudData.parchment = Mathf.Max(0, CloudData.parchment + _parchment);
-            CloudData.diamond = Mathf.Max(0, CloudData.diamond + _diamond);
-        }
+        AddResource(GoldId, _gold);
+        AddResource(ParchmentId, _parchment);
+        AddResource(DiamondId, _diamond);
 
         CloudData.housingAutoCurrencyLastClaimAt = string.IsNullOrWhiteSpace(_lastClaimAtUtc)
             ? DateTime.UtcNow.ToString("o")

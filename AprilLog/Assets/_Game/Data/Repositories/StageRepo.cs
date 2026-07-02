@@ -33,13 +33,14 @@ public class StageRepo : MonoBehaviour
     private Dictionary<int, ChapterData> _chapters;
     private Dictionary<int, StageData> _stages;
     // (Chapter_ID, StageOrder) -> StageData. Stage_ID 체계가 불규칙(챕터1~5=1000~1049, 챕터6~10=1100~1149)이라
-    // 산술(chapterId*100+order)로 못 구한다 → 데이터에서 역조회한다.
+    // 산술(chapterId*100+order)로 못 구한다 → 데이터에서 역조회한다. -> ToDo : 다시 ID 체계 맞춰서 해결함. 코드 수정 필요
     private Dictionary<(int, int), StageData> _stageByChapterOrder;
     private Dictionary<int, MonsterWavePoolData> _poolMasters;
     private Dictionary<int, List<MonsterPoolData>> _pools;
     private Dictionary<int ,List<StageWaveRuleData>> _waveRules;
     private Dictionary<int, SpecialWaveRuleData> _specialRules;
     private List<MonsterStageScalingData> _scalingRules;
+    
     private bool _isInitialized;
 
     public void Initialize()
@@ -242,6 +243,37 @@ public class StageRepo : MonoBehaviour
         // 웨이브풀 자체가 없을 때만 경고 (이건 진짜 데이터 누락)
         Debug.LogWarning($"[StageRepo] WavePool_ID {wavePoolId}에 연결된 MonsterPool이 없습니다.");
         return -1;
+    }
+    
+    // 여러 챕터에 걸친 보상을 계산하기 위해 챕터번호/스테이지 번호만 따로 리스트업해서 외부(RewardRepo)로 전송함
+    public List<int> GetValidChapterList()
+    {
+        var list = new List<int>();
+        HashSet<int> registered = new HashSet<int>();
+
+        foreach (var data in _stageTable.rows)
+        {
+            if(registered.Contains(data.Chapter_ID)) continue;
+            list.Add(data.Chapter_ID);
+            registered.Add(data.Chapter_ID);
+        }
+        
+        return list;
+    }
+
+    public List<int> GetValidStageList()
+    {
+        var list = new List<int>();
+        HashSet<int> registered = new HashSet<int>();
+        
+        foreach (var data in _stageTable.rows)
+        {
+            if(registered.Contains(data.Stage_ID)) continue;
+            list.Add(data.Stage_ID);
+            registered.Add(data.Stage_ID);
+        }
+        
+        return list;
     }
 
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(
