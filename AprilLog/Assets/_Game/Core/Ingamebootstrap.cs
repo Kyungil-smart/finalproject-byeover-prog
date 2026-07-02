@@ -73,8 +73,10 @@ public class InGameBootstrap : MonoBehaviour
     [Header("웨이브")]
     [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용). 현행 데이터의 첫 챕터는 101.")]
     [SerializeField] private int _defaultChapterId = 101;
-    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 Chapter_ID. 현행 데이터 기준 9801(0챕터), 튜토리얼 스테이지는 9901. 씬에 직렬화값이 있으면 인스펙터가 우선하니 _InGame에서 확인/설정.")]
-    [SerializeField] private int _tutorialChapterId = 9801;
+    [Tooltip("튜토리얼 최초 전투(필패 연출) 스테이지 Chapter_ID. 필패 특수웨이브가 있는 9901. 씬 직렬화값이 우선하니 _InGame에서 확인/설정.")]
+    [SerializeField] private int _tutorialChapterId = 9901;
+    [Tooltip("튜토리얼 성장 후 0챕터 재진입 스테이지 Chapter_ID. 클리어 가능한 9801(보스 포함). 씬 직렬화값이 우선하니 _InGame에서 확인/설정.")]
+    [SerializeField] private int _tutorialReentryChapterId = 9801;
 
     private GameObject _projectileTemplate;
     private bool _settlementRewardGranted;   // 단계④: 정산 보상 중복 지급(재정산 중복가산) 방지 가드
@@ -132,7 +134,11 @@ public class InGameBootstrap : MonoBehaviour
         int characterLevel = GetCharacterLevel();
         DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
             out int hpBonus, out int attackBonus, out int effectPower, out int flatPierce);
-        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, effectPower, flatPierce);
+
+        // 장착 아티팩트의 공격/체력도 함께 반영한다.
+        // ApplyStatBonus_OutGameBonus는 Attack을 base+attackBonus로 덮어쓰므로 한 번에 합산해 넘긴다.
+        GetEquippedArtifactStatBonus(out int artifactHpBonus, out int artifactAttackBonus);
+        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus + artifactHpBonus, attackBonus + artifactAttackBonus, effectPower, flatPierce);
 
         _combinationModel.Initialize();
 
@@ -262,6 +268,13 @@ public class InGameBootstrap : MonoBehaviour
             return Mathf.Max(1, saveData.chapterId);
         }
 
+        // 튜토리얼 진행 중에는 스테이지를 튜토리얼 단계로 결정한다(로비 선택 값보다 우선).
+        // 최초 전투(필패 연출) = 9901, 성장 후 0챕터 재진입(step14 클리어) = 9801.
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+        {
+            return IsTutorialReentryBattle() ? _tutorialReentryChapterId : _tutorialChapterId;
+        }
+
         // 추가: 조규민 - 챕터 포기 후 재진입 또는 로비 선택 진입 시 저장 없이도 선택 챕터를 반영한다.
         // 계약: SelectedChapterId에는 풀 Stage_ID(챕터ID*100+스테이지번호, 예 10201/980101)를 넣는다.
         // 새 스킴에선 Chapter_ID(101~9901)도 100 이상이라 자릿수만으로 구분이 안 되므로,
@@ -284,14 +297,6 @@ public class InGameBootstrap : MonoBehaviour
             return selectedChapterId;
         }
 
-        // 튜토리얼(최초 실행) 진행 중 + 명시적 챕터 선택 없음 → 0챕터(튜토 전용 스테이지)로 진입한다.
-        // 튜토리얼은 로비를 안 거쳐 SelectedChapterId가 0이라, 여기서 _defaultChapterId(1)로 잘못 빠지던 걸 차단.
-        // (이어하기/로비 선택은 위에서 이미 처리 — 그 경로는 안 건드린다.)
-        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
-        {
-            return _tutorialChapterId;
-        }
-
         return _defaultChapterId;
     }
 
@@ -300,6 +305,12 @@ public class InGameBootstrap : MonoBehaviour
         if (isResume && saveData != null)
         {
             return Mathf.Max(0, saveData.clearedStage);
+        }
+
+        // 튜토리얼 전투는 항상 1스테이지(인덱스 0). 챕터를 튜토리얼 단계로 강제하므로 스테이지도 맞춘다.
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+        {
+            return 0;
         }
 
         int selectedStageId = GameManager.Instance != null ? GameManager.Instance.SelectedChapterId : 0;
@@ -738,4 +749,45 @@ public class InGameBootstrap : MonoBehaviour
         Debug.Log($"[InGameBootstrap] 클라우드 데이터를 찾음. 아웃 게임 레벨 {GameManager.Instance.CloudData.characterLevel}");
         return GameManager.Instance.CloudData.characterLevel;
     }
+
+    // 현재 튜토리얼 단계가 0챕터 재진입 전투(마지막 인게임 = 챕터 클리어 단계)인지.
+    // 최초 전투 단계(정렬/연습)와 구분해 재진입 때만 클리어 가능한 스테이지로 보낸다.
+    private static bool IsTutorialReentryBattle()
+    {
+        TutorialStep step = TutorialManager.Instance != null ? TutorialManager.Instance.CurrentStep : null;
+        return step != null
+            && step.scene == TutorialScene.InGame
+            && step.gameAction == TutorialGameAction.ChapterClear;
+    }
+
+    // 장착 중인 아티팩트의 인게임 공격/체력 합산. ArtifactManager의 public 데이터만 읽고,
+    // 특수효과는 제외하고 기본 스탯만 반영한다. 스탯 공식은 아티팩트 상세 팝업과 동일하다.
+    private void GetEquippedArtifactStatBonus(out int hpBonus, out int attackBonus)
+    {
+        hpBonus = 0;
+        attackBonus = 0;
+
+        ArtifactManager artifacts = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        if (artifacts == null || artifacts.MyArtifacts == null || repo == null) return;
+
+        foreach (ArtifactInstance inst in artifacts.MyArtifacts)
+        {
+            if (inst == null || !inst.IsEquipped) continue;
+
+            GearMasterData master = repo.GetGearData(inst.MasterId);
+            if (master == null) continue;
+
+            GearLevelData level = repo.GetGearLevel(inst.MasterId);
+            int atkPer = level != null ? level.AttackValue : 0;
+            int hpPer = level != null ? level.MaxHPValue : 0;
+
+            attackBonus += ComputeArtifactStat(master.AttackBaseAmount, atkPer, inst.CurrentLevel);
+            hpBonus += ComputeArtifactStat(master.MaxHPBaseAmount, hpPer, inst.CurrentLevel);
+        }
+    }
+
+    // 최종값 = base + (base × perLevel) × (현재레벨 - 1)
+    private static int ComputeArtifactStat(int baseAmount, int perLevelValue, int level)
+        => baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
 }

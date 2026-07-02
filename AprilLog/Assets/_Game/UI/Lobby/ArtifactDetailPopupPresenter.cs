@@ -254,6 +254,13 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         RefreshOwnedState(CurrentGearId);
     }
 
+    // 외부에서 보유 수량 등을 직접 바꾼 뒤(예: 튜토리얼 돌파 재료 지급) 현재 팝업 표시를 다시 그린다.
+    public void RefreshCurrentArtifact()
+    {
+        if (CurrentGearId == 0) return;
+        RefreshOwnedState(CurrentGearId);
+    }
+
     // 레벨업 버튼 클릭 → 상한 미만이면 1레벨 강화, 상한 도달이면 돌파(같은 장비 소모). 표시를 갱신한다.
     private void HandleLevelUpClicked()
     {
