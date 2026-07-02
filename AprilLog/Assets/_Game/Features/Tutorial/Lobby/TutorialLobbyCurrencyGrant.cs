@@ -6,10 +6,12 @@ using UnityEngine;
 
 public class TutorialLobbyCurrencyGrant : MonoBehaviour
 {
-    [Header("지급량 (여유 지급)")]
-    [SerializeField] private int _grantGold = 200000;
-    [SerializeField] private int _grantParchment = 200000;
-    [SerializeField] private int _grantUpgradeStone = 9999;
+    // 튜토리얼 소요량 : 아티팩트 5레벨 강화(골드 6,000/강화석 120) + 돌파 1회(같은 장비 소모, 재화 0)
+    //                 + 캐릭터 레벨업 1회(골드 50/양피지 5). 여기에 여유분을 더해 지급한다.
+    [Header("지급량 (소요량 + 여유분)")]
+    [SerializeField] private int _grantGold = 20000;
+    [SerializeField] private int _grantParchment = 50;
+    [SerializeField] private int _grantUpgradeStone = 300;
 
     [Header("1회 지급 가드")]
     [Tooltip("이 키로 지급 여부를 저장한다. 테스트로 다시 지급하려면 비활성 상태에서 컨텍스트 메뉴로 초기화")]

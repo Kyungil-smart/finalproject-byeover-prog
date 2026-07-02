@@ -171,7 +171,26 @@ public class TutorialLobbyDirector : MonoBehaviour
             ResolveSystems();
         if (_artifacts == null || _sealGearId <= 0) return;
 
-        _artifacts.AddArtifact(_sealGearId);
+        ArtifactInstance seal = FindSealArtifact();
+        if (seal == null) return;
+
+        // 돌파는 같은 장비를 소모하는데, AddArtifact로 중복을 지급하면 소유 상한(MaxOwned-1)을
+        // 넘겨 곧바로 자동 분해된다. 돌파에 필요한 여유분을 직접 확보한다.
+        int required = ResolveAscensionCostAmount(seal);
+        seal.CurrentCount = Mathf.Max(seal.CurrentCount, required + 1);
+
+        if (_detailPopup != null)
+            _detailPopup.RefreshCurrentArtifact();
+    }
+
+    private int ResolveAscensionCostAmount(ArtifactInstance seal)
+    {
+        GearMasterData master = seal != null ? seal.MasterData : null;
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        GearAscensionCostData cost = master != null && repo != null
+            ? repo.GetAscensionCosts(master.GearGrade, "SameGear")
+            : null;
+        return cost != null ? Mathf.Max(1, cost.CostAmount) : 1;
     }
 
     private void ShowAscendGuide()
