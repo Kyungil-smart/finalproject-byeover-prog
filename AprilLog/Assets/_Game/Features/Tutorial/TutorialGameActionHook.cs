@@ -10,6 +10,7 @@ using UnityEngine;
 public class TutorialGameActionHook : MonoBehaviour
 {
     private ISortNotifier _notifier;
+    private StageLoopManager _loop;
 
     /// <summary>정렬 알림자(SortSystem)를 연결한다. 중복 구독 방지 포함.</summary>
     public void Bind(ISortNotifier notifier)
@@ -19,12 +20,37 @@ public class TutorialGameActionHook : MonoBehaviour
         if (_notifier != null) _notifier.OnSortCompleted += HandleSortCompleted;
     }
 
+    /// <summary>챕터 종료(승리)를 연결한다. 마지막 단계(gameAction==ChapterClear)가 이 이벤트로 진행/완료된다.
+    /// 이 훅이 없으면 마지막 단계에서 튜토리얼이 영원히 안 끝나 매 전투가 튜토 챕터로 반복된다.</summary>
+    public void BindChapterEnd(StageLoopManager loop)
+    {
+        if (_loop != null) _loop.OnChapterEnd -= HandleChapterEnd;
+        _loop = loop;
+        if (_loop != null) _loop.OnChapterEnd += HandleChapterEnd;
+    }
+
     private void OnDestroy() => Unbind();
 
     private void Unbind()
     {
         if (_notifier != null) _notifier.OnSortCompleted -= HandleSortCompleted;
         _notifier = null;
+        if (_loop != null) _loop.OnChapterEnd -= HandleChapterEnd;
+        _loop = null;
+    }
+
+    private void HandleChapterEnd(bool isVictory)
+    {
+        if (!isVictory) return;   // 패배(step3 강제패배 포함)로는 진행하지 않는다
+
+        TutorialManager tm = TutorialManager.Instance;
+        if (tm == null || !tm.IsRunning) return;
+
+        TutorialStep step = tm.CurrentStep;
+        if (step == null || step.advanceMode != TutorialAdvanceMode.GameAction || step.gameAction != TutorialGameAction.ChapterClear)
+            return;
+
+        tm.AdvanceStep();   // 마지막 단계면 TutorialManager가 Complete까지 처리한다
     }
 
     private int _sortCount;

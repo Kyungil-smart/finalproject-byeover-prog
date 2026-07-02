@@ -793,10 +793,16 @@ public class GameManager : MonoBehaviour
         {
             int safeChapterId = Mathf.Max(1, chapterId);
             int safeCompletedStageCount = Mathf.Max(1, completedStageCount);
-            data.currentChapter = Mathf.Max(data.currentChapter, safeChapterId);
-            data.currentStage = Mathf.Max(data.currentStage, safeCompletedStageCount);
-            AddUnlockedStage(data, BuildStageId(safeChapterId, safeCompletedStageCount));
-            AddNextStageIfExists(data, safeChapterId, safeCompletedStageCount + 1);
+            // 튜토리얼/0챕터(98xx/99xx)는 본편 진행도가 아니므로 currentChapter를 오염시키지 않는다.
+            // currentChapter는 Max 갱신이라 9801이 한 번 박히면 본편(101~)을 아무리 깨도 안 내려가고,
+            // 이 값을 읽는 하우징 방치보상 티어(GetRewardAtOrBelow)가 최고 단계로 고착된다.
+            if (safeChapterId < 9000)
+            {
+                data.currentChapter = Mathf.Max(data.currentChapter, safeChapterId);
+                data.currentStage = Mathf.Max(data.currentStage, safeCompletedStageCount);
+                AddUnlockedStage(data, BuildStageId(safeChapterId, safeCompletedStageCount));
+                AddNextStageIfExists(data, safeChapterId, safeCompletedStageCount + 1);
+            }
         }
 
         SyncToCloud(data);
@@ -1242,6 +1248,17 @@ public class GameManager : MonoBehaviour
             AddUnlockedStage(data, nextChapterFirstStageId);
             data.currentChapter = Mathf.Max(data.currentChapter, chapterId + 1);
             data.currentStage = 1;
+            return;
+        }
+
+        // 테마 경계: Chapter_ID는 테마*100+순서(101~105, 201~205)라 105 다음은 106이 아니라 201이다.
+        int nextThemeFirstChapterId = (chapterId / 100 + 1) * 100 + 1;
+        int nextThemeFirstStageId = BuildStageId(nextThemeFirstChapterId, 1);
+        if (HasStage(nextThemeFirstStageId))
+        {
+            AddUnlockedStage(data, nextThemeFirstStageId);
+            data.currentChapter = Mathf.Max(data.currentChapter, nextThemeFirstChapterId);
+            data.currentStage = 1;
         }
     }
 
@@ -1252,9 +1269,8 @@ public class GameManager : MonoBehaviour
             && DataManager.Instance.StageRepo.GetStage(stageId) != null;
     }
 
-    // 실 Stage_ID는 불규칙 체계(챕터1~5=1000~, 6~10=1100~)라 산술 불가 → StageRepo에서 (챕터,순서) 역조회.
-    // 못 찾으면 -1(HasStage/AddUnlockedStage가 무시). 옛 chapterId*100(101~)은 실데이터(1000~)와 안 맞아
-    // HasStage가 항상 실패 → 다음 챕터 해금(currentChapter 상승)이 막혀 있었다(progression 버그).
+    // Stage_ID는 StageRepo (챕터,순서) 역조회로만 구한다. 못 찾으면 -1(HasStage/AddUnlockedStage가 무시).
+    // 형태상 Chapter_ID*100+순서(10101 등)지만 테마 경계/특수 챕터(98xx/99xx)가 있어 산술 조합은 금지.
     private static int BuildStageId(int chapterId, int stageNumber)
     {
         var repo = DataManager.Instance != null ? DataManager.Instance.StageRepo : null;

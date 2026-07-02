@@ -158,7 +158,7 @@ public class TutorialInGameDirector : MonoBehaviour
     private void Start()
     {
         var tm = TutorialManager.Instance;
-        _active = tm != null && tm.IsRunning && IsInGameStep(tm.CurrentStep);
+        _active = tm != null && tm.IsRunning && IsInGameStep(tm.CurrentStep) && IsTutorialChapterRun();
         if (!_active) return;
 
         ResolveSystems();
@@ -230,6 +230,15 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private static bool IsInGameStep(TutorialStep step)
         => step != null && step.scene == TutorialScene.InGame;
+
+    // 이번 인게임 런이 튜토리얼 런인지. 튜토 미완료 상태로 로비에서 일반 챕터를 선택해 들어오면
+    // IsRunning만으로는 구분이 안 돼 디렉터가 일반 런을 하이재킹(보드 커스텀/정지, step3이면 강제 패배)하므로 게이트한다.
+    // 판별은 진입 라우팅(ResolveStartChapterId)과 같은 신호를 쓴다: 로비 선택 런은 SelectedChapterId가 세팅되고,
+    // 튜토 진입(부트스트랩 직행)과 그 재입장/Retry는 0이다. (StageLoopManager는 Start 순서상 아직 없을 수 있어 못 쓴다)
+    private static bool IsTutorialChapterRun()
+    {
+        return GameManager.Instance == null || GameManager.Instance.SelectedChapterId == 0;
+    }
 
     private void ResolveSystems()
     {

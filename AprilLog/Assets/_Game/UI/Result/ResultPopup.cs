@@ -175,11 +175,35 @@ public class ResultPopup : MonoBehaviour
     {
         Close();
         OnNextChapterClicked?.Invoke();
-        if (GameManager.Instance != null)
+        if (GameManager.Instance == null) return;
+
+        // 옛 SelectedChapterId += 1 산술은 값이 비어(0) 있으면 존재하지 않는 챕터 1로 들어가 빈 인게임에 갇히고,
+        // 풀 Stage_ID가 들어 있어도 "다음 스테이지"가 될 뿐 다음 챕터가 아니다. 방금 끝난 챕터 기준으로 데이터 역조회한다.
+        var loop = FindFirstObjectByType<StageLoopManager>();
+        int currentChapterId = loop != null ? loop.CurrentChapterId : 0;
+        int nextStageId = ResolveNextChapterFirstStageId(currentChapterId);
+        if (nextStageId <= 0)
         {
-            GameManager.Instance.SelectedChapterId += 1;
-            GameManager.Instance.LoadInGame();
+            // 다음 챕터가 없으면(마지막 챕터, 튜토리얼/0챕터) 로비로.
+            GoLobby();
+            return;
         }
+
+        GameManager.Instance.SelectedChapterId = nextStageId;   // 계약: SelectedChapterId에는 항상 풀 Stage_ID를 넣는다
+        GameManager.Instance.LoadInGame();
+    }
+
+    // 다음 챕터의 1스테이지 Stage_ID. 챕터+1 → 없으면 다음 테마 1챕터(105 다음은 201). 튜토/0챕터(98xx/99xx)는 본편 진행이 아니라 -1.
+    private static int ResolveNextChapterFirstStageId(int chapterId)
+    {
+        if (chapterId <= 0 || chapterId >= 9000) return -1;
+        var repo = DataManager.Instance != null ? DataManager.Instance.StageRepo : null;
+        if (repo == null) return -1;
+
+        int next = repo.GetStageId(chapterId + 1, 1);
+        if (next > 0) return next;
+
+        return repo.GetStageId((chapterId / 100 + 1) * 100 + 1, 1);
     }
 
     private void GoLobby()
