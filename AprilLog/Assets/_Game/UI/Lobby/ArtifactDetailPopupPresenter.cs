@@ -22,6 +22,12 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     [Tooltip("레벨업 버튼. 미보유 아티팩트면 interactable=false")]
     [SerializeField] private Button _levelUpButton;
 
+    [Header("레벨업 버튼 라벨 (선택)")]
+    [Tooltip("강화 가능하면 레벨업, 상한 도달 후 돌파 가능 상태면 돌파로 표시한다. 비우면 버튼 자식 TMP를 자동 탐색한다.")]
+    [SerializeField] private TMP_Text _levelUpButtonLabel;
+    [SerializeField] private string _levelUpLabel = "레벨업";
+    [SerializeField] private string _ascendLabel = "돌파";
+
     [Header("장착 버튼 라벨 (선택)")]
     [Tooltip("장착/해제 상태에 따라 텍스트를 바꿀 장착 버튼 내부 TMP. 비우면 라벨은 바뀌지 않는다.")]
     [SerializeField] private TMP_Text _equipButtonLabel;
@@ -31,6 +37,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     [Header("상세 정보 표시")]
     [SerializeField] private Image _gradeBg;            // 등급 배경
     [SerializeField] private Image _artifactIcon;       // 아티팩트 아이콘
+    [SerializeField] private ArtifactEquipSlotView[] _popupSlotViews;
     [SerializeField] private TMP_Text _nameText;        // 이름
     [SerializeField] private TMP_Text _gradeText;       // 등급
     [SerializeField] private TMP_Text _equipAttackText; // 장착 시 공격력
@@ -89,6 +96,10 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     public int CurrentGearId { get; private set; }
 
+    private ArtifactManager _inventoryEventSource;
+    private bool _levelUpButtonResolvedFromLabel;
+    private bool _levelUpButtonListenerRegistered;
+
     // 보유/장착/레벨업 판정에 쓰는 인벤토리 매니저. (인스펙터에 지정 안 하면 GameStateManager 사용)
     private ArtifactManager Manager =>
         _artifactManager != null
@@ -97,11 +108,17 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     private void OnEnable()
     {
+        ResolveLevelUpButtonReference();
         if (_listBinder != null) _listBinder.OnSlotClicked += HandleSlotClicked;
         if (_equipBinder != null) _equipBinder.OnSlotClicked += HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.AddListener(Close);
         if (_equipButton != null) _equipButton.onClick.AddListener(HandleEquipClicked);
-        if (_levelUpButton != null) _levelUpButton.onClick.AddListener(HandleLevelUpClicked);
+        if (_levelUpButton != null && !_levelUpButtonResolvedFromLabel)
+        {
+            _levelUpButton.onClick.AddListener(HandleLevelUpClicked);
+            _levelUpButtonListenerRegistered = true;
+        }
+        SubscribeInventoryUpdated();
     }
 
     private void OnDisable()
@@ -110,7 +127,10 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_equipBinder != null) _equipBinder.OnSlotClicked -= HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.RemoveListener(Close);
         if (_equipButton != null) _equipButton.onClick.RemoveListener(HandleEquipClicked);
-        if (_levelUpButton != null) _levelUpButton.onClick.RemoveListener(HandleLevelUpClicked);
+        if (_levelUpButton != null && _levelUpButtonListenerRegistered)
+            _levelUpButton.onClick.RemoveListener(HandleLevelUpClicked);
+        _levelUpButtonListenerRegistered = false;
+        UnsubscribeInventoryUpdated();
     }
 
     // 장착 버튼 클릭 → 현재 표시 중인 아티팩트의 장착/해제를 컨트롤러에 요청.
@@ -144,6 +164,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     private void HandleSlotClicked(int gearId)
     {
+        SubscribeInventoryUpdated();
+
         // 미보유 레전더리 아티팩트는 상세 팝업이 아니라 제작 팝업(POPUP_ArtifactCraft)으로 위임한다.
         if (_craftPopup != null && _craftPopup.IsCraftTarget(gearId))
         {
@@ -180,19 +202,56 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     // (팝업 오픈 시 / 레벨업 직후 공통 호출)
     private void RefreshOwnedState(int gearId)
     {
+        ResolveLevelUpButtonReference();
+
         ArtifactInstance inst = FindInstance(gearId);
         bool owned = inst != null;
+        bool canLevelUp = owned && inst.CanLevelUp();
+        bool isLevelCapReached = owned && !inst.CanLevelUp();
+        bool canAscend = isLevelCapReached && CanAscendWithSameGear(inst);
 
         // 미보유(비활성) 아티팩트는 상세 정보는 보되 장착/레벨업은 할 수 없다.
         if (_equipButton != null) _equipButton.interactable = owned;
-        // 레벨업 버튼은 강화(상한 미만) 또는 돌파(상한 도달) 가능할 때 활성.
-        if (_levelUpButton != null) _levelUpButton.interactable = owned && (inst.CanLevelUp() || inst.CanAscend());
+        // 레벨업 버튼은 강화 가능하거나, 상한 도달 후 돌파 재료가 있을 때만 활성.
+        if (_levelUpButton != null) _levelUpButton.interactable = canLevelUp || canAscend;
+
+        if (_levelUpButtonLabel == null)
+            _levelUpButtonLabel = ResolveLevelUpButtonLabel();
+        if (_levelUpButtonLabel != null)
+            _levelUpButtonLabel.text = isLevelCapReached ? _ascendLabel : _levelUpLabel;
 
         // 장착 버튼 라벨 : 이미 장착된 아티팩트면 '해제', 아니면 '장착'.
         if (_equipButtonLabel != null)
             _equipButtonLabel.text = (owned && inst.IsEquipped) ? _unequipLabel : _equipLabel;
 
+        RefreshPopupSlotViews(gearId, inst);
         PopulateLevelStats(gearId, inst);
+    }
+
+    private void SubscribeInventoryUpdated()
+    {
+        ArtifactManager mgr = Manager;
+        if (_inventoryEventSource == mgr) return;
+
+        UnsubscribeInventoryUpdated();
+        if (mgr == null) return;
+
+        mgr.OnInventoryUpdated += HandleInventoryUpdated;
+        _inventoryEventSource = mgr;
+    }
+
+    private void UnsubscribeInventoryUpdated()
+    {
+        if (_inventoryEventSource == null) return;
+
+        _inventoryEventSource.OnInventoryUpdated -= HandleInventoryUpdated;
+        _inventoryEventSource = null;
+    }
+
+    private void HandleInventoryUpdated()
+    {
+        if (CurrentGearId == 0) return;
+        RefreshOwnedState(CurrentGearId);
     }
 
     // 레벨업 버튼 클릭 → 상한 미만이면 1레벨 강화, 상한 도달이면 돌파(같은 장비 소모). 표시를 갱신한다.
@@ -204,7 +263,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
         if (inst.CanLevelUp())
             mgr.RequestUpgrade(inst.UniqueId);   // 강화석 부족이면 매니저가 무시
-        else if (inst.CanAscend())
+        else if (CanAscendWithSameGear(inst))
             mgr.AscendArtifact(inst);            // 상한 도달 → 돌파(같은 장비 1개 소모)
 
         RefreshOwnedState(CurrentGearId);        // 레벨/스탯/비용/버튼 상태 다시 표시
@@ -214,6 +273,40 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     {
         ArtifactManager mgr = Manager;
         return mgr != null ? mgr.MyArtifacts.Find(a => a != null && a.MasterId == gearId) : null;
+    }
+
+    private TMP_Text ResolveLevelUpButtonLabel()
+    {
+        if (_levelUpButton == null) return null;
+
+        TMP_Text text = _levelUpButton.GetComponentInChildren<TMP_Text>(true);
+        if (text != null) return text;
+
+        Transform parent = _levelUpButton.transform.parent;
+        return parent != null ? parent.GetComponentInChildren<TMP_Text>(true) : null;
+    }
+
+    private void ResolveLevelUpButtonReference()
+    {
+        if (_levelUpButton != null) return;
+        if (_levelUpButtonLabel == null) return;
+
+        _levelUpButton = _levelUpButtonLabel.GetComponentInParent<Button>(true);
+        _levelUpButtonResolvedFromLabel = _levelUpButton != null;
+    }
+
+    private bool CanAscendWithSameGear(ArtifactInstance inst)
+    {
+        if (inst == null || !inst.CanAscend()) return false;
+
+        GearMasterData master = inst.MasterData;
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        GearAscensionCostData cost = master != null && repo != null
+            ? repo.GetAscensionCosts(master.GearGrade, "SameGear")
+            : null;
+        int requiredCount = cost != null ? Mathf.Max(0, cost.CostAmount) : 1;
+
+        return inst.CurrentCount > requiredCount;
     }
 
     // 이름/등급/장착·보유 공격력/특수능력 설명을 채운다. (제작·분해 팝업과 동일한 방식)
@@ -251,6 +344,38 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
     }
 
+    private void RefreshPopupSlotViews(int gearId, ArtifactInstance inst)
+    {
+        ResolvePopupSlotViews();
+        if (_popupSlotViews == null || _popupSlotViews.Length == 0) return;
+
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        GearMasterData master = repo != null ? repo.GetGearData(gearId) : null;
+        ArtifactGrade grade = master != null ? ToGrade(master.GearGrade) : ArtifactGrade.Rare;
+
+        for (int i = 0; i < _popupSlotViews.Length; i++)
+        {
+            ArtifactEquipSlotView view = _popupSlotViews[i];
+            if (view == null) continue;
+
+            if (master != null)
+                view.SetData(master, grade);
+
+            if (inst != null)
+                view.SetOwnedState(inst.CurrentLevel, inst.AscensionCount, IsFinalLevelMax(inst));
+            else
+                view.ClearOwnedState();
+        }
+    }
+
+    private void ResolvePopupSlotViews()
+    {
+        if (_popupSlotViews != null && _popupSlotViews.Length > 0) return;
+        if (_popup == null) return;
+
+        _popupSlotViews = _popup.GetComponentsInChildren<ArtifactEquipSlotView>(true);
+    }
+
     // 현재/다음 레벨 ATK·HP + 골드·강화석 비용(보유/소모) 표시. (inst == null 이면 미보유 → 기본 레벨 기준)
     private void PopulateLevelStats(int gearId, ArtifactInstance inst)
     {
@@ -261,7 +386,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         GearLevelData levelData = repo.GetGearLevel(gearId);
         int startLevel = levelData != null ? levelData.StartLevel : 1;
         int level = inst != null ? inst.CurrentLevel : startLevel;
-        bool isMax = inst != null && !inst.CanLevelUp();
+        bool isLevelCapReached = inst != null && !inst.CanLevelUp();
+        bool isFinalMax = inst != null && IsFinalLevelMax(inst);
 
         if (_levelText != null)
             _levelText.text = $"Lv.{level}";
@@ -274,15 +400,18 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_curHpText != null)  _curHpText.text  = ComputeStat(master.MaxHPBaseAmount,  hpPer,  level).ToString();
 
         // 다음 레벨 스탯 (최대 레벨이면 MAX)
-        if (_nextAtkText != null) _nextAtkText.text = isMax ? "MAX" : ComputeStat(master.AttackBaseAmount, atkPer, level + 1).ToString();
-        if (_nextHpText != null)  _nextHpText.text  = isMax ? "MAX" : ComputeStat(master.MaxHPBaseAmount,  hpPer,  level + 1).ToString();
+        if (_nextAtkText != null) _nextAtkText.text = isFinalMax ? "MAX" : ComputeStat(master.AttackBaseAmount, atkPer, level + 1).ToString();
+        if (_nextHpText != null)  _nextHpText.text  = isFinalMax ? "MAX" : ComputeStat(master.MaxHPBaseAmount,  hpPer,  level + 1).ToString();
 
         // 레벨업 비용 (보유 / 소모)
         int ownedGold  = _currencyModel != null ? _currencyModel.Gold
                        : (GameManager.Instance != null ? GameManager.Instance.Gold : 0);
         int ownedStone = Manager != null ? Manager.UpgradeStone : 0;
-        SetCostText(_goldCostText,  ownedGold,  CostOf(repo, gearId, level, _goldCostItemId),  inst, isMax);
-        SetCostText(_stoneCostText, ownedStone, CostOf(repo, gearId, level, _stoneCostItemId), inst, isMax);
+        SetCostText(_goldCostText,  ownedGold,  CostOf(repo, gearId, level, _goldCostItemId),  inst, isFinalMax);
+        SetCostText(_stoneCostText, ownedStone, CostOf(repo, gearId, level, _stoneCostItemId), inst, isFinalMax);
+
+        if (isLevelCapReached && !isFinalMax)
+            SetAscensionCostText(repo, inst);
 
         // 특수능력 헤더 = '이름 Lv.레벨'. 레벨은 돌파 수(AscensionCount) 기준.
         if (_specialHeaderText != null)
@@ -326,6 +455,30 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         return c > 0 ? c : 0;
     }
 
+    private void SetAscensionCostText(GearRepo repo, ArtifactInstance inst)
+    {
+        if (inst == null) return;
+
+        GearMasterData master = inst.MasterData;
+        GearAscensionCostData cost = master != null && repo != null
+            ? repo.GetAscensionCosts(master.GearGrade, "SameGear")
+            : null;
+        int requiredCount = cost != null ? Mathf.Max(0, cost.CostAmount) : 1;
+        int materialCount = Mathf.Max(0, inst.CurrentCount - 1);
+
+        if (_goldCostText != null)
+        {
+            _goldCostText.text = "-";
+            _goldCostText.color = Color.white;
+        }
+
+        if (_stoneCostText != null)
+        {
+            _stoneCostText.text = $"{materialCount}/{requiredCount}";
+            _stoneCostText.color = materialCount >= requiredCount ? Color.white : Color.red;
+        }
+    }
+
     // 비용 표시 : 미보유 '-', 최대 레벨 'MAX', 그 외 '보유/소모'(부족하면 빨강).
     private void SetCostText(TMP_Text text, int owned, int cost, ArtifactInstance inst, bool isMax)
     {
@@ -341,6 +494,11 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     private static int ComputeStat(int baseAmount, int perLevelValue, int level)
     {
         return baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
+    }
+
+    private static bool IsFinalLevelMax(ArtifactInstance inst)
+    {
+        return inst != null && !inst.CanLevelUp() && !inst.CanAscend();
     }
 
     private string ResolveName(GearMasterData gear)

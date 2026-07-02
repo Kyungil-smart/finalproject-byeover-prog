@@ -266,11 +266,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 6929552109529600238, guid: dea76765199207942829716049dd0043, type: 3}
   m_PrefabInstance: {fileID: 1857311406}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &203881280 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3911302329909770525, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-  m_PrefabInstance: {fileID: 8729724129798290889}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &709813275
 GameObject:
   m_ObjectHideFlags: 0
@@ -355,58 +350,25 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5180511273669623152, guid: dea76765199207942829716049dd0043, type: 3}
   m_PrefabInstance: {fileID: 1857311406}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &888497153
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 888497154}
-  - component: {fileID: 888497155}
-  m_Layer: 5
-  m_Name: --- EnchantBookPanel ---
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!224 &888497154
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 888497153}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 203881280}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 594.1932, y: 87.7428}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &888497155
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 888497153}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53360004fad43164d90bcb8a4f35d465, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BookView
-  _bookModel: {fileID: 2049095341}
 --- !u!224 &891240124 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5806205804163835918, guid: dea76765199207942829716049dd0043, type: 3}
+  m_PrefabInstance: {fileID: 1857311406}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1105503179 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5344026314396266106, guid: dea76765199207942829716049dd0043, type: 3}
+  m_PrefabInstance: {fileID: 1857311406}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 460c00b9fe8b8474b8999e8f3746e75e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArtifactDetailPopupPresenter
+--- !u!224 &1105503180 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3958521931787834794, guid: dea76765199207942829716049dd0043, type: 3}
   m_PrefabInstance: {fileID: 1857311406}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1169593832
@@ -440,6 +402,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1767865415}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1250989671 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6730792083203932228, guid: dea76765199207942829716049dd0043, type: 3}
+  m_PrefabInstance: {fileID: 1857311406}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1 &1383092245
 GameObject:
   m_ObjectHideFlags: 0
@@ -1072,6 +1045,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5344026314396266106, guid: dea76765199207942829716049dd0043, type: 3}
+      propertyPath: _currencyModel
+      value: 
+      objectReference: {fileID: 1461284355}
+    - target: {fileID: 5344026314396266106, guid: dea76765199207942829716049dd0043, type: 3}
+      propertyPath: _levelUpButtonLabel
+      value: 
+      objectReference: {fileID: 1250989671}
     - target: {fileID: 5428969696496605568, guid: dea76765199207942829716049dd0043, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1104,6 +1085,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6329597928112852032, guid: dea76765199207942829716049dd0043, type: 3}
+      propertyPath: _artifactManager
+      value: 
+      objectReference: {fileID: 1470759595}
     - target: {fileID: 7326741913768892587, guid: dea76765199207942829716049dd0043, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -1429,18 +1414,6 @@ PrefabInstance:
     m_TransformParent: {fileID: 1562718397}
     m_Modifications:
     - target: {fileID: 1057777570451791370, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: _startPhase
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1057777570451791370, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: _elements.Array.size
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 1057777570451791370, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: _elements.Array.data[4].label
-      value: Housing
-      objectReference: {fileID: 0}
-    - target: {fileID: 1057777570451791370, guid: 1528c731214f9f44f893eae793db1311, type: 3}
       propertyPath: _elements.Array.data[0].iconTarget
       value: 
       objectReference: {fileID: 1976170077}
@@ -1472,34 +1445,26 @@ PrefabInstance:
       propertyPath: _elements.Array.data[3].lockTarget
       value: 
       objectReference: {fileID: 1976170072}
-    - target: {fileID: 1057777570451791370, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: _elements.Array.data[4].unlockPhase
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 1057777570451791370, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: _elements.Array.data[4].lockedSprite
-      value: 
-      objectReference: {fileID: 21300000, guid: 1af09c7ac29ba45b6827bd65c5a53fe7, type: 3}
     - target: {fileID: 2239461069145719848, guid: 1528c731214f9f44f893eae793db1311, type: 3}
       propertyPath: m_Name
       value: --- Tutorial ---
       objectReference: {fileID: 0}
-    - target: {fileID: 2239461069145719848, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: m_IsActive
-      value: 1
+    - target: {fileID: 6982398870744476017, guid: 1528c731214f9f44f893eae793db1311, type: 3}
+      propertyPath: _sealGearId
+      value: 50001
       objectReference: {fileID: 0}
-    - target: {fileID: 3062865460634909486, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3062865460634909486, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -525
-      objectReference: {fileID: 0}
-    - target: {fileID: 4800856055088283222, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
+    - target: {fileID: 6982398870744476017, guid: 1528c731214f9f44f893eae793db1311, type: 3}
+      propertyPath: _detailPopup
+      value: 
+      objectReference: {fileID: 1105503179}
+    - target: {fileID: 6982398870744476017, guid: 1528c731214f9f44f893eae793db1311, type: 3}
+      propertyPath: _equipButton
+      value: 
+      objectReference: {fileID: 1105503180}
+    - target: {fileID: 6982398870744476017, guid: 1528c731214f9f44f893eae793db1311, type: 3}
+      propertyPath: _ascendButton
+      value: 
+      objectReference: {fileID: 133249759}
     - target: {fileID: 7097457861417313249, guid: 1528c731214f9f44f893eae793db1311, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -1580,14 +1545,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7330325755898449801, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: _dimColor.a
-      value: 0.78431374
-      objectReference: {fileID: 0}
-    - target: {fileID: 7863794985354174349, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      propertyPath: _debugStartIndex
-      value: -1
-      objectReference: {fileID: 0}
+    - target: {fileID: 7887855074600480156, guid: 1528c731214f9f44f893eae793db1311, type: 3}
+      propertyPath: _bookModel
+      value: 
+      objectReference: {fileID: 2049095341}
     - target: {fileID: 8783204367338214693, guid: 1528c731214f9f44f893eae793db1311, type: 3}
       propertyPath: _highlightTargets.Array.data[0].target
       value: 
@@ -1625,12 +1586,8 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 133249759}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 5654647673159819535, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 3911302329909770525, guid: 1528c731214f9f44f893eae793db1311, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 888497154}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1528c731214f9f44f893eae793db1311, type: 3}
 --- !u!1660057539 &9223372036854775807
