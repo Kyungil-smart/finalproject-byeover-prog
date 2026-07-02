@@ -132,7 +132,11 @@ public class InGameBootstrap : MonoBehaviour
         int characterLevel = GetCharacterLevel();
         DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
             out int hpBonus, out int attackBonus, out int effectPower, out int flatPierce);
-        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, effectPower, flatPierce);
+
+        // 장착 아티팩트의 공격/체력도 함께 반영한다.
+        // ApplyStatBonus_OutGameBonus는 Attack을 base+attackBonus로 덮어쓰므로 한 번에 합산해 넘긴다.
+        GetEquippedArtifactStatBonus(out int artifactHpBonus, out int artifactAttackBonus);
+        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus + artifactHpBonus, attackBonus + artifactAttackBonus, effectPower, flatPierce);
 
         _combinationModel.Initialize();
 
@@ -738,4 +742,35 @@ public class InGameBootstrap : MonoBehaviour
         Debug.Log($"[InGameBootstrap] 클라우드 데이터를 찾음. 아웃 게임 레벨 {GameManager.Instance.CloudData.characterLevel}");
         return GameManager.Instance.CloudData.characterLevel;
     }
+
+    // 장착 중인 아티팩트의 인게임 공격/체력 합산. ArtifactManager의 public 데이터만 읽고,
+    // 특수효과는 제외하고 기본 스탯만 반영한다. 스탯 공식은 아티팩트 상세 팝업과 동일하다.
+    private void GetEquippedArtifactStatBonus(out int hpBonus, out int attackBonus)
+    {
+        hpBonus = 0;
+        attackBonus = 0;
+
+        ArtifactManager artifacts = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        if (artifacts == null || artifacts.MyArtifacts == null || repo == null) return;
+
+        foreach (ArtifactInstance inst in artifacts.MyArtifacts)
+        {
+            if (inst == null || !inst.IsEquipped) continue;
+
+            GearMasterData master = repo.GetGearData(inst.MasterId);
+            if (master == null) continue;
+
+            GearLevelData level = repo.GetGearLevel(inst.MasterId);
+            int atkPer = level != null ? level.AttackValue : 0;
+            int hpPer = level != null ? level.MaxHPValue : 0;
+
+            attackBonus += ComputeArtifactStat(master.AttackBaseAmount, atkPer, inst.CurrentLevel);
+            hpBonus += ComputeArtifactStat(master.MaxHPBaseAmount, hpPer, inst.CurrentLevel);
+        }
+    }
+
+    // 최종값 = base + (base × perLevel) × (현재레벨 - 1)
+    private static int ComputeArtifactStat(int baseAmount, int perLevelValue, int level)
+        => baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
 }
