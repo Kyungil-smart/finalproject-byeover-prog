@@ -73,7 +73,7 @@ public class InGameBootstrap : MonoBehaviour
     [Header("웨이브")]
     [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
     [SerializeField] private int _defaultChapterId = 1;
-    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 Chapter_ID. 재파싱 새 스킴(85c8bc0) 기준 9801(0챕터). 튜토리얼 스테이지는 9901. 씬에 직렬화값이 있으면 인스펙터가 우선하니 _InGame에서 확인/설정.")]
+    [Tooltip("튜토리얼(최초 실행) 진행 중 + 챕터 미선택일 때 진입할 0챕터 Chapter_ID. 현행 데이터 기준 9801(0챕터), 튜토리얼 스테이지는 9901. 씬에 직렬화값이 있으면 인스펙터가 우선하니 _InGame에서 확인/설정.")]
     [SerializeField] private int _tutorialChapterId = 9801;
 
     private GameObject _projectileTemplate;
@@ -604,7 +604,7 @@ public class InGameBootstrap : MonoBehaviour
         // ===== 얼음 속성 장판 (골격 — placeholder VFX=색 사각형(하늘). 데미지/판정/발동만. 빙결/슬로우 CC·이동장판은 폴리싱) =====
         // 글레이셜 피어스 5021~23(조합)은 투사체(piercing)라 기본 투사체 경로 — 여기 등록 안 함.
         Color iceFlash = new Color(0.6f, 0.9f, 1f, 0.4f);
-        // 마칭 아이스 5011~13 (일반): 장판형. 에이프릴 → 최단거리 타겟 방향으로 100×100 정사각형 PelletCount(6/7/8)칸을 pulseInterval마다 순차 발동(마칭). (style=MarchingIce → MarchingIceRoutine, placement 미사용. 2026-06-24 QA 개편: 제자리→타겟 전진)
+        // 마칭 아이스 5011~13 (일반): 장판형. 에이프릴 → 최단거리 타겟 방향으로 100×100 정사각형 PelletCount(6/7/8)칸을 pulseInterval마다 순차 발동(마칭). (style=MarchingIce → MarchingIceRoutine, placement 미사용. QA 개편으로 제자리→타겟 전진)
         var marchingIce = new HazardConfig { placement = HazardPlacement.PlayerFront, style = HazardStyle.MarchingIce, widthPx = 100, heightPx = 100, pulseInterval = 0.15f, flashColor = iceFlash };
         skillSystem.RegisterHazardSkill(5011, marchingIce);
         skillSystem.RegisterHazardSkill(5012, marchingIce);
