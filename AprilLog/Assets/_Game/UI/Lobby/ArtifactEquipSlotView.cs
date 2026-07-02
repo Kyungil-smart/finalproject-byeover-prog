@@ -10,15 +10,31 @@ public class ArtifactEquipSlotView : ArtifactSlotView
     [SerializeField] private TMP_Text _levelText;     // 레벨 (만렙 = Max)
     [SerializeField] private TMP_Text _ascensionText; // 돌파 수
 
+    private void OnEnable()
+    {
+        ClearOwnedState();
+    }
+
     // 유저 보유 상태 : 레벨 / 돌파 수 + 돌파 테두리색. (유저 상태)
     public void SetOwnedState(int level, int ascensionStage, bool isMaxLevel)
     {
         if (_levelText != null)
-            _levelText.text = isMaxLevel ? "Max" : $"Lv.{level}";
+            _levelText.text = $"Lv.{level}";
 
         if (_ascensionText != null)
             _ascensionText.text = ascensionStage > 0 ? $"+{ascensionStage}" : string.Empty;
 
         SetAscensionBorder(ascensionStage);
+    }
+
+    public void ClearOwnedState()
+    {
+        if (_levelText != null)
+            _levelText.text = string.Empty;
+
+        if (_ascensionText != null)
+            _ascensionText.text = string.Empty;
+
+        SetAscensionBorder(0);
     }
 }

@@ -71,6 +71,12 @@ public class TutorialView : MonoBehaviour, ITutorialView
 
             LogDebug(
                 $"튜토리얼 뷰 등록 완료. Scene={gameObject.scene.name}");
+
+            // 튜토리얼을 이미 끝냈으면(정상 완료/스킵) 로비 버튼을 모두 해금한다.
+            if (_lobbyGate != null && TutorialManager.Instance.IsCompleted)
+            {
+                _lobbyGate.UnlockAll();
+            }
         }
         else
         {

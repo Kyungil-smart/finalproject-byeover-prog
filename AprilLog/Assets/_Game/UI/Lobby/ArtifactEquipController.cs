@@ -31,6 +31,7 @@ public class ArtifactEquipController : MonoBehaviour
 
     // 장착칸이 가득 찼을 때, 교체를 기다리는(새로 장착하려는) 인스턴스.
     private ArtifactInstance _pending;
+    private ArtifactManager _inventoryEventSource;
 
     private ArtifactManager Manager =>
         _artifactManager != null
@@ -41,17 +42,45 @@ public class ArtifactEquipController : MonoBehaviour
     {
         if (_detailPopup != null) _detailPopup.OnEquipRequested += HandleEquipRequested;
         if (_equipBinder != null) _equipBinder.OnSlotIndexClicked += HandleReplaceSlotSelected;
+        SubscribeInventoryUpdated();
     }
 
     private void OnDisable()
     {
         if (_detailPopup != null) _detailPopup.OnEquipRequested -= HandleEquipRequested;
         if (_equipBinder != null) _equipBinder.OnSlotIndexClicked -= HandleReplaceSlotSelected;
+        UnsubscribeInventoryUpdated();
     }
 
     private void Start()
     {
         if (_replaceHint != null) _replaceHint.SetActive(false);
+        SubscribeInventoryUpdated();
+        SyncFromData();
+    }
+
+    private void SubscribeInventoryUpdated()
+    {
+        ArtifactManager mgr = Manager;
+        if (_inventoryEventSource == mgr) return;
+
+        UnsubscribeInventoryUpdated();
+        if (mgr == null) return;
+
+        mgr.OnInventoryUpdated += HandleInventoryUpdated;
+        _inventoryEventSource = mgr;
+    }
+
+    private void UnsubscribeInventoryUpdated()
+    {
+        if (_inventoryEventSource == null) return;
+
+        _inventoryEventSource.OnInventoryUpdated -= HandleInventoryUpdated;
+        _inventoryEventSource = null;
+    }
+
+    private void HandleInventoryUpdated()
+    {
         SyncFromData();
     }
 

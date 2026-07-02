@@ -318,6 +318,9 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
    
     // 터치 진행
   
+    /// <summary>외부에서 시나리오 스킵을 요청(스킵 버튼과 동일 처리 경로).</summary>
+    public void RequestSkip() => OnSkipRequested?.Invoke();
+
     public void OnPointerClick(PointerEventData eventData)
     {
         if (_isTyping)

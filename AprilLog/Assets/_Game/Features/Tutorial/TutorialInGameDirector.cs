@@ -74,6 +74,26 @@ public class TutorialInGameDirector : MonoBehaviour
     [SerializeField] private int _firstEnchantScenarioGroupId = 100030;
     [SerializeField] private int _firstEnchantScenarioEndId = 100034;
 
+    [Header("step0 전투 연출")]
+    [SerializeField] private int _step0IntroScenarioId = 100019;
+    [SerializeField] private int[] _step0MonsterIds = { 11, 12, 13 };
+    [Tooltip("몬스터가 멈춰서 등장하는 위치(월드). 좌->우 3개")]
+    [SerializeField] private Vector2[] _step0MonsterSpawnPositions =
+    {
+        new Vector2(-2f, 3f), new Vector2(0f, 3f), new Vector2(2f, 3f)
+    };
+    [Tooltip("강조 연출 후 몬스터가 내려와 다시 멈추는 목표 Y(월드)")]
+    [SerializeField] private float _step0MonsterStopY = 1.5f;
+    [Tooltip("하강 소요 시간(초, unscaled)")]
+    [SerializeField] private float _step0MonsterDescendDuration = 0.6f;
+    [Tooltip("몬스터 강조 시 확대 배율(1=원래 크기)")]
+    [SerializeField] private float _step0MonsterEmphasisScale = 1.5f;
+    [Tooltip("확대/복귀 각각 소요 시간(초, unscaled)")]
+    [SerializeField] private float _step0MonsterEmphasisDuration = 0.4f;
+    [Tooltip("확대 상태를 잠깐 유지하는 시간(초)")]
+    [SerializeField] private float _step0MonsterEmphasisHold = 0.3f;
+    [SerializeField] private bool _step0GuaranteeOneShot = true;
+
     [Header("step3 한계 체감 러시")]
     [SerializeField] private float _step3RushWarningDelay = 38f;
     [SerializeField] private int _step3RushWarningScenarioStartId = 100035;
@@ -119,6 +139,13 @@ public class TutorialInGameDirector : MonoBehaviour
     private Coroutine _step3RushRoutine;
     private Coroutine _step3ForceDefeatRoutine;
 
+    private Coroutine _step0Routine;
+    private readonly List<MonsterAI> _step0Monsters = new List<MonsterAI>(3);
+    private int _step0KillCount;
+    private bool _step0PuzzlePhase;
+    private GameObject _bossWavePopup;
+    private bool _bossWavePopupResolved;
+
     private static readonly BindingFlags ScenarioDriverMemberFlags = BindingFlags.Instance | BindingFlags.NonPublic;
     private static FieldInfo _scenarioLinesField;
     private static FieldInfo _scenarioIndexField;
@@ -126,6 +153,7 @@ public class TutorialInGameDirector : MonoBehaviour
     private static FieldInfo _scenarioFinishedField;
     private static MethodInfo _scenarioSubscribeMethod;
     private static MethodInfo _scenarioShowMethod;
+    private static FieldInfo _bossWavePopupField;
 
     private void Start()
     {
@@ -134,6 +162,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (!_active) return;
 
         ResolveSystems();
+        if (_spawner != null) _spawner.OnMonsterDied += HandleStep0MonsterDied;
         if (_inputHandler != null) _inputHandler.OnDragStarted += HandleDragStarted;
         TrySubscribeGrowthLevelUp();
         if (tm.CurrentStep != null && tm.CurrentStep.stepId == 0) HoldStageForTutorialGuide();
@@ -142,6 +171,15 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (_spawner != null) _spawner.OnMonsterDied -= HandleStep0MonsterDied;
+        if (_step0Routine != null)
+        {
+            StopCoroutine(_step0Routine);
+            _step0Routine = null;
+            // 연출 도중 이탈 시 멈춰둔 시간을 복구한다.
+            if (Time.timeScale == 0f) Time.timeScale = 1f;
+        }
+        _step0PuzzlePhase = false;
         if (_inputHandler != null) _inputHandler.OnDragStarted -= HandleDragStarted;
         UnsubscribeGrowthLevelUp();
         UnsubscribePlayerDeath();
@@ -167,6 +205,27 @@ public class TutorialInGameDirector : MonoBehaviour
         if (step.stepId == _runningStepId) return;
 
         BeginCurrentStep();
+    }
+
+    // 튜토리얼 중에는 스테이지 특수 웨이브가 띄우는 보스 경고 팝업을 같은 프레임에 눌러 억제한다.
+    private void LateUpdate()
+    {
+        if (!_active) return;
+
+        if (!_bossWavePopupResolved) ResolveBossWavePopup();
+        if (_bossWavePopup != null && _bossWavePopup.activeSelf)
+            _bossWavePopup.SetActive(false);
+    }
+
+    // ScreenNavigator의 보스 웨이브 팝업 참조를 런타임에 리플렉션으로 확보한다(런타임 스폰이라 인스펙터 연결 불가).
+    private void ResolveBossWavePopup()
+    {
+        var nav = FindFirstObjectByType<ScreenNavigator>();
+        if (nav == null) return;   // 아직 생성 전 — 다음 프레임 재시도
+
+        _bossWavePopupField ??= typeof(ScreenNavigator).GetField("_bossWavePopup", BindingFlags.Instance | BindingFlags.NonPublic);
+        _bossWavePopup = _bossWavePopupField != null ? _bossWavePopupField.GetValue(nav) as GameObject : null;
+        _bossWavePopupResolved = true;   // ScreenNavigator를 찾았으면 재탐색 종료
     }
 
     private static bool IsInGameStep(TutorialStep step)
@@ -270,44 +329,199 @@ public class TutorialInGameDirector : MonoBehaviour
         }
     }
 
-    // step0: 지정한 PuzzleCanvas 오브젝트(Table 등)만 강조(딤 구멍 + 손가락). 대상은 이름으로 지정.
+    // step0: 시나리오 → 멈춘 몬스터 3마리 등장·강조 → 퍼즐 정렬로 1방컷 3회.
     private void RunStep0()
     {
         _step0DragArrowHidden = false;
+        _step0PuzzlePhase = false;
+        _step0KillCount = 0;
         ClearTutorialPracticeOverrides();
-        HoldStageForTutorialGuide();
-        SuppressNormalWaves();
+        HoldStageForTutorialGuide();   // 일반 웨이브만 정지 (timeScale은 코루틴이 제어)
 
-        // 대기열 준비 후 커스텀 보드로 덮어 "한 수면 정렬 완성" 보드를 만든다.
+        if (_step0Routine == null)
+            _step0Routine = StartCoroutine(RunStep0CombatIntro());
+    }
+
+    private IEnumerator RunStep0CombatIntro()
+    {
+        Debug.Log("[TutorialInGameDirector] step0 전투 연출 시작");
+
+        // 도입 시나리오 (기존 3002 그룹 주입 방식 재사용). 재생 중 timeScale=0로 대기.
+        float prevScale = Time.timeScale;
+        Time.timeScale = 0f;
+        yield return PlayScenarioRange(_step0IntroScenarioId, _step0IntroScenarioId);
+
+        // 연출 구간: timeScale=0 유지 → 입력 차단 + 몬스터 자연 정지. 위치는 코드로 직접 제어.
+        SpawnStep0FrozenMonsters();
+        yield return null;   // 스폰(코루틴) 반영 대기
+
+        // 카메라는 건드리지 않는다. 소환된 몬스터만 잠깐 크게 키워 강조 → 원래 크기 → 하강.
+        yield return EmphasizeStep0Monsters();
+        yield return DescendStep0Monsters();
+
+        EnterStep0PuzzlePhase();
+        _step0Routine = null;
+    }
+
+    // 연출 종료 후: timeScale 정상화(입력 허용), 퍼즐 보드/강조 표시.
+    // 몬스터는 계속 멈춰 있고, 정렬 시 기존 CombatSystem이 자동 공격한다.
+    private void EnterStep0PuzzlePhase()
+    {
+        Time.timeScale = 1f;
+        _step0PuzzlePhase = true;
+
         if (_sortSystem != null) _sortSystem.Initialize(_step0Seed);
         SetupStep0Board();
 
-        // 강조할 슬롯들을 이름 목록으로 수집해 하나의 묶음 영역으로 강조
+        var highlights = CollectStep0GuideHighlights();
+        if (highlights.Count > 0)
+        {
+            _step0DimMask = transform.root.GetComponentInChildren<TutorialDimMask>(true);
+            if (_step0DimMask != null) _step0DimMask.ShowWithHoles(highlights.ToArray());
+
+            _step0Finger = transform.root.GetComponentInChildren<TutorialFingerGuide>(true);
+            if (_step0Finger != null) _step0Finger.PointAt(highlights[0]);
+        }
+
         RectTransform dragFrom = FindTargetByName(_step0DragFromName);
         RectTransform dragTo = FindTargetByName(_step0DragToName);
-        var highlights = CollectStep0GuideHighlights();
-        if (highlights.Count == 0)
-        {
-            Debug.LogWarning("[TutorialInGameDirector] step0 강조 슬롯을 못 찾음 — 이름 목록 확인");
-            return;
-        }
-
-        _step0DimMask = transform.root.GetComponentInChildren<TutorialDimMask>(true);
-        if (_step0DimMask != null) _step0DimMask.ShowWithHoles(highlights.ToArray());
-
-        _step0Finger = transform.root.GetComponentInChildren<TutorialFingerGuide>(true);
-        if (_step0Finger != null)
-        {
-            RectTransform fingerTarget = dragFrom != null ? dragFrom : FindTargetByName("sort (0)");
-            _step0Finger.PointAt(fingerTarget != null ? fingerTarget : highlights[0]);
-        }
-
-        // 드래그 화살표: 출발/도착 슬롯이 둘 다 지정됐을 때만
         if (dragFrom != null && dragTo != null)
         {
             _step0DragArrow = transform.root.GetComponentInChildren<TutorialDragArrow>(true);
             if (_step0DragArrow != null) _step0DragArrow.ShowDrag(dragFrom, dragTo);
         }
+    }
+
+    // 소환된 몬스터만 확대해 강조한 뒤 원래 크기로 복귀. 카메라/플레이어는 영향 없음.
+    private IEnumerator EmphasizeStep0Monsters()
+    {
+        int count = _step0Monsters.Count;
+        if (count == 0) yield break;
+
+        var baseScales = new Vector3[count];
+        for (int i = 0; i < count; i++)
+            baseScales[i] = _step0Monsters[i] != null ? _step0Monsters[i].transform.localScale : Vector3.one;
+
+        yield return ScaleStep0Monsters(baseScales, 1f, _step0MonsterEmphasisScale, _step0MonsterEmphasisDuration);
+        yield return WaitUnscaled(_step0MonsterEmphasisHold);
+        yield return ScaleStep0Monsters(baseScales, _step0MonsterEmphasisScale, 1f, _step0MonsterEmphasisDuration);
+    }
+
+    private IEnumerator ScaleStep0Monsters(Vector3[] baseScales, float fromMul, float toMul, float duration)
+    {
+        int count = _step0Monsters.Count;
+        if (duration <= 0f)
+        {
+            for (int i = 0; i < count; i++)
+                if (_step0Monsters[i] != null) _step0Monsters[i].transform.localScale = baseScales[i] * toMul;
+            yield break;
+        }
+
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / duration));
+            float mul = Mathf.Lerp(fromMul, toMul, k);
+            for (int i = 0; i < count; i++)
+                if (_step0Monsters[i] != null) _step0Monsters[i].transform.localScale = baseScales[i] * mul;
+            yield return null;
+        }
+
+        for (int i = 0; i < count; i++)
+            if (_step0Monsters[i] != null) _step0Monsters[i].transform.localScale = baseScales[i] * toMul;
+    }
+
+    private IEnumerator WaitUnscaled(float seconds)
+    {
+        float t = 0f;
+        while (t < seconds) { t += Time.unscaledDeltaTime; yield return null; }
+    }
+
+    // 멈춘 몬스터를 목표 Y까지 unscaled로 부드럽게 내린 뒤 그 자리에서 다시 멈춤.
+    private IEnumerator DescendStep0Monsters()
+    {
+        var starts = new Vector3[_step0Monsters.Count];
+        for (int i = 0; i < _step0Monsters.Count; i++)
+            starts[i] = _step0Monsters[i] != null ? _step0Monsters[i].transform.position : Vector3.zero;
+
+        float duration = Mathf.Max(0.01f, _step0MonsterDescendDuration);
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / duration));
+            for (int i = 0; i < _step0Monsters.Count; i++)
+            {
+                MonsterAI m = _step0Monsters[i];
+                if (m == null) continue;
+                Vector3 p = starts[i];
+                p.y = Mathf.Lerp(starts[i].y, _step0MonsterStopY, k);
+                m.transform.position = p;
+            }
+            yield return null;
+        }
+
+        for (int i = 0; i < _step0Monsters.Count; i++)
+        {
+            MonsterAI m = _step0Monsters[i];
+            if (m == null) continue;
+            m.ApplyStun(9999f);   // 하강 종료 지점에서 다시 멈춤 고정
+        }
+    }
+
+    private void SpawnStep0FrozenMonsters()
+    {
+        if (_spawner == null) _spawner = FindFirstObjectByType<MonsterSpawner>();
+        if (_spawner == null || _step0MonsterIds == null || _step0MonsterIds.Length == 0) return;
+
+        int before = _spawner.AliveMonsters.Count;
+
+        var queue = new Queue<StageModel.SpawnCommand>();
+        foreach (int id in _step0MonsterIds)
+        {
+            if (id <= 0) continue;
+            queue.Enqueue(new StageModel.SpawnCommand
+            {
+                CharacterId = id,
+                ScalingData = null,
+                AccumulateCount = 0,
+                Type = StageModel.SpawnType.Normal
+            });
+        }
+        if (queue.Count == 0) return;
+
+        _spawner.SpawnMonsterBatch(queue, 0f);
+
+        // 스폰 직후 AliveMonsters에서 이번에 추가된 몬스터를 집어 고정 배치 + 멈춤 + HP 1.
+        _step0Monsters.Clear();
+        var alive = _spawner.AliveMonsters;
+        for (int i = before; i < alive.Count; i++)
+        {
+            MonsterAI m = alive[i];
+            if (m == null) continue;
+
+            int idx = _step0Monsters.Count;
+            if (idx < _step0MonsterSpawnPositions.Length)
+                m.transform.position = _step0MonsterSpawnPositions[idx];
+
+            m.ApplyStun(9999f);   // 연출/퍼즐 내내 멈춤 유지
+
+            if (_step0GuaranteeOneShot && m.CurrentHP > 1)
+                m.TakeDamage(m.CurrentHP - 1);   // 1방컷: 실제 공격이 자연 연출로 처치
+
+            _step0Monsters.Add(m);
+        }
+    }
+
+    private void HandleStep0MonsterDied(MonsterAI monster, bool isKamikaze)
+    {
+        if (!_step0PuzzlePhase) return;
+        if (!_step0Monsters.Contains(monster)) return;
+
+        _step0KillCount++;
+        Debug.Log($"[TutorialInGameDirector] step0 처치 {_step0KillCount}/{_step0Monsters.Count}");
+        // 다음 단계 진행은 기존 requiredSortCount(3) 훅이 담당. 여기선 카운트만.
     }
 
     private void RunStep1()

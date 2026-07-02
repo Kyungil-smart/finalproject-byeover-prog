@@ -342,15 +342,13 @@ public class ShopGachaPresenter : MonoBehaviour
     // 튜토리얼 강화·돌파에 필요한 재료를 지급한다(강화석/골드/돌파용 중복 인장)
     private void GrantTutorialUpgradeMaterials()
     {
-        // 강화석/아티팩트/골드 지급은 저장(GameManager)을 거친다. 부트 미경유 단독 씬 테스트면 건너뛴다.
-        if (GameManager.Instance == null) return;
-
         ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
         if (mgr != null)
         {
             mgr.AddStone(_tutorialGrantStone);          // 레벨업용 강화석
             mgr.AddArtifact(_tutorialSealGearId);       // 돌파용 중복 인장
         }
+
         if (GameManager.Instance != null && _tutorialGrantGold > 0)
             GameManager.Instance.AddCurrency(_tutorialGrantGold, 0, "튜토리얼 아티팩트 강화");
     }
