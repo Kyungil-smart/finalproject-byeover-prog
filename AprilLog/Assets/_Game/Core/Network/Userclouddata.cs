@@ -32,7 +32,7 @@ public class UserCloudData
     public int currentStage = 1;
     public List<int> unlockedStages = new ();
     // 최초 클리어 보상을 이미 지급한 스테이지의 실제 Stage_ID 집합(1회성 보상 중복지급 방지 + 최초클리어 판정).
-    // 키는 반드시 데이터의 실제 Stage_ID(1000~)를 쓸 것 — BuildStageId(101~)/unlockedStages 기본값(10001)과 체계가 다르니 혼용 금지.
+    // 키는 데이터의 실제 Stage_ID(10101, 980101 등)를 쓸 것 — StageData.Stage_ID / StageRepo.GetStageId 값 그대로.
     public List<int> firstClearRewardedStages = new ();
 
     // ---------- 최초 진입 상태 (조규민 4차: 최초 스토리/튜토리얼 노출 제어 + 기존 계정 마이그레이션) ----------
@@ -88,7 +88,7 @@ public class UserCloudData
             characterLevel = 1,
             currentChapter = 1,
             currentStage = 1,
-            unlockedStages = new List<int> { 1000 },   // 챕터1 스테이지1의 실 Stage_ID(옛 10001은 실데이터 체계와 불일치)
+            unlockedStages = new List<int> { 10101 },   // 첫 챕터(101) 1스테이지의 실 Stage_ID
             // 신규 계정은 스키마 보유 상태 → 기존계정 마이그레이션(최초콘텐츠 스킵) 대상 아님. story/tutorial는 false로 시작해 신규 유저가 최초 스토리·튜토리얼을 보게 한다.
             _hasInitialFlowState = true,
             _initialStoryStarted = false,

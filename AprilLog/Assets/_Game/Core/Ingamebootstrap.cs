@@ -99,7 +99,21 @@ public class InGameBootstrap : MonoBehaviour
         if (isResume)
         {
             saveData = GameManager.Instance.LoadLocalSaveData();
-            Debug.Log("[InGameBootstrap] 이어하기 데이터 로드됨");
+
+            // 스킴 변경 이전 세이브(현행 데이터에 없는 챕터)로 이어하면 스테이지를 못 찾아 빈 인게임이 된다.
+            // 세이브 전체(챕터+스테이지 인덱스+인챈트가 한 묶음)를 폐기하고 새 판 진입으로 처리한다.
+            int savedChapterId = saveData != null ? saveData.chapterId : 0;
+            if (DataManager.Instance.StageRepo.GetChapter(savedChapterId) == null)
+            {
+                Debug.LogWarning($"[InGameBootstrap] 이어하기 세이브의 챕터 {savedChapterId}가 현행 데이터에 없어 세이브를 폐기하고 새로 시작합니다.");
+                GameManager.Instance.DeleteLocalSave();
+                isResume = false;
+                saveData = null;
+            }
+            else
+            {
+                Debug.Log("[InGameBootstrap] 이어하기 데이터 로드됨");
+            }
         }
 
         // [3] Model 초기화
@@ -249,13 +263,23 @@ public class InGameBootstrap : MonoBehaviour
         }
 
         // 추가: 조규민 - 챕터 포기 후 재진입 또는 로비 선택 진입 시 저장 없이도 선택 챕터를 반영한다.
+        // 계약: SelectedChapterId에는 풀 Stage_ID(챕터ID*100+스테이지번호, 예 10201/980101)를 넣는다.
+        // 새 스킴에선 Chapter_ID(101~9901)도 100 이상이라 자릿수만으로 구분이 안 되므로,
+        // 분해 결과가 실재하는 (챕터,스테이지)인지 검증하고 아니면 값 자체를 Chapter_ID로 재해석한다.
         int selectedChapterId = GameManager.Instance != null ? GameManager.Instance.SelectedChapterId : 0;
         if (selectedChapterId >= 100)
         {
-            return Mathf.Max(1, selectedChapterId / 100);
-        }
+            int chapterPart = selectedChapterId / 100;
+            int stagePart = Mathf.Max(1, selectedChapterId % 100);
+            var repo = DataManager.Instance.StageRepo;
+            if (repo.GetStageId(chapterPart, stagePart) > 0)
+                return chapterPart;
+            if (repo.GetStageId(selectedChapterId, 1) > 0)
+                return selectedChapterId;   // Chapter_ID가 그대로 들어온 경우
 
-        if (selectedChapterId > 0)
+            Debug.LogWarning($"[InGameBootstrap] SelectedChapterId {selectedChapterId}를 해석할 수 없어 기본 진입으로 대체합니다.");
+        }
+        else if (selectedChapterId > 0)
         {
             return selectedChapterId;
         }
