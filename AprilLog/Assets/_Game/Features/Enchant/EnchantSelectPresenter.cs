@@ -48,6 +48,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     private int _rerollRemaining;
     private int _pickCount = 3;     // 리롤 시 같은 개수로 다시 뽑기 위해 보관
     private bool _isTutorialFixedChoices;
+    private bool[] _cardRerollUsed;
     
     // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
     private HashSet<int> _seenEnchantIds = new HashSet<int>();
@@ -90,11 +91,13 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         {
             _pickCount = _currentChoices.Count;
             _isTutorialFixedChoices = true;
+            ResetCardRerollState(_currentChoices.Count);
             DisplayChoicesToView();
             return;
         }
 
         GenerateChoices(pickCount);
+        ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : pickCount);
         DisplayChoicesToView();
     }
 
@@ -133,6 +136,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         }
         
         GenerateChoices(_pickCount);
+        ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : _pickCount);
         DisplayChoicesToView();
     }
 
@@ -141,17 +145,26 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         if (_isTutorialFixedChoices) return;
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
-        
-        var newChoice = _selector.GenerateChoices(_model, 1, _seenEnchantIds)[0];
-        if (newChoice == null) return;
+        if (IsCardRerollUsed(index)) return;
 
         if (!_unlimitedReroll)
         {
             if (_rerollRemaining <= 0) return;
+        }
+
+        List<EnchantCandidate> newChoices = _selector.GenerateChoices(_model, 1, _seenEnchantIds);
+        if (newChoices == null || newChoices.Count == 0) return;
+        
+        var newChoice = newChoices[0];
+        if (newChoice == null) return;
+
+        if (!_unlimitedReroll)
+        {
             _rerollRemaining--;
         }
 
         _currentChoices[index] = newChoice;
+        MarkCardRerollUsed(index);
         _seenEnchantIds.Add(newChoice.Name_ID);
         
         DisplayChoicesToView();
@@ -210,6 +223,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         _view.SetChoices(displayData);
         // 무한(테스트2 씬)이면 항상 사용 가능 + 남은 횟수 -1(View에서 ∞ 표시).
         _view.SetRerollAvailable(!_isTutorialFixedChoices && (_unlimitedReroll || _baseRerollCount > 0), _isTutorialFixedChoices ? 0 : (_unlimitedReroll ? -1 : _rerollRemaining));
+        _view.SetCardRerollAvailable(BuildCardRerollAvailability());
     }
 
     // ---------- 유저 클릭 처리 ----------
@@ -263,5 +277,42 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
 
         _isTutorialFixedChoices = false;
         TutorialFirstEnchantSelectionOverride.ClearFixedChoiceState();
+    }
+
+    private void ResetCardRerollState(int count)
+    {
+        _cardRerollUsed = new bool[Mathf.Max(0, count)];
+    }
+
+    private bool IsCardRerollUsed(int index)
+    {
+        return _cardRerollUsed != null
+            && index >= 0
+            && index < _cardRerollUsed.Length
+            && _cardRerollUsed[index];
+    }
+
+    private void MarkCardRerollUsed(int index)
+    {
+        if (_cardRerollUsed == null || index < 0 || index >= _cardRerollUsed.Length)
+        {
+            return;
+        }
+
+        _cardRerollUsed[index] = true;
+    }
+
+    private bool[] BuildCardRerollAvailability()
+    {
+        int count = _currentChoices != null ? _currentChoices.Count : 0;
+        bool[] availableByIndex = new bool[count];
+        bool hasGlobalReroll = !_isTutorialFixedChoices && (_unlimitedReroll || _rerollRemaining > 0);
+
+        for (int i = 0; i < count; i++)
+        {
+            availableByIndex[i] = hasGlobalReroll && !IsCardRerollUsed(i);
+        }
+
+        return availableByIndex;
     }
 }
