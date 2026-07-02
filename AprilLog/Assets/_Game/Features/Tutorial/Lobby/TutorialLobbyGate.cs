@@ -109,6 +109,26 @@ public class TutorialLobbyGate : MonoBehaviour
     }
 
     /// <summary>
+    /// 모든 게이트 요소를 해금합니다(튜토리얼 완료/스킵 시).
+    /// </summary>
+    public void UnlockAll()
+    {
+        int max = 0;
+        if (_elements != null)
+        {
+            foreach (GatedElement element in _elements)
+            {
+                if (element != null && element.unlockPhase > max)
+                {
+                    max = element.unlockPhase;
+                }
+            }
+        }
+
+        SetPhase(max);
+    }
+
+    /// <summary>
     /// 내부에서 실제 단계 상태를 적용합니다.
     /// </summary>
     private void ApplyPhaseInternal(int phase, bool externalRequest)
