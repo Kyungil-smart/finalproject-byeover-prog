@@ -113,6 +113,24 @@ public class StageLoopManager : MonoBehaviour
             return;
         }
 
+        // 스테이지 데이터는 있는데 웨이브 룰이 없으면 StageBootstrapper가 조립을 포기(return)해
+        // 클리어 콜백이 영영 안 오는 소프트락이 된다(예: 980102 웨이브 룰 미작성). 첫 스테이지면 명확히 중단,
+        // 중간 이후면 해당 스테이지를 건너뛰고 다음으로 진행한다(룰 데이터가 채워지면 자동으로 정상 플레이).
+        var spawnRules = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageId);
+        if (spawnRules == null || spawnRules.Count == 0)
+        {
+            if (_currentStageIndex == 0)
+            {
+                Debug.LogError($"[StageLoopManager] Stage_ID {stageId}의 웨이브 룰이 없어 챕터를 시작할 수 없습니다. StageWaveRuleTable을 확인하세요.");
+                _state = State.Idle;
+                return;
+            }
+
+            Debug.LogWarning($"[StageLoopManager] Stage_ID {stageId}의 웨이브 룰이 없어 스테이지를 건너뜁니다(소프트락 방지). StageWaveRuleTable에 룰을 채워야 정상 플레이됩니다.");
+            ClearStage();
+            return;
+        }
+
         OnStageChanged?.Invoke(stageId);
 
         // 웨이브 수는 StageModel이 데이터(StageWaveRuleData 목록)에서 직접 산출한다.
