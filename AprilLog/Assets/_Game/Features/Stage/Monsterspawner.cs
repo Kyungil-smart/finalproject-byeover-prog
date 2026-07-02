@@ -218,22 +218,23 @@ public class MonsterSpawner : MonoBehaviour
     /// <summary>
     /// Character_ID → 오브젝트 풀 키.
     /// 1순위: 몬스터 데이터(MonsterStatusData.PrefabKey)에 지정된 값
-    /// 2순위: 비어 있으면 "Monster_{Character_ID}" 관례로 폴백
+    /// 2순위: "Monster_{Character_ID}" (PoolManager configs의 몬스터팩 정식 풀)
+    /// 3순위: bare "{Character_ID}" (Resources/Monsters 임시본) → 끝 두 자리 "Monster_{id%100}" (구 팩)
     /// </summary>
     private static string ResolveMonsterPoolKey(int characterId, MonsterStatusData monsterStats)
     {
         if (monsterStats != null && !string.IsNullOrEmpty(monsterStats.PrefabKey))
             return monsterStats.PrefabKey;
 
-        // 프리팹 네이밍이 혼재한다: 일반 몬스터는 Character_ID 그대로("5011"), 튜토/구 몬스터는 "Monster_11".
-        // EnsureMonsterPools가 prefab.name으로 풀을 등록하므로 실제 등록된 풀을 우선 골라 어느 쪽이든 소환되게 한다.
-        // (MonsterStatusTable.PrefabKey가 전부 공란이라 항상 이 폴백을 탐. 옛 코드는 "Monster_{id}" 하나뿐이라 "5011"류가 미스폰됐음.)
         var pool = PoolManager.Instance;
-        string bare = characterId.ToString();
-        if (pool != null && pool.HasPool(bare)) return bare;
 
+        // 정식 경로: PoolManager configs(몬스터팩 0.2, MonsterAI/콜라이더 완비)에 "Monster_{Character_ID}" 키로 등록된 풀.
         string prefixed = $"Monster_{characterId}";
         if (pool != null && pool.HasPool(prefixed)) return prefixed;
+
+        // Resources/Monsters의 bare 이름("5011") 프리팹. MonsterAI 없는 임시본이 섞여 있어 정식 키가 없을 때만 쓴다.
+        string bare = characterId.ToString();
+        if (pool != null && pool.HasPool(bare)) return bare;
 
         // 데이터 ID는 50xx·99xx 체계지만 프리팹 풀은 Monster_11~28뿐이라 끝 두 자리로 매칭한다(5011→Monster_11).
         string byLastTwo = $"Monster_{characterId % 100}";
