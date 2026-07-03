@@ -1,5 +1,5 @@
 ﻿//담당자: 조규민
-// 수정 내용 : 가구 배치 팝업을 하위 카테고리 섹션 단위로 갱신, 미보유 가구 구매 흐름 추가
+// 수정 내용 : 가구 배치 팝업을 하위 카테고리 섹션 단위로 갱신, 미보유 가구 구매 흐름 및 중복 적용 방지 추가
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,6 +16,8 @@ public class HousingPlacementPresenter
     private readonly bool _applyImmediatelyOnItemClick;
     private readonly Action<HousingPlacementItemData> _onFurnitureApplied;
     private readonly Func<HousingPlacementItemData, bool> _onFurniturePurchaseRequested;
+
+    private bool _isApplyingItem;
 
     public HousingPlacementPresenter(
         HousingPlacementModel _model,
@@ -148,6 +150,11 @@ public class HousingPlacementPresenter
 
     private void ApplySelectedItem()
     {
+        if (_isApplyingItem)
+        {
+            return;
+        }
+
         HousingPlacementItemData _selectedItem = _model.SelectedItem;
 
         if (_selectedItem == null)
@@ -163,6 +170,25 @@ public class HousingPlacementPresenter
             return;
         }
 
+        if (_state == HousingPlacementItemState.Equipped)
+        {
+            return;
+        }
+
+        _isApplyingItem = true;
+
+        try
+        {
+            ApplySelectedItem(_selectedItem, _state);
+        }
+        finally
+        {
+            _isApplyingItem = false;
+        }
+    }
+
+    private void ApplySelectedItem(HousingPlacementItemData _selectedItem, HousingPlacementItemState _state)
+    {
         if (_state == HousingPlacementItemState.Price)
         {
             TryPurchaseSelectedItem(_selectedItem);
