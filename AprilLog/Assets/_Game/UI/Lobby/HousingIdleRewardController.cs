@@ -1,5 +1,7 @@
 ﻿//담당자: 조규민
 
+// 수정 내용 : 기존 지급 API가 성공한 경우에만 Presenter가 방치 보상 수령 상태를 확정하도록 결과를 반환
+
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -194,30 +196,28 @@ public class HousingIdleRewardController : MonoBehaviour
         _presenter?.Refresh();
     }
 
-    private void HandleClaimRequested(HousingIdleRewardClaimResult _claimResult)
+    private bool HandleClaimRequested(HousingIdleRewardClaimResult _claimResult)
     {
         HousingIdleRewardState _state = _claimResult.State;
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.ClaimHousingIdleReward(
+            return GameManager.Instance.ClaimHousingIdleReward(
                 _state.GoldReward,
                 _state.ParchmentReward,
                 _state.DiamondReward,
                 _claimResult.ClaimedAtUtcText);
-            return;
         }
 
-        GrantLocalCurrency(_state);
-        GrantDiamondReward(_state.DiamondReward);
+        return GrantLocalCurrency(_state);
     }
 
-    private void GrantLocalCurrency(HousingIdleRewardState _state)
+    private bool GrantLocalCurrency(HousingIdleRewardState _state)
     {
         if (_currencyModel == null)
         {
-            Debug.Log($"[HousingIdleRewardController] CurrencyModel 미연결로 시간 누적 보상 수령을 로그 처리합니다. Gold: {_state.GoldReward}, Parchment: {_state.ParchmentReward}", this);
-            return;
+            Debug.LogWarning($"[HousingIdleRewardController] CurrencyModel 미연결로 시간 누적 보상을 지급하지 못했습니다. Gold: {_state.GoldReward}, Parchment: {_state.ParchmentReward}, Diamond: {_state.DiamondReward}", this);
+            return false;
         }
 
         if (_state.GoldReward > 0)
@@ -229,22 +229,12 @@ public class HousingIdleRewardController : MonoBehaviour
         {
             _currencyModel.AddParchment(_state.ParchmentReward);
         }
-    }
 
-    // 추가: 조규민 - 시간 누적 보상 수령 시 다이아 보상을 기존 재화 저장 흐름으로 지급한다.
-    private void GrantDiamondReward(int _diamondReward)
-    {
-        if (_diamondReward <= 0)
+        if (_state.DiamondReward > 0)
         {
-            return;
+            _currencyModel.AddDiamond(_state.DiamondReward);
         }
 
-        if (GameManager.Instance == null)
-        {
-            Debug.LogWarning($"[HousingIdleRewardController] GameManager가 없어 다이아 보상을 지급하지 못했습니다. Amount: {_diamondReward}", this);
-            return;
-        }
-
-        GameManager.Instance.AddDiamond(_diamondReward, "하우징 시간 누적 보상");
+        return true;
     }
 }
