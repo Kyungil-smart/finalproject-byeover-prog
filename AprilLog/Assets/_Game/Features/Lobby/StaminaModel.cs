@@ -50,11 +50,9 @@ public class StaminaModel : MonoBehaviour
     [SerializeField] private int testStartStamina = TestStartStamina;
     [SerializeField] private int testMaxStamina   = TestMaxStamina;
 
-    private bool _initialized;
-
     private void Awake()
     {
-        if (initializeWithTestValues && !_initialized)
+        if (initializeWithTestValues && GameManager.Instance != null)
             Initialize(testStartStamina, testMaxStamina);
     }
     
@@ -77,7 +75,7 @@ public class StaminaModel : MonoBehaviour
     // ---------- 초기화 ----------
     public void Initialize(int current, int max)
     {
-        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        if (GameManager.Instance != null)
         {
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
             slot.SetStamina(Mathf.Max(0, current), Mathf.Max(0, max));
@@ -87,7 +85,6 @@ public class StaminaModel : MonoBehaviour
         
         _localStamina = Mathf.Max(1, max);
         _localMaxStamina = Mathf.Clamp(current, 0, Max);
-        _initialized = true;
         HandleStaminaEvent(StaminaId);
     }
 
