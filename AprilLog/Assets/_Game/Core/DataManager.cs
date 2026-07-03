@@ -122,6 +122,8 @@ public class DataManager : MonoBehaviour
         InitializeRepo(nameof(_housingRepo), _housingRepo, () => _housingRepo.Initialize());
         InitializeRepo(nameof(_resourceRepo), _resourceRepo, () => _resourceRepo.Initialize());
         InitializeRepo(nameof(_rewardRepo), _rewardRepo, () => _rewardRepo.Initialize());
+        
+        InjectMapStep();
 
         _isInitialized = true;
         Debug.Log("[DataManager] Repository 초기화 완료.");
@@ -143,5 +145,10 @@ public class DataManager : MonoBehaviour
         {
             Debug.LogError($"[DataManager] {repoName} initialization failed.\n{exception}");
         }
+    }
+
+    private void InjectMapStep()
+    {
+        _rewardRepo.BuildStepMapping(_stageRepo.GetValidChapterList(), _stageRepo.GetValidStageList());
     }
 }

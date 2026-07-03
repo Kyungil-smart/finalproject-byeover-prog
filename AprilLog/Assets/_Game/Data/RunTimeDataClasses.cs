@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 #region Sort 보조 구조체
 
@@ -663,6 +664,26 @@ public struct ObscuredInt
     {
         return new ObscuredInt(value);
     }
+}
+
+#endregion
+
+#region RewardRepo 지원
+
+[Serializable]
+public class RangeData 
+{
+    public int StartId;
+    public int EndId;
+    public int DataId;
+}
+
+[Serializable]
+public class RewardRecipe
+{
+    public int TargetId;
+    public int RewardId;
+    public int currentStep;
 }
 
 #endregion
