@@ -312,7 +312,31 @@ public class SortTableView : MonoBehaviour, ISortTableView
             }
         }
     }
-    public void ResetBoard() { /* 전체 초기화 연출 */ }
+
+    public void ResetBoard() 
+    {
+        foreach (var slot in _puzzleSlots)
+        {
+            if (slot != null)
+            {
+                slot.transform.DOKill();
+                slot.enabled = false;
+
+                var unitImg = slot.transform.Find("UnitImage")?.GetComponent<Image>();
+                if (unitImg != null)
+                {
+                    unitImg.enabled = false;
+                    unitImg.sprite = null;
+                }
+
+                var border = slot.transform.Find("Border")?.GetComponent<Image>();
+                if (border != null)
+                {
+                    border.enabled = false;
+                }
+            }
+        }
+    }
 
     public void ShowHint(int tableIdx, int slotIdx)
     {
