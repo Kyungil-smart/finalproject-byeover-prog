@@ -45,8 +45,9 @@ public readonly struct CharacterLevelCostData
 /// </summary>
 public static class CharacterLevelData
 {
-    // v.1.04 CharacterMaster 기준 주인공(Main) ID
-    private const int MainCharacterId = 1;
+    // 현재 데이터의 주인공(Main) Character_ID. 능력치 테이블엔 5001만 존재(1은 없음 → 옛 1은 폴백값으로 추락했음).
+    // InGameBootstrap._playerCharacterId(5001)와 동일해야 로비 표시와 인게임 실제값이 일치한다.
+    private const int MainCharacterId = 5001;
 
     public static CharacterStatData GetStat(int level)
     {
@@ -85,7 +86,10 @@ public static class CharacterLevelData
         DataManager dataManager = DataManager.Instance;
         if (dataManager != null && dataManager.ConfigRepo != null)
         {
-            OutLevelData data = dataManager.ConfigRepo.GetOutLevel(currentLevel);
+            // OutLevel 행 N의 RequiredGold = '레벨 N 도달 비용'(= N-1 -> N 레벨업 비용). OutLevel 1은 0(시작레벨).
+            // 그러므로 currentLevel -> currentLevel+1 비용은 GetOutLevel(currentLevel + 1).
+            // (옛 GetOutLevel(currentLevel)은 첫 레벨업이 공짜·마지막 레벨 비용 미청구되는 off-by-one이었음.)
+            OutLevelData data = dataManager.ConfigRepo.GetOutLevel(currentLevel + 1);
             if (data != null)
                 return new CharacterLevelCostData(data.RequiredGold, data.RequiredParchment);
         }

@@ -43,6 +43,13 @@ public class PoolManager : MonoBehaviour
     // ---------- 사전 생성 (Bootstrap에서 호출) ----------
     public void WarmUp()
     {
+        // _Boot 재진입(로그아웃/계정 탈퇴 후)으로 중복 생성된 인스턴스는 Awake에서 파괴 예약되어
+        // _pools가 초기화되지 않는다. 원본은 이미 워밍업되어 살아있으므로 여기서는 건너뛴다.
+        if (Instance != this || _pools == null)
+        {
+            return;
+        }
+
         for (int i = 0; i < _configs.Count; i++)
         {
             var cfg = _configs[i];
@@ -88,6 +95,9 @@ public class PoolManager : MonoBehaviour
     }
 
     // ---------- Spawn ----------
+    /// <summary>해당 키의 풀이 등록돼 있는지. 프리팹 네이밍이 혼재("5011" vs "Monster_11")할 때 어느 키로 소환할지 고를 때 쓴다.</summary>
+    public bool HasPool(string key) => _pools != null && !string.IsNullOrEmpty(key) && _pools.ContainsKey(key);
+
     public GameObject Spawn(string key, Vector3 position, Quaternion rotation)
     {
         if (!_pools.ContainsKey(key))

@@ -32,6 +32,7 @@ public class MonsterSpawner : MonoBehaviour
     // ---------- 이벤트 ----------
     public event Action<MonsterAI, bool> OnMonsterDied;
     public event Action IsBossDeath;
+    public event Action RequestRewardManager;
 
     // ---------- SerializeField ----------
     [Header("고정 스폰 포인트")]
@@ -57,6 +58,8 @@ public class MonsterSpawner : MonoBehaviour
     // ---------- Private ----------
     private List<MonsterAI> _aliveMonsters = new List<MonsterAI>(32);
     private System.Random _rng;
+    private InGameRewardManager _rewardManager;
+    private Queue<int> _pendingRewards;
     
     // ---------- For Gizmo ----------
     public Transform[] SpawnPoints => _spawnPoints;
@@ -78,6 +81,12 @@ public class MonsterSpawner : MonoBehaviour
         _normalSpawnLineXMax = xMax;
     }
 
+    public void SetRewardManager(InGameRewardManager rewardManager)
+    {
+        _rewardManager = rewardManager;
+        FlushPendingRewards();
+    }
+
     // ---------- 스폰 ----------
     
     /// <summary>
@@ -93,7 +102,7 @@ public class MonsterSpawner : MonoBehaviour
     // 순차 소환 코루틴
     private IEnumerator ProcessSpawnQueue(Queue<StageModel.SpawnCommand> queue, float delay)
     {
-        Debug.Log($"{delay}초의 간격을 두고 총 {queue.Count}만큼 생산명령 접수");
+        Debug.Log($"{delay}초의 간격을 두고 총 {queue.Count}만큼 생산명령 접수.");
         while (queue.Count > 0)
         {
             var cmd = queue.Dequeue();
@@ -102,11 +111,20 @@ public class MonsterSpawner : MonoBehaviour
             bool isBoss = cmd.Type == StageModel.SpawnType.Elite || cmd.Type == StageModel.SpawnType.Boss;
             
             var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss);
+            Debug.Log($"Monster ID : {cmd.CharacterId} 소환됨");
 
             if (ai != null && cmd.ScalingData != null)
             {
                 // 💡 [수정] 스케일링 데이터와 함께 '누적 횟수'도 전달!
                 ai.ApplyScaling(cmd.ScalingData, cmd.AccumulateCount);
+            }
+
+            if (cmd.IsContainBattleReward)
+            {
+                if (cmd.TriggerTargetId != 0)
+                {
+                    ai.SetBattleReward(cmd.TriggerTargetId);
+                }
             }
 
             if (delay > 0f)
@@ -151,11 +169,21 @@ public class MonsterSpawner : MonoBehaviour
         if (obj == null) return null;
 
         var ai = obj.GetComponent<MonsterAI>();
+        if (ai == null)
+        {
+            // 프리팹에 MonsterAI가 없으면 스폰돼도 피격/사망 처리가 불가능한 '안 죽는 유령 몬스터'가 된다.
+            // 화면에 남기지 않도록 즉시 회수하고, 어떤 프리팹인지 에러로 남긴다.
+            Debug.LogError($"[MonsterSpawner] '{poolKey}' 프리팹에 MonsterAI가 없어 소환을 취소합니다(Character_ID {characterId}). 프리팹에 MonsterAI를 붙여야 합니다(정상 예시: 5014).");
+            PoolManager.Instance.Despawn(poolKey, obj);
+            return null;
+        }
+
         if (ai != null)
         {
             ai.Initialize(stats, monsterStats, characterId, isBoss);
             ai.SetPlayerModel(ResolvePlayerModel());
             ai.OnDeath += HandleMonsterDeath;
+            ai.OnRewardContained += HandlePrizeReward;
             _aliveMonsters.Add(ai);
         }
         return ai;
@@ -176,6 +204,7 @@ public class MonsterSpawner : MonoBehaviour
             
             // 이벤트 해제
             monster.OnDeath -= HandleMonsterDeath;
+            monster.OnRewardContained -= HandlePrizeReward;
             
             var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
             string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
@@ -189,14 +218,29 @@ public class MonsterSpawner : MonoBehaviour
     /// <summary>
     /// Character_ID → 오브젝트 풀 키.
     /// 1순위: 몬스터 데이터(MonsterStatusData.PrefabKey)에 지정된 값
-    /// 2순위: 비어 있으면 "Monster_{Character_ID}" 관례로 폴백
+    /// 2순위: "Monster_{Character_ID}" (PoolManager configs의 몬스터팩 정식 풀)
+    /// 3순위: bare "{Character_ID}" (Resources/Monsters 임시본) → 끝 두 자리 "Monster_{id%100}" (구 팩)
     /// </summary>
     private static string ResolveMonsterPoolKey(int characterId, MonsterStatusData monsterStats)
     {
         if (monsterStats != null && !string.IsNullOrEmpty(monsterStats.PrefabKey))
             return monsterStats.PrefabKey;
 
-        return $"Monster_{characterId}";
+        var pool = PoolManager.Instance;
+
+        // 정식 경로: PoolManager configs(몬스터팩 0.2, MonsterAI/콜라이더 완비)에 "Monster_{Character_ID}" 키로 등록된 풀.
+        string prefixed = $"Monster_{characterId}";
+        if (pool != null && pool.HasPool(prefixed)) return prefixed;
+
+        // Resources/Monsters의 bare 이름("5011") 프리팹. MonsterAI 없는 임시본이 섞여 있어 정식 키가 없을 때만 쓴다.
+        string bare = characterId.ToString();
+        if (pool != null && pool.HasPool(bare)) return bare;
+
+        // 데이터 ID는 50xx·99xx 체계지만 프리팹 풀은 Monster_11~28뿐이라 끝 두 자리로 매칭한다(5011→Monster_11).
+        string byLastTwo = $"Monster_{characterId % 100}";
+        if (pool != null && pool.HasPool(byLastTwo)) return byLastTwo;
+
+        return bare;   // 셋 다 없으면 bare로 시도 → Spawn이 '풀 없음' 에러를 남겨 어느 ID의 프리팹이 없는지 알려준다.
     }
 
     private PlayerModel ResolvePlayerModel()
@@ -249,6 +293,21 @@ public class MonsterSpawner : MonoBehaviour
         var monsterStats = DataManager.Instance.CharacterRepo.GetMonsterStatus(monster.MonsterID);
         string poolKey = ResolveMonsterPoolKey(monster.MonsterID, monsterStats);
         PoolManager.Instance.Despawn(poolKey, monster.gameObject);
+    }
+
+    private void HandlePrizeReward(MonsterAI monster, int triggerId)
+    {
+        monster.OnDeath -= HandleMonsterDeath;
+        if (_rewardManager == null)
+        {
+            RequestRewardManager?.Invoke();
+            _pendingRewards ??= new Queue<int>();
+            _pendingRewards.Enqueue(triggerId);
+        }
+        else
+        {
+            _rewardManager.AddBattleReward(triggerId);
+        }
     }
 
     /// <summary>
@@ -343,5 +402,14 @@ public class MonsterSpawner : MonoBehaviour
 
         // 위치 완전 동일 → 3순위: 먼저 스폰된 것 유지
         return false;
+    }
+    
+    private void FlushPendingRewards()
+    {
+        if(_pendingRewards == null || _pendingRewards.Count == 0) return;
+        while (_pendingRewards.Count > 0)
+        {
+            _rewardManager.AddBattleReward(_pendingRewards.Dequeue());
+        }
     }
 }

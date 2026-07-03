@@ -5,6 +5,8 @@
 // 3차 수정자 : 조규민
 // 수정 내용 : UserCloudData 직접 저장 대신 Firestore Dictionary 변환 저장으로 직렬화 오류 수정
 
+// 수정 내용 : 하우징 구매 보유 가구 ID를 Firestore 저장/로드에 포함
+
 #if FIREBASE_ENABLED
 using Firebase.Firestore;
 #endif
@@ -18,6 +20,8 @@ using System.Threading.Tasks;
 #endif
 using UnityEngine;
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 하우징 자동재화 마지막 수령 시간 저장/로드 필드, 계정별 최초 진입 상태 저장/로드 및 기존 계정 감지 추가
 public class FirestoreService : MonoBehaviour
 {
     public event Action<UserCloudData> OnDataLoaded;
@@ -53,9 +57,11 @@ public class FirestoreService : MonoBehaviour
             yield break;
         }
 
+        // 추가: 조규민 - 네트워크 저장을 기다리는 동안 앱이 종료되어도 최초 진입 상태가 유실되지 않게 먼저 로컬에 기록한다.
+        SaveLocalBackup(data);
+
         if (string.IsNullOrEmpty(_uid))
         {
-            SaveLocalBackup(data);
             yield break;
         }
 
@@ -117,6 +123,7 @@ public class FirestoreService : MonoBehaviour
         if (task.Result.Exists)
         {
             var data = ConvertSnapshotToUserCloudData(task.Result);
+            MergeLocalInitialFlowState(data);
             SaveLocalBackup(data);
             OnDataLoaded?.Invoke(data);
         }
@@ -372,13 +379,26 @@ public class FirestoreService : MonoBehaviour
             { "currentChapter", userData.currentChapter },
             { "currentStage", userData.currentStage },
             { "unlockedStages", userData.unlockedStages ?? new List<int>() },
+            { "hasInitialFlowState", userData._hasInitialFlowState },
+            { "initialStoryStarted", userData._initialStoryStarted },
+            { "tutorialCompleted", userData._tutorialCompleted },
             { "gold", userData.gold },
             { "parchment", userData.parchment },
+            { "diamond", userData.diamond },
+            { "housingAutoCurrencyLastClaimAt", userData.housingAutoCurrencyLastClaimAt ?? DateTime.UtcNow.ToString("o") },
+            { "housingPlacedFurnitureIds", userData.housingPlacedFurnitureIds ?? new List<int>() },
+            { "housingOwnedFurnitureIds", userData.housingOwnedFurnitureIds ?? new List<int>() },
             { "hpBonus", userData.hpBonus },
             { "attackBonus", userData.attackBonus },
             { "shieldBonus", userData.shieldBonus },
             { "achievements", CreateAchievementDictionaries(userData.achievements) },
             { "enchantBookOwned", userData.enchantBookOwned ?? new List<int>() },
+            // 아래 4필드가 저장/복원 양쪽에서 빠져 있어 클라우드 왕복 한 번에 아이템/스태미나/아티팩트/최초클리어 기록이
+            // 전부 소멸했다(로드 직후 SaveLocalBackup이 깎인 데이터로 로컬 백업까지 덮음). 반드시 복원 코드와 쌍으로 유지할 것.
+            { "firstClearRewardedStages", userData.firstClearRewardedStages ?? new List<int>() },
+            { "inventory", CreateItemDictionaries(userData.inventory) },
+            { "staminaData", CreateStaminaDictionaries(userData.staminaData) },
+            { "myArtifacts", CreateArtifactDictionaries(userData.myArtifacts) },
             { "language", userData.language },
             { "sfxVolume", userData.sfxVolume },
             { "bgmVolume", userData.bgmVolume },
@@ -413,6 +433,69 @@ public class FirestoreService : MonoBehaviour
 
         return achievementDictionaries;
     }
+
+    // 인벤토리 항목을 Firestore 기본 타입 Dictionary 목록으로 변환한다.
+    private List<Dictionary<string, object>> CreateItemDictionaries(List<ItemSaveEntry> items)
+    {
+        var itemDictionaries = new List<Dictionary<string, object>>();
+        if (items == null) return itemDictionaries;
+
+        foreach (var item in items)
+        {
+            if (item == null) continue;
+            itemDictionaries.Add(new Dictionary<string, object>
+            {
+                { "itemId", item.itemId },
+                { "amount", item.amount }
+            });
+        }
+
+        return itemDictionaries;
+    }
+
+    // 스태미나 항목(오프라인 회복용 타임스탬프 포함)을 Dictionary 목록으로 변환한다.
+    private List<Dictionary<string, object>> CreateStaminaDictionaries(List<StaminaSaveEntry> staminaEntries)
+    {
+        var staminaDictionaries = new List<Dictionary<string, object>>();
+        if (staminaEntries == null) return staminaDictionaries;
+
+        foreach (var stamina in staminaEntries)
+        {
+            if (stamina == null) continue;
+            staminaDictionaries.Add(new Dictionary<string, object>
+            {
+                { "staminaId", stamina.staminaId },
+                { "currentAmount", stamina.currentAmount },
+                { "lastUpdateTime", stamina.lastUpdateTime ?? string.Empty }
+            });
+        }
+
+        return staminaDictionaries;
+    }
+
+    // 아티팩트 보유 목록을 Dictionary 목록으로 변환한다. (IsAscended는 AscensionCount 계산 프로퍼티라 저장하지 않는다)
+    private List<Dictionary<string, object>> CreateArtifactDictionaries(List<ArtifactInstance> artifacts)
+    {
+        var artifactDictionaries = new List<Dictionary<string, object>>();
+        if (artifacts == null) return artifactDictionaries;
+
+        foreach (var artifact in artifacts)
+        {
+            if (artifact == null) continue;
+            artifactDictionaries.Add(new Dictionary<string, object>
+            {
+                { "uniqueId", artifact.UniqueId },
+                { "masterId", artifact.MasterId },
+                { "currentLevel", artifact.CurrentLevel },
+                { "currentCount", artifact.CurrentCount },
+                { "isEquipped", artifact.IsEquipped },
+                { "ascensionCount", artifact.AscensionCount }
+            });
+        }
+
+        return artifactDictionaries;
+    }
+
 #endif
 
     private void SetError(string message)
@@ -450,11 +533,39 @@ public class FirestoreService : MonoBehaviour
         if (snapshot.TryGetValue("currentStage", out int currentStage))
             data.currentStage = currentStage;
 
+        // 추가: 조규민 - 상태 필드가 없는 기존 계정을 신규 계정과 구분해 GameManager에서 한 번만 마이그레이션한다.
+        if (snapshot.TryGetValue("hasInitialFlowState", out bool hasInitialFlowState))
+            data._hasInitialFlowState = hasInitialFlowState;
+        else
+            data._hasInitialFlowState = false;
+
+        if (snapshot.TryGetValue("initialStoryStarted", out bool initialStoryStarted))
+            data._initialStoryStarted = initialStoryStarted;
+
+        if (snapshot.TryGetValue("tutorialCompleted", out bool tutorialCompleted))
+            data._tutorialCompleted = tutorialCompleted;
+
         if (snapshot.TryGetValue("gold", out int gold))
             data.gold = gold;
 
         if (snapshot.TryGetValue("parchment", out int parchment))
             data.parchment = parchment;
+
+        if (snapshot.TryGetValue("diamond", out int diamond))
+            data.diamond = diamond;
+
+        if (snapshot.TryGetValue("housingAutoCurrencyLastClaimAt", out string housingAutoCurrencyLastClaimAt))
+            data.housingAutoCurrencyLastClaimAt = housingAutoCurrencyLastClaimAt;
+        else
+            data.housingAutoCurrencyLastClaimAt = null;
+
+        // 추가: 조규민 - Firestore에 저장된 하우징 배치 가구 ID 목록을 복원한다.
+        if (snapshot.TryGetValue("housingPlacedFurnitureIds", out object housingPlacedFurnitureIds))
+            data.housingPlacedFurnitureIds = ConvertIntList(housingPlacedFurnitureIds);
+
+        // 추가: 조규민 - 계정에 저장된 하우징 구매 보유 가구 ID 목록을 복원한다.
+        if (snapshot.TryGetValue("housingOwnedFurnitureIds", out object housingOwnedFurnitureIds))
+            data.housingOwnedFurnitureIds = ConvertIntList(housingOwnedFurnitureIds);
 
         if (snapshot.TryGetValue("hpBonus", out int hpBonus))
             data.hpBonus = hpBonus;
@@ -486,6 +597,23 @@ public class FirestoreService : MonoBehaviour
         if (snapshot.TryGetValue("enchantBookOwned", out object enchantBookOwned))
             data.enchantBookOwned = ConvertIntList(enchantBookOwned);
 
+        // 저장 딕셔너리와 쌍: 이 4필드 복원이 없으면 클라우드 로드 한 번에 아이템/스태미나/아티팩트/최초클리어 기록이 초기화된다.
+        if (snapshot.TryGetValue("firstClearRewardedStages", out object firstClearRewardedStages))
+            data.firstClearRewardedStages = ConvertIntList(firstClearRewardedStages);
+
+        if (snapshot.TryGetValue("inventory", out object inventory))
+            data.inventory = ConvertItems(inventory);
+
+        if (snapshot.TryGetValue("staminaData", out object staminaData))
+            data.staminaData = ConvertStaminaEntries(staminaData);
+
+        if (snapshot.TryGetValue("myArtifacts", out object myArtifacts))
+            data.myArtifacts = ConvertArtifacts(myArtifacts);
+
+        // 계정 생성일 복원. 없으면 CreateDefault의 현재시각이 남아 저장 때마다 생성일이 전진한다.
+        if (snapshot.TryGetValue("createdAt", out string createdAt))
+            data.createdAt = createdAt;
+
         return data;
     }
 
@@ -516,6 +644,83 @@ public class FirestoreService : MonoBehaviour
         }
 
         return achievements;
+    }
+
+    // Firestore Dictionary 목록을 ItemSaveEntry 목록으로 복원한다.
+    private List<ItemSaveEntry> ConvertItems(object itemObjects)
+    {
+        var items = new List<ItemSaveEntry>();
+        var enumerableItems = itemObjects as IEnumerable;
+        if (enumerableItems == null) return items;
+
+        foreach (var itemObject in enumerableItems)
+        {
+            var itemDictionary = itemObject as IDictionary<string, object>;
+            if (itemDictionary == null) continue;
+
+            items.Add(new ItemSaveEntry
+            {
+                itemId = GetIntValue(itemDictionary, "itemId"),
+                amount = GetIntValue(itemDictionary, "amount")
+            });
+        }
+
+        return items;
+    }
+
+    // Firestore Dictionary 목록을 StaminaSaveEntry 목록으로 복원한다.
+    private List<StaminaSaveEntry> ConvertStaminaEntries(object staminaObjects)
+    {
+        var staminaEntries = new List<StaminaSaveEntry>();
+        var enumerableEntries = staminaObjects as IEnumerable;
+        if (enumerableEntries == null) return staminaEntries;
+
+        foreach (var staminaObject in enumerableEntries)
+        {
+            var staminaDictionary = staminaObject as IDictionary<string, object>;
+            if (staminaDictionary == null) continue;
+
+            staminaEntries.Add(new StaminaSaveEntry
+            {
+                staminaId = GetIntValue(staminaDictionary, "staminaId"),
+                currentAmount = GetIntValue(staminaDictionary, "currentAmount"),
+                lastUpdateTime = GetStringValue(staminaDictionary, "lastUpdateTime")
+            });
+        }
+
+        return staminaEntries;
+    }
+
+    // Firestore Dictionary 목록을 ArtifactInstance 목록으로 복원한다.
+    private List<ArtifactInstance> ConvertArtifacts(object artifactObjects)
+    {
+        var artifacts = new List<ArtifactInstance>();
+        var enumerableArtifacts = artifactObjects as IEnumerable;
+        if (enumerableArtifacts == null) return artifacts;
+
+        foreach (var artifactObject in enumerableArtifacts)
+        {
+            var artifactDictionary = artifactObject as IDictionary<string, object>;
+            if (artifactDictionary == null) continue;
+
+            artifacts.Add(new ArtifactInstance
+            {
+                UniqueId = GetIntValue(artifactDictionary, "uniqueId"),
+                MasterId = GetIntValue(artifactDictionary, "masterId"),
+                CurrentLevel = GetIntValue(artifactDictionary, "currentLevel"),
+                CurrentCount = GetIntValue(artifactDictionary, "currentCount"),
+                IsEquipped = GetBoolValue(artifactDictionary, "isEquipped"),
+                AscensionCount = GetIntValue(artifactDictionary, "ascensionCount")
+            });
+        }
+
+        return artifacts;
+    }
+
+    // Firestore Dictionary에서 string 값을 안전하게 읽는다.
+    private string GetStringValue(IDictionary<string, object> dictionary, string key)
+    {
+        return dictionary.TryGetValue(key, out var value) && value is string stringValue ? stringValue : null;
     }
 
     // 추가: 조규민 - Firestore가 int 값을 long/double로 돌려주는 경우까지 포함해 int 목록으로 변환한다.
@@ -614,6 +819,24 @@ public class FirestoreService : MonoBehaviour
             OnError?.Invoke(exception.Message);
             return null;
         }
+    }
+
+    private void MergeLocalInitialFlowState(UserCloudData cloudData)
+    {
+        if (cloudData == null)
+        {
+            return;
+        }
+
+        UserCloudData localData = LoadLocalBackup();
+        if (localData == null || !string.Equals(localData.uid, _uid, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        // 로컬의 완료 방향 상태만 병합해 네트워크 저장 직전 강제 종료로 최초 콘텐츠가 반복되는 것을 막는다.
+        cloudData._initialStoryStarted |= localData._initialStoryStarted;
+        cloudData._tutorialCompleted |= localData._tutorialCompleted;
     }
 
     public bool HasLocalBackup() => File.Exists(GetBackupPath());

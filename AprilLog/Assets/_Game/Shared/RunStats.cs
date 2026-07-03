@@ -6,6 +6,11 @@
 // 수정자 : 정승우
 // 설명 : 스킬(인챈트)별 단일타격 최고뎀을 스킬ID(StandardID) 키로 기록. MonsterAI.TakeDamage(dmg, skillId)에서 누적.
 //        정산창 '인챈트별 데미지 최고치'용. 기존 HighestEnchantDamage1~3(미사용 死변수) 제거 → TopSkillsByDamage로 대체.
+// 수정자 : 김영찬
+// 수정 내용 : 세이브/로드 시 인첸트별 최고치 정보 또한 갱신 하도록 수정
+
+// 3차 수정자 : 조규민
+// 수정 내용 : 정산 팝업 TOP3 표시용 스킬별 누적 피해 기록 추가
 
 using System.Collections.Generic;
 
@@ -19,13 +24,27 @@ public static class RunStats
     public static int HighestDamage { get; private set; }   // 전체 단일타격 최고뎀
 
     // 스킬(StandardID)별 단일타격 최고뎀. 정산창 '인챈트별 최고치'용.
-    private static readonly Dictionary<int, int> _maxBySkill = new Dictionary<int, int>();
+    private static Dictionary<int, int> _maxBySkill = new ();
+    public static Dictionary<int, int> MaxBySkill => _maxBySkill;
+    private static Dictionary<int, int> _totalBySkill = new ();
 
     public static void Reset()
     {
         TotalDamage = 0;
         HighestDamage = 0;
+        _maxBySkill ??= new Dictionary<int, int>();
         _maxBySkill.Clear();
+        _totalBySkill ??= new Dictionary<int, int>();
+        _totalBySkill.Clear();
+    }
+
+    public static void RestoreFromSave(int totalDamage, int highestDamage, List<MaxBySkillSaveData> maxBySkill)
+    {
+        TotalDamage = totalDamage;
+        HighestDamage = highestDamage;
+        _maxBySkill ??= new Dictionary<int, int>();
+        _maxBySkill = LoadMaxBySkill(maxBySkill);
+        _totalBySkill = new Dictionary<int, int>(_maxBySkill);
     }
 
     public static void AddDamage(int amount) => AddDamage(amount, 0);
@@ -40,8 +59,17 @@ public static class RunStats
 
         if (skillId != 0)
         {
+            _maxBySkill ??= new Dictionary<int, int>();
             if (!_maxBySkill.TryGetValue(skillId, out int cur) || amount > cur)
                 _maxBySkill[skillId] = amount;
+
+            _totalBySkill ??= new Dictionary<int, int>();
+            if (!_totalBySkill.TryGetValue(skillId, out int total))
+            {
+                total = 0;
+            }
+
+            _totalBySkill[skillId] = total + amount;
         }
     }
 
@@ -52,10 +80,58 @@ public static class RunStats
     /// <summary>최고뎀 상위 count개를 (skillId, maxDamage) 내림차순으로 반환. 정산 인챈트별 표시용.</summary>
     public static List<KeyValuePair<int, int>> TopSkillsByDamage(int count)
     {
+        if(_maxBySkill == null ||_maxBySkill.Count == 0) 
+            return new List<KeyValuePair<int, int>>();
+        
         var list = new List<KeyValuePair<int, int>>(_maxBySkill);
         list.Sort((a, b) => b.Value.CompareTo(a.Value));
         if (count >= 0 && list.Count > count)
             list.RemoveRange(count, list.Count - count);
+        return list;
+    }
+
+    public static List<KeyValuePair<int, int>> TopSkillsByTotalDamage(int count)
+    {
+        if (_totalBySkill == null || _totalBySkill.Count == 0)
+        {
+            return TopSkillsByDamage(count);
+        }
+
+        var list = new List<KeyValuePair<int, int>>(_totalBySkill);
+        list.Sort((a, b) => b.Value.CompareTo(a.Value));
+        if (count >= 0 && list.Count > count)
+            list.RemoveRange(count, list.Count - count);
+        return list;
+    }
+
+    private static Dictionary<int, int> LoadMaxBySkill(List<MaxBySkillSaveData> saveData)
+    {
+        if(saveData.Count <= 0) return new Dictionary<int, int>();
+        
+        var dict = new Dictionary<int, int>();
+        foreach (var data in saveData)
+        {
+            dict.TryAdd(data.skillId, data.maxDamage);
+        }
+        
+        return dict;
+    }
+    
+    public static List<MaxBySkillSaveData> ExportMaxBySkill()
+    {
+        if (_maxBySkill == null || _maxBySkill.Count == 0) return new List<MaxBySkillSaveData>();
+
+        var list = new List<MaxBySkillSaveData>();
+        foreach (var data in _maxBySkill)
+        {
+            var temp = new MaxBySkillSaveData
+            {
+                skillId = data.Key,
+                maxDamage = data.Value
+            };
+            list.Add(temp);
+        }
+        
         return list;
     }
 }

@@ -1,4 +1,5 @@
 //담당자: 조규민
+//포기하기 확인 시 인게임을 재시작하지 않고 진행 세이브를 삭제한 뒤 로비로 복귀하도록 변경
 
 using UnityEngine;
 
@@ -8,7 +9,7 @@ using UnityEngine;
 public class EnchantLinkButtonBoundaryPresenter
 {
     private const string _returnLobbyMessage = "로비로 돌아가시겠습니까?\n게임은 자동 저장됩니다.";
-    private const string _restartChapterMessage = "게임을 포기하시겠습니까?\n진행 중인 게임은 저장되지 않습니다.";
+    private const string _restartChapterMessage = "게임을 포기하고 로비로 돌아가시겠습니까?\n진행 중인 게임은 저장되지 않습니다.";
 
     private readonly EnchantLinkButtonBoundaryView _view;
     private readonly ScreenNavigator _screenNavigator;
@@ -37,6 +38,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void HandleContinueClicked()
     {
+        _view.ShowSelectedButton(EnchantLinkButtonType.Continue);
+
         if (_screenNavigator != null)
         {
             _screenNavigator.OnCloseButtonClick();
@@ -48,6 +51,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void HandleReturnLobbyClicked()
     {
+        _view.ShowSelectedButton(EnchantLinkButtonType.ReturnLobby);
+
         if (_confirmPopupPresenter == null)
         {
             Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] 확인 팝업이 없어 로비 복귀를 처리하지 않았습니다.");
@@ -59,6 +64,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void HandleRestartChapterClicked()
     {
+        _view.ShowSelectedButton(EnchantLinkButtonType.RestartChapter);
+
         if (_confirmPopupPresenter == null)
         {
             Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] 확인 팝업이 없어 포기하기를 처리하지 않았습니다.");
@@ -70,6 +77,8 @@ public class EnchantLinkButtonBoundaryPresenter
 
     private void ReturnToLobby()
     {
+        SaveCurrentProgressForResume();
+
         if (_screenNavigator != null)
         {
             _screenNavigator.ToLobbyAction();
@@ -88,13 +97,43 @@ public class EnchantLinkButtonBoundaryPresenter
     {
         Time.timeScale = 1f;
 
-        if (GameManager.Instance == null)
+        if (GameManager.Instance != null)
         {
-            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] GameManager가 없어 포기하기를 처리하지 않았습니다.");
+            GameManager.Instance.DeleteLocalSave();
+        }
+        else
+        {
+            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] GameManager가 없어 포기하기 세이브 삭제를 처리하지 못했습니다.");
+        }
+
+        if (_screenNavigator != null)
+        {
+            _screenNavigator.ToLobbyAction();
             return;
         }
 
-        GameManager.Instance.DeleteLocalSave();
-        GameManager.Instance.LoadInGame();
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.LoadLobby();
+        }
     }
+
+    private void SaveCurrentProgressForResume()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] GameManager가 없어 로비 복귀 저장을 처리하지 않았습니다.");
+            return;
+        }
+
+        StageLoopManager loopManager = Object.FindFirstObjectByType<StageLoopManager>();
+        if (loopManager == null)
+        {
+            Debug.LogWarning("[EnchantLinkButtonBoundaryPresenter] StageLoopManager가 없어 현재 스테이지 저장을 처리하지 않았습니다.");
+            return;
+        }
+
+        GameManager.Instance.SaveLocal();
+    }
+
 }

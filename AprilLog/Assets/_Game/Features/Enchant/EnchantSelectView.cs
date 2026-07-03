@@ -61,6 +61,10 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [SerializeField] private Button _skipButton;
     [SerializeField] private Button _rerollButton;
     [SerializeField] private TMP_Text _rerollCountText;
+    [Tooltip("현재 스킬/스탯 인첸트 선택 종류를 표시하는 제목")]
+    [SerializeField] private TMP_Text _headerText;
+    [SerializeField] private string _skillSelectionHeader = "스킬 인첸트 선택";
+    [SerializeField] private string _statSelectionHeader = "스탯 인첸트 선택";
 
     [Header("리롤 오버레이")]
     [Tooltip("비워두면 EnchantSelectCanvas 아래에 Viewport Mask 영향을 받지 않는 오버레이를 자동 생성합니다.")]
@@ -84,7 +88,9 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     private TMP_Text _resolvedRerollCountText;
     private bool _currentRerollAvailable;
     private int _currentRerollRemaining;
+    private bool[] _currentCardRerollAvailable;
     private ScrollRect _choiceScrollRect;
+    private bool _hasLoggedMissingHeader;
 
     private void OnEnable()
     {
@@ -154,6 +160,50 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
     public void Show() => _navigator.ShowEnchantSelection();
     public void Hide() => _navigator.OnCloseButtonClick();
+
+    // 추가: 조규민 - Presenter가 전달한 선택 종류에 맞춰 인첸트 선택 제목을 갱신한다.
+    public void SetSelectionType(EnchantType type)
+    {
+        if (_headerText == null)
+        {
+            if (!_hasLoggedMissingHeader)
+            {
+                Debug.LogWarning(
+                    "[EnchantSelectView] HeaderText가 연결되지 않아 인첸트 선택 제목을 갱신할 수 없습니다.",
+                    this);
+                _hasLoggedMissingHeader = true;
+            }
+
+            return;
+        }
+
+        switch (type)
+        {
+            case EnchantType.Skill:
+                _headerText.text = _skillSelectionHeader;
+                return;
+
+            case EnchantType.Stat:
+                _headerText.text = _statSelectionHeader;
+                return;
+
+            default:
+                Debug.LogError($"[EnchantSelectView] 지원하지 않는 인첸트 선택 타입입니다. type={type}", this);
+                return;
+        }
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (gameObject.scene.name == "_InGame" && !_useSequence)
+        {
+            Debug.LogError(
+                "[EnchantSelectView] _InGame 씬은 스킬/스탯 분리 선택을 위해 Use Sequence를 활성화해야 합니다.",
+                this);
+        }
+    }
+#endif
     
     /// <summary>
     /// Presenter가 계산된 인챈트 데이터를 넘겨주면, 프리팹을 생성하고 UI를 갱신합니다.
@@ -206,7 +256,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
                 cardUI.OnRerollClicked += () => OnCardRerollSelected?.Invoke(index);
                 cardUI.AttachRerollOverlay(_rerollOverlay);
-                cardUI.SetRerollState(_currentRerollAvailable, _currentRerollRemaining);
+                cardUI.SetRerollState(IsCardRerollAvailable(index), _currentRerollRemaining);
             }
         }
 
@@ -226,11 +276,28 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         SetLegacyRerollVisible(true);
         UpdateRerollCountText(remaining);
 
-        foreach (GameObject card in _spawnedCards)
+        for (int i = 0; i < _spawnedCards.Count; i++)
         {
+            GameObject card = _spawnedCards[i];
+
             if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
-                cardUI.SetRerollState(available, remaining);
+                cardUI.SetRerollState(IsCardRerollAvailable(i), remaining);
+            }
+        }
+    }
+
+    public void SetCardRerollAvailable(bool[] availableByIndex)
+    {
+        _currentCardRerollAvailable = availableByIndex;
+
+        for (int i = 0; i < _spawnedCards.Count; i++)
+        {
+            GameObject card = _spawnedCards[i];
+
+            if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
+            {
+                cardUI.SetRerollState(IsCardRerollAvailable(i), _currentRerollRemaining);
             }
         }
     }
@@ -253,6 +320,26 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 cardUI.SetRerollState(false, _currentRerollRemaining);
             }
         }
+    }
+
+    private bool IsCardRerollAvailable(int index)
+    {
+        if (!_currentRerollAvailable || _currentRerollRemaining == 0)
+        {
+            return false;
+        }
+
+        if (_currentCardRerollAvailable == null)
+        {
+            return true;
+        }
+
+        if (index < 0 || index >= _currentCardRerollAvailable.Length)
+        {
+            return false;
+        }
+
+        return _currentCardRerollAvailable[index];
     }
 
     private void EnsureRerollOverlay()

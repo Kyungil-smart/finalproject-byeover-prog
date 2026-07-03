@@ -13,27 +13,195 @@ MonoBehaviour:
   m_Name: SpecialWaveRuleTable
   m_EditorClassIdentifier: Assembly-CSharp::SpecialWaveRuleTable
   rows:
-  - SpecialWave_ID: 2001
+  - SpecialWave_ID: 1500001
+    MonsterWavePool_ID: 1000012
+    WaveType: Rush
+    TriggerTime: 40
+    EndType: Duration
+    ActiveDuration: 20
+    SpecialSpawnInterval: 3
+    SpecialSpawnAmount: 2
+  - SpecialWave_ID: 1500002
+    MonsterWavePool_ID: 1000011
+    WaveType: Rush
+    TriggerTime: 40
+    EndType: Duration
+    ActiveDuration: 20
+    SpecialSpawnInterval: 3
+    SpecialSpawnAmount: 2
+  - SpecialWave_ID: 1500003
+    MonsterWavePool_ID: 1000013
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 0
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500004
     MonsterWavePool_ID: 0
     WaveType: Rush
     TriggerTime: 20
     EndType: Duration
     ActiveDuration: 20
-    SpecialSpawnInterval: 0.5
+    SpecialSpawnInterval: 1
     SpecialSpawnAmount: 3
-  - SpecialWave_ID: 2002
-    MonsterWavePool_ID: 1006
+  - SpecialWave_ID: 1500005
+    MonsterWavePool_ID: 1001001
     WaveType: Elite
-    TriggerTime: 10
+    TriggerTime: 0
     EndType: Instant
-    ActiveDuration: 0
+    ActiveDuration: 20
     SpecialSpawnInterval: 0
     SpecialSpawnAmount: 1
-  - SpecialWave_ID: 2003
-    MonsterWavePool_ID: 1007
-    WaveType: Boss
-    TriggerTime: 10
+  - SpecialWave_ID: 1500006
+    MonsterWavePool_ID: 1001004
+    WaveType: Elite
+    TriggerTime: 0
     EndType: Instant
-    ActiveDuration: 0
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500007
+    MonsterWavePool_ID: 1001007
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500008
+    MonsterWavePool_ID: 1001010
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500009
+    MonsterWavePool_ID: 1001013
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500010
+    MonsterWavePool_ID: 1001016
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500011
+    MonsterWavePool_ID: 1001019
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500012
+    MonsterWavePool_ID: 1001022
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500013
+    MonsterWavePool_ID: 1001025
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500014
+    MonsterWavePool_ID: 1001028
+    WaveType: Elite
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 20
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500015
+    MonsterWavePool_ID: 1001002
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500016
+    MonsterWavePool_ID: 1001005
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500017
+    MonsterWavePool_ID: 1001008
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500018
+    MonsterWavePool_ID: 1001011
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500019
+    MonsterWavePool_ID: 1001014
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500020
+    MonsterWavePool_ID: 1001017
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500021
+    MonsterWavePool_ID: 1001020
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500022
+    MonsterWavePool_ID: 1001023
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500023
+    MonsterWavePool_ID: 1001026
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
+    SpecialSpawnInterval: 0
+    SpecialSpawnAmount: 1
+  - SpecialWave_ID: 1500024
+    MonsterWavePool_ID: 1001029
+    WaveType: Boss
+    TriggerTime: 0
+    EndType: Instant
+    ActiveDuration: 40
     SpecialSpawnInterval: 0
     SpecialSpawnAmount: 1

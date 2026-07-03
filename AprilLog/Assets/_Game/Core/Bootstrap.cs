@@ -5,7 +5,7 @@
 // 수정 내용 : Repository를 DataManager 싱글톤의 자식으로 편입하여, _boot 씬에서만 초기화 하면 되도록 수정
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 로그인 이벤트 분기, 시작 하단 로딩바, 이전 세션 옵션, 로비 로딩 애니메이션, Google 안내 팝업, 초기 Portrait 안정화, 시작 로딩 완료 이벤트 누락 방어, Editor Email/Password 테스트 시 이전 세션 자동 로그인 방지, 이전 세션 자동 로그인 실패 시 로그인 화면 복구 추가
+// 수정 내용 : 로그인 이벤트 분기, 시작 하단 로딩바, 이전 세션 옵션, 로비 로딩 애니메이션, Google 안내 팝업, 초기 Portrait 안정화, 시작 로딩 완료 이벤트 누락 방어, Editor Email/Password 테스트 시 이전 세션 자동 로그인 방지, 이전 세션 자동 로그인 실패 시 로그인 화면 복구, 계정 데이터 기준 최초 스토리 분기 추가
 
 using System;
 using System.Collections;
@@ -169,7 +169,24 @@ public class Bootstrap : MonoBehaviour
         // [7] 로비 진입 전 로딩 애니메이션
         yield return StartCoroutine(PlayLobbyLoadingVideo());
 
-        // [8] 로비 진입
+        // [8] 진입 분기.
+        // 최초 실행(튜토리얼 미완료)이면 인트로 시나리오 → (씬 흐름이) 인게임으로. 로비 안 거침(기획 v1.04 튜토 1-3).
+        // 그 외(튜토 완료/재실행)는 평소대로 로비.
+        if (GameManager.Instance.ShouldStartInitialStory())
+        {
+            Debug.Log("[Bootstrap] === 최초 실행 감지 — 튜토리얼 인트로 시나리오로 진입 ===");
+            // 추가: 조규민 - 최초 로그인 이벤트를 Story 이동 전에 기록해 전투 도중 종료해도 재접속 시 반복하지 않는다.
+            GameManager.Instance.MarkInitialStoryStarted();
+
+            if (TutorialManager.Instance != null)
+            {
+                TutorialManager.Instance.TryStart();
+            }
+
+            GameManager.Instance.LoadScenarioIntro();      // 인트로 시나리오 씬 → 끝나면 인게임
+            yield break;
+        }
+
         Debug.Log("[Bootstrap] === 초기화 완료. Lobby로 이동 ===");
         GameManager.Instance.LoadLobby();
     }

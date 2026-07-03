@@ -20,6 +20,9 @@
 // 4차 수정자 : 김영찬
 // 수정 내용 : 리롤 시 리롤 전 인첸트가 중복 등장하지 않도록 수정
 
+// 5수정자 : 홍정옥
+// 수정 내용 : 튜토리얼 최초 인챈트 선택 시 고정 후보 3장 표시 및 해당 튜토리얼 팝업에서만 리롤 차단
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -33,6 +36,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     private readonly SpellRepo _repo;
     private readonly ScreenNavigator _navigator;
     private readonly EnchantChangePresenter _changePresenter;
+    private readonly LocalizationManager _localizationManager;
     
     // 확률 생성기
     private readonly EnchantSelector _selector;
@@ -43,6 +47,8 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     private List<EnchantCandidate> _currentChoices;
     private int _rerollRemaining;
     private int _pickCount = 3;     // 리롤 시 같은 개수로 다시 뽑기 위해 보관
+    private bool _isTutorialFixedChoices;
+    private bool[] _cardRerollUsed;
     
     // 이번 팝업에서 유저가 한 번이라도 본(등장한) 모든 인챈트 ID 누적용
     private HashSet<int> _seenEnchantIds = new HashSet<int>();
@@ -57,6 +63,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         _unlimitedReroll = rerollCount < 0;                                 // -1 = 무한(EnchantSelectView가 테스트2 씬 보고 결정)
         _baseRerollCount = _unlimitedReroll ? 0 : Mathf.Max(0, rerollCount);
         _selector = new EnchantSelector(_repo, config);
+        _localizationManager = LocalizationManager.Instance;
 
         _view.OnChoiceSelected += HandleChoice;
         _view.OnSkipSelected += HandleSkip;
@@ -76,10 +83,21 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     {
         _pickCount = pickCount;
         _rerollRemaining = _baseRerollCount;
+        _isTutorialFixedChoices = false;
         
         _seenEnchantIds.Clear();
-        
+
+        if (TutorialFirstEnchantSelectionOverride.TryConsumeFixedChoices(_model, _repo, out _currentChoices))
+        {
+            _pickCount = _currentChoices.Count;
+            _isTutorialFixedChoices = true;
+            ResetCardRerollState(_currentChoices.Count);
+            DisplayChoicesToView();
+            return;
+        }
+
         GenerateChoices(pickCount);
+        ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : pickCount);
         DisplayChoicesToView();
     }
 
@@ -98,6 +116,8 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     // 리롤: 같은 레벨업에서 카드만 다시 뽑는다(선택 풀·확률은 EnchantSelector가 처리).
     private void HandleReroll()
     {
+        if (_isTutorialFixedChoices) return;
+
         Debug.Log($"[Reroll] HandleReroll 진입 remaining={(_unlimitedReroll ? "무한" : _rerollRemaining.ToString())}");
         if (!_unlimitedReroll)
         {
@@ -116,24 +136,35 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         }
         
         GenerateChoices(_pickCount);
+        ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : _pickCount);
         DisplayChoicesToView();
     }
 
     private void HandleCardReroll(int index)
     {
+        if (_isTutorialFixedChoices) return;
         if (_currentChoices == null) return;
         if (index < 0 || index >= _currentChoices.Count) return;
-        
-        var newChoice = _selector.GenerateChoices(_model, 1, _seenEnchantIds)[0];
-        if (newChoice == null) return;
+        if (IsCardRerollUsed(index)) return;
 
         if (!_unlimitedReroll)
         {
             if (_rerollRemaining <= 0) return;
+        }
+
+        List<EnchantCandidate> newChoices = _selector.GenerateChoices(_model, 1, _seenEnchantIds);
+        if (newChoices == null || newChoices.Count == 0) return;
+        
+        var newChoice = newChoices[0];
+        if (newChoice == null) return;
+
+        if (!_unlimitedReroll)
+        {
             _rerollRemaining--;
         }
 
         _currentChoices[index] = newChoice;
+        MarkCardRerollUsed(index);
         _seenEnchantIds.Add(newChoice.Name_ID);
         
         DisplayChoicesToView();
@@ -148,28 +179,51 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         {
             var candidate = _currentChoices[i];
 
-            displayData[i] = new EnchantDisplayData
+            if (_localizationManager == null)
             {
-                EnchantId = candidate.Specific_ID,
-                Level = candidate.Level,
-                // 카드 상단에 스킬/스탯 텍스트 표시
-                TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                Debug.LogWarning("No localization manager found. No Localization.");
+                displayData[i] = new EnchantDisplayData
+                {
+                    EnchantId = candidate.Specific_ID,
+                    Level = candidate.Level,
+                    // 카드 상단에 스킬/스탯 텍스트 표시
+                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
                 
-                // 추후 로컬라이징 연동
-                Name = $"NameID: {candidate.Name_ID}", 
-                Description = candidate.Type == EnchantType.Skill ? 
-                    $"데미지: {candidate.SkillData.Dmg}" : 
-                    $"수치 증가: {candidate.StatData.Variation_2}",
-                // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
-                ImageKey = candidate.Type == EnchantType.Skill ? 
-                    $"{candidate.SkillData.SkillIcon_ID}" : 
-                    $"{candidate.StatData.Image_ID}"
-            };
+                    // 번역 데이터가 없음으로 ID를 출력함
+                    Name = $"NameID: {candidate.Name_ID}", 
+                    Description = candidate.Type == EnchantType.Skill ? 
+                        $"데미지: {candidate.SkillData.Dmg}" : 
+                        $"수치 증가: {candidate.StatData.Variation_2}",
+                    // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
+                    ImageKey = candidate.Type == EnchantType.Skill ? 
+                        $"{candidate.SkillData.SkillIcon_ID}" : 
+                        $"{candidate.StatData.Image_ID}"
+                };
+            }
+            else
+            {
+                displayData[i] = new EnchantDisplayData
+                {
+                    EnchantId = candidate.Specific_ID,
+                    Level = candidate.Level,
+                    // 카드 상단에 스킬/스탯 텍스트 표시
+                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                    Name = _localizationManager.Get(candidate.Name_ID, LocalizingType.Enchant), 
+                    Description = candidate.Type == EnchantType.Skill ? 
+                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                        _localizationManager.Get(candidate.StatData.StatDescrip, LocalizingType.Enchant),
+                    // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
+                    ImageKey = candidate.Type == EnchantType.Skill ? 
+                        $"{candidate.SkillData.SkillIcon_ID}" : 
+                        $"{candidate.StatData.Image_ID}"
+                };
+            }
         }
         
         _view.SetChoices(displayData);
         // 무한(테스트2 씬)이면 항상 사용 가능 + 남은 횟수 -1(View에서 ∞ 표시).
-        _view.SetRerollAvailable(_unlimitedReroll || _baseRerollCount > 0, _unlimitedReroll ? -1 : _rerollRemaining);
+        _view.SetRerollAvailable(!_isTutorialFixedChoices && (_unlimitedReroll || _baseRerollCount > 0), _isTutorialFixedChoices ? 0 : (_unlimitedReroll ? -1 : _rerollRemaining));
+        _view.SetCardRerollAvailable(BuildCardRerollAvailability());
     }
 
     // ---------- 유저 클릭 처리 ----------
@@ -183,6 +237,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
             if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
             {
                 _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
+                ClearTutorialFixedChoiceState();
                 ClosePopup(); 
             }
             else
@@ -195,6 +250,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
             if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
             {
                 _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
+                ClearTutorialFixedChoiceState();
                 ClosePopup();
             }
             else
@@ -206,11 +262,57 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
     
     private void HandleSkip()
     {
+        ClearTutorialFixedChoiceState();
         ClosePopup();
     }
 
     private void ClosePopup()
     {
         _navigator.OnCloseButtonClick();
+    }
+
+    private void ClearTutorialFixedChoiceState()
+    {
+        if (!_isTutorialFixedChoices) return;
+
+        _isTutorialFixedChoices = false;
+        TutorialFirstEnchantSelectionOverride.ClearFixedChoiceState();
+    }
+
+    private void ResetCardRerollState(int count)
+    {
+        _cardRerollUsed = new bool[Mathf.Max(0, count)];
+    }
+
+    private bool IsCardRerollUsed(int index)
+    {
+        return _cardRerollUsed != null
+            && index >= 0
+            && index < _cardRerollUsed.Length
+            && _cardRerollUsed[index];
+    }
+
+    private void MarkCardRerollUsed(int index)
+    {
+        if (_cardRerollUsed == null || index < 0 || index >= _cardRerollUsed.Length)
+        {
+            return;
+        }
+
+        _cardRerollUsed[index] = true;
+    }
+
+    private bool[] BuildCardRerollAvailability()
+    {
+        int count = _currentChoices != null ? _currentChoices.Count : 0;
+        bool[] availableByIndex = new bool[count];
+        bool hasGlobalReroll = !_isTutorialFixedChoices && (_unlimitedReroll || _rerollRemaining > 0);
+
+        for (int i = 0; i < count; i++)
+        {
+            availableByIndex[i] = hasGlobalReroll && !IsCardRerollUsed(i);
+        }
+
+        return availableByIndex;
     }
 }

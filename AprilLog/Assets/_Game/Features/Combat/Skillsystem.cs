@@ -54,6 +54,11 @@ public class SkillSystem : MonoBehaviour
     // 자동공격 N회마다 발동하는 스킬 (인챈트 테이블 v1.03 '일반 스킬 인챈트' — 파이어브레스 등)
     private List<AutoAttackSkillEntry> _autoAttackSkills = new List<AutoAttackSkillEntry>();
     private List<Legacy_SkillData> _triggeredAutoCache = new List<Legacy_SkillData>(4);
+    // 마지막으로 받은 자동공격 누적 카운트. 등록/레벨업 시 nextTriggerAt 위상 기준점으로 사용(레벨업 cadence 변경 대응).
+    private int _lastAutoCount;
+
+    // 스폰한 스킬 VFX 추적. 전투 종료 시 ClearActiveSkillVfx로 일괄 정리(정산 팝업 timeScale=0 중 루틴이 멈춰 VFX 잔존하는 것 방지).
+    private readonly List<GameObject> _activeSkillVfx = new List<GameObject>();
 
     // 장판(hazard) 스킬: SkillID → 장판 설정. FireSkill이 투사체 대신 장판 경로로 분기한다.
     private Dictionary<int, HazardConfig> _hazardConfigs = new Dictionary<int, HazardConfig>();
@@ -234,7 +239,8 @@ public class SkillSystem : MonoBehaviour
     public void RegisterAutoAttackSkill(int everyNAttacks, Legacy_SkillData data)
     {
         if (data == null) return;
-        _autoAttackSkills.Add(new AutoAttackSkillEntry { everyNAttacks = everyNAttacks, data = data });
+        // nextTriggerAt = 현재 카운트 + N → 등록 시점부터 N회 뒤 첫 발동(절대 모듈로 위상 어긋남 방지).
+        _autoAttackSkills.Add(new AutoAttackSkillEntry { everyNAttacks = everyNAttacks, data = data, nextTriggerAt = _lastAutoCount + everyNAttacks });
     }
 
     /// <summary>같은 스킬군(StandardID)의 기존 등록을 제거하고 새로 등록 (인챈트 레벨업 시 상위 레벨로 교체).</summary>
@@ -244,7 +250,8 @@ public class SkillSystem : MonoBehaviour
         for (int i = _autoAttackSkills.Count - 1; i >= 0; i--)
             if (_autoAttackSkills[i].data != null && _autoAttackSkills[i].data.StandardID == data.StandardID)
                 _autoAttackSkills.RemoveAt(i);
-        _autoAttackSkills.Add(new AutoAttackSkillEntry { everyNAttacks = everyNAttacks, data = data });
+        // 레벨업 교체 시에도 nextTriggerAt = 현재 카운트 + N → 교체 직후 N회 뒤 발동(위상 리셋, cadence 변경 대응).
+        _autoAttackSkills.Add(new AutoAttackSkillEntry { everyNAttacks = everyNAttacks, data = data, nextTriggerAt = _lastAutoCount + everyNAttacks });
     }
 
     /// <summary>같은 스킬군(StandardID)의 기존 등록을 제거하고 새로 등록 (인챈트 레벨업 시 상위 레벨로 교체).</summary>
@@ -294,16 +301,22 @@ public class SkillSystem : MonoBehaviour
         return _triggeredComboCache;
     }
 
-    /// <summary>자동공격 누적 횟수가 등록된 주기(N회)의 배수일 때 발동할 스킬 목록.</summary>
+    /// <summary>자동공격 누적 횟수가 각 스킬의 다음 발동 시점(nextTriggerAt)에 도달했을 때 발동할 스킬 목록.
+    /// 절대 카운트 % N 방식은 레벨업으로 N이 바뀌면 위상이 어긋나(스킵/조기발동) → 스킬별 nextTriggerAt로 '마지막 발동 후 N회'를 유지.</summary>
     public List<Legacy_SkillData> GetTriggeredAutoAttackSkills(int autoAttackCount)
     {
         _triggeredAutoCache.Clear();
+        _lastAutoCount = autoAttackCount;   // 등록/레벨업 시 nextTriggerAt 위상 기준점
 
         for (int i = 0; i < _autoAttackSkills.Count; i++)
         {
-            int n = _autoAttackSkills[i].everyNAttacks;
-            if (n > 0 && autoAttackCount > 0 && autoAttackCount % n == 0)
-                _triggeredAutoCache.Add(_autoAttackSkills[i].data);
+            var e = _autoAttackSkills[i];
+            if (e.everyNAttacks > 0 && autoAttackCount >= e.nextTriggerAt)
+            {
+                _triggeredAutoCache.Add(e.data);
+                e.nextTriggerAt = autoAttackCount + e.everyNAttacks;   // 다음 발동 = 이번 발동 + N (struct write-back로 위상 유지)
+                _autoAttackSkills[i] = e;
+            }
         }
 
         return _triggeredAutoCache;
@@ -631,7 +644,7 @@ public class SkillSystem : MonoBehaviour
         var lib = WaterVfx;
         float baseY = _firePoint != null ? _firePoint.position.y : 0f;
         Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
-        float speed = PxToWorld(125f);     // 나미 R식: 천천히 전진하며 적을 밀기 (QA 2026-06-25: 250→125로 2배 느리게)
+        float speed = PxToWorld(125f);     // 나미 R식: 천천히 전진하며 적을 밀기 (QA 피드백으로 250→125로 감속)
         const float duration = 4.0f;       // 속도 절반이라 같은 거리 도달하도록 지속 2.0→4.0초로 보정
 
         GameObject vfx = null;
@@ -799,6 +812,9 @@ public class SkillSystem : MonoBehaviour
 
         // ① 타겟 발밑에 수정구 생성 → 시퀀스 끝까지 루프 유지 (기획 4-1-4 #1)
         GameObject crystal = SpawnVfx(lib != null ? lib.fireBreathCrystal : null, center, crystalScale, 53);
+        // 안전망(#305): 루틴이 중간에 끊겨도(스테이지/챕터 종료 시 StopAllCoroutines 등) 수정구가 화면에 남지 않도록
+        // 최대 수명 후 무조건 자동 삭제한다. 정상 종료 시엔 아래 ⑤의 즉시 Destroy가 먼저 처리(이중 Destroy는 무해).
+        if (crystal != null) Destroy(crystal, flameCount * flameInterval + 2f);
 
         for (int n = 0; n < flameCount; n++)
         {
@@ -940,7 +956,7 @@ public class SkillSystem : MonoBehaviour
         if (vfx != null) Destroy(vfx);
     }
 
-    // 마칭 아이스(QA 개편 2026-06-24): 에이프릴 → 최단거리 타겟 좌표 방향으로 100x100 정사각형 N칸(=PelletCount)을
+    // 마칭 아이스(QA 개편): 에이프릴 → 최단거리 타겟 좌표 방향으로 100x100 정사각형 N칸(=PelletCount)을
     // interval마다 한 칸씩 순차 발동. 각 칸은 그 자리에 1틱 판정 + VFX 1개. 칸을 이으면 타겟으로 가는 마칭 형태.
     private System.Collections.IEnumerator MarchingIceRoutine(Legacy_SkillData data, Vector2 sizeWorld, int pulses, float interval)
     {
@@ -1259,7 +1275,20 @@ public class SkillSystem : MonoBehaviour
         foreach (var r in go.GetComponentsInChildren<ParticleSystemRenderer>(true))
             r.sortingOrder = sortingOrder;
 
+        _activeSkillVfx.Add(go);   // 추적: 전투 종료 시 ClearActiveSkillVfx에서 일괄 정리
         return go;
+    }
+
+    /// <summary>전투 종료/스테이지 전환 시 호출 — 진행 중 스킬 루틴을 멈추고 스폰된 스킬 VFX를 모두 정리한다.
+    /// held VFX 루틴이 정산 팝업(Time.timeScale=0) 중 WaitForSeconds에 멈춰 자체 Destroy에 도달 못 해
+    /// 화면에 남는 문제(파이어브레스 수정구 #305, 방전 구슬·벽, 하이드로펌프·파도 빔 등)를 중단-안전하게 막는다.
+    /// (개별 루틴의 타임드 Destroy는 timeScale=0에 같이 멈춰 무효라, 이 일괄 정리가 정답.)</summary>
+    public void ClearActiveSkillVfx()
+    {
+        StopAllCoroutines();   // 진행 중 스킬 루틴(held VFX 생성 후 대기 중)을 멈춰 더는 안 그리게
+        for (int i = 0; i < _activeSkillVfx.Count; i++)
+            if (_activeSkillVfx[i] != null) Destroy(_activeSkillVfx[i]);
+        _activeSkillVfx.Clear();
     }
 
     /// <summary>from→to를 따라 전기 아크 파티클(빌보드)을 일정 간격으로 타일 배치해 '전기선'을 만든다.
@@ -1288,6 +1317,7 @@ public class SkillSystem : MonoBehaviour
             foreach (var r in go.GetComponentsInChildren<ParticleSystemRenderer>(true))
                 r.sortingOrder = sortingOrder;
             if (sink != null) sink.Add(go);
+            _activeSkillVfx.Add(go);   // 추적: 전투 종료 시 일괄 정리(방전 벽 타일 잔존 방지)
         }
     }
 
@@ -1792,6 +1822,7 @@ public struct AutoAttackSkillEntry
 {
     public int everyNAttacks;
     public Legacy_SkillData data;
+    public int nextTriggerAt;   // 다음 발동 자동공격 카운트. 등록/레벨업 시점 기준 재계산 → 레벨업 cadence 변경에도 위상 유지.
 }
 
 /// <summary>장판 배치 방식 (인챈트 테이블 v1.03 RequiredValue_4 대응)</summary>

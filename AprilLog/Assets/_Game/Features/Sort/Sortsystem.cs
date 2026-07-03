@@ -1,6 +1,9 @@
 // 담당자 : 정승우
 // 설명   : Sort 퍼즐 핵심 로직 -- 배치, 매칭, 대기열 난이도 알고리즘
 
+// 수정자 : 김영찬
+// 수정 내용 : 로드 기능 추가 및 현재 진행 중 시드 세이브
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -58,6 +61,16 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         {
             _model.SetWaiting(i, GenerateWaitingCombo());
         }
+    }
+    
+    // ---------- 이어하기 (추가) ----------
+    public void RestoreFromSave(int seed, int[] savedPuzzle, int[] savedWaiting)
+    {
+        _rng = new System.Random(seed);
+        
+        _model.RestoreBoardState(savedPuzzle, savedWaiting);
+        
+        Debug.Log("[SortSystem] 이어하기 세이브 데이터로 퍼즐 보드 복구 완료!");
     }
 
     // ---------- 생명주기 ----------
@@ -447,5 +460,17 @@ public class SortSystem : MonoBehaviour, ISortNotifier
             if (_model.GetUnit(tableIdx, s) == unitType) count++;
         }
         return count;
+    }
+        
+    // ---------- 세이브 / 로드용 시드 추출 ----------
+    public int GetCurrentSeedForSave()
+    {
+        if (_rng == null) 
+        {
+            return UnityEngine.Random.Range(0, int.MaxValue); 
+        }
+
+        // 현재 난수 상태에서 무작위 int 값을 하나 뽑아서 '다음 시드'로 사용
+        return _rng.Next(); 
     }
 }

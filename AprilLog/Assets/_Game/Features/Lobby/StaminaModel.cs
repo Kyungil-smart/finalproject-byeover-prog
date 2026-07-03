@@ -12,13 +12,38 @@ public class StaminaModel : MonoBehaviour
 {
     public const int TestStartStamina = 999;
     public const int TestMaxStamina   = 999;
+    
+    private const int StaminaId = 10001;
 
     // ---------- 이벤트 ----------
     public event Action<int, int> OnStaminaChanged;   // current, max
 
     // ---------- 데이터 ----------
-    public int Current { get; private set; }
-    public int Max     { get; private set; }
+    public int Current {
+        get 
+        {
+            if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+            {
+                var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
+                return slot != null ? slot.CurrentAmount : 0;
+            }
+            return _localStamina;
+        }
+    }
+    public int Max {
+        get 
+        {
+            if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+            {
+                var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
+                return slot != null ? slot.OverCapMax : 0;
+            }
+            return _localMaxStamina;
+        }
+    }
+    
+    private int _localStamina;
+    private int _localMaxStamina;
 
     [Header("테스트 기본값")]
     [SerializeField] private bool initializeWithTestValues = true;
@@ -32,40 +57,102 @@ public class StaminaModel : MonoBehaviour
         if (initializeWithTestValues && !_initialized)
             Initialize(testStartStamina, testMaxStamina);
     }
+    
+    private void OnEnable()
+    {
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            DataManager.Instance.ResourceRepo.OnStaminaRecovered += HandleStaminaEvent;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            DataManager.Instance.ResourceRepo.OnStaminaRecovered -= HandleStaminaEvent;
+        }
+    }
 
     // ---------- 초기화 ----------
     public void Initialize(int current, int max)
     {
-        Max     = Mathf.Max(1, max);
-        Current = Mathf.Clamp(current, 0, Max);
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
+            slot.SetStamina(Mathf.Max(0, current), Mathf.Max(0, max));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+            return;
+        }
+        
+        _localStamina = Mathf.Max(1, max);
+        _localMaxStamina = Mathf.Clamp(current, 0, Max);
         _initialized = true;
-        RaiseChanged();
+        HandleStaminaEvent(StaminaId);
     }
 
     // ---------- 조작 ----------
-    public void Recover(int amount)
+    public void Recover(int amount, out int lossAmount)
     {
-        Current = Mathf.Clamp(Current + Mathf.Max(0, amount), 0, Max);
-        RaiseChanged();
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
+            if (slot == null)
+            {
+                lossAmount = 0;
+                return;
+            }
+            DataManager.Instance.ResourceRepo.AddStamina(StaminaId, Mathf.Max(0, amount), out lossAmount);
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+            HandleStaminaEvent(StaminaId);
+            return;
+        }
+
+        var temp = Current + Mathf.Max(0, amount);
+        _localStamina = Mathf.Clamp(temp, 0, Max);
+        lossAmount = Mathf.Max(0, temp - Max);
+        HandleStaminaEvent(StaminaId);
     }
 
     public bool Spend(int amount)
     {
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
+            if (slot == null) return false;
+            if(!DataManager.Instance.ResourceRepo.UseStamina(StaminaId, Mathf.Max(0, amount))) return false;
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+            HandleStaminaEvent(StaminaId);
+            return true;
+        }
+        
         amount = Mathf.Max(0, amount);
-        if (Current < amount) return false;
-        Current -= amount;
-        RaiseChanged();
+        if (!CanAfford(amount)) return false;
+        _localStamina -= amount;
+        HandleStaminaEvent(StaminaId);
         return true;
     }
 
-    public bool CanAfford(int amount) => Current >= Mathf.Max(0, amount);
+    private bool CanAfford(int amount) => Current >= Mathf.Max(0, amount);
 
     public void SetMax(int max)
     {
-        Max     = Mathf.Max(1, max);
-        Current = Mathf.Clamp(Current, 0, Max);
-        RaiseChanged();
+        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        {
+            var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
+            slot.SetStamina(Mathf.Clamp(Current, 0, Max), Mathf.Max(1, max));
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+            HandleStaminaEvent(StaminaId);
+            return;
+        }
+        
+        _localMaxStamina = Mathf.Max(1, max);
+        _localStamina = Mathf.Clamp(Current, 0, Max);
+        HandleStaminaEvent(StaminaId);
     }
-
-    private void RaiseChanged() => OnStaminaChanged?.Invoke(Current, Max);
+    
+    private void HandleStaminaEvent(int staminaId)
+    {
+        if (staminaId == StaminaId) OnStaminaChanged?.Invoke(Current, Max);
+    }
 }

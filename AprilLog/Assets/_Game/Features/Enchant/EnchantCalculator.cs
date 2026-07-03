@@ -1,3 +1,6 @@
+// 수정자 : 조규민
+// 수정 내용 : 이어하기 복원 중 EnchantModel 재초기화 시 스탯 인챈트 이벤트가 중복 구독되지 않도록 수정
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +12,9 @@ public class EnchantCalculator : MonoBehaviour
     [Header("참조")]
     [SerializeField] private PlayerModel _playerModel;
     [SerializeField] private EnchantModel _enchantModel;
+
+    [Header("크리티컬 기본 배율")]
+    [SerializeField][Range(1f,5f)] private float _baseCritDamageRate = 1.4f;
     
     // ---------- private ----------
     private SpellRepo _repo;
@@ -59,6 +65,7 @@ public class EnchantCalculator : MonoBehaviour
             return; // 그래도 없으면 이벤트 구독 스킵 (크래시 방지)
         }
 
+        UnbindModelEvents();
         _enchantModel.OnStatAcquired += HandleStatAcquired;
         _enchantModel.OnStatLevelUp += HandleStatLevelUp;
         _enchantModel.OnStatRemoved += HandleStatRemoved;
@@ -76,8 +83,16 @@ public class EnchantCalculator : MonoBehaviour
 
     public void Discard()
     {
-        if (_enchantModel == null) return;
-        
+        if (_enchantModel == null)
+        {
+            return;
+        }
+
+        UnbindModelEvents();
+    }
+
+    private void UnbindModelEvents()
+    {
         _enchantModel.OnStatAcquired -= HandleStatAcquired;
         _enchantModel.OnStatLevelUp -= HandleStatLevelUp;
         _enchantModel.OnStatRemoved -= HandleStatRemoved;
@@ -115,7 +130,7 @@ public class EnchantCalculator : MonoBehaviour
         GetGroupDamageModifier(data, out var groupDmgBonus, out var groupCritRateBonus, out var groupCritDmgBonus);
 
         float calCritRate = critRate + skillCritRateBonus + groupCritRateBonus;
-        float calCritDmg = 1 + 0.2f * ((100 + (critDmg + groupCritDmgBonus)) / 100f);
+        float calCritDmg = _baseCritDamageRate * ((100 + (critDmg + groupCritDmgBonus)) / 100f);
 
         int baseDamage;
 

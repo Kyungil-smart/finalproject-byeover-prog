@@ -22,7 +22,13 @@
 // 7차 수정자 : 김영찬
 // SaveData 관련 Class Legacy 처리한 내용들을 SaveDataClasses.cs 신설 하면서 클래스명이 변화 한것 반영함
 
+// 8차 수정자 : 김영찬
+// 데이터 로드 개선
+
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
+
 // 추가: 조규민 - 챕터 정산 보상과 진행도를 로그인 계정 CloudData에 즉시 반영한다.
 
 /// <summary>
@@ -40,6 +46,13 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private Legacy_EnchantApplicationSystem _enchantApplicationSystem;
     [Tooltip("비워두면 런타임에 씬에서 탐색")]
     [SerializeField] private InGameGrowthSystem _growthSystem;
+    [FormerlySerializedAs("_inGameRewardManager")]
+    [Tooltip("비워두면 런타임에 자동 생성됨")]
+    [SerializeField] private InGameRewardManager _rewardManager;
+
+    [Header("플레이어")]
+    [Tooltip("플레이어 캐릭터의 Character_ID. CharacterRepo에서 이 ID로 공통/캐릭터 스탯을 로드한다. 현재 데이터의 플레이어 캐릭터 = 5001")]
+    [SerializeField] private int _playerCharacterId = 5001;
 
     [Header("System")]
     [SerializeField] private SortSystem _sortSystem;
@@ -58,8 +71,12 @@ public class InGameBootstrap : MonoBehaviour
     [SerializeField] private int _projectilePoolSize = 20;
 
     [Header("웨이브")]
-    [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용)")]
-    [SerializeField] private int _defaultChapterId = 1;
+    [Tooltip("새 게임 시작 시 진입할 챕터 ID (이어하기는 세이브의 chapterId 사용). 현행 데이터의 첫 챕터는 101.")]
+    [SerializeField] private int _defaultChapterId = 101;
+    [Tooltip("튜토리얼 최초 전투(필패 연출) 스테이지 Chapter_ID. 필패 특수웨이브가 있는 9901. 씬 직렬화값이 우선하니 _InGame에서 확인/설정.")]
+    [SerializeField] private int _tutorialChapterId = 9901;
+    [Tooltip("튜토리얼 성장 후 0챕터 재진입 스테이지 Chapter_ID. 클리어 가능한 9801(보스 포함). 씬 직렬화값이 우선하니 _InGame에서 확인/설정.")]
+    [SerializeField] private int _tutorialReentryChapterId = 9801;
 
     private GameObject _projectileTemplate;
     private bool _settlementRewardGranted;   // 단계④: 정산 보상 중복 지급(재정산 중복가산) 방지 가드
@@ -84,17 +101,31 @@ public class InGameBootstrap : MonoBehaviour
         if (isResume)
         {
             saveData = GameManager.Instance.LoadLocalSaveData();
-            Debug.Log("[InGameBootstrap] 이어하기 데이터 로드됨");
+
+            // 스킴 변경 이전 세이브(현행 데이터에 없는 챕터)로 이어하면 스테이지를 못 찾아 빈 인게임이 된다.
+            // 세이브 전체(챕터+스테이지 인덱스+인챈트가 한 묶음)를 폐기하고 새 판 진입으로 처리한다.
+            int savedChapterId = saveData != null ? saveData.chapterId : 0;
+            if (DataManager.Instance.StageRepo.GetChapter(savedChapterId) == null)
+            {
+                Debug.LogWarning($"[InGameBootstrap] 이어하기 세이브의 챕터 {savedChapterId}가 현행 데이터에 없어 세이브를 폐기하고 새로 시작합니다.");
+                GameManager.Instance.DeleteLocalSave();
+                isResume = false;
+                saveData = null;
+            }
+            else
+            {
+                Debug.Log("[InGameBootstrap] 이어하기 데이터 로드됨");
+            }
         }
 
         // [3] Model 초기화
-        var commonStatus = DataManager.Instance.CharacterRepo.GetCommonStatus(1);
-        var characterStatus = DataManager.Instance.CharacterRepo.GetCharacterStatus(1);
+        var commonStatus = DataManager.Instance.CharacterRepo.GetCommonStatus(_playerCharacterId);
+        var characterStatus = DataManager.Instance.CharacterRepo.GetCharacterStatus(_playerCharacterId);
         // 신규 CharacterRepo는 데이터 없으면 예외 대신 null 반환 → PlayerModel.Initialize가 null 역참조로 NRE,
         // try/catch 없는 InitializeAll 전체가 중단되어 소트·웨이브까지 안 뜸. 한 단계 실패를 명시 로그+중단으로 격리.
         if (commonStatus == null || characterStatus == null)
         {
-            Debug.LogError("[InGameBootstrap] 캐릭터(ID=1) 스탯 데이터 없음 — CharacterRepo SO 배선/시트(Character_ID=1) 확인. 초기화 중단.");
+            Debug.LogError($"[InGameBootstrap] 캐릭터(ID={_playerCharacterId}) 스탯 데이터 없음 — CharacterRepo SO 배선/시트(Character_ID={_playerCharacterId}) 확인. 초기화 중단.");
             return;
         }
         _playerModel.Initialize(commonStatus, characterStatus);
@@ -103,7 +134,11 @@ public class InGameBootstrap : MonoBehaviour
         int characterLevel = GetCharacterLevel();
         DataManager.Instance.ConfigRepo.GetOutGrowthBonusUntilLevel(characterLevel,
             out int hpBonus, out int attackBonus, out int effectPower, out int flatPierce);
-        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus, attackBonus, effectPower, flatPierce);
+
+        // 장착 아티팩트의 공격/체력도 함께 반영한다.
+        // ApplyStatBonus_OutGameBonus는 Attack을 base+attackBonus로 덮어쓰므로 한 번에 합산해 넘긴다.
+        GetEquippedArtifactStatBonus(out int artifactHpBonus, out int artifactAttackBonus);
+        _playerModel.ApplyStatBonus_OutGameBonus(hpBonus + artifactHpBonus, attackBonus + artifactAttackBonus, effectPower, flatPierce);
 
         _combinationModel.Initialize();
 
@@ -123,14 +158,24 @@ public class InGameBootstrap : MonoBehaviour
 
         if (isResume && saveData != null)
         {
-            _playerModel.RestoreFromSave(saveData);
             _enchantModel.RestoreFromSave(saveData.acquiredEnchants);
             // 이어하기: 세이브된 인챈트 효과를 최종 레벨 누적값으로 재적용
             // (RestoreFromSave는 이벤트를 발행하지 않으므로 직접 재적용 필요)
             _enchantApplicationSystem.ReapplyFromSave(saveData.acquiredEnchants);
 
+            // 플레이어 HP 복원은 인챈트 HP 재적용 '뒤'에. (앞에 두면 재적용이 CurrentHP에 보너스를
+            //  한 번 더 더해 과회복됨. 뒤에 두면 저장된 현재 HP로 덮어써 정확. MaxHP는 재적용으로 보정됨.)
+            _playerModel.RestoreFromSave(saveData);
+
             if (_growthSystem != null)
                 _growthSystem.RestoreFromSave(saveData.inGameLevel, saveData.currentEXP);
+            
+            RunStats.RestoreFromSave(saveData.totalDamage, saveData.highestDamage, saveData.MaxBySkill);
+            
+            if (_comboModel != null)
+            {
+                _comboModel.RestoreFromSave(saveData.maxCombo);
+            }
         }
         else if (_growthSystem != null)
         {
@@ -160,13 +205,38 @@ public class InGameBootstrap : MonoBehaviour
             _sortSystem = gameObject.AddComponent<SortSystem>();
             Debug.LogWarning("[InGameBootstrap] SortSystem이 씬에 없어 런타임에 생성했습니다.");
         }
-        _sortSystem.Initialize(seed);
+        
+        if (isResume && saveData != null)
+        {
+            // 이어하기 : 퍼즐의 상태와 조커의 상태를 복구한다.
+            // 퍼즐 보드 및 대기열 복구
+            _sortSystem.RestoreFromSave(seed, saveData.puzzleSlots, saveData.waitingSlots);
+
+            // 조커 상태 복구
+            var jokerSystem = FindFirstObjectByType<JokerSystem>();
+            if (jokerSystem != null)
+            {
+                jokerSystem.RestoreFromSave(saveData.jokerCount, saveData.jokerRemainingCooldown);
+            }
+        }
+        else
+        {
+            _sortSystem.Initialize(seed);
+        }
 
         // CombatSystem은 OnEnable(씬 로드) 시점엔 아직 없던 SortSystem 구독을 놓쳤을 수 있으므로,
         // SortSystem 생성/초기화 직후 명시적으로 바인딩한다 (→ 정렬 성공 시 공격 발동).
         var combatSystem = FindFirstObjectByType<CombatSystem>();
         if (combatSystem != null)
             combatSystem.BindSortSystem(_sortSystem);
+
+        // 튜토리얼 GameAction 훅: 정렬 완성 시 현재 단계가 GameAction이면 TutorialManager가 다음 단계로 진행.
+        // (SortSystem : ISortNotifier. 씬 배선 없이 런타임 연결.)
+        if (_sortSystem != null)
+        {
+            var tutorialHook = gameObject.AddComponent<TutorialGameActionHook>();
+            tutorialHook.Bind(_sortSystem);
+        }
 
         // [5] 플레이어 비주얼 + 전투 발사 셋업
         SetupPlayerCombat();
@@ -176,12 +246,81 @@ public class InGameBootstrap : MonoBehaviour
         RegisterFireSkills(combatSystem, isResume, saveData);
 
         // [6] 실제 웨이브 시스템 시작 (데이터 기반). 더미 테스터는 비활성화.
-        int chapterId = (isResume && saveData != null) ? saveData.chapterId : _defaultChapterId;
-        int startStageIndex = (isResume && saveData != null) ? saveData.clearedStage : 0;
+        int chapterId = ResolveStartChapterId(isResume, saveData);
+        int startStageIndex = ResolveStartStageIndex(isResume, saveData);
         DisableDummyTester();
         StartWaveSystem(chapterId, startStageIndex, seed);
 
+        // 누적 전투 보상 로드
+        if (isResume && saveData != null)
+        {
+            if(_rewardManager != null)
+                _rewardManager.LoadRewardData(saveData.accumulatedRewards);
+        }
+
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
+    }
+
+    private int ResolveStartChapterId(bool isResume, InGameSaveData saveData)
+    {
+        if (isResume && saveData != null)
+        {
+            return Mathf.Max(1, saveData.chapterId);
+        }
+
+        // 튜토리얼 진행 중에는 스테이지를 튜토리얼 단계로 결정한다(로비 선택 값보다 우선).
+        // 최초 전투(필패 연출) = 9901, 성장 후 0챕터 재진입(step14 클리어) = 9801.
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+        {
+            return IsTutorialReentryBattle() ? _tutorialReentryChapterId : _tutorialChapterId;
+        }
+
+        // 추가: 조규민 - 챕터 포기 후 재진입 또는 로비 선택 진입 시 저장 없이도 선택 챕터를 반영한다.
+        // 계약: SelectedChapterId에는 풀 Stage_ID(챕터ID*100+스테이지번호, 예 10201/980101)를 넣는다.
+        // 새 스킴에선 Chapter_ID(101~9901)도 100 이상이라 자릿수만으로 구분이 안 되므로,
+        // 분해 결과가 실재하는 (챕터,스테이지)인지 검증하고 아니면 값 자체를 Chapter_ID로 재해석한다.
+        int selectedChapterId = GameManager.Instance != null ? GameManager.Instance.SelectedChapterId : 0;
+        if (selectedChapterId >= 100)
+        {
+            int chapterPart = selectedChapterId / 100;
+            int stagePart = Mathf.Max(1, selectedChapterId % 100);
+            var repo = DataManager.Instance.StageRepo;
+            if (repo.GetStageId(chapterPart, stagePart) > 0)
+                return chapterPart;
+            if (repo.GetStageId(selectedChapterId, 1) > 0)
+                return selectedChapterId;   // Chapter_ID가 그대로 들어온 경우
+
+            Debug.LogWarning($"[InGameBootstrap] SelectedChapterId {selectedChapterId}를 해석할 수 없어 기본 진입으로 대체합니다.");
+        }
+        else if (selectedChapterId > 0)
+        {
+            return selectedChapterId;
+        }
+
+        return _defaultChapterId;
+    }
+
+    private int ResolveStartStageIndex(bool isResume, InGameSaveData saveData)
+    {
+        if (isResume && saveData != null)
+        {
+            return Mathf.Max(0, saveData.clearedStage);
+        }
+
+        // 튜토리얼 전투는 항상 1스테이지(인덱스 0). 챕터를 튜토리얼 단계로 강제하므로 스테이지도 맞춘다.
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+        {
+            return 0;
+        }
+
+        int selectedStageId = GameManager.Instance != null ? GameManager.Instance.SelectedChapterId : 0;
+        if (selectedStageId < 100)
+        {
+            return 0;
+        }
+
+        int selectedStageNumber = selectedStageId % 100;
+        return Mathf.Max(0, selectedStageNumber - 1);
     }
 
     // 플레이어 사각형 비주얼 생성 + 투사체 풀 보장 + SkillSystem 발사점 연결.
@@ -261,7 +400,18 @@ public class InGameBootstrap : MonoBehaviour
         loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지
         loop.OnChapterEnd += ShowSettlement;
 
+        // 튜토리얼 마지막 단계(ChapterClear)가 챕터 승리로 진행/완료되도록 훅 연결.
+        // (이 연결이 없으면 마지막 단계가 영원히 안 끝나 매 전투가 튜토 챕터로 반복된다.)
+        var tutorialHook = GetComponent<TutorialGameActionHook>();
+        if (tutorialHook != null)
+            tutorialHook.BindChapterEnd(loop);
+
         loop.StartChapter(chapterId, startStageIndex, seed);
+        
+        // 전투 중 보상 누적을 위함 (BattleReward DB)
+        if (_rewardManager == null)
+            _rewardManager = gameObject.AddComponent<InGameRewardManager>();
+        loop.SetRewardManager(_rewardManager);
     }
 
     // 챕터 종료 시 정산 팝업 표시 + 데이터 주입 (기획: 승패/콤보/총뎀/보상)
@@ -277,33 +427,135 @@ public class InGameBootstrap : MonoBehaviour
         int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
         int maxDamage = RunStats.HighestDamage;
         
-        // 스킬(인챈트)별 단일타격 최고뎀 상위 3개. RunStats가 MonsterAI.TakeDamage(dmg, skillId)로 스킬ID별 기록.
-        // (.Key=StandardID로 어떤 인챈트인지도 알 수 있음 — 정산창에 이름 표시하려면 ResultPopup.Show에 ID 추가)
-        var topEnchants = RunStats.TopSkillsByDamage(3);
-        int enchantDamage1 = topEnchants.Count > 0 ? topEnchants[0].Value : 0;
-        int enchantDamage2 = topEnchants.Count > 1 ? topEnchants[1].Value : 0;
-        int enchantDamage3 = topEnchants.Count > 2 ? topEnchants[2].Value : 0;
+        // 스킬(인챈트)별 누적 피해 상위 3개. RunStats가 MonsterAI.TakeDamage(dmg, skillId)로 스킬ID별 기록.
+        // .Key=StandardID이므로 ResultPopup에서 인챈트 아이콘을 역조회할 수 있다.
+      
 
-        // 보상(임시값): 챕터 클리어 시 재화·양피지. 정확값은 ConfigRepo 연동 시 교체 (기획 보상 수치 미확정)
-        int gold = isVictory ? 100 : 0;
-        int parchment = isVictory ? 10 : 0;
+        // 수정 내용 : 정산 팝업에서 사용 스킬 아이콘을 표시할 수 있도록 TOP3 스킬 ID와 데미지를 함께 전달
+        var topEnchants = RunStats.TopSkillsByTotalDamage(3);
+        var topEnchantEntries = new ResultEnchantEntry[3];
+        for (int i = 0; i < topEnchantEntries.Length; i++)
+        {
+            if (i >= topEnchants.Count)
+            {
+                topEnchantEntries[i] = new ResultEnchantEntry(0, 0);
+                continue;
+            }
+
+            topEnchantEntries[i] = new ResultEnchantEntry(topEnchants[i].Key, topEnchants[i].Value);
+        }
+
+        // 보상
+        const int goldId = 70001;
+        const int parchmentId = 70002;
+        const int diamondId = 70003;
+        
+        int gold = 0;
+        int parchment = 0;
+        int diamond = 0;
+        
+        var battleRewards = _rewardManager != null ?
+            _rewardManager.GetAndClearAccumulatedRewards() : null;
+        if (battleRewards != null && battleRewards.Count > 0)
+        {
+            if(battleRewards.TryGetValue(goldId, out var battleGold)) gold += battleGold;
+            if(battleRewards.TryGetValue(parchmentId, out var battleParchment)) parchment += battleParchment;
+            if(battleRewards.TryGetValue(diamondId, out var battleDiamond)) diamond += battleDiamond;
+        }
 
         var loop = FindFirstObjectByType<StageLoopManager>();
         int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
         int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
+        int stageId = DataManager.Instance.StageRepo.GetStageId(chapterId, completedStageCount);
+        
+        var firstChapterList = _rewardManager.AddChangeChapterReward(chapterId, isVictory);
+        _rewardManager.AddChangeStageReward(stageId, 
+            out var firstStageList, out var repeatList);
+
+        if (repeatList != null && repeatList.Count > 0)
+        {
+            foreach (var data in repeatList)
+            {
+                switch (data.itemId)
+                {
+                    case goldId:
+                        gold += data.amount;
+                        break;
+                    case parchmentId:
+                        parchment += data.amount;
+                        break;
+                    case diamondId:
+                        diamond += data.amount;
+                        break;
+                }
+            }
+        }
 
         // 단계④: 같은 정산이 중복 발동돼도 보상은 한 번만 지급(재정산 중복가산 방지).
         if (GameManager.Instance != null && !_settlementRewardGranted)
         {
-            GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment);
+            GameManager.Instance.SaveChapterResult(isVictory, chapterId, completedStageCount, gold, parchment, diamond);
+            
+            // 초회보상은 여기서 계산한다. 초회 보상 넣는 로직에 재화 증가가 포함 되어있음.
+            foreach (var list in firstChapterList)
+            {
+                if (!GameManager.Instance.TryGrantFirstClearChapterReward(list.Key, list.Value)) continue;
+                
+                // 이하는 적용 된 수치를 UI에 넣기 위해 계산
+                foreach (var data in list.Value)
+                {
+                    switch (data.itemId)
+                    {
+                        case goldId:
+                            gold += data.amount;
+                            break;
+                        case parchmentId:
+                            parchment += data.amount;
+                            break;
+                        case diamondId:
+                            diamond += data.amount;
+                            break;
+                    }
+                }
+            }
+            
+            foreach (var list in firstStageList)
+            {
+                if (!GameManager.Instance.TryGrantFirstClearStageReward(list.Key, list.Value)) continue;
+                
+                // 이하는 적용 된 수치를 UI에 넣기 위해 계산
+                foreach (var data in list.Value)
+                {
+                    switch (data.itemId)
+                    {
+                        case goldId:
+                            gold += data.amount;
+                            break;
+                        case parchmentId:
+                            parchment += data.amount;
+                            break;
+                        case diamondId:
+                            diamond += data.amount;
+                            break;
+                    }
+                }
+            }
+            
             _settlementRewardGranted = true;
         }
 
-        view.Show(isVictory, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, gold, parchment);
+        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
         // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.
         DisablePlayerInputOnGameEnd();
+        
+        // 정산창이 뜨면 게임 진행 상황을 모두 지우고 새롭게 재시작해야된다. (기획팀 이형진 확인)
+        if (GameManager.Instance != null)
+        {
+            bool hasSaveData = GameManager.Instance.HasLocalSave();
+            if (hasSaveData) GameManager.Instance.DeleteLocalSave();
+        }
     }
 
     // 게임 종료(승/패) 시 퍼즐 입력을 차단해 더 이상 조작/공격이 일어나지 않게 한다. (기획 1-3-1)
@@ -456,7 +708,7 @@ public class InGameBootstrap : MonoBehaviour
         // ===== 얼음 속성 장판 (골격 — placeholder VFX=색 사각형(하늘). 데미지/판정/발동만. 빙결/슬로우 CC·이동장판은 폴리싱) =====
         // 글레이셜 피어스 5021~23(조합)은 투사체(piercing)라 기본 투사체 경로 — 여기 등록 안 함.
         Color iceFlash = new Color(0.6f, 0.9f, 1f, 0.4f);
-        // 마칭 아이스 5011~13 (일반): 장판형. 에이프릴 → 최단거리 타겟 방향으로 100×100 정사각형 PelletCount(6/7/8)칸을 pulseInterval마다 순차 발동(마칭). (style=MarchingIce → MarchingIceRoutine, placement 미사용. 2026-06-24 QA 개편: 제자리→타겟 전진)
+        // 마칭 아이스 5011~13 (일반): 장판형. 에이프릴 → 최단거리 타겟 방향으로 100×100 정사각형 PelletCount(6/7/8)칸을 pulseInterval마다 순차 발동(마칭). (style=MarchingIce → MarchingIceRoutine, placement 미사용. QA 개편으로 제자리→타겟 전진)
         var marchingIce = new HazardConfig { placement = HazardPlacement.PlayerFront, style = HazardStyle.MarchingIce, widthPx = 100, heightPx = 100, pulseInterval = 0.15f, flashColor = iceFlash };
         skillSystem.RegisterHazardSkill(5011, marchingIce);
         skillSystem.RegisterHazardSkill(5012, marchingIce);
@@ -553,7 +805,52 @@ public class InGameBootstrap : MonoBehaviour
     private int GetCharacterLevel()
     {
         if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
+        {
+            Debug.LogWarning("[InGameBootstrap] 클라우드 데이터를 찾을 수 없음. 아웃 게임 레벨 1");
             return 1;
+        }
+        Debug.Log($"[InGameBootstrap] 클라우드 데이터를 찾음. 아웃 게임 레벨 {GameManager.Instance.CloudData.characterLevel}");
         return GameManager.Instance.CloudData.characterLevel;
     }
+
+    // 현재 튜토리얼 단계가 0챕터 재진입 전투(마지막 인게임 = 챕터 클리어 단계)인지.
+    // 최초 전투 단계(정렬/연습)와 구분해 재진입 때만 클리어 가능한 스테이지로 보낸다.
+    private static bool IsTutorialReentryBattle()
+    {
+        TutorialStep step = TutorialManager.Instance != null ? TutorialManager.Instance.CurrentStep : null;
+        return step != null
+            && step.scene == TutorialScene.InGame
+            && step.gameAction == TutorialGameAction.ChapterClear;
+    }
+
+    // 장착 중인 아티팩트의 인게임 공격/체력 합산. ArtifactManager의 public 데이터만 읽고,
+    // 특수효과는 제외하고 기본 스탯만 반영한다. 스탯 공식은 아티팩트 상세 팝업과 동일하다.
+    private void GetEquippedArtifactStatBonus(out int hpBonus, out int attackBonus)
+    {
+        hpBonus = 0;
+        attackBonus = 0;
+
+        ArtifactManager artifacts = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        if (artifacts == null || artifacts.MyArtifacts == null || repo == null) return;
+
+        foreach (ArtifactInstance inst in artifacts.MyArtifacts)
+        {
+            if (inst == null || !inst.IsEquipped) continue;
+
+            GearMasterData master = repo.GetGearData(inst.MasterId);
+            if (master == null) continue;
+
+            GearLevelData level = repo.GetGearLevel(inst.MasterId);
+            int atkPer = level != null ? level.AttackValue : 0;
+            int hpPer = level != null ? level.MaxHPValue : 0;
+
+            attackBonus += ComputeArtifactStat(master.AttackBaseAmount, atkPer, inst.CurrentLevel);
+            hpBonus += ComputeArtifactStat(master.MaxHPBaseAmount, hpPer, inst.CurrentLevel);
+        }
+    }
+
+    // 최종값 = base + (base × perLevel) × (현재레벨 - 1)
+    private static int ComputeArtifactStat(int baseAmount, int perLevelValue, int level)
+        => baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
 }

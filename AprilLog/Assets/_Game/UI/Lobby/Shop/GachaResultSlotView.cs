@@ -62,15 +62,9 @@ public class GachaResultSlotView : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private Sprite LoadIcon(string iconName)
+    private Sprite LoadIcon(int iconId)
     {
-        if (string.IsNullOrEmpty(iconName))
-            return null;
-
-        string path = string.IsNullOrEmpty(_iconResourceFolder)
-            ? iconName
-            : $"{_iconResourceFolder}/{iconName}";
-
-        return Resources.Load<Sprite>(path);
+        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
+        return null;
     }
 }

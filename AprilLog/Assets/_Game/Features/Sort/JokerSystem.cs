@@ -1,3 +1,9 @@
+// 담당자 : 최동훈
+// 조커 시스템
+
+// 수정자 : 김영찬
+// 수정 내용 : 세이브/로드 구현
+
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -18,21 +24,24 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     [SerializeField] private SortSystem _sortSystem;
     [SerializeField] private CanvasGroup[] _maskCanvasGroups;
     [SerializeField] private SortTableView _view;
-    [SerializeField] private Image[] _jokerIcons;
+    [SerializeField] private Image _jokerIcon;
     [SerializeField] private Image _coolTimeImage;
     [SerializeField] private TMP_Text _coolDownText;
+    [SerializeField] private TMP_Text _jokerCountText;
     [SerializeField] private UnitDataManager _dataManager;
 
     private JokerPatternData _activePattern;
     private int _currentIndex = 0;
-    private float _lastUsedTime = -60f;
-    private const float _coolDown = 60f;
+    private int _currentCount = 2;
+    private float _lastUsedTime = -5f;
+    private const float _coolDown = 5f;
     private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정
 
     private void Start()
     {
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
         if (_coolDownText != null) _coolDownText.enabled = false;
+        UpdateJokerUI();
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -48,17 +57,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        bool hasActiveJoker = false;
-        foreach (var icon in _jokerIcons)
-        {
-            if (icon.enabled)
-            {
-                hasActiveJoker = true;
-                break;
-            }
-        }
-
-        if (!hasActiveJoker)
+        if (_currentCount <= 0)
         {
             Debug.Log("사용할 수 있는 조커가 없습니다!");
             return;
@@ -66,11 +65,8 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
         if (IsActive || _patternLibrary == null || _patternLibrary.patterns.Count == 0) return;
 
-        if (_currentActiveIndex >= 0)
-        {
-            _jokerIcons[_currentActiveIndex].enabled = false;
-            _currentActiveIndex--;
-        }
+        _currentCount--;
+        UpdateJokerUI();
 
         _lastUsedTime = Time.time;
         StartCoroutine(CooldownRoutine());
@@ -81,6 +77,12 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         int baseUnitType = FindFirstValidUnitInTable(firstTargetTable);
 
         StartCoroutine(JokerRoutine(baseUnitType));
+    }
+
+    private void UpdateJokerUI()
+    {
+        if (_jokerCountText != null) _jokerCountText.text = $"X {_currentCount}";
+        if (_jokerIcon != null) _jokerIcon.enabled = (_currentCount > 0);
     }
 
     private int FindFirstValidUnitInTable(int tableIdx)
@@ -147,10 +149,10 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     public void AcquireJokerItem()
     {
-        if (_currentActiveIndex < _jokerIcons.Length - 1)
+        if (_currentCount < 2)
         {
-            _currentActiveIndex++;
-            _jokerIcons[_currentActiveIndex].enabled = true;
+            _currentCount++;
+            UpdateJokerUI();
         }
     }
 
@@ -179,5 +181,45 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
         if (_coolDownText != null) _coolDownText.enabled = false;
+    }
+
+    public void RestoreJokerImages()
+    {
+        if (_jokerIcon != null)
+        {
+            _jokerIcon.enabled = true;
+        }
+
+        _currentCount = 2;
+        UpdateJokerUI();
+    }
+    
+    
+    // ---------- 세이브 / 로드 (추가) ----------
+    
+    // 현재 조커 보유량 반환 (Index + 1)
+    public int GetJokerCount() => _currentCount;
+    
+    public float GetRemainingCooldown()
+    {
+        float elapsed = Time.time - _lastUsedTime;
+        return elapsed >= _coolDown ? 0f : _coolDown - elapsed;
+    }
+
+    // 세이브된 보유량을 바탕으로 시스템 복구
+    public void RestoreFromSave(int savedJokerCount, float savedRemainingCooldown)
+    {
+        _currentCount = savedJokerCount;
+        UpdateJokerUI();
+        
+        if (savedRemainingCooldown > 0)
+        {
+            _lastUsedTime = Time.time - (_coolDown - savedRemainingCooldown);
+            StartCoroutine(CooldownRoutine());
+        }
+        else
+        {
+            _lastUsedTime = -_coolDown;
+        }
     }
 }

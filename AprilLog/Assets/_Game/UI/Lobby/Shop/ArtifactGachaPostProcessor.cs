@@ -9,6 +9,10 @@ using UnityEngine;
 // - 중복 획득은 한도 이내면 직접 +1, 한도 초과면 자동 분해(보상 합산).
 // - 보상(강화석/조각)은 ArtifactDismantleReward 로 계산해 실제 재화에 즉시 반영.
 // - 누적(마일리지) 보상 구간 통과 수는 ArtifactMileageTracker 에 위임.
+
+// 수정자 : 김영찬
+// 수정 내용 : 실제 재화에 반영 하는 부분을 ArtifactManager에서 담당하도록 수정
+
 public class ArtifactGachaPostProcessor : MonoBehaviour
 {
     [Header("시스템 참조")]
@@ -49,8 +53,8 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         }
 
         // 자동 분해 보상을 실제 재화에 즉시 반영(수동 분해와 동일 데이터/식)
-        if (result.TotalStone > 0) mgr.UpgradeStone += result.TotalStone;
-        if (result.TotalShard > 0) mgr.LegendaryShard += result.TotalShard;
+        if (result.TotalStone > 0) mgr.AddStone(result.TotalStone);
+        if (result.TotalShard > 0) mgr.AddShard(result.TotalShard);
 
         // 직접 +1(중복) 케이스는 OnInventoryUpdated 가 발행되지 않으므로 리스트를 강제 갱신
         if (_listBinder != null) _listBinder.RefreshInventory();

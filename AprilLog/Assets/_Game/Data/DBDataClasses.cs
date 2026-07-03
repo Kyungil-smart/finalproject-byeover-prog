@@ -55,7 +55,7 @@ public class ChangeRewardData
     public int ChangeReward_ID;
     public int Start_ID;
     public int End_ID;
-    public string RewardType;       // Gold, Parchment, Diamond
+    public int RewardType;       // Gold, Parchment, Diamond
     public int BaseAmount;
     public string GrowthType;       // None, Add, Rate
     public float GrowthValue;
@@ -222,7 +222,7 @@ public class GearMasterData
     public int AttackBaseAmount;
     public int GearName; // 기어이름 : 번역 연결용
     public int Explanation; // 기어 설명 : 번역 연결용
-    public string IconSpriteKey;
+    public int IconSpriteKey;
 }
 
 /// <summary>
@@ -707,6 +707,21 @@ public class Story_TalkData
     public int CG;
     public int BGM;
     public int SFX;
+}
+
+/// <summary>
+/// 챕터 도달 상황에 따라 스토리 데이터를 연결<br/>
+/// 생성일 : 26.06.26<br/>
+/// 최종 수정일 : 
+/// </summary>
+[Serializable]
+public class StoryTriggerData
+{
+    public int StoryTrigger_ID;
+    public int Story_ID;
+    public string TargetType;
+    public int Target_ID;
+    public string TriggerType;
 }
 
 #endregion

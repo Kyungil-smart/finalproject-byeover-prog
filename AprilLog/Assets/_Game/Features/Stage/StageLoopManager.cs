@@ -76,6 +76,11 @@ public class StageLoopManager : MonoBehaviour
         StartStage();
     }
 
+    public void SetRewardManager(InGameRewardManager rewardManager)
+    {
+        _bootstrapper.SetRewardManager(rewardManager);
+    }
+
     private void OnDisable()
     {
         if (_playerModel != null)
@@ -92,7 +97,37 @@ public class StageLoopManager : MonoBehaviour
         var stageData = DataManager.Instance.StageRepo.GetStage(stageId);
         if (stageData == null)
         {
+            // GetStageId가 -1((챕터,순서) 못 찾음)이거나 해당 Stage_ID 데이터가 없을 때.
+            // 첫 스테이지(index 0)부터 없으면 이건 '챕터 완료'가 아니라 데이터/배선 오류다.
+            //   EndChapter(true)로 처리하면 가짜 승리 + 정산(ShowSettlement) NRE로 이어져 진짜 원인이 가려진다 → 명확히 로그하고 중단.
+            if (_currentStageIndex == 0)
+            {
+                Debug.LogError($"[StageLoopManager] 챕터 {_chapterId}의 첫 스테이지를 찾지 못했습니다(Stage_ID={stageId}). " +
+                               $"StageDataTable에 (Chapter_ID={_chapterId}, StageOrder=1) 행이 있는지 + StageRepo._stageTable 배선/Reimport를 확인하세요. 챕터 시작 중단.");
+                _state = State.Idle;
+                return;
+            }
+
+            // 중간 이후에서 못 찾음 = 마지막 스테이지를 지나 정상적으로 챕터 완료된 경로.
             EndChapter(true);
+            return;
+        }
+
+        // 스테이지 데이터는 있는데 웨이브 룰이 없으면 StageBootstrapper가 조립을 포기(return)해
+        // 클리어 콜백이 영영 안 오는 소프트락이 된다(예: 980102 웨이브 룰 미작성). 첫 스테이지면 명확히 중단,
+        // 중간 이후면 해당 스테이지를 건너뛰고 다음으로 진행한다(룰 데이터가 채워지면 자동으로 정상 플레이).
+        var spawnRules = DataManager.Instance.StageRepo.GetSpawnRulesForStage(stageId);
+        if (spawnRules == null || spawnRules.Count == 0)
+        {
+            if (_currentStageIndex == 0)
+            {
+                Debug.LogError($"[StageLoopManager] Stage_ID {stageId}의 웨이브 룰이 없어 챕터를 시작할 수 없습니다. StageWaveRuleTable을 확인하세요.");
+                _state = State.Idle;
+                return;
+            }
+
+            Debug.LogWarning($"[StageLoopManager] Stage_ID {stageId}의 웨이브 룰이 없어 스테이지를 건너뜁니다(소프트락 방지). StageWaveRuleTable에 룰을 채워야 정상 플레이됩니다.");
+            ClearStage();
             return;
         }
 
@@ -107,8 +142,8 @@ public class StageLoopManager : MonoBehaviour
     {
         _state = State.StageClear;
 
-        if (GameManager.Instance != null)
-            GameManager.Instance.SaveLocal();
+        // 스테이지 클리어 자동 체크포인트 저장 제거(기획 #300): 한 판 도중 이어하기 가능한 세이브를 남기지 않는다.
+        // 강제종료/크래시로도 이어하기 안 되게. 이어하기 세이브는 '로비로' 버튼(SaveCurrentProgressForResume)에서만 기록.
 
         OnStageClearSaved?.Invoke();
 
@@ -132,6 +167,11 @@ public class StageLoopManager : MonoBehaviour
         if (_bootstrapper != null)
             _bootstrapper.StopStage();
 
+        // 전투 종료 시 진행 중 스킬 루틴 정지 + 잔존 VFX 일괄 정리.
+        // (정산 팝업이 Time.timeScale=0으로 뜨면 held VFX 루틴이 WaitForSeconds에 멈춰 자체 Destroy에 도달 못 해
+        //  방전 구슬·벽, 하이드로펌프·파도 빔, 파이어브레스 수정구 등이 정산 화면에 남던 문제 해소.)
+        FindFirstObjectByType<SkillSystem>()?.ClearActiveSkillVfx();
+
         OnChapterEnd?.Invoke(isVictory);
     }
 
@@ -143,7 +183,11 @@ public class StageLoopManager : MonoBehaviour
     // ---------- 유틸 ----------
     private int GetStageId()
     {
-        return _chapterId * 100 + _currentStageIndex + 1;
+        // 데이터의 Stage_ID는 불규칙 체계(챕터1~5=1000~, 챕터6~10=1100~)라 산술(chapterId*100+...)로 못 구한다.
+        // StageRepo에서 (챕터, 순서)로 역조회. 못 찾으면 -1 → StartStage의 GetStage(-1)=null → 챕터 종료
+        // (마지막 스테이지 이후 정상 종료와 동일 경로).
+        int stageOrder = _currentStageIndex + 1;   // StageOrder는 1-base
+        return DataManager.Instance.StageRepo.GetStageId(_chapterId, stageOrder);
     }
 
     public float GetStageProgress()

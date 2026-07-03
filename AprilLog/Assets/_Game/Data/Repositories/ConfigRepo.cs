@@ -10,12 +10,18 @@
 // 3차 수정자 : 김영찬
 // 수정 내용 : 26.06.12 DB 컬럼 변경 사항 반영하여 기절강화 둔화강화를 효과 강화로 연결
 
+// 4차 수정자 : 김영찬
+// 수정 내용 : 재화와 스태미나 부분을 SupplyRepo로 이관
+
+// 5차 수정자 : 김영찬
+// 수정 내용 : 보상 부분을 RewardRepo로 이관
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 레벨 곡선, 아웃게임 성장, 업적, 보상 등 설정 데이터를 관리한다.
+/// 레벨 곡선, 아웃게임 성장, 업적 등 설정 데이터를 관리한다.
 /// </summary>
 public class ConfigRepo : MonoBehaviour
 {
@@ -26,25 +32,12 @@ public class ConfigRepo : MonoBehaviour
     
     [Header("업적 데이터")]
     [SerializeField] private Legacy_AchievementDataTable _achievementTable;
-    
-    [Header("보상 데이터")]
-    [SerializeField] private ChangeRewardTable _changeRewardTable;
-    [SerializeField] private BattleRewardTable _battleRewardTable;
-    
-    [Header("행동력 데이터")]
-    [SerializeField] private StaminaTable _staminaTable;
-    
-    [Header("아이템 데이터")]
-    [SerializeField] private ItemTable _itemTable;
 
     // ---------- Dictionary 캐시 ----------
     private Dictionary<int, InLevelData> _inLevel;
     private Dictionary<int, OutLevelData> _outLevel;
     private Dictionary<int, Legacy_AchievementData> _achievements;
-    private List<ChangeRewardData> _changeRewards;
-    private Dictionary<int, BattleRewardData> _battleRewards;
-    private Dictionary<int, StaminaData> _stamina;
-    private Dictionary<int, ItemData> _items;
+    
     private bool _isInitialized;
 
     // ---------- 초기화 ----------
@@ -59,21 +52,16 @@ public class ConfigRepo : MonoBehaviour
         _inLevel = BuildDictionary(_inLevelTable, nameof(_inLevelTable), r => r.InLevel);
         _outLevel = BuildDictionary(_outLevelTable, nameof(_outLevelTable), r => r.OutLevel);
         _achievements = BuildDictionary(_achievementTable, nameof(_achievementTable), r => r.AchievementID);
-        _changeRewards = BuildList(_changeRewardTable, nameof(_changeRewardTable));
-        _battleRewards = BuildDictionary(_battleRewardTable, nameof(_battleRewardTable), r => r.Target_ID);
-        _stamina = BuildDictionary(_staminaTable, nameof(_staminaTable), r => r.Stamina_ID);
-        _items = BuildDictionary(_itemTable, nameof(_itemTable), r => r.Item_ID);
+        
         _isInitialized = true;
-        Debug.Log($"[ConfigRepo] 초기화 완료. InLevel: {_inLevel.Count}, OutLevel: {_outLevel.Count}, Achievements: {_achievements.Count}, ChangeRewards: {_changeRewards.Count}");
+        Debug.Log($"[ConfigRepo] 초기화 완료. InLevel: {_inLevel.Count}, OutLevel: {_outLevel.Count}, Achievements: {_achievements.Count}");
     }
 
     // ---------- 조회 API ----------
     public InLevelData GetInLevel(int level) => GetData(_inLevel, level, nameof(GetInLevel));
     public OutLevelData GetOutLevel(int level) => GetData(_outLevel, level, nameof(GetOutLevel));
     public Legacy_AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
-    public StaminaData GetStaminaData(int id) => GetData(_stamina, id, nameof(GetStaminaData));
-    public BattleRewardData GetBattleReward(int id) => GetData(_battleRewards, id, nameof(GetBattleReward));
-    public ItemData GetItemInfo(int id) => GetData(_items, id, nameof(GetItemInfo));
+    
 
     public IReadOnlyDictionary<int, Legacy_AchievementData> GetAllAchievements()
     {
@@ -84,17 +72,6 @@ public class ConfigRepo : MonoBehaviour
         }
 
         return _achievements;
-    }
-
-    public IReadOnlyList<ChangeRewardData> GetAllChangeRewards()
-    {
-        if (_changeRewards == null)
-        {
-            Debug.LogWarning("[ConfigRepo] ChangeReward cache is not initialized. Empty list will be used.");
-            _changeRewards = new List<ChangeRewardData>();
-        }
-
-        return _changeRewards;
     }
 
     // 홍정옥 요청: 1레벨부터 targetLevel까지의 성장 보너스 누적합 계산
@@ -157,38 +134,6 @@ public class ConfigRepo : MonoBehaviour
             }
 
             result.Add(key, row);
-        }
-
-        return result;
-    }
-
-    private List<TData> BuildList<TData>(DataTable<TData> table, string tableName)
-        where TData : class
-    {
-        var result = new List<TData>();
-
-        if (table == null)
-        {
-            Debug.LogWarning($"[ConfigRepo] {tableName} is not assigned. Empty list will be used.");
-            return result;
-        }
-
-        if (table.rows == null)
-        {
-            Debug.LogWarning($"[ConfigRepo] {tableName}.rows is null. Empty list will be used.");
-            return result;
-        }
-
-        for (int i = 0; i < table.rows.Count; i++)
-        {
-            TData row = table.rows[i];
-            if (row == null)
-            {
-                Debug.LogWarning($"[ConfigRepo] {tableName}.rows[{i}] is null. Skip.");
-                continue;
-            }
-
-            result.Add(row);
         }
 
         return result;

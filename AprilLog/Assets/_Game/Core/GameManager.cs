@@ -6,6 +6,12 @@
 
 // 추가: 조규민 - 로그인 계정의 아웃게임 모델과 정산 결과를 UserCloudData로 저장하는 공용 진입점 추가
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 세이브 개선
+//
+// 4차 수정자 : 조규민
+// 수정 내용 : 계정별 최초 진입 상태 마이그레이션과 최초 스토리 시작·튜토리얼 완료 저장 API 추가
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,6 +24,8 @@ using UnityEngine.SceneManagement;
 /// 앱 수명주기, 인증, 로컬/클라우드 저장, 씬 전환을 담당한다.
 /// 실제 Firebase 통신은 FirebaseAuthService, FirestoreService에 위임.
 /// </summary>
+// 2차 수정자 : 조규민
+// 수정 내용 : 하우징 자동재화 수령 시간 저장과 골드/양피지 지급을 한 번에 처리하는 계정 저장 API 추가
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -126,17 +134,18 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 모바일: 백그라운드 전환 시 즉시 세이브
+    // 모바일: 전투 중 백그라운드 전환/종료 = '포기'(인게임 세이브 삭제) → 재진입 시 새 판.
+    // (기획 #300: 종료로 죽음/손해를 회피하는 세이브스컴 차단. 의도적 이어하기는 '로비로' 버튼으로만.)
     private void OnApplicationPause(bool isPaused)
     {
         if (isPaused && _currentState == GameState.InGame)
-            SaveLocal();
+            DeleteLocalSave();
     }
 
     private void OnApplicationQuit()
     {
         if (_currentState == GameState.InGame)
-            SaveLocal();
+            DeleteLocalSave();
     }
 
     // ---------- 이벤트 핸들러 ----------
@@ -256,6 +265,13 @@ public class GameManager : MonoBehaviour
     {
         ChangeState(GameState.InGame);
         StartCoroutine(LoadSceneCoroutine("_InGame")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
+    }
+
+    // 추가: 정승우 - 최초 실행 튜토리얼 인트로 시나리오 씬으로 진입.
+    // 시나리오 종료 시 그 씬의 흐름(TempStoryToGameFlow 등)이 인게임으로 넘긴다.
+    public void LoadScenarioIntro()
+    {
+        StartCoroutine(LoadSceneCoroutine("_Story")); // 시나리오 재생 씬(_Boot/_Lobby/_InGame/_Story 규칙)
     }
 
     private IEnumerator LoadSceneCoroutine(string sceneName)
@@ -551,7 +567,10 @@ public class GameManager : MonoBehaviour
             if (!deleted)
             {
                 Debug.LogWarning("[GameManager] Firebase 계정 삭제 실패.");
-                // 실패해도 로컬은 초기화 후 로그인 화면으로
+                // 익명 세션은 recent-login 만료로 삭제가 거부될 수 있다.
+                // 이때 세션을 끊지 않으면 _Boot 재진입 시 같은 계정으로 자동 재로그인되어
+                // 무한 로딩에 빠지므로, 삭제 실패 시 로컬 세션을 강제로 정리한다.
+                _authService.SignOut();
             }
         }
 
@@ -604,6 +623,83 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // 추가: 조규민 - 상태 필드가 없던 기존 계정은 최초 콘텐츠를 이미 경험한 계정으로 마이그레이션한다.
+    public bool ShouldStartInitialStory()
+    {
+        if (CloudData == null)
+        {
+            Debug.LogWarning("[GameManager] 최초 진입 상태를 확인할 계정 데이터가 없습니다.");
+            return false;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        return !CloudData._initialStoryStarted;
+    }
+
+    public bool IsTutorialCompleted()
+    {
+        if (CloudData == null)
+        {
+            return PlayerPrefs.GetInt("Tutorial_Completed", 0) == 1;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        return CloudData._tutorialCompleted;
+    }
+
+    public void MarkInitialStoryStarted()
+    {
+        if (CloudData == null)
+        {
+            Debug.LogWarning("[GameManager] 최초 스토리 시작 상태를 저장할 계정 데이터가 없습니다.");
+            return;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        if (CloudData._initialStoryStarted)
+        {
+            return;
+        }
+
+        CloudData._initialStoryStarted = true;
+        SyncToCloud(CloudData);
+    }
+
+    public void MarkTutorialCompleted()
+    {
+        PlayerPrefs.SetInt("Tutorial_Completed", 1);
+        PlayerPrefs.Save();
+
+        if (CloudData == null)
+        {
+            return;
+        }
+
+        MigrateInitialFlowStateIfNeeded();
+        if (CloudData._tutorialCompleted)
+        {
+            return;
+        }
+
+        CloudData._tutorialCompleted = true;
+        SyncToCloud(CloudData);
+    }
+
+    private void MigrateInitialFlowStateIfNeeded()
+    {
+        if (CloudData == null || CloudData._hasInitialFlowState)
+        {
+            return;
+        }
+
+        // 새 스키마 필드가 없는 문서는 업데이트 이전부터 존재한 계정이므로 최초 콘텐츠를 재노출하지 않는다.
+        CloudData._hasInitialFlowState = true;
+        CloudData._initialStoryStarted = true;
+        CloudData._tutorialCompleted = true;
+        SyncToCloud(CloudData);
+        Debug.Log("[GameManager] 기존 계정의 최초 진입 상태 마이그레이션을 완료했습니다.");
+    }
+
     public void SyncToCloud(UserCloudData data)
     {
         if (_firestoreService == null) return;
@@ -619,10 +715,7 @@ public class GameManager : MonoBehaviour
 
     public void ApplyCloudDataToOutGameModels(PlayerProgressModel progressModel, CurrencyModel currencyModel)
     {
-        if (CloudData == null)
-        {
-            CloudData = UserCloudData.CreateDefault();
-        }
+        CloudData ??= UserCloudData.CreateDefault();
 
         EnsureCloudIdentity(CloudData);
 
@@ -637,11 +730,32 @@ public class GameManager : MonoBehaviour
 
         if (currencyModel != null)
         {
-            currencyModel.Initialize(CloudData.gold, CloudData.parchment);
+            currencyModel.Initialize(CloudData.gold, CloudData.parchment, CloudData.diamond);
+        }
+        
+        if (DataManager.Instance != null && DataManager.Instance.ResourceRepo != null)
+        {
+            DataManager.Instance.ResourceRepo.LoadResourceData();
         }
     }
 
-    public void SaveOutGameProgress(PlayerProgressModel progressModel, CurrencyModel currencyModel)
+    public void ApplyCloudDataToArtifactManager(ArtifactManager manager)
+    {
+        if (manager == null)
+        {
+            return;
+        }
+
+        CloudData ??= UserCloudData.CreateDefault();
+
+        EnsureCloudIdentity(CloudData);
+
+        // CloudData에 저장된 아티팩트를 매니저로 복원한다.
+        // (manager.LoadData()를 다시 부르면 LoadData ↔ Apply 무한 재귀로 StackOverflow가 난다.)
+        manager.MyArtifacts = CloneArtifactList(CloudData.myArtifacts);
+    }
+
+    public void SaveOutGameProgress(PlayerProgressModel progressModel)
     {
         if (!IsLoggedIn)
         {
@@ -665,31 +779,125 @@ public class GameManager : MonoBehaviour
         SyncToCloud(data);
     }
 
-    public void SaveChapterResult(bool isVictory, int chapterId, int completedStageCount, int rewardGold, int rewardParchment)
+    public void SaveChapterResult(bool isVictory, int chapterId, int completedStageCount, int rewardGold, int rewardParchment, int rewardDiamond)
     {
-        if (!IsLoggedIn)
-        {
-            return;
-        }
-
         var data = CloudData ?? UserCloudData.CreateDefault();
         EnsureCloudIdentity(data);
-
-        data.gold = Mathf.Max(0, data.gold + Mathf.Max(0, rewardGold));
-        data.parchment = Mathf.Max(0, data.parchment + Mathf.Max(0, rewardParchment));
+        
+        AddCurrency(Mathf.Max(0, rewardGold), Mathf.Max(0, rewardParchment));
+        AddDiamond(Mathf.Max(0, rewardDiamond));
 
         if (isVictory)
         {
             int safeChapterId = Mathf.Max(1, chapterId);
             int safeCompletedStageCount = Mathf.Max(1, completedStageCount);
-            data.currentChapter = Mathf.Max(data.currentChapter, safeChapterId);
-            data.currentStage = Mathf.Max(data.currentStage, safeCompletedStageCount);
-            AddUnlockedStage(data, BuildStageId(safeChapterId, safeCompletedStageCount));
-            AddNextStageIfExists(data, safeChapterId, safeCompletedStageCount + 1);
+            // 튜토리얼/0챕터(98xx/99xx)는 본편 진행도가 아니므로 currentChapter를 오염시키지 않는다.
+            // currentChapter는 Max 갱신이라 9801이 한 번 박히면 본편(101~)을 아무리 깨도 안 내려가고,
+            // 이 값을 읽는 하우징 방치보상 티어(GetRewardAtOrBelow)가 최고 단계로 고착된다.
+            if (safeChapterId < 9000)
+            {
+                data.currentChapter = Mathf.Max(data.currentChapter, safeChapterId);
+                data.currentStage = Mathf.Max(data.currentStage, safeCompletedStageCount);
+                AddUnlockedStage(data, BuildStageId(safeChapterId, safeCompletedStageCount));
+                AddNextStageIfExists(data, safeChapterId, safeCompletedStageCount + 1);
+            }
         }
 
         SyncToCloud(data);
         RaiseCurrencyChanged();   // 단계②: 전투 보상이 View(로비 등)에 전파되도록 단일 이벤트 발행
+    }
+
+    // ---------- 최초 클리어 보상 (1회성, 영속) ----------
+    // 팀 공용 canonical API. 중복방지 + 지급 + 영속만 책임진다. 보상 수치는 호출부(기획 데이터)가 정한다.
+    // 반복 클리어로 매번 주는 '변동 보상'은 이 API가 아니라 AddCurrency로 처리할 것(그건 1회성 아님).
+
+    /// <summary>해당 스테이지의 최초 클리어 보상을 이미 지급했는지. 키는 데이터의 실제 Stage_ID(1000~).</summary>
+    private bool IsStageFirstClearRewarded(int stageId)
+    {
+        return CloudData != null
+            && CloudData.firstClearRewardedStages != null
+            && CloudData.firstClearRewardedStages.Contains(stageId);
+    }
+    
+    private bool IsChapterFirstClearRewarded(int chapterId)
+    {
+        return CloudData != null
+               && CloudData.firstClearRewardedChapters != null
+               && CloudData.firstClearRewardedChapters.Contains(chapterId);
+    }
+
+    /// <summary>스테이지 최초 클리어 보상을 1회만 지급한다. 이미 지급됐거나 CloudData 없으면 아무것도 안 하고 false.
+    /// stageId는 데이터의 실제 Stage_ID(StageData.Stage_ID / StageRepo.GetStageId)를 넘길 것(BuildStageId 금지).</summary>
+    public bool TryGrantFirstClearStageReward(int stageId, List<ItemSaveEntry> rewardList)
+    {
+        if (stageId <= 0 || CloudData == null) return false;
+        if (IsStageFirstClearRewarded(stageId)) return false;   // 이미 최초보상 지급됨 → 중복 차단
+        if (rewardList == null || rewardList.Count == 0) return false;
+
+        if (CloudData.firstClearRewardedStages == null) CloudData.firstClearRewardedStages = new List<int>();
+        CloudData.firstClearRewardedStages.Add(stageId);        // 먼저 마킹 → 아래 지급 영속 시 함께 저장
+
+        StringBuilder debugLog = new StringBuilder();
+        debugLog.Append($"[GameManager] 최초 클리어 보상 지급: Stage {stageId} (");
+
+        foreach (var data in rewardList)
+        {
+            AddResource(data.itemId, data.amount);
+            
+            debugLog.Append($"+ID({data.itemId}): {data.amount} ");
+        }
+        
+        debugLog.Append(")");
+        Debug.Log(debugLog.ToString());
+        return true;
+    }
+    
+    public bool TryGrantFirstClearChapterReward(int chapterId, List<ItemSaveEntry> rewardList)
+    {
+        if (chapterId <= 0 || CloudData == null) return false;
+        if (IsChapterFirstClearRewarded(chapterId)) return false;   // 이미 최초보상 지급됨 → 중복 차단
+        if (rewardList == null || rewardList.Count == 0) return false;
+
+        if (CloudData.firstClearRewardedChapters == null) CloudData.firstClearRewardedChapters = new List<int>();
+        CloudData.firstClearRewardedChapters.Add(chapterId);        // 먼저 마킹 → 아래 지급 영속 시 함께 저장
+        
+        StringBuilder debugLog = new StringBuilder();
+        debugLog.Append($"[GameManager] 최초 클리어 보상 지급: Chapter {chapterId} (");
+
+        foreach (var data in rewardList)
+        {
+            AddResource(data.itemId, data.amount);
+            
+            debugLog.Append($"+ID({data.itemId}): {data.amount} ");
+        }
+        
+        debugLog.Append(")");
+        Debug.Log(debugLog.ToString());
+        return true;
+    }
+
+    public void SaveArtifact(List<ArtifactInstance> myArtifacts)
+    {
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+
+        data.myArtifacts = CloneArtifactList(myArtifacts);
+
+        SyncToCloud(data);
+    }
+
+    // 아티팩트 목록의 저장/로드 복사 경계. CloudData와 런타임(ArtifactManager.MyArtifacts)이 같은 인스턴스를
+    // 공유하면 저장 호출 없이도 변경이 CloudData에 스며들어(우연한 영속) 저장 누락 버그를 은닉한다.
+    // 계약: 아티팩트 영속은 SaveArtifact 호출로만 일어난다. 양방향 모두 깊은 복사로 공유를 끊는다.
+    private static List<ArtifactInstance> CloneArtifactList(List<ArtifactInstance> source)
+    {
+        var result = new List<ArtifactInstance>();
+        if (source == null) return result;
+
+        foreach (var inst in source)
+            if (inst != null) result.Add(inst.Clone());
+
+        return result;
     }
 
     // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) — 영속 원본 = CloudData.gold/parchment =====
@@ -699,7 +907,56 @@ public class GameManager : MonoBehaviour
 
     public int Gold => CloudData != null ? CloudData.gold : 0;
     public int Parchment => CloudData != null ? CloudData.parchment : 0;
+    public int Diamond => CloudData != null ? CloudData.diamond : 0;
+    
+    private const int GoldId = 70001;
+    private const int ParchmentId = 70002;
+    private const int DiamondId = 70003;
 
+    // 기존의 파편화된 함수 호출과 하드코딩된 분기를 이 안으로 완전히 격리함
+    public void AddResource(int itemId, int amount)
+    {
+        if (itemId == GoldId) 
+        {
+            AddCurrency(amount, 0, "보상");
+        }
+        else if (itemId == ParchmentId) 
+        {
+            AddCurrency(0, amount, "보상");
+        }
+        else if (itemId == DiamondId) 
+        {
+            AddDiamond(amount);
+        }
+        else 
+        {
+            DataManager.Instance.ResourceRepo.AddItem(itemId, amount);
+            SyncAndSaveResourceCloudData();
+        }
+    }
+
+    public bool UseResource(int itemId, int amount)
+    {
+        if (itemId == GoldId)
+        {
+            return TrySpendCurrency(amount, 0);
+        }
+        if (itemId == ParchmentId) 
+        {
+            return TrySpendCurrency(0, amount);
+        }
+        if (itemId == DiamondId)
+        {
+            return TrySpendDiamond(amount);
+        }
+        
+        var result = DataManager.Instance.ResourceRepo.UseItem(itemId, amount);
+        if(!result) return false;
+        
+        SyncAndSaveResourceCloudData();
+        return true;
+    }
+    
     public bool CanAffordCurrency(int gold, int parchment)
     {
         return CloudData != null
@@ -714,40 +971,295 @@ public class GameManager : MonoBehaviour
         parchment = Mathf.Max(0, parchment);
         if (gold == 0 && parchment == 0) return;
 
-        EnsureCurrencyData();
-        CloudData.gold = Mathf.Max(0, CloudData.gold + gold);
-        CloudData.parchment = Mathf.Max(0, CloudData.parchment + parchment);
-        Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {CloudData.gold} / 양피지 {CloudData.parchment}");
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            if (gold > 0) repo.AddItem(GoldId, gold);
+            if (parchment > 0) repo.AddItem(ParchmentId, parchment);
+        }
 
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {Gold} / 양피지 {Parchment}");
+        SyncAndSaveResourceCloudData();
     }
 
     /// <summary>재화 차감 시도 — 상점/레벨업 등 소비 공통 진입점. 부족하면 false(변경 없음).</summary>
     public bool TrySpendCurrency(int gold, int parchment)
     {
-        gold = Mathf.Max(0, gold);
-        parchment = Mathf.Max(0, parchment);
         if (!CanAffordCurrency(gold, parchment)) return false;
 
-        CloudData.gold -= gold;
-        CloudData.parchment -= parchment;
-        RaiseCurrencyChanged();
-        PersistCurrency();
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            bool goldSuccess = (gold <= 0) || repo.UseItem(GoldId, gold);
+            bool parchmentSuccess = (parchment <= 0) || repo.UseItem(ParchmentId, parchment);
+            
+            if (goldSuccess && !parchmentSuccess && gold > 0) 
+                repo.AddItem(GoldId, gold);
+            
+            if (!goldSuccess && parchmentSuccess && parchment > 0) 
+                repo.AddItem(ParchmentId, parchment);
+            
+            if (!goldSuccess || !parchmentSuccess)
+            {
+                Debug.LogError($"[GameManager] 재화 차감 실패! (CanAfford는 통과했으나 UseItem에서 거부됨) - Gold:{goldSuccess}, Parchment:{parchmentSuccess}");
+                return false; 
+            }
+        }
+
+        SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>재화를 지정 값으로 설정 — 하이드레이션/리셋·테스트용(가산 아님). 값 동일하면 무시.</summary>
     public void SetCurrency(int gold, int parchment)
     {
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            repo.SetItemCount(GoldId, Mathf.Max(0, gold));
+            repo.SetItemCount(ParchmentId, Mathf.Max(0, parchment));
+        }
+        SyncAndSaveResourceCloudData();
+    }
+
+    // ===== 다이아 API (gold/parchment와 동일 패턴. 영속 원본 = CloudData.diamond) =====
+    public bool CanAffordDiamond(int diamond)
+        => CloudData != null && CloudData.diamond >= Mathf.Max(0, diamond);
+
+    /// <summary>다이아 가산. reason은 로그·추적용.</summary>
+    public void AddDiamond(int diamond, string reason = null)
+    {
+        diamond = Mathf.Max(0, diamond);
+        if (diamond == 0) return;
+
+        DataManager.Instance?.ResourceRepo?.AddItem(DiamondId, diamond);
+        Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {Diamond}");
+        SyncAndSaveResourceCloudData();
+    }
+
+    /// <summary>다이아 차감 시도. 부족하면 false(변경 없음).</summary>
+    public bool TrySpendDiamond(int diamond)
+    {
+        if (!CanAffordDiamond(diamond)) return false;
+        
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            bool success = (diamond <= 0) || repo.UseItem(DiamondId, diamond);
+            if (!success)
+            {
+                Debug.LogError("[GameManager] 다이아 차감 실패! (UseItem에서 거부됨)");
+                return false;
+            }
+        }
+        
+        SyncAndSaveResourceCloudData();
+        return true;
+    }
+
+    /// <summary>다이아를 지정 값으로 설정 — 하이드레이션/리셋·테스트용. 값 동일하면 무시.</summary>
+    public void SetDiamond(int diamond)
+    {
+        DataManager.Instance?.ResourceRepo?.SetItemCount(DiamondId, Mathf.Max(0, diamond));
+        SyncAndSaveResourceCloudData();
+    }
+    
+    // ResourceRepo의 최신 상태를 CloudData로 복사 및 저장
+    public void SyncAndSaveResourceCloudData()
+    {
+        EnsureCurrencyData();
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo != null)
+        {
+            CloudData.gold = repo.GetItemCount(GoldId);
+            CloudData.parchment = repo.GetItemCount(ParchmentId);
+            CloudData.diamond = repo.GetItemCount(DiamondId);
+            CloudData.inventory = repo.ExportInventory();
+            CloudData.staminaData = repo.ExportStaminaData();
+        }
+        
+        RaiseCurrencyChanged();
+        
+        // 유저 데이터를 실제 서버/로컬에 굽는 기존 함수 호출
+        PersistCurrency(); 
+    }
+    
+    // 추가: 조규민 - 하우징 가구 구매는 재화 차감과 보유 등록을 한 번의 영속 데이터 변경으로 처리한다.
+    public bool TryPurchaseHousingFurniture(int _furnitureId, int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_furnitureId <= 0)
+        {
+            Debug.LogWarning($"[하우징 구매] 유효하지 않은 가구 ID입니다. Furniture: {_furnitureId}");
+            return false;
+        }
+
+        EnsureCurrencyData();
+        EnsureHousingOwnedFurnitureData();
+
+        if (IsHousingFurnitureOwned(_furnitureId))
+        {
+            return true;
+        }
+
+        int _safePrice = Mathf.Max(0, _price);
+
+        if (!CanAffordHousingPurchase(_safePrice, _currency))
+        {
+            Debug.LogWarning($"[하우징 구매] 재화가 부족합니다. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+            return false;
+        }
+
+        if (!TrySpendHousingPurchaseCurrency(_safePrice, _currency))
+        {
+            Debug.LogError($"[하우징 구매] 재화 차감에 실패했습니다. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+            return false;
+        }
+
+        CloudData.housingOwnedFurnitureIds.Add(_furnitureId);
+        Debug.Log($"[하우징 구매] 가구 구매 완료. Furniture: {_furnitureId}, Price: {_safePrice}, Currency: {_currency}");
+
+        SyncAndSaveResourceCloudData();
+        return true;
+    }
+
+    public bool IsHousingFurnitureOwned(int _furnitureId)
+    {
+        if (_furnitureId <= 0 || CloudData == null)
+        {
+            return false;
+        }
+
+        EnsureHousingOwnedFurnitureData();
+        return CloudData.housingOwnedFurnitureIds.Contains(_furnitureId);
+    }
+
+    private bool CanAffordHousingPurchase(int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_price <= 0)
+        {
+            return true;
+        }
+
+        var _repo = DataManager.Instance?.ResourceRepo;
+
+        if (_repo != null)
+        {
+            int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
+            return _repo.GetItemCount(_itemId) >= _price;
+        }
+
+        switch (_currency)
+        {
+            case HousingPlacementPriceCurrency.Diamond:
+                return CloudData.diamond >= _price;
+            default:
+                return CloudData.gold >= _price;
+        }
+    }
+
+    private bool TrySpendHousingPurchaseCurrency(int _price, HousingPlacementPriceCurrency _currency)
+    {
+        if (_price <= 0)
+        {
+            return true;
+        }
+
+        // 수정 : 김영찬 -> 재화는 CloudData.diamond/gold를 직접 증/차감 하면 안되서 수정함 (팀장님 지시사항)
+        // 2차 수정 : 재화는 전용 획득/소모 함수를 쓰지 않으면 획득/소모 내역이 증발하니 그것을 방지하기 위해 통합 획득/소모용 함수 생성 및 적용
+
+        int _itemId = _currency == HousingPlacementPriceCurrency.Diamond ? DiamondId : GoldId;
+        return UseResource(_itemId, _price);
+    }
+
+    private void EnsureHousingOwnedFurnitureData()
+    {
+        if (CloudData == null)
+        {
+            return;
+        }
+
+        if (CloudData.housingOwnedFurnitureIds == null)
+        {
+            CloudData.housingOwnedFurnitureIds = new List<int>();
+        }
+    }
+
+    public DateTime EnsureHousingAutoCurrencyLastClaimUtc()
+    {
+        EnsureCurrencyData();
+
+        if (TryParseUtc(CloudData.housingAutoCurrencyLastClaimAt, out DateTime savedUtc))
+        {
+            return savedUtc;
+        }
+
+        DateTime nowUtc = DateTime.UtcNow;
+        CloudData.housingAutoCurrencyLastClaimAt = nowUtc.ToString("o");
+        SyncToCloud(CloudData);
+        return nowUtc;
+    }
+
+    public void ClaimHousingAutoCurrency(int gold, int parchment, string lastClaimAtUtc)
+    {
         gold = Mathf.Max(0, gold);
         parchment = Mathf.Max(0, parchment);
         EnsureCurrencyData();
-        if (CloudData.gold == gold && CloudData.parchment == parchment) return;
-        CloudData.gold = gold;
-        CloudData.parchment = parchment;
+
+        CloudData.gold = Mathf.Max(0, CloudData.gold + gold);
+        CloudData.parchment = Mathf.Max(0, CloudData.parchment + parchment);
+        CloudData.housingAutoCurrencyLastClaimAt = string.IsNullOrWhiteSpace(lastClaimAtUtc)
+            ? DateTime.UtcNow.ToString("o")
+            : lastClaimAtUtc;
+
+        Debug.Log($"[하우징 자동재화] +골드 {gold} +양피지 {parchment} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
         RaiseCurrencyChanged();
         PersistCurrency();
+    }
+
+    // 추가: 조규민 - 하우징 방치 보상의 모든 재화를 한 번의 저장 흐름으로 지급한다.
+    // 수정 : 클라우드데이터의 재화를 직접 수정하는것은 팀장님께서 금지 시켰으며, 골드/양피지/다이아몬드는 팀장님이 전용 획득/소모 함수를 사용하라고 했기 때문에 해당 부분에 대해 수정함
+    public bool ClaimHousingIdleReward(int _gold, int _parchment, int _diamond, string _lastClaimAtUtc)
+    {
+        _gold = Mathf.Max(0, _gold);
+        _parchment = Mathf.Max(0, _parchment);
+        _diamond = Mathf.Max(0, _diamond);
+
+        if (_gold == 0 && _parchment == 0 && _diamond == 0)
+        {
+            return false;
+        }
+
+        EnsureCurrencyData();
+
+        AddResource(GoldId, _gold);
+        AddResource(ParchmentId, _parchment);
+        AddResource(DiamondId, _diamond);
+
+        CloudData.housingAutoCurrencyLastClaimAt = string.IsNullOrWhiteSpace(_lastClaimAtUtc)
+            ? DateTime.UtcNow.ToString("o")
+            : _lastClaimAtUtc;
+
+        Debug.Log($"[하우징 자동 재화] +골드 {_gold} +양피지 {_parchment} +다이아 {_diamond} / 마지막 수령 {CloudData.housingAutoCurrencyLastClaimAt}");
+        SyncAndSaveResourceCloudData();
+        return true;
+    }
+
+    private static bool TryParseUtc(string value, out DateTime utcTime)
+    {
+        utcTime = default;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (!DateTime.TryParse(value, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime parsedTime))
+        {
+            return false;
+        }
+
+        utcTime = parsedTime.Kind == DateTimeKind.Utc ? parsedTime : parsedTime.ToUniversalTime();
+        return true;
     }
 
     private void EnsureCurrencyData()
@@ -802,6 +1314,17 @@ public class GameManager : MonoBehaviour
             AddUnlockedStage(data, nextChapterFirstStageId);
             data.currentChapter = Mathf.Max(data.currentChapter, chapterId + 1);
             data.currentStage = 1;
+            return;
+        }
+
+        // 테마 경계: Chapter_ID는 테마*100+순서(101~105, 201~205)라 105 다음은 106이 아니라 201이다.
+        int nextThemeFirstChapterId = (chapterId / 100 + 1) * 100 + 1;
+        int nextThemeFirstStageId = BuildStageId(nextThemeFirstChapterId, 1);
+        if (HasStage(nextThemeFirstStageId))
+        {
+            AddUnlockedStage(data, nextThemeFirstStageId);
+            data.currentChapter = Mathf.Max(data.currentChapter, nextThemeFirstChapterId);
+            data.currentStage = 1;
         }
     }
 
@@ -812,13 +1335,18 @@ public class GameManager : MonoBehaviour
             && DataManager.Instance.StageRepo.GetStage(stageId) != null;
     }
 
+    // Stage_ID는 StageRepo (챕터,순서) 역조회로만 구한다. 못 찾으면 -1(HasStage/AddUnlockedStage가 무시).
+    // 형태상 Chapter_ID*100+순서(10101 등)지만 테마 경계/특수 챕터(98xx/99xx)가 있어 산술 조합은 금지.
     private static int BuildStageId(int chapterId, int stageNumber)
     {
-        return chapterId * 100 + Mathf.Max(1, stageNumber);
+        var repo = DataManager.Instance != null ? DataManager.Instance.StageRepo : null;
+        return repo != null ? repo.GetStageId(chapterId, Mathf.Max(1, stageNumber)) : -1;
     }
 
     private static void AddUnlockedStage(UserCloudData data, int stageId)
     {
+        if (stageId <= 0) return;   // BuildStageId가 못 찾으면 -1 → 잘못된 ID로 unlockedStages 오염 방지
+
         if (data.unlockedStages == null)
         {
             data.unlockedStages = new List<int>();
@@ -833,13 +1361,65 @@ public class GameManager : MonoBehaviour
     // ---------- 로컬 세이브 (인게임) ----------
     public void SaveLocal()
     {
-        Debug.Log("[GameManager] 로컬 세이브 실행");
+        // 인게임 진행 상태를 모아 로컬 세이브에 기록한다. (백그라운드 전환/종료/스테이지 클리어 체크포인트 공용)
+        // 옛 구현은 로그만 찍는 빈 스텁이라 OnApplicationPause/Quit, StageLoopManager.ClearStage의 자동 저장이 전부 무동작이었다.
+        // 구성은 EnchantLinkButtonBoundaryPresenter.CreateCurrentProgressSaveData와 동일 — 추후 단일 빌더로 통합 권장.
+        var loop = FindFirstObjectByType<StageLoopManager>();
+        if (loop == null)
+        {
+            Debug.LogWarning("[GameManager] SaveLocal: StageLoopManager가 없어 인게임 세이브를 건너뜀(인게임 상태 아님?).");
+            return;
+        }
+
+        var playerModel = FindFirstObjectByType<PlayerModel>();
+        var growthSystem = FindFirstObjectByType<InGameGrowthSystem>();
+        var enchantModel = FindFirstObjectByType<EnchantModel>();
+        var comboModel = FindFirstObjectByType<ComboModel>();
+        var sortModel = FindFirstObjectByType<SortModel>();
+        var sortSystem = FindFirstObjectByType<SortSystem>();
+        var jokerSystem = FindFirstObjectByType<JokerSystem>();
+        var rewardManager = FindFirstObjectByType<InGameRewardManager>();
+
+        var data = new InGameSaveData
+        {
+            // 스테이지
+            chapterId = Mathf.Max(1, loop.CurrentChapterId),
+            clearedStage = Mathf.Max(0, loop.CompletedStageCount),
+            
+            // 플레이어
+            playerHP = playerModel != null ? Mathf.Max(1, playerModel.CurrentHP) : 1,
+            currentEXP = growthSystem != null ? Mathf.Max(0, growthSystem.CurrentEXP) : 0,
+            inGameLevel = growthSystem != null ? Mathf.Max(1, growthSystem.CurrentLevel) : 1,
+            
+            // 퍼즐
+            puzzleSlots = sortModel != null ? sortModel.ExportPuzzleSlots() : Array.Empty<int>(),
+            waitingSlots = sortModel != null ? sortModel.ExportWaitingSlots() : Array.Empty<int>(),
+            jokerCount = jokerSystem != null ? jokerSystem.GetJokerCount() : 2,
+            jokerRemainingCooldown = jokerSystem != null ? jokerSystem.GetRemainingCooldown() : 0f,
+            nextStageSeed = sortSystem != null ? sortSystem.GetCurrentSeedForSave() : UnityEngine.Random.Range(0, int.MaxValue),
+            
+            // 전투 보상
+            accumulatedRewards = rewardManager != null ? rewardManager.ExportRewardData() : new List<ItemSaveEntry>(),
+            
+            // 인첸트
+            acquiredEnchants = enchantModel != null ? enchantModel.ToSaveData() : new List<AcquiredEnchantSaveData>(),
+            
+            // 기록
+            totalDamage = RunStats.HighestDamage,
+            highestDamage =  RunStats.HighestDamage,
+            MaxBySkill = RunStats.ExportMaxBySkill(),
+            maxCombo = comboModel != null ? comboModel.MaxComboThisRun : 0
+        };
+
+        SaveLocalData(data);
+        Debug.Log($"[GameManager] 인게임 로컬 세이브 완료 (챕터{data.chapterId} 클리어{data.clearedStage} HP{data.playerHP})");
     }
 
-    public void SaveLocalData(InGameSaveData data)
+    private void SaveLocalData(InGameSaveData data)
     {
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(GetInGameSavePath(), json);
+        Debug.Log($"[세이브 경로] {Application.persistentDataPath}");
     }
 
     public bool HasLocalSave()

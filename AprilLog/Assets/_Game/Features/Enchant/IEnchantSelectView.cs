@@ -10,7 +10,9 @@ public interface IEnchantSelectView
 {
     void Show();
     void Hide();
+    void SetSelectionType(EnchantType type);
     void SetChoices(EnchantDisplayData[] choices);
+    void SetCardRerollAvailable(bool[] availableByIndex);
     event Action<int> OnChoiceSelected;
     event Action OnSkipSelected;
     event Action<int> OnDeleteConfirmed;

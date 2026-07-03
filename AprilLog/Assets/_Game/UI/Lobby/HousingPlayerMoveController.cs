@@ -7,6 +7,7 @@ using UnityEngine;
 /// </summary>
 public class HousingPlayerMoveController : MonoBehaviour
 {
+    private const string MoveAreaName = "Housing_MoveArea";
     private const float ArrivalDistance = 0.01f;
     private const float DirectionFlipEpsilon = 0.001f;
     private const float MinPatrolDistance = 120f;
@@ -44,12 +45,15 @@ public class HousingPlayerMoveController : MonoBehaviour
     private float _idleTimer;
     private float _playerVisualBaseScaleX = 1f;
     private float[] _nonFlipBaseScaleXs;
-    private Vector2[] _nonFlipBaseAnchoredPositions;
+    private Vector3 _playerStartLocalPosition;
+    private bool _isMovementPaused;
 
     private void Awake()
     {
+        ResolveMoveArea();
         ResolvePlayerVisual();
         CacheFlipBaseScales();
+        CachePlayerStartPosition();
     }
 
     private void Update()
@@ -64,8 +68,31 @@ public class HousingPlayerMoveController : MonoBehaviour
         ResetIdleTimer();
     }
 
+    // 추가: 조규민 - 가구 상호작용 중 자동 순찰을 일시 정지하고 종료 시 시작 위치에서 재개한다.
+    public void PauseMovement()
+    {
+        _isMovementPaused = true;
+        StopMove();
+    }
+
+    public void ResumeMovement(bool _restoreStartPosition)
+    {
+        if (_player != null && _restoreStartPosition)
+        {
+            _player.localPosition = _playerStartLocalPosition;
+        }
+
+        _isMovementPaused = false;
+        StopMove();
+    }
+
     private void MovePlayer()
     {
+        if (_isMovementPaused)
+        {
+            return;
+        }
+
         if (_hasTarget == false)
         {
             return;
@@ -104,6 +131,11 @@ public class HousingPlayerMoveController : MonoBehaviour
 
     private void UpdateAutoPatrol()
     {
+        if (_isMovementPaused)
+        {
+            return;
+        }
+
         if (_hasTarget)
         {
             return;
@@ -229,6 +261,81 @@ public class HousingPlayerMoveController : MonoBehaviour
         _playerVisual = _player;
     }
 
+    private void CachePlayerStartPosition()
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        _playerStartLocalPosition = _player.localPosition;
+    }
+
+    private void ResolveMoveArea()
+    {
+        if (_moveArea != null)
+        {
+            return;
+        }
+
+        Transform _moveAreaTransform = FindChildRecursive(GetPageRoot(), MoveAreaName);
+
+        if (_moveAreaTransform == null)
+        {
+            Debug.LogWarning("[HousingPlayerMoveController] Housing_MoveArea를 찾지 못했습니다.", this);
+            return;
+        }
+
+        _moveArea = _moveAreaTransform.GetComponent<PolygonCollider2D>();
+
+        if (_moveArea == null)
+        {
+            Debug.LogWarning("[HousingPlayerMoveController] Housing_MoveArea에 PolygonCollider2D가 없습니다.", this);
+        }
+    }
+
+    private Transform GetPageRoot()
+    {
+        Transform _current = transform;
+
+        while (_current.parent != null)
+        {
+            if (_current.name == "Page_Housing")
+            {
+                return _current;
+            }
+
+            _current = _current.parent;
+        }
+
+        return _current;
+    }
+
+    private static Transform FindChildRecursive(Transform _parent, string _name)
+    {
+        if (_parent == null)
+        {
+            return null;
+        }
+
+        if (_parent.name == _name)
+        {
+            return _parent;
+        }
+
+        for (int _index = 0; _index < _parent.childCount; _index++)
+        {
+            Transform _found = FindChildRecursive(_parent.GetChild(_index), _name);
+
+            if (_found != null)
+            {
+                return _found;
+            }
+        }
+
+        return null;
+    }
+
     private void CacheFlipBaseScales()
     {
         if (_playerVisual != null)
@@ -239,18 +346,15 @@ public class HousingPlayerMoveController : MonoBehaviour
         if (_nonFlipTargets == null)
         {
             _nonFlipBaseScaleXs = null;
-            _nonFlipBaseAnchoredPositions = null;
             return;
         }
 
         _nonFlipBaseScaleXs = new float[_nonFlipTargets.Length];
-        _nonFlipBaseAnchoredPositions = new Vector2[_nonFlipTargets.Length];
 
         for (int _index = 0; _index < _nonFlipTargets.Length; _index++)
         {
             Transform _target = _nonFlipTargets[_index];
             _nonFlipBaseScaleXs[_index] = _target != null ? Mathf.Abs(_target.localScale.x) : 1f;
-            _nonFlipBaseAnchoredPositions[_index] = GetAnchoredPosition(_target);
         }
     }
 
@@ -275,7 +379,7 @@ public class HousingPlayerMoveController : MonoBehaviour
 
     private void UpdateNonFlipTargets(float _directionScale)
     {
-        if (_nonFlipTargets == null || _nonFlipBaseScaleXs == null || _nonFlipBaseAnchoredPositions == null)
+        if (_nonFlipTargets == null || _nonFlipBaseScaleXs == null)
         {
             return;
         }
@@ -295,7 +399,6 @@ public class HousingPlayerMoveController : MonoBehaviour
             }
 
             SetLocalScaleX(_target, _nonFlipBaseScaleXs[_index] * _directionScale);
-            SetAnchoredPositionX(_target, _nonFlipBaseAnchoredPositions[_index].x * _directionScale);
         }
     }
 
@@ -306,25 +409,4 @@ public class HousingPlayerMoveController : MonoBehaviour
         _target.localScale = _localScale;
     }
 
-    private Vector2 GetAnchoredPosition(Transform _target)
-    {
-        if (_target is RectTransform _rectTransform)
-        {
-            return _rectTransform.anchoredPosition;
-        }
-
-        return Vector2.zero;
-    }
-
-    private void SetAnchoredPositionX(Transform _target, float _anchoredPositionX)
-    {
-        if (_target is not RectTransform _rectTransform)
-        {
-            return;
-        }
-
-        Vector2 _anchoredPosition = _rectTransform.anchoredPosition;
-        _anchoredPosition.x = _anchoredPositionX;
-        _rectTransform.anchoredPosition = _anchoredPosition;
-    }
 }

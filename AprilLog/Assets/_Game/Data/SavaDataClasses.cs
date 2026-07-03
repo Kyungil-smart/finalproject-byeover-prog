@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 #region 인챈트 시스템 세이브 데이터
 
@@ -26,22 +27,45 @@ public class AcquiredEnchantSaveData
 /// <summary>
 /// 인게임 세이브 데이터<br/>
 /// (기존 Legacy_InGameSaveData 였으나, 정식 세이브 데이터로 승격됨)<br/>
-/// 최종 수정일 : 26.06.12
+/// 최종 수정일 : 26.06.29
 /// </summary>
 [Serializable]
 public class InGameSaveData
 {
+    // 스테이지
     public int chapterId;
     public int clearedStage;
+
+    // 플레이어
     public int playerHP;
     public int currentEXP;
     public int inGameLevel;
+    
+    // 퍼즐
     public int[] puzzleSlots;
     public int[] waitingSlots;
-    public List<AcquiredEnchantSaveData> acquiredEnchants;
-    public int totalDamage;
-    public int maxCombo;
+    public int jokerCount; 
+    public float jokerRemainingCooldown;
     public int nextStageSeed;
+    
+    // 인첸트
+    public List<AcquiredEnchantSaveData> acquiredEnchants;
+    
+    // 전투보상
+    public List<ItemSaveEntry> accumulatedRewards;
+    
+    // 기록
+    public int totalDamage;
+    public int highestDamage;
+    public List<MaxBySkillSaveData> MaxBySkill;
+    public int maxCombo;
+}
+
+[Serializable]
+public class MaxBySkillSaveData
+{
+   public int skillId;
+   public int maxDamage;
 }
 
 #endregion

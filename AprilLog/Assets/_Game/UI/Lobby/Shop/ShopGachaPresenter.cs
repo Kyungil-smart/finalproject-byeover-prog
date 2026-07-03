@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 // 작성자 : 홍정옥
 // 설명   : 상점 페이지의 뽑기 UI 컨트롤러
@@ -11,23 +12,39 @@ public class ShopGachaPresenter : MonoBehaviour
 {
     public enum CostCurrency { Gold, Parchment, Diamond }
 
+    // 가챠 별 소모 재화 / 비용 / 아이콘 설정
+    // 일반상자,고급상자가 서로 다른 재화를 쓰므로, 가챠 ID 별로 분리해서 지정
+    [System.Serializable]
+    public class GachaCostConfig
+    {
+        [Tooltip("이 설정을 적용할 가챠 ID (GachaBoxTable 의 Gacha_ID)")]
+        public int gachaId;
+        [Tooltip("이 가챠가 소모하는 재화 종류")]
+        public CostCurrency currency = CostCurrency.Gold;
+        [Tooltip("이 가챠의 소모 재화 아이콘 (결과창/뽑기 버튼에 표시)")]
+        public Sprite costIcon;
+    }
+
     [Header("시스템 참조")]
     [Tooltip("씬의 GachaManager")]
     [SerializeField] private GachaManager _gachaManager;
-    [Tooltip("씬의 CurrencyModel. 비우면 자동 탐색")]
+    [Tooltip("씬의 CurrencyModel 비우면 자동 탐색")]
     [SerializeField] private CurrencyModel _currencyModel;
-    [Tooltip("등급별 기어 추첨용 GearMasterTable SO. 현재 추첨 데이터 소스라 필수(연결 유지).")]
+    [Tooltip("등급별 기어 추첨용 GearMasterTable SO. 현재 추첨 데이터 소스라 필수")]
     [SerializeField] private GearMasterTable _gearTable;
 
     [Header("뽑기 박스 ID (GachaBoxTable 의 Gacha_ID)")]
     [SerializeField] private int _gachaId = 1;
 
-    [Header("임시 비용 (CostAmount 데이터가 채워지기 전까지 사용)")]
+    [Header("가챠(상자)별 소모 재화 / 아이콘")]
+    [Tooltip("가챠 ID 별로 소모 재화와 아이콘을 지정\n현재 활성 가챠에 해당하는 설정을 사용하며 없으면 아래 기본 재화로 폴백한다.")]
+    [SerializeField] private GachaCostConfig[] _gachaCosts;
+    [Tooltip("현재 활성 가챠의 소모 재화 아이콘을 표시할 Image 들(결과창/뽑기 버튼의 재화 아이콘). 선택.")]
+    [SerializeField] private Image[] _costIconTargets;
+
+    [Header("기본 재화 (가챠별 설정에 없을 때 폴백)")]
+    [Tooltip("가챠별 설정(_gachaCosts)에 해당 ID 가 없을 때 사용할 기본 재화.\n비용 금액은 데이터(PaidGachaBox / GachaBox)에서 가져온다.")]
     [SerializeField] private CostCurrency _costCurrency = CostCurrency.Gold;
-    [Tooltip("1회 뽑기 비용. 데이터의 CostAmount 가 0 보다 크면 그 값을 우선 사용한다.")]
-    [SerializeField] private int _singleCostFallback = 500;
-    [Tooltip("10회 뽑기 비용. 0 이면 1회 비용 x 10 으로 계산")]
-    [SerializeField] private int _tenCostFallback = 0;
 
     [Header("1회 결과창")]
     [SerializeField] private GameObject _singleResultPopup;
@@ -35,6 +52,11 @@ public class ShopGachaPresenter : MonoBehaviour
     [SerializeField] private GachaResultSlotView[] _singleSlots;
     [Tooltip("POPUP_OnceGacha 의 자동 분해 보상 표시(RewardPreviewSlot). 선택.")]
     [SerializeField] private GachaDecomposeRewardView _singleDecomposeView;
+
+    [Tooltip("1회 결과창의 추가 뽑기(1회 더/10회 더) 버튼 묶음. 무료/튜토 뽑기에선 숨긴다.")]
+    [SerializeField] private GameObject _singleRedrawGroup;
+    [Tooltip("1회 결과창 확인 버튼. 추가 뽑기를 숨길 때 가운데로 옮겨 대칭을 맞춘다.")]
+    [SerializeField] private RectTransform _singleConfirmRect;
 
     [Header("10회 결과창")]
     [SerializeField] private GameObject _tenResultPopup;
@@ -45,6 +67,14 @@ public class ShopGachaPresenter : MonoBehaviour
 
     [Header("재화 부족 팝업")]
     [SerializeField] private GameObject _insufficientPopup;
+
+    [Header("튜토리얼")]
+    [Tooltip("튜토리얼 뽑기에서 고정 지급할 기어 ID(수습 마법사의 인장)")]
+    [SerializeField] private int _tutorialSealGearId;
+    [Tooltip("튜토리얼 강화용 골드 지급량")]
+    [SerializeField] private int _tutorialGrantGold = 5000;
+    [Tooltip("튜토리얼 강화용 강화석 지급량")]
+    [SerializeField] private int _tutorialGrantStone = 100;
 
     [Header("뽑기 후처리 / 결과 팝업")]
     [Tooltip("획득 반영·등급별 한도·자동 분해·누적 보상 처리를 담당. 비우면 폴백으로 단순 보유 추가만 한다.")]
@@ -68,6 +98,12 @@ public class ShopGachaPresenter : MonoBehaviour
             _currencyModel = FindFirstObjectByType<CurrencyModel>(FindObjectsInactive.Include);
     }
 
+    private void Start()
+    {
+        // 시작 시 기본 활성 가챠(_gachaId)의 소모 재화 아이콘을 한 번 반영.
+        RefreshCostIcon();
+    }
+
     // ---------- 버튼 진입점 ----------
 
     // 메인 상점의 1회 뽑기 버튼 OnClick 에 연결
@@ -81,8 +117,52 @@ public class ShopGachaPresenter : MonoBehaviour
     public void SetActiveGacha(int gachaId)
     {
         _gachaId = gachaId;
+        RefreshCostIcon();   // 활성 가챠가 바뀌면 소모 재화 아이콘도 그 가챠에 맞춰 갱신
         if (_pityInfoView != null) _pityInfoView.Refresh(_gachaId);
         if (_progressView != null) _progressView.Refresh(_gachaId);
+    }
+
+    // 현재 활성 가챠(_gachaId)에 해당하는 비용 설정. 없으면 null.
+    private GachaCostConfig GetCostConfig(int gachaId)
+    {
+        if (_gachaCosts == null) return null;
+        for (int i = 0; i < _gachaCosts.Length; i++)
+            if (_gachaCosts[i] != null && _gachaCosts[i].gachaId == gachaId)
+                return _gachaCosts[i];
+        return null;
+    }
+
+    // 현재 활성 가챠가 소모하는 재화 종류. 설정이 없으면 기본 재화로 폴백.
+    private CostCurrency CurrentCurrency()
+    {
+        GachaCostConfig cfg = GetCostConfig(_gachaId);
+        return cfg != null ? cfg.currency : _costCurrency;
+    }
+
+    // 현재 활성 가챠의 소모 재화 아이콘을 모든 아이콘 표시 대상에 반영.
+    private void RefreshCostIcon()
+    {
+        if (_costIconTargets == null) return;
+
+        GachaCostConfig cfg = GetCostConfig(_gachaId);
+        Sprite icon = cfg != null ? cfg.costIcon : null;
+
+        for (int i = 0; i < _costIconTargets.Length; i++)
+        {
+            Image img = _costIconTargets[i];
+            if (img == null) continue;
+
+            if (icon != null)
+            {
+                img.sprite = icon;
+                img.enabled = true;
+            }
+            else
+            {
+                // 아이콘이 지정되지 않은 가챠면 숨겨서 다른 가챠 아이콘이 잘못 남지 않게 한다.
+                img.enabled = false;
+            }
+        }
     }
 
     // [프리젠터 1개 공유 방식용] 버튼 OnClick 에 가챠 ID(1/2/3)를 정적 인자로 넘겨 그 가챠를 1회/10회 뽑는다.
@@ -119,6 +199,8 @@ public class ShopGachaPresenter : MonoBehaviour
         if (_singleDecomposeView != null)
             _singleDecomposeView.Show(post.TotalStone, post.TotalShard);
 
+        ConfigureSingleResult(hideRedraw: true);   // 무료 뽑기는 추가 뽑기 숨김 + 확인 가운데
+
         if (_singleResultPopup != null)
             _singleResultPopup.SetActive(true);
 
@@ -146,9 +228,24 @@ public class ShopGachaPresenter : MonoBehaviour
 
     private void TryDraw(int count, GameObject resultPopup, GachaResultSlotView[] slots, GachaDecomposeRewardView decomposeView)
     {
+        // 튜토리얼 뽑기는 비용 없이 마법사 인장 고정 지급
+        if (IsTutorialGacha())
+        {
+            DrawTutorialFixed(resultPopup, slots, decomposeView);
+            return;
+        }
+
         int cost = GetCost(count);
 
-        // 재화 체크 & 차감 (비용 0 이면 항상 통과)
+        // 비용 0(무료/광고 전용 상자)은 일반 뽑기로 뽑을 수 없다. 무료 뽑기는 광고/쿨타임 흐름(FreeDrawSingle) 전용.
+        // (이게 없으면 결과창 '1회 더'/상점 '1회 뽑기'로 무료 상자를 무한 뽑을 수 있다 — 이슈 #198)
+        if (cost <= 0)
+        {
+            Debug.LogWarning($"[ShopGachaPresenter] 무료/비용 미설정 가챠(id:{_gachaId})는 일반 뽑기로 뽑을 수 없습니다. 광고/쿨타임 전용.", this);
+            return;
+        }
+
+        // 재화 체크 & 차감
         if (!TrySpend(cost))
         {
             ShowInsufficient();
@@ -167,6 +264,10 @@ public class ShopGachaPresenter : MonoBehaviour
         if (decomposeView != null)
             decomposeView.Show(post.TotalStone, post.TotalShard);
 
+        // 유료 뽑기는 추가 뽑기 버튼을 보이고 확인 버튼을 원위치로(무료 뽑기에서 바뀐 상태 복구).
+        if (resultPopup == _singleResultPopup)
+            ConfigureSingleResult(hideRedraw: false);
+
         // 누적 보상 → 결과 확인 후 메인 복귀 시점에 별도 팝업으로 출력하도록 큐에 적재.
         if (_popupQueue != null)
             _popupQueue.Enqueue(post);
@@ -181,6 +282,75 @@ public class ShopGachaPresenter : MonoBehaviour
 
         if (resultPopup != null)
             resultPopup.SetActive(true);
+    }
+
+    // 튜토리얼 가챠 단계(GachaButton 강조)인지
+    private bool IsTutorialGacha()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        if (tm == null || !tm.IsRunning) return false;
+        TutorialStep step = tm.CurrentStep;
+        return step != null && step.highlightTargetId == "GachaButton";
+    }
+
+    // 튜토리얼 전용 : 비용·천장·마일리지 없이 마법사 인장 1개 고정 지급
+    private void DrawTutorialFixed(GameObject resultPopup, GachaResultSlotView[] slots, GachaDecomposeRewardView decomposeView)
+    {
+        if (_tutorialSealGearId <= 0)
+        {
+            Debug.LogWarning("[ShopGachaPresenter] 튜토리얼 인장 Gear_ID가 설정되지 않았습니다.", this);
+            return;
+        }
+
+        var drawn = new List<int> { _tutorialSealGearId };
+        FillSlots(slots, drawn);
+
+        ArtifactGachaResult post = ProcessDraw(_gachaId, drawn, countMileage: false);
+        if (decomposeView != null)
+            decomposeView.Show(post.TotalStone, post.TotalShard);
+
+        GrantTutorialUpgradeMaterials();
+
+        ConfigureSingleResult(hideRedraw: true);   // 튜토 뽑기도 추가 뽑기 숨김 + 확인 가운데
+
+        if (resultPopup != null)
+            resultPopup.SetActive(true);
+    }
+
+    // 1회 결과창의 추가 뽑기 버튼 표시/숨김 + 확인 버튼 위치(가운데 정렬) 전환.
+    private bool _confirmXCached;
+    private float _confirmDefaultX;
+
+    private void ConfigureSingleResult(bool hideRedraw)
+    {
+        if (_singleRedrawGroup != null)
+            _singleRedrawGroup.SetActive(!hideRedraw);
+
+        if (_singleConfirmRect != null)
+        {
+            if (!_confirmXCached)
+            {
+                _confirmDefaultX = _singleConfirmRect.anchoredPosition.x;
+                _confirmXCached = true;
+            }
+            Vector2 p = _singleConfirmRect.anchoredPosition;
+            p.x = hideRedraw ? 0f : _confirmDefaultX;
+            _singleConfirmRect.anchoredPosition = p;
+        }
+    }
+
+    // 튜토리얼 강화·돌파에 필요한 재료를 지급한다(강화석/골드/돌파용 중복 인장)
+    private void GrantTutorialUpgradeMaterials()
+    {
+        ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+        if (mgr != null)
+        {
+            mgr.AddStone(_tutorialGrantStone);          // 레벨업용 강화석
+            mgr.AddArtifact(_tutorialSealGearId);       // 돌파용 중복 인장
+        }
+
+        if (GameManager.Instance != null && _tutorialGrantGold > 0)
+            GameManager.Instance.AddCurrency(_tutorialGrantGold, 0, "튜토리얼 아티팩트 강화");
     }
 
     // 뽑힌 Gear_ID 목록을 유저 데이터에 반영하고 자동분해/누적보상 결과를 돌려준다.
@@ -283,21 +453,26 @@ public class ShopGachaPresenter : MonoBehaviour
     // 결과창 안의 '10회 더' 버튼 OnClick 에 연결
     public void OnClickRedrawTen() => TryDraw(TenDrawCount, _tenResultPopup, _tenSlots, _tenDecomposeView);
 
+    // 뽑기 비용은 전부 데이터에서 가져온다.
+    //  1순위 : PaidGachaBox(가챠ID + 뽑기횟수) — 횟수별 비용/할인이 데이터에 정의된 경우.
+    //  2순위 : GachaBox.CostAmount(1회 기준) x 횟수 — 횟수별 데이터가 없을 때의 데이터 폴백.
+    //  둘 다 없으면 0(무료) 처리하고 경고.
     private int GetCost(int count)
     {
-        // 데이터(CostAmount)가 채워지면 우선 사용, 아니면 임시 비용 사용
-        int singleCost = _singleCostFallback;
-        if (DataManager.Instance != null && DataManager.Instance.GearRepo != null)
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        if (repo != null)
         {
-            GachaBoxData box = DataManager.Instance.GearRepo.GetGachaBox(_gachaId);
+            PaidGachaBoxData paid = repo.GetPaidGachaBox(_gachaId, count);
+            if (paid != null && paid.CostAmount > 0)
+                return paid.CostAmount;
+
+            GachaBoxData box = repo.GetGachaBox(_gachaId);
             if (box != null && box.CostAmount > 0)
-                singleCost = box.CostAmount;
+                return box.CostAmount * Mathf.Max(1, count);
         }
 
-        if (count <= 1)
-            return singleCost;
-
-        return _tenCostFallback > 0 ? _tenCostFallback : singleCost * count;
+        Debug.LogWarning($"[ShopGachaPresenter] 가챠 비용 데이터를 찾지 못했습니다. gachaId={_gachaId}, count={count} → 무료(0) 처리", this);
+        return 0;
     }
 
     private bool TrySpend(int cost)
@@ -309,22 +484,14 @@ public class ShopGachaPresenter : MonoBehaviour
             return true;
         }
 
-        switch (_costCurrency)
+        // 현재 활성 가챠(_gachaId)의 재화로 결제 — 일반/고급 상자가 서로 다른 재화를 쓰도록 분리.
+        switch (CurrentCurrency())
         {
             case CostCurrency.Gold:      return _currencyModel.SpendGold(cost);
             case CostCurrency.Parchment: return _currencyModel.SpendParchment(cost);
-            case CostCurrency.Diamond:   return SpendDiamond(cost);
+            case CostCurrency.Diamond: return _currencyModel.SpendDiamond(cost);// 추가 : 홍정옥 다이아 
             default:                     return _currencyModel.SpendGold(cost);
         }
-    }
-
-    // [다이아 결제] 다이아 재화는 정승우님 담당 지갑(GameManager/CurrencyModel)에 신규 추가 예정.
-    // 지갑 API 가 생기면 아래 한 줄로 교체한다 :  return _currencyModel.SpendDiamond(cost);
-    // 그 전까지는 결제 실패로 처리해 무료 뽑기로 새지 않게 한다(fail-closed).
-    private bool SpendDiamond(int cost)
-    {
-        Debug.LogWarning("[ShopGachaPresenter] 다이아 재화 미구현 — CurrencyModel.SpendDiamond 추가 후 연결 필요. 결제 실패 처리.", this);
-        return false;
     }
 
     private void ShowInsufficient()

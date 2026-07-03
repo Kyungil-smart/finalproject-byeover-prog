@@ -14,6 +14,10 @@ using UnityEngine.UI;
 public static class InGameEnchantLinkButtonSceneInstaller
 {
     private const string _targetScenePathArgument = "-targetScenePath";
+    private const string _backgroundSpritePath = "Assets/Imports/In_UI/UI_Background/Box_Square.png";
+    private const string _selectedBackgroundSpritePath = "Assets/Imports/In_UI/UI_Background/WBox_Square.png";
+    private const string _popupSelectedBackgroundSpritePath = "Assets/Imports/In_UI/UI_Background/WBox_43.png";
+    private const string _iconsSpriteSheetPath = "Assets/Imports/In_UI/ICO_UI/Icons.png";
 
     [MenuItem("Tools/InGame/Apply Enchant Link Button UI Layout To Open Scene")]
     public static void ApplyToOpenSceneFromMenu()
@@ -56,15 +60,33 @@ public static class InGameEnchantLinkButtonSceneInstaller
         }
 
         Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
-        GameObject confirmPopupObject = ConfigureConfirmPopup(scene);
+        GameObject confirmPopupObject = FindConfirmPopup(scene);
         if (confirmPopupObject != null)
         {
             ConfigureConfirmPopupView(confirmPopupObject);
         }
+        else
+        {
+            Debug.LogWarning("[InGameEnchantLinkButtonSceneInstaller] 확인 팝업 오브젝트를 찾지 못해 기능 연결을 건너뜁니다.");
+            return;
+        }
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
-        Debug.Log($"[InGameEnchantLinkButtonSceneInstaller] {scene.path} 확인 팝업 UI 배치를 적용했습니다.");
+        Debug.Log($"[InGameEnchantLinkButtonSceneInstaller] {scene.path} 확인 팝업 기능 연결만 적용했습니다.");
+    }
+
+    public static void VerifySceneLoadOnlyFromCommandLine()
+    {
+        string scenePath = GetCommandLineValue(_targetScenePathArgument);
+        if (string.IsNullOrWhiteSpace(scenePath))
+        {
+            Debug.LogError("[InGameEnchantLinkButtonSceneInstaller] -targetScenePath 값이 필요합니다.");
+            return;
+        }
+
+        Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+        Debug.Log($"[InGameEnchantLinkButtonSceneInstaller] {scene.path} 씬 로드 검증만 완료했습니다.");
     }
 
     private static void ApplyLayout(Scene scene)
@@ -125,11 +147,7 @@ public static class InGameEnchantLinkButtonSceneInstaller
 
     private static GameObject ConfigureConfirmPopup(Scene scene)
     {
-        GameObject popupObject = FindSceneObject(scene, "ToLobbyWarningCanvas");
-        if (popupObject == null)
-        {
-            popupObject = FindSceneObject(scene, "InGameConfirmPopupCanvas");
-        }
+        GameObject popupObject = FindConfirmPopup(scene);
 
         if (popupObject == null)
         {
@@ -170,6 +188,17 @@ public static class InGameEnchantLinkButtonSceneInstaller
         return popupObject;
     }
 
+    private static GameObject FindConfirmPopup(Scene scene)
+    {
+        GameObject popupObject = FindSceneObject(scene, "InGameConfirmPopupCanvas");
+        if (popupObject != null)
+        {
+            return popupObject;
+        }
+
+        return FindSceneObject(scene, "ToLobbyWarningCanvas");
+    }
+
     private static void ConfigureRuntimeComponents(Scene scene, GameObject linkButtonBoundary, GameObject confirmPopupObject)
     {
         if (confirmPopupObject == null)
@@ -191,7 +220,68 @@ public static class InGameEnchantLinkButtonSceneInstaller
         SetObject(boundarySerializedObject, "_restartChapterButton", FindButtonInChild(linkButtonBoundary, "RestartChapterButtonSet"));
         SetObject(boundarySerializedObject, "_screenNavigator", screenNavigator);
         SetObject(boundarySerializedObject, "_confirmPopupView", confirmPopupView);
+        ConfigureButtonVisualFields(boundarySerializedObject, linkButtonBoundary);
         boundarySerializedObject.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void ConfigureButtonVisualFields(SerializedObject boundarySerializedObject, GameObject linkButtonBoundary)
+    {
+        Sprite defaultBackgroundSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_backgroundSpritePath);
+        Sprite selectedBackgroundSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_selectedBackgroundSpritePath);
+
+        ConfigureButtonVisualFields(
+            boundarySerializedObject,
+            linkButtonBoundary,
+            "ContinueButtonSet",
+            "_continueVisual",
+            defaultBackgroundSprite,
+            selectedBackgroundSprite,
+            FindIconSprite("Icons_63"),
+            FindIconSprite("Icons_6"));
+
+        ConfigureButtonVisualFields(
+            boundarySerializedObject,
+            linkButtonBoundary,
+            "ReturnLobbyButtonSet",
+            "_returnLobbyVisual",
+            defaultBackgroundSprite,
+            selectedBackgroundSprite,
+            FindIconSprite("Icons_71"),
+            FindIconSprite("Icons_14"));
+
+        ConfigureButtonVisualFields(
+            boundarySerializedObject,
+            linkButtonBoundary,
+            "RestartChapterButtonSet",
+            "_restartChapterVisual",
+            defaultBackgroundSprite,
+            selectedBackgroundSprite,
+            FindIconSprite("Icons_86"),
+            FindIconSprite("Icons_29"));
+    }
+
+    private static void ConfigureButtonVisualFields(
+        SerializedObject boundarySerializedObject,
+        GameObject linkButtonBoundary,
+        string buttonSetName,
+        string propertyPrefix,
+        Sprite defaultBackgroundSprite,
+        Sprite selectedBackgroundSprite,
+        Sprite defaultIconSprite,
+        Sprite selectedIconSprite)
+    {
+        Image backgroundImage = FindImageInChild(linkButtonBoundary, buttonSetName, "Button & Image");
+        Image iconImage = FindImageInChild(linkButtonBoundary, buttonSetName, "Button & Image (1)");
+
+        ApplySprite(backgroundImage, defaultBackgroundSprite);
+        ApplySprite(iconImage, defaultIconSprite);
+
+        SetObject(boundarySerializedObject, $"{propertyPrefix}._backgroundImage", backgroundImage);
+        SetObject(boundarySerializedObject, $"{propertyPrefix}._iconImage", iconImage);
+        SetObject(boundarySerializedObject, $"{propertyPrefix}._defaultBackgroundSprite", defaultBackgroundSprite);
+        SetObject(boundarySerializedObject, $"{propertyPrefix}._selectedBackgroundSprite", selectedBackgroundSprite);
+        SetObject(boundarySerializedObject, $"{propertyPrefix}._defaultIconSprite", defaultIconSprite);
+        SetObject(boundarySerializedObject, $"{propertyPrefix}._selectedIconSprite", selectedIconSprite);
     }
 
     private static InGameConfirmPopupView ConfigureConfirmPopupView(GameObject popupObject)
@@ -208,9 +298,55 @@ public static class InGameEnchantLinkButtonSceneInstaller
         SetObject(popupSerializedObject, "_yesButton", FindButtonInChild(popupObject, "YesButton"));
         SetObject(popupSerializedObject, "_noButton", FindButtonInChild(popupObject, "NoButton"));
         SetObject(popupSerializedObject, "_closeButton", FindButtonInChild(popupObject, "CloseButton"));
+        ConfigureConfirmPopupVisualFields(popupSerializedObject, popupObject);
         popupSerializedObject.ApplyModifiedPropertiesWithoutUndo();
 
         return popupView;
+    }
+
+    private static void ConfigureConfirmPopupVisualFields(SerializedObject popupSerializedObject, GameObject popupObject)
+    {
+        Sprite defaultBackgroundSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_backgroundSpritePath);
+        Sprite selectedBackgroundSprite = AssetDatabase.LoadAssetAtPath<Sprite>(_popupSelectedBackgroundSpritePath);
+
+        ConfigureConfirmPopupVisualFields(
+            popupSerializedObject,
+            popupObject,
+            "YesButton",
+            "_yesVisual",
+            defaultBackgroundSprite,
+            selectedBackgroundSprite);
+
+        ConfigureConfirmPopupVisualFields(
+            popupSerializedObject,
+            popupObject,
+            "NoButton",
+            "_noVisual",
+            defaultBackgroundSprite,
+            selectedBackgroundSprite);
+    }
+
+    private static void ConfigureConfirmPopupVisualFields(
+        SerializedObject popupSerializedObject,
+        GameObject popupObject,
+        string buttonName,
+        string propertyPrefix,
+        Sprite defaultBackgroundSprite,
+        Sprite selectedBackgroundSprite)
+    {
+        Button button = FindButtonInChild(popupObject, buttonName);
+        Image backgroundImage = FindButtonBackgroundImage(button);
+        TMP_Text text = FindButtonText(button);
+
+        ApplySprite(backgroundImage, defaultBackgroundSprite);
+        ApplyTextColor(text, Color.white);
+
+        SetObject(popupSerializedObject, $"{propertyPrefix}._backgroundImage", backgroundImage);
+        SetObject(popupSerializedObject, $"{propertyPrefix}._text", text);
+        SetObject(popupSerializedObject, $"{propertyPrefix}._defaultBackgroundSprite", defaultBackgroundSprite);
+        SetObject(popupSerializedObject, $"{propertyPrefix}._selectedBackgroundSprite", selectedBackgroundSprite);
+        SetColor(popupSerializedObject, $"{propertyPrefix}._defaultTextColor", Color.white);
+        SetColor(popupSerializedObject, $"{propertyPrefix}._selectedTextColor", Color.black);
     }
 
     private static EnchantLinkButtonBoundaryView ConfigureBoundaryView(GameObject boundaryObject)
@@ -322,7 +458,8 @@ public static class InGameEnchantLinkButtonSceneInstaller
         SetCenterRect(buttonObject.GetComponent<RectTransform>(), position, new Vector2(350f, 140f));
 
         Image image = EnsureComponent<Image>(buttonObject);
-        image.color = new Color(0.82f, 0.82f, 0.82f, 1f);
+        image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(_backgroundSpritePath);
+        image.color = Color.white;
         image.raycastTarget = true;
 
         Button button = EnsureComponent<Button>(buttonObject);
@@ -380,6 +517,85 @@ public static class InGameEnchantLinkButtonSceneInstaller
         return child.GetComponentInChildren<Button>(true);
     }
 
+    private static Image FindImageInChild(GameObject rootObject, string buttonSetName, string imageObjectName)
+    {
+        Transform buttonSet = FindChildByName(rootObject.transform, buttonSetName);
+        if (buttonSet == null)
+        {
+            return null;
+        }
+
+        Transform imageTransform = FindChildByName(buttonSet, imageObjectName);
+        if (imageTransform == null)
+        {
+            return null;
+        }
+
+        return imageTransform.GetComponent<Image>();
+    }
+
+    private static Image FindButtonBackgroundImage(Button button)
+    {
+        if (button == null)
+        {
+            return null;
+        }
+
+        if (button.targetGraphic is Image targetImage)
+        {
+            return targetImage;
+        }
+
+        return button.GetComponent<Image>();
+    }
+
+    private static TMP_Text FindButtonText(Button button)
+    {
+        if (button == null)
+        {
+            return null;
+        }
+
+        return button.GetComponentInChildren<TMP_Text>(true);
+    }
+
+    private static Sprite FindIconSprite(string spriteName)
+    {
+        UnityEngine.Object[] sprites = AssetDatabase.LoadAllAssetRepresentationsAtPath(_iconsSpriteSheetPath);
+        foreach (UnityEngine.Object spriteObject in sprites)
+        {
+            if (spriteObject is Sprite sprite && sprite.name == spriteName)
+            {
+                return sprite;
+            }
+        }
+
+        Debug.LogWarning($"[InGameEnchantLinkButtonSceneInstaller] {spriteName} 아이콘 Sprite를 찾지 못했습니다.");
+        return null;
+    }
+
+    private static void ApplySprite(Image image, Sprite sprite)
+    {
+        if (image == null || sprite == null)
+        {
+            return;
+        }
+
+        image.sprite = sprite;
+        EditorUtility.SetDirty(image);
+    }
+
+    private static void ApplyTextColor(TMP_Text text, Color color)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        text.color = color;
+        EditorUtility.SetDirty(text);
+    }
+
     private static void SetButtonText(GameObject buttonObject, string label, float fontSize)
     {
         TMP_Text text = buttonObject.GetComponentInChildren<TMP_Text>(true);
@@ -396,7 +612,7 @@ public static class InGameEnchantLinkButtonSceneInstaller
         text.fontSizeMin = 24f;
         text.fontSizeMax = fontSize;
         text.alignment = TextAlignmentOptions.Center;
-        text.color = Color.black;
+        text.color = Color.white;
     }
 
     private static GameObject FindOrCreateChild(Transform parent, string objectName, bool addImage)
@@ -615,6 +831,18 @@ public static class InGameEnchantLinkButtonSceneInstaller
         }
 
         property.objectReferenceValue = value;
+    }
+
+    private static void SetColor(SerializedObject serializedObject, string propertyName, Color value)
+    {
+        SerializedProperty property = serializedObject.FindProperty(propertyName);
+        if (property == null)
+        {
+            Debug.LogWarning($"[InGameEnchantLinkButtonSceneInstaller] {propertyName} 필드를 찾지 못했습니다.");
+            return;
+        }
+
+        property.colorValue = value;
     }
 
     private static string GetCommandLineValue(string key)
