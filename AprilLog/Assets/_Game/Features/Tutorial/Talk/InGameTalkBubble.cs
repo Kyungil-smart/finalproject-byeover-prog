@@ -8,6 +8,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
 {
@@ -47,6 +48,7 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     private bool _useFixedViewportPosition;
     private Vector2 _fixedViewportPosition;
     private Vector2 _fixedScreenOffset;
+    private GameObject _advanceTouchArea;
 
     public bool IsTyping => _isTyping;
 
@@ -79,6 +81,7 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
 
     public void Show()
     {
+        SetAdvanceTouchAreaActive(true);
         gameObject.SetActive(true);
     }
 
@@ -86,6 +89,7 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     {
         StopTyping();
         HideNextIcon();
+        SetAdvanceTouchAreaActive(false);
         gameObject.SetActive(false);
     }
 
@@ -209,7 +213,65 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        AdvanceOrComplete();
+    }
+
+    private void OnDestroy()
+    {
+        if (_advanceTouchArea != null)
+            Destroy(_advanceTouchArea);
+    }
+
+    private void AdvanceOrComplete()
+    {
         if (_isTyping) CompleteText();          // 타이핑 중 → 즉시 완성
         else           OnAdvanceRequested?.Invoke();   // 완성 후 → 다음 줄
+    }
+
+    private void SetAdvanceTouchAreaActive(bool active)
+    {
+        EnsureAdvanceTouchArea();
+        if (_advanceTouchArea != null)
+            _advanceTouchArea.SetActive(active);
+    }
+
+    private void EnsureAdvanceTouchArea()
+    {
+        if (_advanceTouchArea != null) return;
+
+        Transform parent = transform.parent;
+        if (parent == null) return;
+
+        _advanceTouchArea = new GameObject("TalkAdvanceTouchArea", typeof(RectTransform), typeof(Image), typeof(TalkAdvanceTouchArea));
+        _advanceTouchArea.layer = gameObject.layer;
+        RectTransform rt = _advanceTouchArea.GetComponent<RectTransform>();
+        rt.SetParent(parent, false);
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = Vector2.zero;
+        rt.SetAsLastSibling();
+
+        Image image = _advanceTouchArea.GetComponent<Image>();
+        image.color = Color.clear;
+        image.raycastTarget = true;
+
+        _advanceTouchArea.GetComponent<TalkAdvanceTouchArea>().Bind(this);
+    }
+
+    private sealed class TalkAdvanceTouchArea : MonoBehaviour, IPointerClickHandler
+    {
+        private InGameTalkBubble _owner;
+
+        public void Bind(InGameTalkBubble owner)
+        {
+            _owner = owner;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            _owner?.AdvanceOrComplete();
+        }
     }
 }

@@ -15,6 +15,7 @@ public class TutorialInGameDirector : MonoBehaviour
     private const float Step1TutorialSpawnInterval = 2f;
     private const int Step1TutorialSpawnAmount = 1;
     private const int Step1TutorialTargetKillCount = 10;
+    private const int TutorialCombinationSkillNameId = 71;
 
     public static bool AllowsPausedSortInput { get; private set; }
     private static bool _hasTutorialSpawnOverride;
@@ -91,7 +92,7 @@ public class TutorialInGameDirector : MonoBehaviour
     [Tooltip("인챈트 설명 중 말풍선 고정 위치에 더할 픽셀 오프셋.")]
     [SerializeField] private Vector2 _enchantBubbleScreenOffset;
 
-    // 고정 3카드 순서: 자동공격(50)/조합(51)/콤보(53) = TutorialFirstEnchantSelectionOverride와 동일
+    // 고정 3카드 순서: 자동공격(50)/조합(71)/콤보(54) = TutorialFirstEnchantSelectionOverride와 동일
     private const int EnchantCardAutoAttack = 0;
     private const int EnchantCardCombination = 1;
     private const int EnchantCardCombo = 2;
@@ -159,6 +160,8 @@ public class TutorialInGameDirector : MonoBehaviour
     private TutorialDimMask _step0DimMask;
     private TutorialDimMask _enchantDimMask;
     private CanvasGroup _firstEnchantCanvasGroup;
+    private CombinationView _combinationView;
+    private EnchantCombinationModel _enchantCombinationModel;
     private static FieldInfo _enchantSpawnedCardsField;
 
     private bool _active;
@@ -173,6 +176,8 @@ public class TutorialInGameDirector : MonoBehaviour
     private bool _isStep3DefeatHandled;
     private bool _isStep3ScenarioPaused;
     private bool _previousFirstEnchantBlocksRaycasts;
+    private bool _temporaryCombinationRecipeShown;
+    private bool _temporaryFusionDataAdded;
     private int _runningStepId = -1;
     private float _previousTimeScale = 1f;
     private float _step3PreviousTimeScale = 1f;
@@ -229,6 +234,9 @@ public class TutorialInGameDirector : MonoBehaviour
             if (Time.timeScale == 0f) Time.timeScale = 1f;
         }
         _step0PuzzlePhase = false;
+        ClearEnchantDim();
+        ClearTemporaryCombinationRecipe();
+        SetFirstEnchantPopupVisible(true);
         ClearEnchantDialogueBubblePosition();
         if (_inputHandler != null) _inputHandler.OnDragStarted -= HandleDragStarted;
         UnsubscribeGrowthLevelUp();
@@ -763,11 +771,15 @@ public class TutorialInGameDirector : MonoBehaviour
         DimEnchantExcept(EnchantCardCombination);
         yield return PlayWorldDialogue(_enchantCombinationId, _enchantCombinationId);
 
-        // 4-3-1-5 인게임 조합식 테이블 강조 → 100038 → 복귀
+        // 4-3-1-5 팝업을 잠시 숨기고 조합식 테이블을 강조 → 100038 → 복귀
         ClearEnchantDim();
+        SetFirstEnchantPopupVisible(false);
+        ShowTemporaryCombinationRecipe();
         HighlightCombinationTable();
         yield return PlayWorldDialogue(_enchantCombinationGuideId, _enchantCombinationGuideId);
         ClearEnchantDim();
+        ClearTemporaryCombinationRecipe();
+        SetFirstEnchantPopupVisible(true);
 
         // 4-3-1-6 콤보 스킬만 남기고 딤
         DimEnchantExcept(EnchantCardCombo);
@@ -812,13 +824,35 @@ public class TutorialInGameDirector : MonoBehaviour
         if (rects == null || keepIndex < 0 || keepIndex >= rects.Count || rects[keepIndex] == null) return;
 
         TutorialDimMask dim = ResolveEnchantDimMask();
-        if (dim != null) dim.ShowWithHoles(new[] { rects[keepIndex] });
+        if (dim != null)
+        {
+            PrepareEnchantDimLayer(dim);
+            dim.ShowWithHoles(new[] { rects[keepIndex] });
+        }
     }
 
     private void ClearEnchantDim()
     {
         TutorialDimMask dim = ResolveEnchantDimMask();
         if (dim != null) dim.Hide();
+    }
+
+    private void PrepareEnchantDimLayer(TutorialDimMask dim)
+    {
+        if (dim == null) return;
+
+        if (_firstEnchantSelectView == null)
+            _firstEnchantSelectView = FindFirstObjectByType<EnchantSelectView>();
+
+        Canvas dimCanvas = dim.GetComponentInParent<Canvas>();
+        Canvas popupCanvas = _firstEnchantSelectView != null
+            ? _firstEnchantSelectView.GetComponentInParent<Canvas>()
+            : null;
+        if (dimCanvas == null || popupCanvas == null || dimCanvas == popupCanvas) return;
+
+        dimCanvas.overrideSorting = true;
+        dimCanvas.sortingLayerID = popupCanvas.sortingLayerID;
+        dimCanvas.sortingOrder = Mathf.Max(dimCanvas.sortingOrder, popupCanvas.sortingOrder + 1);
     }
 
     // 4-3-1-5: 인게임 조합식 테이블의 첫 슬롯(CombinationCanvas/Slot_1)만 남기고 딤 처리해 강조한다.
@@ -830,7 +864,119 @@ public class TutorialInGameDirector : MonoBehaviour
         TutorialDimMask dim = ResolveEnchantDimMask();
         if (dim == null) return;
 
+        PrepareEnchantDimLayer(dim);
         dim.ShowWithHole(target);
+    }
+
+    private void ShowTemporaryCombinationRecipe()
+    {
+        CombinationView view = ResolveCombinationView();
+        if (view == null) return;
+        if (!TryGetTutorialCombinationRecipe(out int recipeKey, out int[] ingredients, out SkillTableData skillData))
+            return;
+
+        EnsureTemporaryFusionData(recipeKey, skillData);
+        view.SetRecipe(0, recipeKey, ingredients);
+        _temporaryCombinationRecipeShown = true;
+    }
+
+    private void ClearTemporaryCombinationRecipe()
+    {
+        if (!_temporaryCombinationRecipeShown) return;
+
+        CombinationView view = ResolveCombinationView();
+        if (view != null) view.ClearRecipe(0);
+
+        RectTransform slot = ResolveCombinationSlot();
+        if (slot != null) slot.gameObject.SetActive(false);
+
+        if (_temporaryFusionDataAdded && _enchantCombinationModel != null && _enchantCombinationModel.FusionData != null)
+            _enchantCombinationModel.FusionData.Remove(TutorialCombinationSkillNameId);
+
+        _temporaryCombinationRecipeShown = false;
+        _temporaryFusionDataAdded = false;
+    }
+
+    private CombinationView ResolveCombinationView()
+    {
+        if (_combinationView == null)
+            _combinationView = FindFirstObjectByType<CombinationView>();
+        return _combinationView;
+    }
+
+    private bool TryGetTutorialCombinationRecipe(out int recipeKey, out int[] ingredients, out SkillTableData skillData)
+    {
+        recipeKey = TutorialCombinationSkillNameId;
+        ingredients = null;
+        skillData = null;
+
+        SpellRepo repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        SkillNameChainData chain = repo != null
+            ? repo.GetSkillChainByName(EnchantModel.GROUP_COMBINATION_SKILL, recipeKey)
+            : null;
+        skillData = chain != null ? chain.GetNextLevelData(0) : null;
+        if (skillData == null) return false;
+
+        var ingredientList = new List<int>(3);
+        AddIngredient(ingredientList, skillData.RequiredValue_1);
+        AddIngredient(ingredientList, skillData.RequiredValue_2);
+        AddIngredient(ingredientList, skillData.RequiredValue_3);
+        ingredients = ingredientList.ToArray();
+        return ingredients.Length > 0;
+    }
+
+    private static void AddIngredient(List<int> ingredients, float rawValue)
+    {
+        int unitType = ConvertRawIdToUnitType(rawValue);
+        if (unitType != (int)UnitType.None) ingredients.Add(unitType);
+    }
+
+    private static int ConvertRawIdToUnitType(float rawValue)
+    {
+        int id = Mathf.RoundToInt(rawValue);
+        return id switch
+        {
+            1001 => (int)UnitType.Red,
+            1002 => (int)UnitType.Blue,
+            1003 => (int)UnitType.Yellow,
+            1004 => (int)UnitType.Green,
+            1005 => (int)UnitType.Purple,
+            _ => (int)UnitType.None
+        };
+    }
+
+    private void EnsureTemporaryFusionData(int recipeKey, SkillTableData skillData)
+    {
+        if (_enchantCombinationModel == null)
+            _enchantCombinationModel = FindFirstObjectByType<EnchantCombinationModel>();
+        if (_enchantCombinationModel == null || _enchantCombinationModel.FusionData == null || skillData == null)
+            return;
+        if (_enchantCombinationModel.FusionData.ContainsKey(recipeKey)) return;
+
+        _enchantCombinationModel.FusionData.Add(recipeKey, new FusionEnchantData(
+            skillData.Skill_ID,
+            ConvertRawIdToUnitType(skillData.RequiredValue_1),
+            ConvertRawIdToUnitType(skillData.RequiredValue_2),
+            ConvertRawIdToUnitType(skillData.RequiredValue_3),
+            skillData.SkillIcon_ID));
+        _temporaryFusionDataAdded = true;
+    }
+
+    private void SetFirstEnchantPopupVisible(bool visible)
+    {
+        if (_firstEnchantSelectView == null)
+            _firstEnchantSelectView = FindFirstObjectByType<EnchantSelectView>();
+        if (_firstEnchantSelectView == null) return;
+
+        if (_firstEnchantCanvasGroup == null)
+            _firstEnchantCanvasGroup = _firstEnchantSelectView.GetComponent<CanvasGroup>();
+        if (_firstEnchantCanvasGroup == null)
+            _firstEnchantCanvasGroup = _firstEnchantSelectView.gameObject.AddComponent<CanvasGroup>();
+
+        _firstEnchantCanvasGroup.alpha = visible ? 1f : 0f;
+        _firstEnchantCanvasGroup.interactable = true;
+        if (_isFirstEnchantSelectionLocked)
+            _firstEnchantCanvasGroup.blocksRaycasts = false;
     }
 
     private void SetEnchantDialogueBubblePosition()
@@ -1391,8 +1537,8 @@ public class TutorialInGameDirector : MonoBehaviour
 public static class TutorialFirstEnchantSelectionOverride
 {
     private const int FixedNormalSkillNameId = 50;
-    private const int FixedCombinationSkillNameId = 51;
-    private const int FixedComboSkillNameId = 53;
+    private const int FixedCombinationSkillNameId = 71;
+    private const int FixedComboSkillNameId = 54;
 
     private static bool _hasPendingFixedChoices;
 

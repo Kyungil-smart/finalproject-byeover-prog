@@ -177,7 +177,21 @@ public class StageLoopManager : MonoBehaviour
 
     private void HandlePlayerDeath()
     {
+        if (IsTutorialForcedDefeatStep())
+            return;
+
         EndChapter(false);
+    }
+
+    private static bool IsTutorialForcedDefeatStep()
+    {
+        TutorialManager tutorialManager = TutorialManager.Instance;
+        TutorialStep step = tutorialManager != null ? tutorialManager.CurrentStep : null;
+        return tutorialManager != null
+            && tutorialManager.IsRunning
+            && step != null
+            && step.scene == TutorialScene.InGame
+            && step.stepId == 3;
     }
 
     // ---------- 유틸 ----------
