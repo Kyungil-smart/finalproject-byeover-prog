@@ -1,5 +1,6 @@
 ﻿//담당자: 조규민
 //팝업의 시간당 생산량과 현재 수령 가능 수량이 섞이지 않도록 생산량 상태를 분리
+// 수정 내용 : 보상 지급 성공 전에는 마지막 수령 시각과 누적 상태를 초기화하지 않도록 수령 준비와 확정을 분리
 
 using System;
 using UnityEngine;
@@ -41,14 +42,19 @@ public class HousingIdleRewardModel
         OnStateChanged?.Invoke(_currentState);
     }
 
-    public HousingIdleRewardClaimResult Claim()
+    public HousingIdleRewardClaimResult CreateClaimRequest()
     {
         DateTime _claimedAtUtc = DateTime.UtcNow;
         HousingIdleRewardState _claimedState = CalculateState(_claimedAtUtc);
-        _chargeStartUtc = _claimedAtUtc;
+
+        return new HousingIdleRewardClaimResult(_claimedState, _claimedAtUtc);
+    }
+
+    public void CommitClaim(HousingIdleRewardClaimResult _claimResult)
+    {
+        _chargeStartUtc = EnsureUtc(_claimResult.ClaimedAtUtc);
         _currentState = CalculateState(_chargeStartUtc);
         OnStateChanged?.Invoke(_currentState);
-        return new HousingIdleRewardClaimResult(_claimedState, _claimedAtUtc);
     }
 
     public void ForceNotify()

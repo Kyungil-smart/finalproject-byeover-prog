@@ -46,4 +46,19 @@ public class ArtifactInstance
     {
         return AscensionCount < GetMaxAscensionLimit();
     }
+
+    /// <summary>저장/로드 복사 경계용 깊은 복사. CloudData와 런타임 목록(ArtifactManager.MyArtifacts)이
+    /// 같은 인스턴스를 공유하면 저장 호출 없이도 변경이 스며들어 저장 누락 버그를 은닉하므로, 경계에서 항상 복사한다.</summary>
+    public ArtifactInstance Clone()
+    {
+        return new ArtifactInstance
+        {
+            UniqueId = UniqueId,
+            MasterId = MasterId,
+            CurrentLevel = CurrentLevel,
+            CurrentCount = CurrentCount,
+            IsEquipped = IsEquipped,
+            AscensionCount = AscensionCount,
+        };
+    }
 }

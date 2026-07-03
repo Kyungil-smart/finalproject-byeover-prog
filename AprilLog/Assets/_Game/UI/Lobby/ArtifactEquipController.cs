@@ -2,8 +2,9 @@ using UnityEngine;
 
 // 작성자 : 홍정옥
 // 설명   : 아티팩트 장착 / 해제 로직(UI 영역).
-//          규칙 : 최대 3개 장착, 빈 칸이 있으면 자동 장착, 가득 차면 교체할 슬롯을 선택해 교체.
-//          데이터는 ArtifactManager 의 public 멤버(MyArtifacts, ArtifactInstance.IsEquipped)만 사용한다.
+//          규칙 : 최대 ArtifactManager.MaxEquip개 장착, 빈 칸이 있으면 자동 장착, 가득 차면 교체할 슬롯을 선택해 교체.
+//          장착 상태 변경(IsEquipped)은 ArtifactManager.TryEquip/TryUnequip으로만 한다(검증+저장은 매니저 책임).
+//          여기는 슬롯 표시/교체 선택 등 화면만 담당한다.
 //          - 상세 팝업(POPUP_ArtifactInfo)의 장착 버튼 클릭 → 현재 아티팩트 장착/해제(토글)
 //          - 장착칸이 가득 차면 ArtifactEquipBinder 를 슬롯 선택 모드로 전환 → 고른 슬롯과 교체
 public class ArtifactEquipController : MonoBehaviour
@@ -24,10 +25,8 @@ public class ArtifactEquipController : MonoBehaviour
     [Tooltip("장착칸이 가득 차 교체할 슬롯을 골라야 할 때 켜는 안내 오브젝트(예: '교체할 슬롯을 선택하세요').")]
     [SerializeField] private GameObject _replaceHint;
 
-    private const int MaxEquip = 3;
-
-    // 각 장착 슬롯에 들어있는 인스턴스(없으면 null). 인덱스 = ArtifactEquipBinder 슬롯 인덱스.
-    private readonly ArtifactInstance[] _equipped = new ArtifactInstance[MaxEquip];
+    // 각 장착 슬롯에 들어있는 인스턴스(없으면 null). 인덱스 = ArtifactEquipBinder 슬롯 인덱스. 한도는 매니저가 단일 소스.
+    private readonly ArtifactInstance[] _equipped = new ArtifactInstance[ArtifactManager.MaxEquip];
 
     // 장착칸이 가득 찼을 때, 교체를 기다리는(새로 장착하려는) 인스턴스.
     private ArtifactInstance _pending;
@@ -97,7 +96,7 @@ public class ArtifactEquipController : MonoBehaviour
         foreach (ArtifactInstance inst in mgr.MyArtifacts)
         {
             if (inst == null || !inst.IsEquipped) continue;
-            if (slot >= MaxEquip) { inst.IsEquipped = false; continue; } // 한도 초과 방어
+            if (slot >= ArtifactManager.MaxEquip) { mgr.TryUnequip(inst.UniqueId); continue; } // 한도 초과 방어(해제+저장은 매니저가)
             EquipIntoSlot(slot, inst);
             slot++;
         }
@@ -122,7 +121,9 @@ public class ArtifactEquipController : MonoBehaviour
         int empty = FindEmptySlot();
         if (empty >= 0)
         {
-            EquipIntoSlot(empty, inst);   // 빈 칸 자동 장착
+            // 데이터 장착(검증+저장)은 매니저가, 성공했을 때만 슬롯을 표시한다.
+            if (mgr.TryEquip(inst.UniqueId))
+                EquipIntoSlot(empty, inst);
             CloseDetail();
         }
         else
@@ -156,10 +157,14 @@ public class ArtifactEquipController : MonoBehaviour
         if (_pending == null) { EndReplaceSelection(); return; }
         if (slotIndex < 0 || slotIndex >= _equipped.Length) return;
 
-        ArtifactInstance old = _equipped[slotIndex];
-        if (old != null) old.IsEquipped = false; // 기존 장착 해제
+        ArtifactManager mgr = Manager;
+        if (mgr == null) { _pending = null; EndReplaceSelection(); return; }
 
-        EquipIntoSlot(slotIndex, _pending);       // 새 아티팩트로 교체
+        ArtifactInstance old = _equipped[slotIndex];
+        if (old != null) mgr.TryUnequip(old.UniqueId);   // 기존 장착 해제(저장 포함)
+
+        if (mgr.TryEquip(_pending.UniqueId))             // 데이터 장착 성공 시에만 슬롯 교체 표시
+            EquipIntoSlot(slotIndex, _pending);
         _pending = null;
         EndReplaceSelection();
     }
@@ -181,6 +186,8 @@ public class ArtifactEquipController : MonoBehaviour
         if (_replaceHint != null) _replaceHint.SetActive(false);
     }
 
+    // 슬롯 '표시' 전용. 데이터 장착(IsEquipped)은 호출 전에 ArtifactManager.TryEquip으로 끝나 있어야 한다.
+    // (SyncFromData의 복원 경로에서도 호출되므로 여기서 데이터를 만지면 안 된다.)
     private void EquipIntoSlot(int index, ArtifactInstance inst)
     {
         if (_equipBinder == null || inst == null) return;
@@ -188,7 +195,6 @@ public class ArtifactEquipController : MonoBehaviour
         GearMasterData data = inst.MasterData;
         if (data == null) { Debug.LogWarning($"[ArtifactEquip] 마스터 데이터가 없습니다. MasterId:{inst.MasterId}"); return; }
 
-        inst.IsEquipped = true;
         _equipped[index] = inst;
 
         ArtifactGrade grade = ToGrade(data.GearGrade);
@@ -201,13 +207,15 @@ public class ArtifactEquipController : MonoBehaviour
 
     private void Unequip(ArtifactInstance inst)
     {
+        ArtifactManager mgr = Manager;
+        if (mgr == null || !mgr.TryUnequip(inst.UniqueId)) return;   // 데이터 해제 실패면 표시도 유지
+
         int index = System.Array.IndexOf(_equipped, inst);
         if (index >= 0)
         {
             _equipped[index] = null;
             if (_equipBinder != null) _equipBinder.ClearSlot(index);
         }
-        inst.IsEquipped = false;
         RefreshList();
         Debug.Log($"[ArtifactEquip] 해제 완료. Gear_ID={inst.MasterId}");
     }

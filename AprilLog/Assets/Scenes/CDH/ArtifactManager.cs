@@ -69,6 +69,53 @@ public class ArtifactManager : MonoBehaviour
         Debug.Log("[ArtifactManager] 초기화 완료. 데이터를 로드할 준비가 되었습니다.");
     }
 
+    // ---------- 장착 (단일 진입점) ----------
+    // 장착 상태 변경은 반드시 TryEquip/TryUnequip을 거친다. UI(ArtifactEquipController 등)가 IsEquipped를
+    // 직접 토글하면 검증/저장이 누락되고, 로드-저장 복사 경계(GameManager.CloneArtifactList) 도입 후에는
+    // 직접 토글분이 어디에도 저장되지 않는다.
+
+    /// <summary>동시 장착 한도. UI 슬롯 수도 이 값을 따른다.</summary>
+    public const int MaxEquip = 3;
+
+    /// <summary>장착/해제 성공 시 발행. (OnInventoryUpdated와 분리 - 인벤토리 재동기화/저장 루프를 피한다)</summary>
+    public event Action OnEquipmentChanged;
+
+    public int EquippedCount
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < MyArtifacts.Count; i++)
+                if (MyArtifacts[i] != null && MyArtifacts[i].IsEquipped) count++;
+            return count;
+        }
+    }
+
+    /// <summary>장착 시도. 미보유/이미 장착/한도 초과면 false(변경 없음). 성공 시 이벤트 발행 + 저장.</summary>
+    public bool TryEquip(int uniqueId)
+    {
+        var inst = MyArtifacts.Find(a => a != null && a.UniqueId == uniqueId);
+        if (inst == null || inst.IsEquipped) return false;
+        if (EquippedCount >= MaxEquip) return false;
+
+        inst.IsEquipped = true;
+        OnEquipmentChanged?.Invoke();
+        SaveData();
+        return true;
+    }
+
+    /// <summary>해제 시도. 미보유/미장착이면 false(변경 없음). 성공 시 이벤트 발행 + 저장.</summary>
+    public bool TryUnequip(int uniqueId)
+    {
+        var inst = MyArtifacts.Find(a => a != null && a.UniqueId == uniqueId);
+        if (inst == null || !inst.IsEquipped) return false;
+
+        inst.IsEquipped = false;
+        OnEquipmentChanged?.Invoke();
+        SaveData();
+        return true;
+    }
+
     public void AddArtifact(int masterId)
     {
         var existing = MyArtifacts.Find(a => a.MasterId == masterId);
