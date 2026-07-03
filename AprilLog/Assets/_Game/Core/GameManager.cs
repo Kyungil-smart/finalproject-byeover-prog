@@ -752,9 +752,7 @@ public class GameManager : MonoBehaviour
 
         // CloudData에 저장된 아티팩트를 매니저로 복원한다.
         // (manager.LoadData()를 다시 부르면 LoadData ↔ Apply 무한 재귀로 StackOverflow가 난다.)
-        manager.MyArtifacts = CloudData.myArtifacts != null
-            ? new List<ArtifactInstance>(CloudData.myArtifacts)
-            : new List<ArtifactInstance>();
+        manager.MyArtifacts = CloneArtifactList(CloudData.myArtifacts);
     }
 
     public void SaveOutGameProgress(PlayerProgressModel progressModel)
@@ -882,10 +880,24 @@ public class GameManager : MonoBehaviour
     {
         var data = CloudData ?? UserCloudData.CreateDefault();
         EnsureCloudIdentity(data);
-        
-        data.myArtifacts = myArtifacts;
+
+        data.myArtifacts = CloneArtifactList(myArtifacts);
 
         SyncToCloud(data);
+    }
+
+    // 아티팩트 목록의 저장/로드 복사 경계. CloudData와 런타임(ArtifactManager.MyArtifacts)이 같은 인스턴스를
+    // 공유하면 저장 호출 없이도 변경이 CloudData에 스며들어(우연한 영속) 저장 누락 버그를 은닉한다.
+    // 계약: 아티팩트 영속은 SaveArtifact 호출로만 일어난다. 양방향 모두 깊은 복사로 공유를 끊는다.
+    private static List<ArtifactInstance> CloneArtifactList(List<ArtifactInstance> source)
+    {
+        var result = new List<ArtifactInstance>();
+        if (source == null) return result;
+
+        foreach (var inst in source)
+            if (inst != null) result.Add(inst.Clone());
+
+        return result;
     }
 
     // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) — 영속 원본 = CloudData.gold/parchment =====
