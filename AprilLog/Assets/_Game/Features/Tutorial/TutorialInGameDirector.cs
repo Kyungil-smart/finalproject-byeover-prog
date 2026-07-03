@@ -140,6 +140,10 @@ public class TutorialInGameDirector : MonoBehaviour
     [SerializeField] private float _step3RushSpawnInterval = 0.35f;
     [SerializeField] private float _step3ForcedDefeatDelay = 12f;
 
+    [Header("step14 0-1챕터 재진입")]
+    [SerializeField] private int _step14EntryScenarioStartId = 100075;
+    [SerializeField] private int _step14EntryScenarioEndId = 100078;
+
     [Header("인게임 대화 버블")]
     [Tooltip("인게임 다이제틱 대화를 재생할 프리젠터. 오버레이 프리팹 안에 두고 연결.")]
     [SerializeField] private InGameTalkPresenter _talkPresenter;
@@ -175,15 +179,19 @@ public class TutorialInGameDirector : MonoBehaviour
     private bool _isStep3RushActive;
     private bool _isStep3DefeatHandled;
     private bool _isStep3ScenarioPaused;
+    private bool _step14EntryScenarioPlayed;
+    private bool _isStep14ScenarioPaused;
     private bool _previousFirstEnchantBlocksRaycasts;
     private bool _temporaryCombinationRecipeShown;
     private bool _temporaryFusionDataAdded;
     private int _runningStepId = -1;
     private float _previousTimeScale = 1f;
     private float _step3PreviousTimeScale = 1f;
+    private float _step14PreviousTimeScale = 1f;
     private Coroutine _step3Routine;
     private Coroutine _step3RushRoutine;
     private Coroutine _step3ForceDefeatRoutine;
+    private Coroutine _step14Routine;
 
     private Coroutine _step0Routine;
     private Coroutine _step1Routine;
