@@ -6,6 +6,7 @@ using System;
 public class UnitVisualController : MonoBehaviour
 {
     [SerializeField] private Image _unitImage;
+    [SerializeField] private GameObject[] _enchantObjects;
 
     private void OnEnable()
     {
@@ -16,24 +17,38 @@ public class UnitVisualController : MonoBehaviour
     public void PlayJokerEffect(Action onComplete)
     {
         _unitImage.DOKill();
-        _unitImage.color = Color.white;
 
         _unitImage.DOColor(Color.gray, 1.0f)
             .SetUpdate(true)
-            .OnComplete(() => {
+            .OnComplete(() =>
+            {
                 gameObject.SetActive(false);
                 _unitImage.color = Color.white;
                 onComplete?.Invoke();
             });
     }
 
-    public void PlayEnchantEffect(int count)
+    public void PlayEnchantEffect(int count, Action onComplete)
     {
         Sequence seq = DOTween.Sequence().SetUpdate(true);
-        for (int i = 0; i < count; i++)
+
+        for (int i = 0; i <= count && i < _enchantObjects.Length; i++)
         {
-            seq.Append(_unitImage.DOColor(Color.yellow, 0.2f).SetUpdate(true));
-            seq.Append(_unitImage.DOColor(Color.white, 0.2f).SetUpdate(true));
+            int index = i;
+
+            seq.AppendCallback(() => ToggleObjects(index));
+            
+            seq.AppendInterval(1.0f);
+ 
         }
+        seq.OnComplete(() => onComplete?.Invoke());
     }
+
+    private void ToggleObjects(int activeIndex)
+    {
+        for (int i = 0; i < _enchantObjects.Length; i++)
+            _enchantObjects[i].SetActive(i == activeIndex);
+    }
+
+    public void ResetToDefault() => ToggleObjects(0);
 }
