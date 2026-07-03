@@ -139,11 +139,10 @@ public class StageModel
         _spawnTimer += deltaTime;
 
         // --- 가속 스폰 로직 (제한 없이 무한정 소환) ---
-        int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
         float currentInterval = Mathf.Max(0.3f,
-            _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) - (timeFactor * 0.1f));
+            _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f));
         int currentAmount =
-            Mathf.Min(5, _currentRule.SpawnAmount + Mathf.FloorToInt((_stageLevel - 1) / 2f) + timeFactor);
+            Mathf.Min(5, _currentRule.SpawnAmount + Mathf.FloorToInt((_stageLevel - 1) / 2f));
         if (TutorialInGameDirector.TryGetTutorialSpawnOverride(out float tutorialInterval, out int tutorialAmount))
         {
             currentInterval = tutorialInterval;
@@ -297,10 +296,8 @@ public class StageModel
 
             // 일반 웨이브 상태 초기화
             _waveTimer = 0f;
-            int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
             float currentInterval = Mathf.Max(0.3f,
-                _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) -
-                (timeFactor * 0.1f));
+                _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f));
             if (TutorialInGameDirector.TryGetTutorialSpawnOverride(out float tutorialInterval, out _))
             {
                 currentInterval = tutorialInterval;
