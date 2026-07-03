@@ -86,6 +86,10 @@ public class TutorialInGameDirector : MonoBehaviour
     [SerializeField] private int _enchantComboEndId = 100040;
     [Tooltip("스킬 딤 해제 후 마무리 재생")]
     [SerializeField] private int _enchantWrapupId = 100041;
+    [Tooltip("인챈트 설명 중 말풍선을 화면 어디에 고정할지(0~1 뷰포트 좌표).")]
+    [SerializeField] private Vector2 _enchantBubbleViewportPosition = new Vector2(0.5f, 0.78f);
+    [Tooltip("인챈트 설명 중 말풍선 고정 위치에 더할 픽셀 오프셋.")]
+    [SerializeField] private Vector2 _enchantBubbleScreenOffset;
 
     // 고정 3카드 순서: 자동공격(50)/조합(51)/콤보(53) = TutorialFirstEnchantSelectionOverride와 동일
     private const int EnchantCardAutoAttack = 0;
@@ -96,7 +100,16 @@ public class TutorialInGameDirector : MonoBehaviour
     [Tooltip("0챕터 진입 대사(몬스터 없는 화면). 100019 앞에 먼저 재생")]
     [SerializeField] private int _step0EntryScenarioStartId = 100009;
     [SerializeField] private int _step0EntryScenarioEndId = 100018;
+    [Tooltip("몬스터 스폰 대사")]
     [SerializeField] private int _step0IntroScenarioId = 100019;
+    [Tooltip("몬스터 강조 복귀 후 대사")]
+    [SerializeField] private int _step0PostEmphasisScenarioStartId = 100020;
+    [SerializeField] private int _step0PostEmphasisScenarioEndId = 100025;
+    [Tooltip("퍼즐 조작 유도 대사(이후 딤+화살표)")]
+    [SerializeField] private int _step0PuzzleGuideScenarioId = 100026;
+    [Tooltip("콤보 학습 대사(3정렬 후 공격 순간)")]
+    [SerializeField] private int _step0ComboScenarioStartId = 100027;
+    [SerializeField] private int _step0ComboScenarioEndId = 100029;
     [SerializeField] private int[] _step0MonsterIds = { 5011, 5012, 5013 };
     [Tooltip("몬스터가 멈춰서 등장하는 위치(월드). 좌->우 3개")]
     [SerializeField] private Vector2[] _step0MonsterSpawnPositions =
@@ -159,7 +172,6 @@ public class TutorialInGameDirector : MonoBehaviour
     private bool _isStep3RushActive;
     private bool _isStep3DefeatHandled;
     private bool _isStep3ScenarioPaused;
-    private bool _previousFirstEnchantInteractable;
     private bool _previousFirstEnchantBlocksRaycasts;
     private int _runningStepId = -1;
     private float _previousTimeScale = 1f;
@@ -169,6 +181,8 @@ public class TutorialInGameDirector : MonoBehaviour
     private Coroutine _step3ForceDefeatRoutine;
 
     private Coroutine _step0Routine;
+    private Coroutine _step1Routine;
+    private bool _step0ComboLessonPlayed;
     private readonly List<MonsterAI> _step0Monsters = new List<MonsterAI>(3);
     private int _step0KillCount;
     private bool _step0PuzzlePhase;
@@ -208,7 +222,14 @@ public class TutorialInGameDirector : MonoBehaviour
             // 연출 도중 이탈 시 멈춰둔 시간을 복구한다.
             if (Time.timeScale == 0f) Time.timeScale = 1f;
         }
+        if (_step1Routine != null)
+        {
+            StopCoroutine(_step1Routine);
+            _step1Routine = null;
+            if (Time.timeScale == 0f) Time.timeScale = 1f;
+        }
         _step0PuzzlePhase = false;
+        ClearEnchantDialogueBubblePosition();
         if (_inputHandler != null) _inputHandler.OnDragStarted -= HandleDragStarted;
         UnsubscribeGrowthLevelUp();
         UnsubscribePlayerDeath();
@@ -389,6 +410,10 @@ public class TutorialInGameDirector : MonoBehaviour
         yield return EmphasizeStep0Monsters();
         yield return DescendStep0Monsters();
 
+        // 복귀 후 대사 → 퍼즐 조작 유도 대사(유저 터치로 넘김) → 퍼즐 가이드(딤+화살표)
+        yield return PlayWorldDialogue(_step0PostEmphasisScenarioStartId, _step0PostEmphasisScenarioEndId);
+        yield return PlayWorldDialogue(_step0PuzzleGuideScenarioId, _step0PuzzleGuideScenarioId);
+
         EnterStep0PuzzlePhase();
         _step0Routine = null;
     }
@@ -556,11 +581,45 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private void RunStep1()
     {
+        if (_step1Routine == null)
+            _step1Routine = StartCoroutine(RunStep1Sequence());
+    }
+
+    // 3정렬 직후(step1 진입) 콤보 학습(2-3-3)을 먼저 재생하고, 이어서 자유 연습을 세팅한다.
+    private IEnumerator RunStep1Sequence()
+    {
+        if (!_step0ComboLessonPlayed)
+        {
+            _step0ComboLessonPlayed = true;
+
+            // 공격 직후 즉시 일시정지 + 콤보 카운트 UI만 남기고 딤 → 100027~29 → 딤 해제 + 재개
+            float prev = Time.timeScale;
+            Time.timeScale = 0f;
+            HighlightComboCountUI();
+            yield return PlayWorldDialogue(_step0ComboScenarioStartId, _step0ComboScenarioEndId);
+            ClearEnchantDim();
+            Time.timeScale = prev <= 0f ? 1f : prev;
+        }
+
         ResumeGameplayAfterGuide();
         HideStep0GuideVisuals();
         HideTutorialViewForFreePractice();
         ApplyTutorialPracticeOverrides();
         ReleaseStageForTutorialPractice();
+        _step1Routine = null;
+    }
+
+    // 2-3-3: 콤보 카운트 UI(ComboPopupCanvas/Boundary/ComboText)만 남기고 딤 처리해 강조한다.
+    private void HighlightComboCountUI()
+    {
+        GameObject canvas = GameObject.Find("ComboPopupCanvas");
+        if (canvas == null) return;
+
+        Transform found = FindDeepChild(canvas.transform, "ComboText");
+        if (found is not RectTransform rt) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.ShowWithHole(rt);
     }
 
     private void RunStep2()
@@ -689,45 +748,35 @@ public class TutorialInGameDirector : MonoBehaviour
         // InGameGrowthSystem은 OnLevelUp 이벤트 이후 같은 프레임에 인챈트 팝업을 연다.
         yield return null;
 
-        if (_firstEnchantScenarioDriver == null)
-            _firstEnchantScenarioDriver = FindFirstObjectByType<ScenarioDataDriver>();
-
-        if (_firstEnchantScenarioDriver == null)
-        {
-            Debug.LogWarning("[TutorialInGameDirector] 최초 인챈트 안내 시나리오 드라이버를 찾지 못했습니다.");
-            StartCoroutine(WaitForFirstEnchantChoiceClosed());
-            yield break;
-        }
-
         // 대화 동안 카드 선택 잠금 (마지막에 해제)
         LockFirstEnchantSelection();
+        SetEnchantDialogueBubblePosition();
 
         // 4-3-1-2 도입 (전 카드 노출)
-        yield return PlayScenarioRange(_firstEnchantScenarioGroupId, _firstEnchantScenarioEndId);
+        yield return PlayWorldDialogue(_firstEnchantScenarioGroupId, _firstEnchantScenarioEndId);
 
         // 4-3-1-3 자동공격 스킬만 남기고 딤
         DimEnchantExcept(EnchantCardAutoAttack);
-        yield return PlayScenarioRange(_enchantAutoAttackStartId, _enchantAutoAttackEndId);
+        yield return PlayWorldDialogue(_enchantAutoAttackStartId, _enchantAutoAttackEndId);
 
         // 4-3-1-4 조합 스킬만 남기고 딤
         DimEnchantExcept(EnchantCardCombination);
-        yield return PlayScenarioRange(_enchantCombinationId, _enchantCombinationId);
+        yield return PlayWorldDialogue(_enchantCombinationId, _enchantCombinationId);
 
-        // 4-3-1-5 팝업 숨김(비활성화 X → 고정 카드 유지) + 인게임 조합식 테이블 강조 → 100038 → 복귀
+        // 4-3-1-5 인게임 조합식 테이블 강조 → 100038 → 복귀
         ClearEnchantDim();
-        SetEnchantPopupVisible(false);
         HighlightCombinationTable();
-        yield return PlayScenarioRange(_enchantCombinationGuideId, _enchantCombinationGuideId);
+        yield return PlayWorldDialogue(_enchantCombinationGuideId, _enchantCombinationGuideId);
         ClearEnchantDim();
-        SetEnchantPopupVisible(true);
 
         // 4-3-1-6 콤보 스킬만 남기고 딤
         DimEnchantExcept(EnchantCardCombo);
-        yield return PlayScenarioRange(_enchantComboStartId, _enchantComboEndId);
+        yield return PlayWorldDialogue(_enchantComboStartId, _enchantComboEndId);
 
         // 4-3-1-7 스킬 딤 해제 후 마무리
         ClearEnchantDim();
-        yield return PlayScenarioRange(_enchantWrapupId, _enchantWrapupId);
+        yield return PlayWorldDialogue(_enchantWrapupId, _enchantWrapupId);
+        ClearEnchantDialogueBubblePosition();
 
         // 4-3-1-8 유저가 3장 중 1장 선택 → 팝업 닫힘 → 다음 단계
         UnlockFirstEnchantSelection();
@@ -779,7 +828,21 @@ public class TutorialInGameDirector : MonoBehaviour
         if (target == null) return;
 
         TutorialDimMask dim = ResolveEnchantDimMask();
-        if (dim != null) dim.ShowWithHole(target);
+        if (dim == null) return;
+
+        dim.ShowWithHole(target);
+    }
+
+    private void SetEnchantDialogueBubblePosition()
+    {
+        if (_talkPresenter != null)
+            _talkPresenter.SetBubbleViewportPosition(_enchantBubbleViewportPosition, _enchantBubbleScreenOffset);
+    }
+
+    private void ClearEnchantDialogueBubblePosition()
+    {
+        if (_talkPresenter != null)
+            _talkPresenter.ClearBubblePositionOverride();
     }
 
     private RectTransform ResolveCombinationSlot()
@@ -809,15 +872,6 @@ public class TutorialInGameDirector : MonoBehaviour
         return _enchantDimMask;
     }
 
-    // 팝업을 비활성화하지 않고 CanvasGroup 알파로만 숨긴다(OnEnable 재실행 → 카드 리롤 방지).
-    private void SetEnchantPopupVisible(bool visible)
-    {
-        if (_firstEnchantCanvasGroup == null && _firstEnchantSelectView != null)
-            _firstEnchantCanvasGroup = _firstEnchantSelectView.GetComponent<CanvasGroup>();
-        if (_firstEnchantCanvasGroup != null)
-            _firstEnchantCanvasGroup.alpha = visible ? 1f : 0f;
-    }
-
     private void LockFirstEnchantSelection()
     {
         if (_isFirstEnchantSelectionLocked) return;
@@ -830,10 +884,10 @@ public class TutorialInGameDirector : MonoBehaviour
         if (_firstEnchantCanvasGroup == null)
             _firstEnchantCanvasGroup = _firstEnchantSelectView.gameObject.AddComponent<CanvasGroup>();
 
-        _previousFirstEnchantInteractable = _firstEnchantCanvasGroup.interactable;
         _previousFirstEnchantBlocksRaycasts = _firstEnchantCanvasGroup.blocksRaycasts;
 
-        _firstEnchantCanvasGroup.interactable = false;
+        _firstEnchantCanvasGroup.alpha = 1f;
+        _firstEnchantCanvasGroup.interactable = true;
         _firstEnchantCanvasGroup.blocksRaycasts = false;
         _isFirstEnchantSelectionLocked = true;
     }
@@ -842,7 +896,7 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         if (!_isFirstEnchantSelectionLocked || _firstEnchantCanvasGroup == null) return;
 
-        _firstEnchantCanvasGroup.interactable = _previousFirstEnchantInteractable;
+        _firstEnchantCanvasGroup.alpha = 1f;
         _firstEnchantCanvasGroup.blocksRaycasts = _previousFirstEnchantBlocksRaycasts;
         _isFirstEnchantSelectionLocked = false;
     }
@@ -1358,7 +1412,8 @@ public static class TutorialFirstEnchantSelectionOverride
         choices = null;
         IsShowingFixedChoices = false;
 
-        if (!_hasPendingFixedChoices) return false;
+        if (!_hasPendingFixedChoices && !ShouldForceFixedChoicesForTutorial())
+            return false;
 
         _hasPendingFixedChoices = false;
 
@@ -1387,6 +1442,17 @@ public static class TutorialFirstEnchantSelectionOverride
     public static void ClearFixedChoiceState()
     {
         IsShowingFixedChoices = false;
+    }
+
+    private static bool ShouldForceFixedChoicesForTutorial()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        return tm != null
+            && tm.IsRunning
+            && step != null
+            && (step.stepId == 1 || step.stepId == 2)
+            && !IsShowingFixedChoices;
     }
 
     private static void TryAddSkillChoice(

@@ -39,6 +39,18 @@ public class InGameTalkPresenter : MonoBehaviour
 
     public bool IsPlaying => _playing;
 
+    public void SetBubbleViewportPosition(Vector2 viewportPosition, Vector2 screenOffset)
+    {
+        if (_bubble != null)
+            _bubble.UseViewportPosition(viewportPosition, screenOffset);
+    }
+
+    public void ClearBubblePositionOverride()
+    {
+        if (_bubble != null)
+            _bubble.UseAnchorPosition();
+    }
+
     // 대화 시작. 종료되면 OnFinished 발생.
     public void Play(IReadOnlyList<TalkLine> lines)
     {

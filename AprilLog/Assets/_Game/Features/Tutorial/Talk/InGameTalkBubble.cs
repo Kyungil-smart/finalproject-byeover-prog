@@ -33,6 +33,10 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     [SerializeField] private float _nextBobAmplitude = 8f;   // 이동 폭(px)
     [SerializeField] private float _nextBobSpeed = 4f;        // 왕복 속도
 
+    [Header("다음 표시 위치")]
+    [Tooltip("Icon_Next를 말풍선 오른쪽 아래에서 얼마나 안쪽으로 둘지(px).")]
+    [SerializeField] private Vector2 _nextIconInset = new Vector2(48f, 36f);
+
     private Transform _anchor;
     private Camera _camera;
     private Coroutine _typing;
@@ -40,6 +44,9 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
 
     private Vector2 _nextIconBasePos;
     private float _nextBobTime;
+    private bool _useFixedViewportPosition;
+    private Vector2 _fixedViewportPosition;
+    private Vector2 _fixedScreenOffset;
 
     public bool IsTyping => _isTyping;
 
@@ -47,7 +54,7 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     {
         if (_nextIcon != null)
         {
-            _nextIconBasePos = _nextIcon.anchoredPosition;
+            ConfigureNextIconPosition();
             _nextIcon.gameObject.SetActive(false);
         }
     }
@@ -56,6 +63,18 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     {
         _anchor = anchor;
         _camera = cam != null ? cam : (Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>());
+    }
+
+    public void UseAnchorPosition()
+    {
+        _useFixedViewportPosition = false;
+    }
+
+    public void UseViewportPosition(Vector2 viewportPosition, Vector2 screenOffset)
+    {
+        _useFixedViewportPosition = true;
+        _fixedViewportPosition = viewportPosition;
+        _fixedScreenOffset = screenOffset;
     }
 
     public void Show()
@@ -73,14 +92,28 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     public void PlayLine(string speakerName, string text)
     {
         Show();
-        if (_nameText != null) _nameText.text = speakerName ?? string.Empty;
+        string safeSpeakerName = speakerName ?? string.Empty;
+        string safeText = text ?? string.Empty;
+        if (_nameText != null) _nameText.text = safeSpeakerName;
 
         StopTyping();
         HideNextIcon();
         if (_dialogueText == null) return;
 
-        _dialogueText.text = text ?? string.Empty;
+        _dialogueText.text = safeText;
+        ConfigureNextIconPosition();
         _typing = StartCoroutine(TypeRoutine());
+    }
+
+    private void ConfigureNextIconPosition()
+    {
+        if (_nextIcon == null) return;
+
+        _nextIcon.anchorMin = new Vector2(1f, 0f);
+        _nextIcon.anchorMax = new Vector2(1f, 0f);
+        _nextIcon.pivot = new Vector2(1f, 0f);
+        _nextIconBasePos = new Vector2(-Mathf.Abs(_nextIconInset.x), Mathf.Abs(_nextIconInset.y));
+        _nextIcon.anchoredPosition = _nextIconBasePos;
     }
 
     private IEnumerator TypeRoutine()
@@ -145,7 +178,18 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
 
     private void FollowAnchor()
     {
-        if (_anchor == null || _camera == null || _root == null) return;
+        if (_root == null) return;
+
+        if (_useFixedViewportPosition)
+        {
+            _root.position = new Vector3(
+                Screen.width * _fixedViewportPosition.x + _fixedScreenOffset.x,
+                Screen.height * _fixedViewportPosition.y + _fixedScreenOffset.y,
+                0f);
+            return;
+        }
+
+        if (_anchor == null || _camera == null) return;
 
         Vector3 world = _anchor.position + new Vector3(0f, _worldYOffset, 0f);
         Vector3 screen = _camera.WorldToScreenPoint(world);
