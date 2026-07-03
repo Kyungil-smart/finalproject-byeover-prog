@@ -14,10 +14,10 @@ public class ArtifactManager : MonoBehaviour
     private const int UpgradeStoneId = 70004;
     private const int LegendaryShardId = 70005;
     
-    public int UpgradeStone => GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null
+    public int UpgradeStone => GameManager.Instance != null
         ? DataManager.Instance.ResourceRepo.GetItemCount(UpgradeStoneId)
         : _localUpgradeStones;
-    public int LegendaryShard => GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null
+    public int LegendaryShard => GameManager.Instance != null
         ? DataManager.Instance.ResourceRepo.GetItemCount(LegendaryShardId)
         : _localLegendaryShard;
     
@@ -30,7 +30,7 @@ public class ArtifactManager : MonoBehaviour
     
     public void InitializeItems(int upgradeStone, int legendaryShard)
     {
-        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        if (GameManager.Instance != null)
         {
             DataManager.Instance.ResourceRepo.SetItemCount(UpgradeStoneId, Mathf.Max(0, upgradeStone));
             DataManager.Instance.ResourceRepo.SetItemCount(LegendaryShardId, Mathf.Max(0, legendaryShard));

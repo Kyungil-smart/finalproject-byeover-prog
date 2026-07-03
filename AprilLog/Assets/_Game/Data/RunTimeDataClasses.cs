@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine.UIElements;
 
 #region Sort 보조 구조체
 
@@ -684,6 +684,102 @@ public class RewardRecipe
     public int TargetId;
     public int RewardId;
     public int currentStep;
+}
+
+#endregion
+
+#region Lobby 지원
+
+[Serializable]
+public class ChapterEntry
+{
+    [Tooltip("챕터 이름 (예: 어둠의 숲)")]
+    public string chapterName;
+
+    [Tooltip("챕터 표시 텍스트 (예: CHAPTER.1) — 비워두면 자동 생성")]
+    public string chapterLabel;
+
+    [TextArea(2, 4)]
+    [Tooltip("챕터 설명")]
+    public string description;
+    
+    [Tooltip("챕터 대표 이미지")]
+    public Sprite image;
+}
+
+[CreateAssetMenu(fileName = "ChapterData", menuName = "Lobby/Chapter Data")]
+public class ChapterDataSO : ScriptableObject
+{
+    [Header("챕터 목록 (순서대로)")] 
+    public List<ChapterEntry> chapters = new();
+    
+    private StageRepo _repo;
+    private LocalizationManager _localizationManager;
+    private bool _isInitialized;
+
+    public int ChapterCount => chapters != null ? chapters.Count : 0;
+
+    public void InitChapters()
+    {
+        if(_isInitialized) return;
+        
+        if(chapters.Count > 0)
+        {
+            _isInitialized = true;
+            return;
+        }
+        
+        chapters ??= new List<ChapterEntry>();
+        _repo ??= DataManager.Instance.StageRepo;
+        _localizationManager ??= LocalizationManager.Instance;
+        string path = "Lobby/T";
+        
+        var indexData = _repo.GetStepIndexToChapterIdMappingData();
+        if(indexData == null || indexData.Count == 0)
+        {
+            Debug.LogWarning("[PageMainLobbyController] 챕터 정보를 불러오지 못했습니다.");
+            return;
+        }
+
+        for (int i = 0; i < indexData.Count; i++)
+        {
+            var masterData = _repo.GetChapter(indexData[i]);
+            string imageIndex = (indexData[i] / 100).ToString();
+            
+            chapters.Add(
+                new ChapterEntry
+                {
+                    chapterName = _localizationManager == null? 
+                        _localizationManager.Get(masterData.Name, LocalizingType.UI) : null,
+                    chapterLabel = _localizationManager == null?
+                        _localizationManager.Get(masterData.Explanation, LocalizingType.UI): null,
+                    description = _localizationManager == null?
+                        _localizationManager.Get(masterData.Explanation, LocalizingType.UI): null,
+                    image = Resources.Load<Sprite>(path + imageIndex)
+                });
+        }
+        
+        _isInitialized = true;
+    }
+    
+    /// <summary>인덱스(0-based)로 챕터 데이터를 반환합니다.</summary>
+    public ChapterEntry GetChapter(int index)
+    {
+        if (chapters == null || chapters.Count == 0) return null;
+
+        index = Mathf.Clamp(index, 0, chapters.Count - 1);
+        var entry = chapters[index];
+
+        // label 비어있으면 자동 생성
+        if (string.IsNullOrWhiteSpace(entry.chapterLabel))
+            entry.chapterLabel = $"CHAPTER.{index + 1}";
+
+        // 이름 비어있으면 자동 생성
+        if (string.IsNullOrWhiteSpace(entry.chapterName))
+            entry.chapterName = $"Chapter {index + 1}";
+
+        return entry;
+    }
 }
 
 #endregion

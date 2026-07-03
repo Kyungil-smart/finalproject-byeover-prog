@@ -25,11 +25,9 @@ public class ExtraCurrencyModel : MonoBehaviour
     [SerializeField] private bool initializeWithTestValues = true;
     [SerializeField] private int testStartTicket = TestStartTicket;
 
-    private bool _initialized;
-
     private void Awake()
     {
-        if (initializeWithTestValues && !_initialized)
+        if (initializeWithTestValues && GameManager.Instance == null)
             Initialize(testStartTicket);
     }
     
@@ -47,7 +45,7 @@ public class ExtraCurrencyModel : MonoBehaviour
     // ---------- 초기화/리셋 ----------
     public void Initialize(int ticket)
     {
-        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        if (GameManager.Instance != null)
         {
             DataManager.Instance.ResourceRepo.SetItemCount(GachaTicketId, Mathf.Max(0, ticket));
             GameManager.Instance.SyncAndSaveResourceCloudData();

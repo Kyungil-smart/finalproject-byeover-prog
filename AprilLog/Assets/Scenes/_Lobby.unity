@@ -402,6 +402,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1767865415}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1203280962 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4642423598959218703, guid: dea76765199207942829716049dd0043, type: 3}
+  m_PrefabInstance: {fileID: 1857311406}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a227a493b3bc93143898147692fb22ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaminaModel
 --- !u!114 &1250989671 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6730792083203932228, guid: dea76765199207942829716049dd0043, type: 3}
@@ -945,6 +956,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: --- LobbyUI ---
       objectReference: {fileID: 0}
+    - target: {fileID: 3083498279530948815, guid: dea76765199207942829716049dd0043, type: 3}
+      propertyPath: _staminaModel
+      value: 
+      objectReference: {fileID: 1203280962}
     - target: {fileID: 3242708693023634704, guid: dea76765199207942829716049dd0043, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1020,6 +1035,10 @@ PrefabInstance:
     - target: {fileID: 4028540494522033440, guid: dea76765199207942829716049dd0043, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -477.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4642423598959218703, guid: dea76765199207942829716049dd0043, type: 3}
+      propertyPath: initializeWithTestValues
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4647384072913577003, guid: dea76765199207942829716049dd0043, type: 3}
       propertyPath: m_Interactable
@@ -1237,7 +1256,8 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8290771561288230585, guid: dea76765199207942829716049dd0043, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
