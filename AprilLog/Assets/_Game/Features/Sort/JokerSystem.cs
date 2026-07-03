@@ -33,8 +33,8 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     private JokerPatternData _activePattern;
     private int _currentIndex = 0;
     private int _currentCount = 2;
-    private float _lastUsedTime = -5f;
-    private const float _coolDown = 5f;
+    private float _lastUsedTime = -60f;
+    private const float _coolDown = 60f;
     private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정
 
     private void Start()

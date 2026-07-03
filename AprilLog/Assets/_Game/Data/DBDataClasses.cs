@@ -220,8 +220,9 @@ public class GearMasterData
     public string GearGrade; // Rare, Epic, Legendary
     public int MaxHPBaseAmount;
     public int AttackBaseAmount;
-    public int GearName; // 기어이름 : 번역 연결용
-    public int Explanation; // 기어 설명 : 번역 연결용
+    public int GearName;            // 기어 이름 : 번역 연결용
+    public int SpecialExplanation;  // 기어 설명 : 특수 능력 설명
+    public int OwnedExplanation;    // 기어 설명 : 보유 효과 능력치 설명
     public int IconSpriteKey;
 }
 

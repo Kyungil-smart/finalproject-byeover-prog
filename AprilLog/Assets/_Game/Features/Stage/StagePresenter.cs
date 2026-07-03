@@ -108,8 +108,7 @@ public class StagePresenter
 
         // _model.Tick 도중 스테이지 클리어 콜백이 동기적으로 다음 스테이지 조립(InitAndStart)을 타면
         // 이 프레젠터는 이미 Release되어 _spawner가 null이다(재진입). 한 프레임 건너뛰면 새 프레젠터가 돈다.
-        if (_spawner != null)
-            _spawner.Tick(deltaTime);
+        // 스포너의 Tick는 안쓰기 때문에 제거함(26.07.03)
     }
     
     // ---------- 메모리 할당 해제 ----------
