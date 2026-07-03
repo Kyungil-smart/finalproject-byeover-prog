@@ -67,10 +67,10 @@ public class MonsterSpawner : MonoBehaviour
     public float NormalSpawnLineXMin => _normalSpawnLineXMin;
     public float NormalSpawnLineXMax => _normalSpawnLineXMax;
 
-    // ---------- Update ----------
-    public void Tick(float deltaTime)
+    // ---------- Life Cycle ----------
+    private void OnDestroy()
     {
-
+        PoolManager.Instance.DespawnAllPools();
     }
 
     // 일반 스폰 라인(상단 Y + 좌우 X 범위)을 외부에서 설정. InGameBootstrap이 카메라 기준으로 맞춤.

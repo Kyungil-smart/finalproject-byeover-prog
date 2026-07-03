@@ -292,37 +292,27 @@ public class StageRepo : MonoBehaviour
     
     public int GetChapterIdByStep(int targetChapterId, int step)
     {
-        int index = GetStepIndexByChapterId(targetChapterId);
+        int index = GetIndexByChapterId(targetChapterId);
         if(index != -1) return index;
         
         int temp = index - step;
+        int id = GetChapterIdByIndex(temp);
         
-        if (_stepIndexToChapterIdMapping.TryGetValue(temp, out int id))
-        {
-            return id;
-        }
-    
-        Debug.LogError($"[StageRepo] Step {step}에 해당하는 ID를 찾을 수 없습니다.");
-        return -1;
+        return id;
     }
     
     public int GetStageIdByStep(int targetStageId, int step)
     {
-        int index = GetStepIndexByStageId(targetStageId);
+        int index = GetIndexByStageId(targetStageId);
         if(index != -1) return index;
 
         int temp = index - step;
+        int id = GetStageIdByIndex(temp);
         
-        if (_stepIndexToStageIdMapping.TryGetValue(temp, out int id))
-        {
-            return id;
-        }
-    
-        Debug.LogError($"[StageRepo] Step {step}에 해당하는 ID를 찾을 수 없습니다.");
-        return -1;
+        return id;
     }
 
-    public int GetStepIndexByChapterId(int chapterId)
+    public int GetIndexByChapterId(int chapterId)
     {
         if(_chapterStepMapping.TryGetValue(chapterId, out int index))
         {
@@ -333,7 +323,7 @@ public class StageRepo : MonoBehaviour
         return -1;
     }
 
-    public int GetStepIndexByStageId(int stageId)
+    public int GetIndexByStageId(int stageId)
     {
         if(_stageStepMapping.TryGetValue(stageId, out int index))
         {
@@ -341,6 +331,28 @@ public class StageRepo : MonoBehaviour
         }
         
         Debug.LogError($"[StageRepo] Stage ID {stageId}에 해당하는 ID를 찾을 수 없습니다.");
+        return -1;
+    }
+
+    public int GetChapterIdByIndex(int index)
+    {
+        if (_stepIndexToChapterIdMapping.TryGetValue(index, out int id))
+        {
+            return id;
+        }
+    
+        Debug.LogError($"[StageRepo] Index {index}에 해당하는 ID를 찾을 수 없습니다.");
+        return -1;
+    }
+
+    public int GetStageIdByIndex(int index)
+    {
+        if (_stepIndexToStageIdMapping.TryGetValue(index, out int id))
+        {
+            return id;
+        }
+    
+        Debug.LogError($"[StageRepo] Index {index}에 해당하는 ID를 찾을 수 없습니다.");
         return -1;
     }
 
