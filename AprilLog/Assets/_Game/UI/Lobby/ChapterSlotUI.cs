@@ -24,7 +24,7 @@ public class ChapterSlotUI : MonoBehaviour
     [SerializeField] private Sprite   _placeholderSprite;
 
     // ------------------------------------------------------------------
-    public void SetData(ChapterTestEntry entry, int chapterIndex)
+    public void SetData(ChapterEntry entry, int chapterIndex)
     {
         if (entry == null) return;
 

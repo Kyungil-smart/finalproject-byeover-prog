@@ -4,6 +4,7 @@
 //          - DOTween으로 카드 슬라이드 인/아웃 연출
 //          - 첫 번째/마지막 챕터면 이동 불가 버튼 숨김
 
+using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +13,7 @@ public class PageMainLobbyController : MonoBehaviour
 {
     // ------------------------------------------------------------------
     [Header("데이터")]
-    [SerializeField] private ChapterTestDataSO _data;
+    [SerializeField] private ChapterDataSO _data;
 
     [Header("슬롯")]
     [Tooltip("슬라이드 애니메이션할 챕터 카드의 RectTransform")]
@@ -23,6 +24,7 @@ public class PageMainLobbyController : MonoBehaviour
     [Header("버튼")]
     [SerializeField] private Button _btnPrev;
     [SerializeField] private Button _btnNext;
+    [SerializeField] private Button _btnStart;
 
     [Header("슬라이드 애니메이션")]
     [SerializeField] private float _slideWidth    = 1440f;
@@ -32,6 +34,7 @@ public class PageMainLobbyController : MonoBehaviour
     // ------------------------------------------------------------------
     private int  _currentIndex;
     private bool _isAnimating;
+    public event Action<int> OnGameStart; 
 
     // ------------------------------------------------------------------
     private void Awake()
@@ -41,6 +44,11 @@ public class PageMainLobbyController : MonoBehaviour
 
         if (_btnNext != null) _btnNext.onClick.AddListener(OnNextClicked);
         else Debug.LogWarning("[PageMainLobbyController] Btn_Next 미연결", this);
+        
+        if (_btnStart != null) _btnStart.onClick.AddListener(OnStartClicked);
+        else Debug.LogWarning("[PageMainLobbyController] Btn_Start 미연결", this);
+        
+        if (_data == null) _data = ScriptableObject.CreateInstance<ChapterDataSO>();
     }
 
     private void OnEnable()
@@ -53,9 +61,21 @@ public class PageMainLobbyController : MonoBehaviour
         ShowChapter(0, instant: true);
     }
 
+    private void Start()
+    {
+        _data.InitChapters();
+        ShowChapter(0, instant: true);
+    }
+
     // ------------------------------------------------------------------
     private void OnPrevClicked() => Navigate(-1);
     private void OnNextClicked() => Navigate(+1);
+    private void OnStartClicked() => GameStart(_currentIndex);
+
+    private void GameStart(int index)
+    {
+        OnGameStart?.Invoke(index);
+    }
 
     private void Navigate(int direction)
     {
