@@ -105,6 +105,10 @@ public class TutorialInGameDirector : MonoBehaviour
     [SerializeField] private float _step3RushSpawnInterval = 0.35f;
     [SerializeField] private float _step3ForcedDefeatDelay = 12f;
 
+    [Header("인게임 대화 버블")]
+    [Tooltip("인게임 다이제틱 대화를 재생할 프리젠터. 오버레이 프리팹 안에 두고 연결.")]
+    [SerializeField] private InGameTalkPresenter _talkPresenter;
+
     [Header("런타임 참조")]
     [SerializeField] private InGameGrowthSystem _growth;
 
@@ -854,6 +858,28 @@ public class TutorialInGameDirector : MonoBehaviour
             GameManager.Instance.LoadLobby();
         else
             UnityEngine.SceneManagement.SceneManager.LoadScene("_Lobby");
+    }
+
+    // 인게임 다이제틱 대화 버블로 라인들을 재생하고 종료까지 대기한다.
+    // 라인 소스(데이터 어댑터)는 이 함수 밖에서 만들어 넘긴다.
+    private IEnumerator PlayTalk(IReadOnlyList<TalkLine> lines)
+    {
+        if (_talkPresenter == null)
+        {
+            Debug.LogWarning("[TutorialInGameDirector] 대화 버블 프리젠터가 연결되지 않았습니다.");
+            yield break;
+        }
+        if (lines == null || lines.Count == 0) yield break;
+
+        bool finished = false;
+        Action handleFinished = () => finished = true;
+        _talkPresenter.OnFinished += handleFinished;
+        _talkPresenter.Play(lines);
+
+        while (!finished)
+            yield return null;
+
+        _talkPresenter.OnFinished -= handleFinished;
     }
 
     private IEnumerator PlayScenarioRange(int startId, int endId)
