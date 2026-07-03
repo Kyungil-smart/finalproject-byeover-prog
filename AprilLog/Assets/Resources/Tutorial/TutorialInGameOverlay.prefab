@@ -84,6 +84,7 @@ RectTransform:
   m_Children:
   - {fileID: 2413880576238509904}
   - {fileID: 2372274495810422172}
+  - {fileID: 4352025831260549299}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -195,8 +196,17 @@ MonoBehaviour:
   _tutorialScenarioSourceGroupId: 3002
   _firstEnchantScenarioGroupId: 100030
   _firstEnchantScenarioEndId: 100034
+  _enchantAutoAttackStartId: 100035
+  _enchantAutoAttackEndId: 100036
+  _enchantCombinationId: 100037
+  _enchantCombinationGuideId: 100038
+  _enchantComboStartId: 100039
+  _enchantComboEndId: 100040
+  _enchantWrapupId: 100041
+  _step0EntryScenarioStartId: 100009
+  _step0EntryScenarioEndId: 100018
   _step0IntroScenarioId: 100019
-  _step0MonsterIds: 0b0000000c0000000d000000
+  _step0MonsterIds: 931300009413000095130000
   _step0MonsterSpawnPositions:
   - {x: -2, y: 3}
   - {x: 0, y: 3}
@@ -208,15 +218,16 @@ MonoBehaviour:
   _step0MonsterEmphasisHold: 0.3
   _step0GuaranteeOneShot: 1
   _step3RushWarningDelay: 38
-  _step3RushWarningScenarioStartId: 100035
-  _step3RushWarningScenarioEndId: 100035
-  _step3DefeatScenarioStartId: 100036
-  _step3DefeatScenarioEndId: 100039
-  _step3RushMonsterIds: 0b0000000c0000000d000000
+  _step3RushWarningScenarioStartId: 100042
+  _step3RushWarningScenarioEndId: 100042
+  _step3DefeatScenarioStartId: 100043
+  _step3DefeatScenarioEndId: 100046
+  _step3RushMonsterIds: 931300009413000095130000
   _step3RushBatchAmount: 6
   _step3RushSpawnInterval: 0.35
   _step3ForcedDefeatDelay: 12
   _talkPresenter: {fileID: 2919050666667887572}
+  _aprilSpeakerName: "\uC5D0\uC774\uD504\uB9B4"
   _growth: {fileID: 0}
 --- !u!1 &2404184547563699816
 GameObject:
@@ -516,6 +527,61 @@ MonoBehaviour:
   _startPhase: 0
   _applyOnStart: 1
   _showDebugLog: 1
+--- !u!1 &3671397823590830590
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4352025831260549299}
+  - component: {fileID: 1536189731030840949}
+  m_Layer: 5
+  m_Name: ScenarioDataDriver
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4352025831260549299
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3671397823590830590}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7097457861417313249}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1536189731030840949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3671397823590830590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a3f1c9e2b6d4a8f05e1c3b7d9a2f640, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScenarioDataDriver
+  _view: {fileID: 0}
+  _startGroupId: 3002
+  _playOnStart: 0
+  _useEnglish: 0
+  _portraitPath: Story/Portraits/
+  _backgroundPath: Story/Backgrounds/
+  _cutscenePath: Story/Cutscenes/
 --- !u!1 &4172266222334835024
 GameObject:
   m_ObjectHideFlags: 0
@@ -527,6 +593,8 @@ GameObject:
   - component: {fileID: 2372274495810422172}
   - component: {fileID: 5180868533285896110}
   - component: {fileID: 2919050666667887572}
+  - component: {fileID: 3767343283158925839}
+  - component: {fileID: 8849894633283466309}
   m_Layer: 0
   m_Name: TalkOverlay
   m_TagString: Untagged
@@ -549,9 +617,9 @@ RectTransform:
   - {fileID: 1341496462664945536}
   m_Father: {fileID: 7097457861417313249}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 600}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &5180868533285896110
@@ -568,7 +636,7 @@ Canvas:
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
-  m_OverrideSorting: 0
+  m_OverrideSorting: 1
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
@@ -593,6 +661,31 @@ MonoBehaviour:
   _raryPrefab: {fileID: 3843200032211840365, guid: b3cfbe8c190cd95418a6f6a88dca3c44, type: 3}
   _raryOffset: {x: 1.2, y: 0}
   _dimAmount: 0.45
+--- !u!222 &3767343283158925839
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4172266222334835024}
+  m_CullTransparentMesh: 1
+--- !u!114 &8849894633283466309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4172266222334835024}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &4274418952285231074
 GameObject:
   m_ObjectHideFlags: 0

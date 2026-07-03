@@ -2492,10 +2492,10 @@ GameObject:
   - component: {fileID: 1411708654}
   - component: {fileID: 1411708653}
   - component: {fileID: 1411708658}
-  - component: {fileID: 1411708659}
   - component: {fileID: 1411708660}
   - component: {fileID: 1411708661}
   - component: {fileID: 1411708662}
+  - component: {fileID: 1411708663}
   m_Layer: 5
   m_Name: '--- StoryPopup --- '
   m_TagString: Untagged
@@ -2627,25 +2627,6 @@ MonoBehaviour:
   _useSceneFade: 1
   _sceneFadeDuration: 0.3
   _skipButton: {fileID: 1922228081}
---- !u!114 &1411708659
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1411708652}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c4b0e121d3baee84ead3b01dac83f8a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ScenarioDummyDriver
-  _view: {fileID: 1411708658}
-  _lines: []
-  _spriteApril: {fileID: 21300000, guid: 00782d3b5aa5cac4d9db825272e333e1, type: 3}
-  _spriteLarry: {fileID: 21300000, guid: 00782d3b5aa5cac4d9db825272e333e1, type: 3}
-  _bg3001: {fileID: 0}
-  _bg3002: {fileID: 0}
-  _playOnStart: 1
 --- !u!114 &1411708660
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2677,7 +2658,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77ff6f5d35e8a0f42a4ab5c4f20e5822, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TempStoryToGameFlow
-  _driver: {fileID: 1411708659}
+  _driver: {fileID: 0}
   _nextScene: _InGame
 --- !u!114 &1411708662
 MonoBehaviour:
@@ -2695,7 +2676,25 @@ MonoBehaviour:
   _confirmPopup: {fileID: 1229027504}
   _confirmButton: {fileID: 1048264027}
   _cancelButton: {fileID: 299038679}
-  _scenarioView: {fileID: 1411708658}
+--- !u!114 &1411708663
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1411708652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a3f1c9e2b6d4a8f05e1c3b7d9a2f640, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScenarioDataDriver
+  _view: {fileID: 1411708658}
+  _startGroupId: 3001
+  _playOnStart: 1
+  _useEnglish: 0
+  _portraitPath: Story/Portraits/
+  _backgroundPath: Story/Backgrounds/
+  _cutscenePath: Story/Cutscenes/
 --- !u!1 &1444678832
 GameObject:
   m_ObjectHideFlags: 0

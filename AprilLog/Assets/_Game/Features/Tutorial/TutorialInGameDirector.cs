@@ -71,12 +71,33 @@ public class TutorialInGameDirector : MonoBehaviour
     [Header("step2 최초 인챈트 안내")]
     [SerializeField] private ScenarioDataDriver _firstEnchantScenarioDriver;
     [SerializeField] private int _tutorialScenarioSourceGroupId = 3002;
+    [Tooltip("도입: 레벨업/인챈트 개념 안내")]
     [SerializeField] private int _firstEnchantScenarioGroupId = 100030;
     [SerializeField] private int _firstEnchantScenarioEndId = 100034;
+    [Tooltip("자동공격 스킬만 남기고 딤 후 재생")]
+    [SerializeField] private int _enchantAutoAttackStartId = 100035;
+    [SerializeField] private int _enchantAutoAttackEndId = 100036;
+    [Tooltip("조합 스킬만 남기고 딤 후 재생")]
+    [SerializeField] private int _enchantCombinationId = 100037;
+    [Tooltip("팝업 숨기고 버블로 조합 스킬 설명 연출")]
+    [SerializeField] private int _enchantCombinationGuideId = 100038;
+    [Tooltip("콤보 스킬만 남기고 딤 후 재생")]
+    [SerializeField] private int _enchantComboStartId = 100039;
+    [SerializeField] private int _enchantComboEndId = 100040;
+    [Tooltip("스킬 딤 해제 후 마무리 재생")]
+    [SerializeField] private int _enchantWrapupId = 100041;
+
+    // 고정 3카드 순서: 자동공격(50)/조합(51)/콤보(53) = TutorialFirstEnchantSelectionOverride와 동일
+    private const int EnchantCardAutoAttack = 0;
+    private const int EnchantCardCombination = 1;
+    private const int EnchantCardCombo = 2;
 
     [Header("step0 전투 연출")]
+    [Tooltip("0챕터 진입 대사(몬스터 없는 화면). 100019 앞에 먼저 재생")]
+    [SerializeField] private int _step0EntryScenarioStartId = 100009;
+    [SerializeField] private int _step0EntryScenarioEndId = 100018;
     [SerializeField] private int _step0IntroScenarioId = 100019;
-    [SerializeField] private int[] _step0MonsterIds = { 11, 12, 13 };
+    [SerializeField] private int[] _step0MonsterIds = { 5011, 5012, 5013 };
     [Tooltip("몬스터가 멈춰서 등장하는 위치(월드). 좌->우 3개")]
     [SerializeField] private Vector2[] _step0MonsterSpawnPositions =
     {
@@ -96,11 +117,11 @@ public class TutorialInGameDirector : MonoBehaviour
 
     [Header("step3 한계 체감 러시")]
     [SerializeField] private float _step3RushWarningDelay = 38f;
-    [SerializeField] private int _step3RushWarningScenarioStartId = 100035;
-    [SerializeField] private int _step3RushWarningScenarioEndId = 100035;
-    [SerializeField] private int _step3DefeatScenarioStartId = 100036;
-    [SerializeField] private int _step3DefeatScenarioEndId = 100039;
-    [SerializeField] private int[] _step3RushMonsterIds = { 11, 12, 13 };
+    [SerializeField] private int _step3RushWarningScenarioStartId = 100042;
+    [SerializeField] private int _step3RushWarningScenarioEndId = 100042;
+    [SerializeField] private int _step3DefeatScenarioStartId = 100043;
+    [SerializeField] private int _step3DefeatScenarioEndId = 100046;
+    [SerializeField] private int[] _step3RushMonsterIds = { 5011, 5012, 5013 };
     [SerializeField] private int _step3RushBatchAmount = 6;
     [SerializeField] private float _step3RushSpawnInterval = 0.35f;
     [SerializeField] private float _step3ForcedDefeatDelay = 12f;
@@ -108,6 +129,8 @@ public class TutorialInGameDirector : MonoBehaviour
     [Header("인게임 대화 버블")]
     [Tooltip("인게임 다이제틱 대화를 재생할 프리젠터. 오버레이 프리팹 안에 두고 연결.")]
     [SerializeField] private InGameTalkPresenter _talkPresenter;
+    [Tooltip("이 이름과 일치하는 대사는 에이프릴(플레이어), 나머지는 래리로 매핑.")]
+    [SerializeField] private string _aprilSpeakerName = "에이프릴";
 
     [Header("런타임 참조")]
     [SerializeField] private InGameGrowthSystem _growth;
@@ -121,7 +144,9 @@ public class TutorialInGameDirector : MonoBehaviour
     private TutorialDragArrow _step0DragArrow;
     private TutorialFingerGuide _step0Finger;
     private TutorialDimMask _step0DimMask;
+    private TutorialDimMask _enchantDimMask;
     private CanvasGroup _firstEnchantCanvasGroup;
+    private static FieldInfo _enchantSpawnedCardsField;
 
     private bool _active;
     private bool _step0DragArrowHidden;
@@ -193,8 +218,6 @@ public class TutorialInGameDirector : MonoBehaviour
         ReleaseStageForTutorialPractice();
         ClearTutorialPracticeOverrides();
         TutorialFirstEnchantSelectionOverride.ClearFixedChoiceState();
-        if (_firstEnchantScenarioDriver != null)
-            _firstEnchantScenarioDriver.OnFinished -= HandleFirstEnchantScenarioFinished;
     }
 
     private void Update()
@@ -350,10 +373,13 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         Debug.Log("[TutorialInGameDirector] step0 전투 연출 시작");
 
-        // 도입 시나리오 (기존 3002 그룹 주입 방식 재사용). 재생 중 timeScale=0로 대기.
+        // 도입 시나리오. 재생 중 timeScale=0로 대기.
         float prevScale = Time.timeScale;
         Time.timeScale = 0f;
-        yield return PlayScenarioRange(_step0IntroScenarioId, _step0IntroScenarioId);
+
+        // 0챕터 진입 대사(몬스터 없는 화면) → 이후 몬스터 스폰 대사(100019)
+        yield return PlayWorldDialogue(_step0EntryScenarioStartId, _step0EntryScenarioEndId);
+        yield return PlayWorldDialogue(_step0IntroScenarioId, _step0IntroScenarioId);
 
         // 연출 구간: timeScale=0 유지 → 입력 차단 + 몬스터 자연 정지. 위치는 코드로 직접 제어.
         SpawnStep0FrozenMonsters();
@@ -673,20 +699,123 @@ public class TutorialInGameDirector : MonoBehaviour
             yield break;
         }
 
-        _firstEnchantScenarioDriver.OnFinished -= HandleFirstEnchantScenarioFinished;
-        _firstEnchantScenarioDriver.OnFinished += HandleFirstEnchantScenarioFinished;
+        // 대화 동안 카드 선택 잠금 (마지막에 해제)
         LockFirstEnchantSelection();
-        if (!TryPlayTutorialScenarioRange(_firstEnchantScenarioGroupId, _firstEnchantScenarioEndId))
-            HandleFirstEnchantScenarioFinished();
-    }
 
-    private void HandleFirstEnchantScenarioFinished()
-    {
-        if (_firstEnchantScenarioDriver != null)
-            _firstEnchantScenarioDriver.OnFinished -= HandleFirstEnchantScenarioFinished;
+        // 4-3-1-2 도입 (전 카드 노출)
+        yield return PlayScenarioRange(_firstEnchantScenarioGroupId, _firstEnchantScenarioEndId);
 
+        // 4-3-1-3 자동공격 스킬만 남기고 딤
+        DimEnchantExcept(EnchantCardAutoAttack);
+        yield return PlayScenarioRange(_enchantAutoAttackStartId, _enchantAutoAttackEndId);
+
+        // 4-3-1-4 조합 스킬만 남기고 딤
+        DimEnchantExcept(EnchantCardCombination);
+        yield return PlayScenarioRange(_enchantCombinationId, _enchantCombinationId);
+
+        // 4-3-1-5 팝업 숨김(비활성화 X → 고정 카드 유지) + 인게임 조합식 테이블 강조 → 100038 → 복귀
+        ClearEnchantDim();
+        SetEnchantPopupVisible(false);
+        HighlightCombinationTable();
+        yield return PlayScenarioRange(_enchantCombinationGuideId, _enchantCombinationGuideId);
+        ClearEnchantDim();
+        SetEnchantPopupVisible(true);
+
+        // 4-3-1-6 콤보 스킬만 남기고 딤
+        DimEnchantExcept(EnchantCardCombo);
+        yield return PlayScenarioRange(_enchantComboStartId, _enchantComboEndId);
+
+        // 4-3-1-7 스킬 딤 해제 후 마무리
+        ClearEnchantDim();
+        yield return PlayScenarioRange(_enchantWrapupId, _enchantWrapupId);
+
+        // 4-3-1-8 유저가 3장 중 1장 선택 → 팝업 닫힘 → 다음 단계
         UnlockFirstEnchantSelection();
         StartCoroutine(WaitForFirstEnchantChoiceClosed());
+    }
+
+    // 인챈트 팝업의 런타임 생성 카드(_spawnedCards)를 리플렉션으로 읽어 RectTransform 목록을 만든다.
+    private List<RectTransform> ResolveEnchantCardRects()
+    {
+        if (_firstEnchantSelectView == null)
+            _firstEnchantSelectView = FindFirstObjectByType<EnchantSelectView>();
+        if (_firstEnchantSelectView == null) return null;
+
+        _enchantSpawnedCardsField ??= typeof(EnchantSelectView)
+            .GetField("_spawnedCards", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (_enchantSpawnedCardsField == null) return null;
+
+        if (_enchantSpawnedCardsField.GetValue(_firstEnchantSelectView) is not List<GameObject> cards)
+            return null;
+
+        var rects = new List<RectTransform>(cards.Count);
+        foreach (GameObject card in cards)
+        {
+            if (card != null) rects.Add(card.GetComponent<RectTransform>());
+        }
+        return rects;
+    }
+
+    // 지정 카드만 남기고 나머지를 딤 처리(딤마스크 구멍).
+    private void DimEnchantExcept(int keepIndex)
+    {
+        List<RectTransform> rects = ResolveEnchantCardRects();
+        if (rects == null || keepIndex < 0 || keepIndex >= rects.Count || rects[keepIndex] == null) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.ShowWithHoles(new[] { rects[keepIndex] });
+    }
+
+    private void ClearEnchantDim()
+    {
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.Hide();
+    }
+
+    // 4-3-1-5: 인게임 조합식 테이블의 첫 슬롯(CombinationCanvas/Slot_1)만 남기고 딤 처리해 강조한다.
+    private void HighlightCombinationTable()
+    {
+        RectTransform target = ResolveCombinationSlot();
+        if (target == null) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.ShowWithHole(target);
+    }
+
+    private RectTransform ResolveCombinationSlot()
+    {
+        GameObject canvas = GameObject.Find("CombinationCanvas");
+        if (canvas == null) return null;
+
+        Transform slot = FindDeepChild(canvas.transform, "Slot_1");
+        return slot as RectTransform;
+    }
+
+    private static Transform FindDeepChild(Transform parent, string name)
+    {
+        if (parent.name == name) return parent;
+        foreach (Transform child in parent)
+        {
+            Transform found = FindDeepChild(child, name);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private TutorialDimMask ResolveEnchantDimMask()
+    {
+        if (_enchantDimMask == null)
+            _enchantDimMask = transform.root.GetComponentInChildren<TutorialDimMask>(true);
+        return _enchantDimMask;
+    }
+
+    // 팝업을 비활성화하지 않고 CanvasGroup 알파로만 숨긴다(OnEnable 재실행 → 카드 리롤 방지).
+    private void SetEnchantPopupVisible(bool visible)
+    {
+        if (_firstEnchantCanvasGroup == null && _firstEnchantSelectView != null)
+            _firstEnchantCanvasGroup = _firstEnchantSelectView.GetComponent<CanvasGroup>();
+        if (_firstEnchantCanvasGroup != null)
+            _firstEnchantCanvasGroup.alpha = visible ? 1f : 0f;
     }
 
     private void LockFirstEnchantSelection()
@@ -746,7 +875,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (!_isStep3Running || _isStep3DefeatHandled) yield break;
 
         PauseStep3Scenario();
-        yield return PlayScenarioRange(_step3RushWarningScenarioStartId, _step3RushWarningScenarioEndId);
+        yield return PlayWorldDialogue(_step3RushWarningScenarioStartId, _step3RushWarningScenarioEndId);
         ResumeStep3ScenarioPause();
 
         StartStep3Rush();
@@ -846,7 +975,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (_spawner != null) _spawner.StopSpawning();
 
         PauseStep3Scenario();
-        yield return PlayScenarioRange(_step3DefeatScenarioStartId, _step3DefeatScenarioEndId);
+        yield return PlayWorldDialogue(_step3DefeatScenarioStartId, _step3DefeatScenarioEndId);
         ResumeStep3ScenarioPause();
 
         TutorialManager tm = TutorialManager.Instance;
@@ -880,6 +1009,41 @@ public class TutorialInGameDirector : MonoBehaviour
             yield return null;
 
         _talkPresenter.OnFinished -= handleFinished;
+    }
+
+    // 시나리오 소스 그룹(3002)에서 ID 범위를 골라 버블용 TalkLine으로 변환한다.
+    // 화자는 이름으로 매핑(에이프릴=플레이어, 그 외=래리). 데이터 교체 시 이 어댑터만 손보면 된다.
+    private List<TalkLine> BuildTutorialTalkLines(int startId, int endId)
+    {
+        var result = new List<TalkLine>();
+
+        StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
+        if (repo == null)
+        {
+            Debug.LogWarning("[TutorialInGameDirector] StoryRepo를 찾지 못해 대화 라인을 만들지 못했습니다.");
+            return result;
+        }
+
+        List<Story_TalkData> source = repo.GetTalkGroup(_tutorialScenarioSourceGroupId);
+        foreach (Story_TalkData line in CollectTutorialScenarioLines(source, startId, endId))
+        {
+            if (line == null) continue;
+            TalkSpeaker speaker = string.Equals(line.name_KR, _aprilSpeakerName)
+                ? TalkSpeaker.April
+                : TalkSpeaker.Rary;
+            result.Add(new TalkLine(speaker, line.name_KR, line.Text_KR));
+        }
+
+        return result;
+    }
+
+    // 월드(필드) 인게임 대사: 버블 프리젠터가 연결돼 있으면 스토리박스(버블)로, 없으면 기존 ScenarioView로 폴백.
+    private IEnumerator PlayWorldDialogue(int startId, int endId)
+    {
+        if (_talkPresenter != null)
+            yield return PlayTalk(BuildTutorialTalkLines(startId, endId));
+        else
+            yield return PlayScenarioRange(startId, endId);
     }
 
     private IEnumerator PlayScenarioRange(int startId, int endId)
