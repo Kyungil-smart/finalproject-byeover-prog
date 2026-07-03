@@ -241,6 +241,12 @@ public class TutorialInGameDirector : MonoBehaviour
             _step1Routine = null;
             if (Time.timeScale == 0f) Time.timeScale = 1f;
         }
+        if (_step14Routine != null)
+        {
+            StopCoroutine(_step14Routine);
+            _step14Routine = null;
+            ResumeStep14ScenarioPause();
+        }
         _step0PuzzlePhase = false;
         ClearEnchantDim();
         ClearTemporaryCombinationRecipe();
@@ -251,6 +257,7 @@ public class TutorialInGameDirector : MonoBehaviour
         UnsubscribePlayerDeath();
         ResumeGameplayAfterGuide();
         ResumeStep3ScenarioPause();
+        ResumeStep14ScenarioPause();
         UnlockFirstEnchantSelection();
         ReleaseStageForTutorialPractice();
         ClearTutorialPracticeOverrides();
@@ -385,6 +392,7 @@ public class TutorialInGameDirector : MonoBehaviour
             case 1: RunStep1(); break;
             case 2: RunStep2(); break;
             case 3: RunStep3(); break;
+            case 14: RunStep14(); break;
             default:
                 ResumeGameplayAfterGuide();
                 ReleaseStageForTutorialPractice();
@@ -660,6 +668,26 @@ public class TutorialInGameDirector : MonoBehaviour
             _step3Routine = StartCoroutine(RunStep3RushSequence());
     }
 
+    private void RunStep14()
+    {
+        ResumeGameplayAfterGuide();
+        HideStep0GuideVisuals();
+        ReleaseStageForTutorialPractice();
+        ClearTutorialPracticeOverrides();
+
+        if (!_step14EntryScenarioPlayed && _step14Routine == null)
+            _step14Routine = StartCoroutine(RunStep14EntryScenario());
+    }
+
+    private IEnumerator RunStep14EntryScenario()
+    {
+        _step14EntryScenarioPlayed = true;
+        PauseStep14Scenario();
+        yield return PlayWorldDialogue(_step14EntryScenarioStartId, _step14EntryScenarioEndId);
+        ResumeStep14ScenarioPause();
+        _step14Routine = null;
+    }
+
     private void HoldStageForTutorialGuide()
     {
         if (_stageBootstrapper == null) _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
@@ -691,6 +719,27 @@ public class TutorialInGameDirector : MonoBehaviour
         if (_stageBootstrapper == null) _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
         if (_stageBootstrapper != null) _stageBootstrapper.SetStageTickPaused(false);
         _isStep3ScenarioPaused = false;
+    }
+
+    private void PauseStep14Scenario()
+    {
+        if (_isStep14ScenarioPaused) return;
+
+        _step14PreviousTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+        if (_stageBootstrapper == null) _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
+        if (_stageBootstrapper != null) _stageBootstrapper.SetStageTickPaused(true);
+        _isStep14ScenarioPaused = true;
+    }
+
+    private void ResumeStep14ScenarioPause()
+    {
+        if (!_isStep14ScenarioPaused) return;
+
+        Time.timeScale = _step14PreviousTimeScale <= 0f ? 1f : _step14PreviousTimeScale;
+        if (_stageBootstrapper == null) _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
+        if (_stageBootstrapper != null) _stageBootstrapper.SetStageTickPaused(false);
+        _isStep14ScenarioPaused = false;
     }
 
     private void ApplyTutorialPracticeOverrides()
