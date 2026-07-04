@@ -461,6 +461,11 @@ public class TutorialInGameDirector : MonoBehaviour
         ClearTutorialPracticeOverrides();
         HoldStageForTutorialGuide();   // 일반 웨이브만 정지 (timeScale은 코루틴이 제어)
 
+        // 로드 직후부터 지정 퍼즐 보드를 깔아둔다. 퍼즐 단계에서 세팅하면 인트로 동안 랜덤 보드가
+        // 보이다가 갑자기 바뀌어 어색하므로, step0 진입 시점에 미리 고정 보드로 맞춘다.
+        if (_sortSystem != null) _sortSystem.Initialize(_step0Seed);
+        SetupStep0Board();
+
         if (_step0Routine == null)
             _step0Routine = StartCoroutine(RunStep0CombatIntro());
     }
@@ -500,8 +505,8 @@ public class TutorialInGameDirector : MonoBehaviour
         Time.timeScale = 1f;
         _step0PuzzlePhase = true;
 
-        if (_sortSystem != null) _sortSystem.Initialize(_step0Seed);
-        SetupStep0Board();
+        // 보드는 step0 진입 시점(RunStep0)에서 이미 고정 보드로 세팅했으므로 여기서 다시 깔지 않는다.
+        // (여기서 재세팅하면 timeScale=1 상태에서 클리어→재배치로 1프레임 깜빡임이 생길 수 있다.)
 
         var highlights = CollectStep0GuideHighlights();
         if (highlights.Count > 0)
