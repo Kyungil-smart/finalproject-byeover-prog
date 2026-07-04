@@ -143,6 +143,11 @@ public class TutorialInGameDirector : MonoBehaviour
     [Header("step14 0-1챕터 재진입")]
     [SerializeField] private int _step14EntryScenarioStartId = 100075;
     [SerializeField] private int _step14EntryScenarioEndId = 100078;
+    [SerializeField] private int _step14BossScenarioId = 100079;
+    [Tooltip("100079 이후 조커 사용을 기다리는 동안 몬스터를 다시 멈추는 주기")]
+    [SerializeField] private float _step14JokerProtectionRefreshInterval = 0.1f;
+    [Tooltip("조커 사용 유도 중 몬스터에게 반복 적용할 짧은 스턴 시간")]
+    [SerializeField] private float _step14JokerProtectionStunDuration = 0.25f;
 
     [Header("인게임 대화 버블")]
     [Tooltip("인게임 다이제틱 대화를 재생할 프리젠터. 오버레이 프리팹 안에 두고 연결.")]
@@ -180,7 +185,9 @@ public class TutorialInGameDirector : MonoBehaviour
     private bool _isStep3DefeatHandled;
     private bool _isStep3ScenarioPaused;
     private bool _step14EntryScenarioPlayed;
+    private bool _step14BossScenarioPlayed;
     private bool _isStep14ScenarioPaused;
+    private bool _wasStep14BossWavePopupVisible;
     private bool _previousFirstEnchantBlocksRaycasts;
     private bool _temporaryCombinationRecipeShown;
     private bool _temporaryFusionDataAdded;
@@ -192,6 +199,8 @@ public class TutorialInGameDirector : MonoBehaviour
     private Coroutine _step3RushRoutine;
     private Coroutine _step3ForceDefeatRoutine;
     private Coroutine _step14Routine;
+    private Coroutine _step14BossScenarioRoutine;
+    private Coroutine _step14JokerProtectionRoutine;
 
     private Coroutine _step0Routine;
     private Coroutine _step1Routine;
@@ -247,6 +256,17 @@ public class TutorialInGameDirector : MonoBehaviour
             _step14Routine = null;
             ResumeStep14ScenarioPause();
         }
+        if (_step14BossScenarioRoutine != null)
+        {
+            StopCoroutine(_step14BossScenarioRoutine);
+            _step14BossScenarioRoutine = null;
+            ResumeStep14ScenarioPause();
+        }
+        if (_step14JokerProtectionRoutine != null)
+        {
+            StopCoroutine(_step14JokerProtectionRoutine);
+            _step14JokerProtectionRoutine = null;
+        }
         _step0PuzzlePhase = false;
         ClearEnchantDim();
         ClearTemporaryCombinationRecipe();
@@ -278,14 +298,38 @@ public class TutorialInGameDirector : MonoBehaviour
         BeginCurrentStep();
     }
 
-    // 튜토리얼 중에는 스테이지 특수 웨이브가 띄우는 보스 경고 팝업을 같은 프레임에 눌러 억제한다.
+    // 튜토리얼 중에는 기획상 필요한 14단계를 제외하고 보스 경고 팝업을 같은 프레임에 눌러 억제한다.
     private void LateUpdate()
     {
         if (!_active) return;
 
         if (!_bossWavePopupResolved) ResolveBossWavePopup();
-        if (_bossWavePopup != null && _bossWavePopup.activeSelf)
+        if (_bossWavePopup == null) return;
+
+        if (IsCurrentStep(14))
+        {
+            WatchStep14BossWavePopup();
+            return;
+        }
+
+        if (_bossWavePopup.activeSelf)
             _bossWavePopup.SetActive(false);
+    }
+
+    private void WatchStep14BossWavePopup()
+    {
+        if (_step14BossScenarioPlayed || _step14BossScenarioRoutine != null) return;
+
+        bool isVisible = _bossWavePopup != null && _bossWavePopup.activeInHierarchy;
+        if (isVisible)
+        {
+            _wasStep14BossWavePopupVisible = true;
+            StartStep14JokerProtection();
+            return;
+        }
+
+        if (_wasStep14BossWavePopupVisible)
+            _step14BossScenarioRoutine = StartCoroutine(RunStep14BossScenario());
     }
 
     // ScreenNavigator의 보스 웨이브 팝업 참조를 런타임에 리플렉션으로 확보한다(런타임 스폰이라 인스펙터 연결 불가).
@@ -301,6 +345,13 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private static bool IsInGameStep(TutorialStep step)
         => step != null && step.scene == TutorialScene.InGame;
+
+    private static bool IsCurrentStep(int stepId)
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        return step != null && step.stepId == stepId;
+    }
 
     // 이번 인게임 런이 튜토리얼 런인지. 튜토 미완료 상태로 로비에서 일반 챕터를 선택해 들어오면
     // IsRunning만으로는 구분이 안 돼 디렉터가 일반 런을 하이재킹(보드 커스텀/정지, step3이면 강제 패배)하므로 게이트한다.
@@ -674,6 +725,8 @@ public class TutorialInGameDirector : MonoBehaviour
         HideStep0GuideVisuals();
         ReleaseStageForTutorialPractice();
         ClearTutorialPracticeOverrides();
+        ApplyStep14SpawnThrottle();
+        _wasStep14BossWavePopupVisible = false;
 
         if (!_step14EntryScenarioPlayed && _step14Routine == null)
             _step14Routine = StartCoroutine(RunStep14EntryScenario());
@@ -686,6 +739,68 @@ public class TutorialInGameDirector : MonoBehaviour
         yield return PlayWorldDialogue(_step14EntryScenarioStartId, _step14EntryScenarioEndId);
         ResumeStep14ScenarioPause();
         _step14Routine = null;
+    }
+
+    private IEnumerator RunStep14BossScenario()
+    {
+        _step14BossScenarioPlayed = true;
+        PauseStep14Scenario();
+        HighlightJokerTable();
+        yield return PlayWorldDialogue(_step14BossScenarioId, _step14BossScenarioId);
+        ClearEnchantDim();
+        ResumeStep14ScenarioPause();
+        _step14BossScenarioRoutine = null;
+    }
+
+    private void HighlightJokerTable()
+    {
+        GameObject jokerTable = GameObject.Find("JokerTable");
+        if (jokerTable == null) return;
+
+        RectTransform target = jokerTable.GetComponent<RectTransform>();
+        if (target == null) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.ShowWithHole(target);
+    }
+
+    private void StartStep14JokerProtection()
+    {
+        StunAliveMonstersForStep14Joker();
+
+        if (_step14JokerProtectionRoutine == null)
+            _step14JokerProtectionRoutine = StartCoroutine(ProtectStep14JokerUse());
+    }
+
+    private IEnumerator ProtectStep14JokerUse()
+    {
+        bool jokerStarted = false;
+        float interval = Mathf.Max(0.02f, _step14JokerProtectionRefreshInterval);
+
+        while (IsCurrentStep(14))
+        {
+            StunAliveMonstersForStep14Joker();
+
+            JokerSystem joker = FindFirstObjectByType<JokerSystem>();
+            if (joker != null && joker.IsActive)
+                jokerStarted = true;
+            else if (jokerStarted)
+                break;
+
+            yield return new WaitForSeconds(interval);
+        }
+
+        _step14JokerProtectionRoutine = null;
+    }
+
+    private void StunAliveMonstersForStep14Joker()
+    {
+        float duration = Mathf.Max(0.05f, _step14JokerProtectionStunDuration);
+        foreach (MonsterAI monster in FindObjectsByType<MonsterAI>(FindObjectsSortMode.None))
+        {
+            if (monster != null)
+                monster.ApplyStun(duration);
+        }
     }
 
     private void HoldStageForTutorialGuide()
@@ -760,6 +875,15 @@ public class TutorialInGameDirector : MonoBehaviour
 
         _hasTutorialMonsterExpOverride = false;
         _tutorialMonsterExp = 0;
+    }
+
+    // 보스 스테이지(step14)는 60초 단일 웨이브라 가속 스폰이 걸리면 몬스터가 100마리 넘게 쌓여
+    // 데미지1이라도 누적으로 패배한다. 정규 스폰만 소량 고정해 누적을 막는다(경험치는 오버라이드하지 않음).
+    private void ApplyStep14SpawnThrottle()
+    {
+        _hasTutorialSpawnOverride = true;
+        _tutorialSpawnInterval = Step1TutorialSpawnInterval;
+        _tutorialSpawnAmount = Step1TutorialSpawnAmount;
     }
 
     private int ResolveTutorialPracticeExpPerKill()
