@@ -50,14 +50,13 @@ public class StaminaModel : MonoBehaviour
     [SerializeField] private int testStartStamina = TestStartStamina;
     [SerializeField] private int testMaxStamina   = TestMaxStamina;
 
-    private bool _initialized;
-
     private void Awake()
     {
         // 실제 데이터(DB/클라우드) 파이프라인이 있으면 그쪽 값을 그대로 쓴다.
         // 백엔드가 없는 순수 에디터 테스트에서만 테스트값으로 초기화한다.
         bool hasBackend = GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null;
         if (initializeWithTestValues && !hasBackend && !_initialized)
+        if (initializeWithTestValues && GameManager.Instance != null)
             Initialize(testStartStamina, testMaxStamina);
     }
     
@@ -80,7 +79,7 @@ public class StaminaModel : MonoBehaviour
     // ---------- 초기화 ----------
     public void Initialize(int current, int max)
     {
-        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        if (GameManager.Instance != null)
         {
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
             slot.SetStamina(Mathf.Max(0, current), Mathf.Max(0, max));
@@ -91,6 +90,8 @@ public class StaminaModel : MonoBehaviour
         _localMaxStamina = Mathf.Max(1, max);
         _localStamina = Mathf.Clamp(current, 0, _localMaxStamina);
         _initialized = true;
+        _localStamina = Mathf.Max(1, max);
+        _localMaxStamina = Mathf.Clamp(current, 0, Max);
         HandleStaminaEvent(StaminaId);
     }
 

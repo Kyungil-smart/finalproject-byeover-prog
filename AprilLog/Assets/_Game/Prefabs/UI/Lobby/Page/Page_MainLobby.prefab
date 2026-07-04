@@ -444,7 +444,7 @@ GameObject:
   - component: {fileID: 318394036685180915}
   - component: {fileID: 5253903108337042343}
   - component: {fileID: 3871830856805537397}
-  - component: {fileID: 454734902038527150}
+  - component: {fileID: 8459696792814187701}
   m_Layer: 5
   m_Name: Page_MainLobby
   m_TagString: Untagged
@@ -502,15 +502,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4aebf8f564212b648b64921fa6096702, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PageMainLobbyController
-  _data: {fileID: 11400000, guid: 0027acca3897a934d8eec07e7d6f7a76, type: 2}
+  _data: {fileID: 0}
   _slotRect: {fileID: 552926170272611444}
   _slotUI: {fileID: 5253903108337042343}
   _btnPrev: {fileID: 7877575623172717650}
   _btnNext: {fileID: 1858291983225458896}
+  _btnStart: {fileID: 7565141907611587391}
   _slideWidth: 1440
   _slideDuration: 0.25
   _slideEase: 9
---- !u!114 &454734902038527150
+--- !u!114 &8459696792814187701
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -519,10 +520,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1527945563012132398}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c05b9d5507d83f3499d07b8a059af31e, type: 3}
+  m_Script: {fileID: 11500000, guid: 85cafdcada204ed4f99e01a25e768c07, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TempSceneLoader
-  _sceneName: _Story
+  m_EditorClassIdentifier: Assembly-CSharp::GameStartBridge
+  _controller: {fileID: 3871830856805537397}
 --- !u!1 &2664141352311523462
 GameObject:
   m_ObjectHideFlags: 0
@@ -1587,7 +1588,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 454734902038527150}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: TempSceneLoader, Assembly-CSharp
         m_MethodName: LoadScene
         m_Mode: 5

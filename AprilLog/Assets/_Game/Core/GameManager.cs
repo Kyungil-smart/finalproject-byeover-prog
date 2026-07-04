@@ -900,10 +900,14 @@ public class GameManager : MonoBehaviour
         return result;
     }
 
-    // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) — 영속 원본 = CloudData.gold/parchment =====
-    // 단계 a(재화 관리 통일): 전투 보상·업적·로그인 보상·상점/레벨업 소비를 전부 이 API로 모은다.
-    // 새 싱글톤 안 만들고 영속 GameManager를 권위로 사용. CurrencyModel 등 씬 모델은 OnCurrencyChanged 구독하는 View로 이관 예정(단계 ②③).
+    // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) =====
+    // 계약: 게임플레이/UI 코드는 ResourceRepo를 직접 만지지 않고 이 지갑 API만 쓴다.
+    //   지급 = AddResource(itemId, amount, reason) / 차감 = UseResource / 다중 비용 = TrySpendResources(원자적).
+    //   Set 계열(SetCurrency, repo.SetItemCount)은 로드·디버그 전용. CurrencyModel류 씬 모델은 표시 View(쓰기 경로 아님).
+    // 런타임 원장 = ResourceRepo 아이템 컨테이너(골드 70001, 양피지 70002, 다이아 70003, 강화석 70004, 조각 70005, 티켓 70006).
+    // 영속 = SyncAndSaveResourceCloudData(원장 → CloudData 미러 → Firestore+로컬백업). 변이당 1회.
     public event Action<int, int> OnCurrencyChanged;   // (gold, parchment) — 변경 시 전역 발행
+    public event Action<int, int> OnItemChanged;       // (itemId, 변경 후 수량) — 모든 재화/아이템 공통. 신규 UI는 이것 하나만 구독하면 된다.
 
     public int Gold => CloudData != null ? CloudData.gold : 0;
     public int Parchment => CloudData != null ? CloudData.parchment : 0;
@@ -913,24 +917,37 @@ public class GameManager : MonoBehaviour
     private const int ParchmentId = 70002;
     private const int DiamondId = 70003;
 
-    // 기존의 파편화된 함수 호출과 하드코딩된 분기를 이 안으로 완전히 격리함
-    public void AddResource(int itemId, int amount)
+    /// <summary>아이템/재화 보유량 조회(런타임 원장 기준). 골드류도 같은 아이템ID로 조회된다.</summary>
+    public int GetResourceCount(int itemId)
     {
-        if (itemId == GoldId) 
+        var repo = DataManager.Instance?.ResourceRepo;
+        return repo != null ? repo.GetItemCount(itemId) : 0;
+    }
+
+    private void RaiseItemChanged(int itemId)
+        => OnItemChanged?.Invoke(itemId, GetResourceCount(itemId));
+
+    // 기존의 파편화된 함수 호출과 하드코딩된 분기를 이 안으로 완전히 격리함
+    public void AddResource(int itemId, int amount, string reason = null)
+    {
+        if (itemId == GoldId)
         {
-            AddCurrency(amount, 0, "보상");
+            AddCurrency(amount, 0, reason ?? "보상");
         }
-        else if (itemId == ParchmentId) 
+        else if (itemId == ParchmentId)
         {
-            AddCurrency(0, amount, "보상");
+            AddCurrency(0, amount, reason ?? "보상");
         }
-        else if (itemId == DiamondId) 
+        else if (itemId == DiamondId)
         {
-            AddDiamond(amount);
+            AddDiamond(amount, reason);
         }
-        else 
+        else
         {
+            if (amount <= 0) return;
             DataManager.Instance.ResourceRepo.AddItem(itemId, amount);
+            Debug.Log($"[재화] +아이템 {itemId} x{amount} ({reason}) → 보유 {GetResourceCount(itemId)}");
+            RaiseItemChanged(itemId);
             SyncAndSaveResourceCloudData();
         }
     }
@@ -941,7 +958,7 @@ public class GameManager : MonoBehaviour
         {
             return TrySpendCurrency(amount, 0);
         }
-        if (itemId == ParchmentId) 
+        if (itemId == ParchmentId)
         {
             return TrySpendCurrency(0, amount);
         }
@@ -949,10 +966,53 @@ public class GameManager : MonoBehaviour
         {
             return TrySpendDiamond(amount);
         }
-        
+
         var result = DataManager.Instance.ResourceRepo.UseItem(itemId, amount);
         if(!result) return false;
-        
+
+        RaiseItemChanged(itemId);
+        SyncAndSaveResourceCloudData();
+        return true;
+    }
+
+    /// <summary>다중 비용 원자 차감 — 전부 검사한 뒤 전부 차감하고 영속/이벤트는 1회만 처리한다.
+    /// 아티팩트 강화(골드+강화석)처럼 비용이 여러 개일 때 수동 롤백 없이 이걸 쓴다. 하나라도 부족하면 false(변경 없음).</summary>
+    public bool TrySpendResources(string reason, params (int itemId, int amount)[] costs)
+    {
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo == null || costs == null) return false;
+
+        // 같은 아이템이 중복으로 들어와도 합산해서 검사한다.
+        var merged = new Dictionary<int, int>();
+        foreach (var (itemId, amount) in costs)
+        {
+            if (amount <= 0) continue;
+            merged[itemId] = merged.TryGetValue(itemId, out int prev) ? prev + amount : amount;
+        }
+        if (merged.Count == 0) return true;
+
+        foreach (var cost in merged)
+            if (repo.GetItemCount(cost.Key) < cost.Value) return false;
+
+        string detail = "";
+        foreach (var cost in merged)
+        {
+            if (!repo.UseItem(cost.Key, cost.Value))
+            {
+                // 사전 검사를 통과했는데 차감이 거부되면 원장 구현 불일치다. 이미 차감된 앞 항목을 되돌리고 실패 처리.
+                Debug.LogError($"[GameManager] TrySpendResources 차감 불일치: 아이템 {cost.Key} x{cost.Value} ({reason})");
+                foreach (var refund in merged)
+                {
+                    if (refund.Key == cost.Key) break;
+                    repo.AddItem(refund.Key, refund.Value);
+                }
+                return false;
+            }
+            detail += $"{cost.Key} x{cost.Value} ";
+        }
+
+        Debug.Log($"[재화] 지출 ({reason}): {detail}");
+        foreach (var cost in merged) RaiseItemChanged(cost.Key);
         SyncAndSaveResourceCloudData();
         return true;
     }
@@ -979,6 +1039,8 @@ public class GameManager : MonoBehaviour
         }
 
         Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {Gold} / 양피지 {Parchment}");
+        if (gold > 0) RaiseItemChanged(GoldId);
+        if (parchment > 0) RaiseItemChanged(ParchmentId);
         SyncAndSaveResourceCloudData();
     }
 
@@ -1002,10 +1064,12 @@ public class GameManager : MonoBehaviour
             if (!goldSuccess || !parchmentSuccess)
             {
                 Debug.LogError($"[GameManager] 재화 차감 실패! (CanAfford는 통과했으나 UseItem에서 거부됨) - Gold:{goldSuccess}, Parchment:{parchmentSuccess}");
-                return false; 
+                return false;
             }
         }
 
+        if (gold > 0) RaiseItemChanged(GoldId);
+        if (parchment > 0) RaiseItemChanged(ParchmentId);
         SyncAndSaveResourceCloudData();
         return true;
     }
@@ -1034,6 +1098,7 @@ public class GameManager : MonoBehaviour
 
         DataManager.Instance?.ResourceRepo?.AddItem(DiamondId, diamond);
         Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {Diamond}");
+        RaiseItemChanged(DiamondId);
         SyncAndSaveResourceCloudData();
     }
 
@@ -1052,7 +1117,8 @@ public class GameManager : MonoBehaviour
                 return false;
             }
         }
-        
+
+        if (diamond > 0) RaiseItemChanged(DiamondId);
         SyncAndSaveResourceCloudData();
         return true;
     }

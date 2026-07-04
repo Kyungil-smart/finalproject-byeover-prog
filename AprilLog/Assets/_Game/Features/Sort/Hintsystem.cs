@@ -19,6 +19,7 @@ public class HintSystem : MonoBehaviour
     [Header("참조")]
     [SerializeField] private SortModel _model;
     [SerializeField] private PlayerModel _playerModel;
+    [SerializeField] private DeadlockDetector _deadlockDetector;
 
     [Header("설정")]
     [Tooltip("기본 힌트 대기 시간(초)")]
@@ -61,6 +62,11 @@ public class HintSystem : MonoBehaviour
 
     private void ShowHint()
     {
+        if (_deadlockDetector != null && _deadlockDetector.IsDeadlock(_model))
+        {
+            return;
+        }
+
         var targets = _model.GetHintTargets();
         Debug.Log($"[힌트] 타겟 개수: {targets.Count}");
         if (targets.Count > 0)

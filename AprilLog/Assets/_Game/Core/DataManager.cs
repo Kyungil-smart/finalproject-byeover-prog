@@ -14,6 +14,7 @@
 // 수정자 : 김영찬 - ResourceRepo 신설
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -149,6 +150,7 @@ public class DataManager : MonoBehaviour
 
     private void InjectMapStep()
     {
-        _rewardRepo.BuildStepMapping(_stageRepo.GetValidChapterList(), _stageRepo.GetValidStageList());
+        _stageRepo.ExportStepMapping(out var chapter, out var stage);
+        _rewardRepo.ImportStepMappingData(chapter, stage);
     }
 }
