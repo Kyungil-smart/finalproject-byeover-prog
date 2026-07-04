@@ -10,8 +10,8 @@ using UnityEngine;
 /// </summary>
 public class StaminaModel : MonoBehaviour
 {
-    public const int TestStartStamina = 999;
-    public const int TestMaxStamina   = 999;
+    public const int TestStartStamina = 40;
+    public const int TestMaxStamina   = 40;
     
     private const int StaminaId = 10001;
 
@@ -36,7 +36,7 @@ public class StaminaModel : MonoBehaviour
             if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
             {
                 var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
-                return slot != null ? slot.OverCapMax : 0;
+                return slot != null ? slot.MaxOwned : 0;
             }
             return _localMaxStamina;
         }
@@ -44,6 +44,7 @@ public class StaminaModel : MonoBehaviour
     
     private int _localStamina;
     private int _localMaxStamina;
+    private bool _initialized;
 
     [Header("테스트 기본값")]
     [SerializeField] private bool initializeWithTestValues = true;
@@ -52,7 +53,10 @@ public class StaminaModel : MonoBehaviour
 
     private void Awake()
     {
-        if (initializeWithTestValues && GameManager.Instance != null)
+        // 실제 데이터(DB/클라우드) 파이프라인이 있으면 그쪽 값을 그대로 쓴다.
+        // 백엔드가 없는 순수 에디터 테스트에서만 테스트값으로 초기화한다.
+        bool hasBackend = GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null;
+        if (initializeWithTestValues && !hasBackend && !_initialized)
             Initialize(testStartStamina, testMaxStamina);
     }
     
@@ -83,8 +87,9 @@ public class StaminaModel : MonoBehaviour
             return;
         }
         
-        _localStamina = Mathf.Max(1, max);
-        _localMaxStamina = Mathf.Clamp(current, 0, Max);
+        _localMaxStamina = Mathf.Max(1, max);
+        _localStamina = Mathf.Clamp(current, 0, _localMaxStamina);
+        _initialized = true;
         HandleStaminaEvent(StaminaId);
     }
 

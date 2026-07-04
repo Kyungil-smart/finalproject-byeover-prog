@@ -9,14 +9,14 @@ using UnityEngine.SceneManagement;
 
 public class TempStoryToGameFlow : MonoBehaviour
 {
-    [SerializeField] private ScenarioDummyDriver _driver;
+    [SerializeField] private ScenarioDataDriver _driver;
     [Tooltip("시나리오 종료 후 이동할 씬")]
     [SerializeField] private string _nextScene = "_InGame";
 
     private void Awake()
     {
         if (_driver == null)
-            _driver = FindFirstObjectByType<ScenarioDummyDriver>();
+            _driver = FindFirstObjectByType<ScenarioDataDriver>();
     }
 
     private void OnEnable()

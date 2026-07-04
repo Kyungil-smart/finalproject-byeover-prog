@@ -13,10 +13,10 @@ public class TutorialLobbyDirector : MonoBehaviour
     [SerializeField] private int _sealGearId = 50001;
 
     [Header("시나리오 ID")]
-    [SerializeField] private int _breakthroughScenarioStartId = 100061;
-    [SerializeField] private int _breakthroughScenarioEndId = 100064;
-    [SerializeField] private int _equipDoneScenarioStartId = 100065;
-    [SerializeField] private int _equipDoneScenarioEndId = 100067;
+    [SerializeField] private int _breakthroughScenarioStartId = 100068;
+    [SerializeField] private int _breakthroughScenarioEndId = 100071;
+    [SerializeField] private int _equipDoneScenarioStartId = 100072;
+    [SerializeField] private int _equipDoneScenarioEndId = 100074;
     [SerializeField] private int _scenarioSourceGroupId = 3002;
 
     [Header("팝업/버튼 참조")]
@@ -29,6 +29,11 @@ public class TutorialLobbyDirector : MonoBehaviour
     [Tooltip("시나리오 중 전체 입력을 막을 CanvasGroup(전체화면 블로커)")]
     [SerializeField] private CanvasGroup _inputBlocker;
 
+    [Header("버블")]
+    [SerializeField] private InGameTalkBubble _talkBubble;
+    [SerializeField] private Vector2 _bubbleViewportPosition = new Vector2(0.5f, 0.72f);
+    [SerializeField] private Vector2 _bubbleScreenOffset;
+
     private ArtifactManager _artifacts;
     private ScenarioDataDriver _scenarioDriver;
     private TutorialFingerGuide _finger;
@@ -40,9 +45,13 @@ public class TutorialLobbyDirector : MonoBehaviour
     private bool _level5Handled;
     private bool _ascendHandled;
     private bool _equipHandled;
+    private bool _inventorySubscribed;
+    private bool _isPlayingBubble;
     private int _lastKnownAscensionCount;
+    private int _playedLobbyScenarioStepId = -1;
     private Coroutine _level5Routine;
     private Coroutine _equipRoutine;
+    private Coroutine _stepScenarioRoutine;
 
     private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
     private static FieldInfo _linesField, _indexField, _isPlayingField, _finishedField;
@@ -50,26 +59,24 @@ public class TutorialLobbyDirector : MonoBehaviour
 
     private void Start()
     {
-        var tm = TutorialManager.Instance;
-        _active = tm != null && tm.IsRunning;
-        if (!_active) return;
-
-        ResolveSystems();
-        if (_artifacts != null) _artifacts.OnInventoryUpdated += HandleInventoryUpdated;
-        SetInputBlocked(false);
-        HandleInventoryUpdated();
+        TryActivate();
     }
 
     private void OnDestroy()
     {
-        if (_artifacts != null) _artifacts.OnInventoryUpdated -= HandleInventoryUpdated;
+        if (_artifacts != null && _inventorySubscribed)
+            _artifacts.OnInventoryUpdated -= HandleInventoryUpdated;
         SetInputBlocked(false);
         HideGuide();
     }
 
     private void Update()
     {
-        if (!_active || !_ascendHandled || _equipHandled) return;
+        if (!TryActivate()) return;
+
+        TryPlayLobbyStepScenario();
+
+        if (!_ascendHandled || _equipHandled) return;
 
         ArtifactInstance seal = FindSealArtifact();
         if (seal == null || !seal.IsEquipped) return;
@@ -85,9 +92,37 @@ public class TutorialLobbyDirector : MonoBehaviour
         _artifacts = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
         if (_detailPopup == null) _detailPopup = FindFirstObjectByType<ArtifactDetailPopupPresenter>(FindObjectsInactive.Include);
         if (_scenarioDriver == null) _scenarioDriver = FindFirstObjectByType<ScenarioDataDriver>(FindObjectsInactive.Include);
+        if (_talkBubble == null) _talkBubble = FindFirstObjectByType<InGameTalkBubble>(FindObjectsInactive.Include);
+        if (_talkBubble != null) _talkBubble.Hide();
         _finger = transform.root.GetComponentInChildren<TutorialFingerGuide>(true);
         _dimMask = transform.root.GetComponentInChildren<TutorialDimMask>(true);
         ResolveAscendButtonComponents();
+    }
+
+    private bool TryActivate()
+    {
+        var tm = TutorialManager.Instance;
+        if (tm == null || !tm.IsRunning)
+            return false;
+
+        if (!_active)
+        {
+            _active = true;
+            ResolveSystems();
+            SetInputBlocked(false);
+        }
+
+        if (_artifacts == null)
+            _artifacts = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+
+        if (_artifacts != null && !_inventorySubscribed)
+        {
+            _artifacts.OnInventoryUpdated += HandleInventoryUpdated;
+            _inventorySubscribed = true;
+            HandleInventoryUpdated();
+        }
+
+        return true;
     }
 
     private ArtifactInstance FindSealArtifact()
@@ -255,29 +290,106 @@ public class TutorialLobbyDirector : MonoBehaviour
 
     private IEnumerator PlayScenarioRange(int startId, int endId)
     {
-        if (_scenarioDriver == null)
-            _scenarioDriver = FindFirstObjectByType<ScenarioDataDriver>();
-
-        if (_scenarioDriver == null)
+        List<Story_TalkData> lines = CollectTutorialScenarioLines(startId, endId);
+        if (lines.Count == 0)
         {
-            Debug.LogWarning("[TutorialLobbyDirector] 시나리오 드라이버를 찾지 못했습니다.");
+            Debug.LogWarning($"[TutorialLobbyDirector] 튜토리얼 시나리오 ID {startId}~{endId} 대사를 찾지 못했습니다.");
             yield break;
         }
 
-        bool finished = false;
-        Action handleFinished = () => finished = true;
-        _scenarioDriver.OnFinished += handleFinished;
+        yield return PlayBubbleLines(lines);
+    }
 
-        if (!TryPlayTutorialScenarioRange(startId, endId))
+    private void TryPlayLobbyStepScenario()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        if (step == null || step.scene != TutorialScene.Lobby)
+            return;
+        if (_playedLobbyScenarioStepId == step.stepId)
+            return;
+        if (_isPlayingBubble || _stepScenarioRoutine != null || _level5Routine != null || _equipRoutine != null)
+            return;
+        if (!TryGetLobbyStepScenarioRange(step.stepId, out int startId, out int endId))
+            return;
+
+        _playedLobbyScenarioStepId = step.stepId;
+        _stepScenarioRoutine = StartCoroutine(PlayLobbyStepScenario(startId, endId));
+    }
+
+    private IEnumerator PlayLobbyStepScenario(int startId, int endId)
+    {
+        yield return PlayScenarioRange(startId, endId);
+        _stepScenarioRoutine = null;
+    }
+
+    public static bool HasScenarioForStep(int stepId)
+        => TryGetLobbyStepScenarioRange(stepId, out _, out _);
+
+    private static bool TryGetLobbyStepScenarioRange(int stepId, out int startId, out int endId)
+    {
+        switch (stepId)
         {
-            _scenarioDriver.OnFinished -= handleFinished;
+            case 4:
+                startId = 100048;
+                endId = 100053;
+                return true;
+            case 6:
+                startId = 100054;
+                endId = 100058;
+                return true;
+            case 7:
+                startId = 100059;
+                endId = 100062;
+                return true;
+            case 8:
+                startId = 100063;
+                endId = 100064;
+                return true;
+            case 10:
+                startId = 100065;
+                endId = 100067;
+                return true;
+            default:
+                startId = 0;
+                endId = 0;
+                return false;
+        }
+    }
+
+    private IEnumerator PlayBubbleLines(List<Story_TalkData> sourceLines)
+    {
+        if (_talkBubble == null)
+            _talkBubble = FindFirstObjectByType<InGameTalkBubble>(FindObjectsInactive.Include);
+        if (_talkBubble == null)
+        {
+            Debug.LogWarning("[TutorialLobbyDirector] 로비 튜토리얼 버블을 찾지 못했습니다.");
             yield break;
         }
 
-        while (!finished)
-            yield return null;
+        _talkBubble.UseViewportPosition(_bubbleViewportPosition, _bubbleScreenOffset);
+        _talkBubble.Bind(null, Camera.main);
+        SetInputBlocked(false);
+        _isPlayingBubble = true;
 
-        _scenarioDriver.OnFinished -= handleFinished;
+        foreach (Story_TalkData line in sourceLines)
+        {
+            if (line == null) continue;
+
+            bool advanced = false;
+            Action handleAdvance = () => advanced = true;
+            _talkBubble.OnAdvanceRequested += handleAdvance;
+            _talkBubble.PlayLine(line.name_KR, line.Text_KR);
+
+            while (!advanced)
+                yield return null;
+
+            _talkBubble.OnAdvanceRequested -= handleAdvance;
+        }
+
+        _talkBubble.Hide();
+        _talkBubble.UseAnchorPosition();
+        _isPlayingBubble = false;
     }
 
     // 담당자 스크립트(StoryRepo/ScenarioDataDriver)를 수정하지 않기 위해,
@@ -309,6 +421,19 @@ public class TutorialLobbyDirector : MonoBehaviour
         }
 
         return TryInjectScenarioLines(_scenarioDriver, rangeLines);
+    }
+
+    private List<Story_TalkData> CollectTutorialScenarioLines(int startId, int endId)
+    {
+        StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
+        if (repo == null)
+        {
+            Debug.LogWarning("[TutorialLobbyDirector] StoryRepo를 찾지 못했습니다.");
+            return new List<Story_TalkData>();
+        }
+
+        List<Story_TalkData> sourceLines = repo.GetTalkGroup(_scenarioSourceGroupId);
+        return CollectTutorialScenarioLines(sourceLines, startId, endId);
     }
 
     private static List<Story_TalkData> CollectTutorialScenarioLines(List<Story_TalkData> sourceLines, int startId, int endId)

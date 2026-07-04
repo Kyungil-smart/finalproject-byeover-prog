@@ -15,6 +15,7 @@ public class TutorialInGameDirector : MonoBehaviour
     private const float Step1TutorialSpawnInterval = 2f;
     private const int Step1TutorialSpawnAmount = 1;
     private const int Step1TutorialTargetKillCount = 10;
+    private const int TutorialCombinationSkillNameId = 71;
 
     public static bool AllowsPausedSortInput { get; private set; }
     private static bool _hasTutorialSpawnOverride;
@@ -71,12 +72,46 @@ public class TutorialInGameDirector : MonoBehaviour
     [Header("step2 최초 인챈트 안내")]
     [SerializeField] private ScenarioDataDriver _firstEnchantScenarioDriver;
     [SerializeField] private int _tutorialScenarioSourceGroupId = 3002;
+    [Tooltip("도입: 레벨업/인챈트 개념 안내")]
     [SerializeField] private int _firstEnchantScenarioGroupId = 100030;
     [SerializeField] private int _firstEnchantScenarioEndId = 100034;
+    [Tooltip("자동공격 스킬만 남기고 딤 후 재생")]
+    [SerializeField] private int _enchantAutoAttackStartId = 100035;
+    [SerializeField] private int _enchantAutoAttackEndId = 100036;
+    [Tooltip("조합 스킬만 남기고 딤 후 재생")]
+    [SerializeField] private int _enchantCombinationId = 100037;
+    [Tooltip("팝업 숨기고 버블로 조합 스킬 설명 연출")]
+    [SerializeField] private int _enchantCombinationGuideId = 100038;
+    [Tooltip("콤보 스킬만 남기고 딤 후 재생")]
+    [SerializeField] private int _enchantComboStartId = 100039;
+    [SerializeField] private int _enchantComboEndId = 100040;
+    [Tooltip("스킬 딤 해제 후 마무리 재생")]
+    [SerializeField] private int _enchantWrapupId = 100041;
+    [Tooltip("인챈트 설명 중 말풍선을 화면 어디에 고정할지(0~1 뷰포트 좌표).")]
+    [SerializeField] private Vector2 _enchantBubbleViewportPosition = new Vector2(0.5f, 0.78f);
+    [Tooltip("인챈트 설명 중 말풍선 고정 위치에 더할 픽셀 오프셋.")]
+    [SerializeField] private Vector2 _enchantBubbleScreenOffset;
+
+    // 고정 3카드 순서: 자동공격(50)/조합(71)/콤보(54) = TutorialFirstEnchantSelectionOverride와 동일
+    private const int EnchantCardAutoAttack = 0;
+    private const int EnchantCardCombination = 1;
+    private const int EnchantCardCombo = 2;
 
     [Header("step0 전투 연출")]
+    [Tooltip("0챕터 진입 대사(몬스터 없는 화면). 100019 앞에 먼저 재생")]
+    [SerializeField] private int _step0EntryScenarioStartId = 100009;
+    [SerializeField] private int _step0EntryScenarioEndId = 100018;
+    [Tooltip("몬스터 스폰 대사")]
     [SerializeField] private int _step0IntroScenarioId = 100019;
-    [SerializeField] private int[] _step0MonsterIds = { 11, 12, 13 };
+    [Tooltip("몬스터 강조 복귀 후 대사")]
+    [SerializeField] private int _step0PostEmphasisScenarioStartId = 100020;
+    [SerializeField] private int _step0PostEmphasisScenarioEndId = 100025;
+    [Tooltip("퍼즐 조작 유도 대사(이후 딤+화살표)")]
+    [SerializeField] private int _step0PuzzleGuideScenarioId = 100026;
+    [Tooltip("콤보 학습 대사(3정렬 후 공격 순간)")]
+    [SerializeField] private int _step0ComboScenarioStartId = 100027;
+    [SerializeField] private int _step0ComboScenarioEndId = 100029;
+    [SerializeField] private int[] _step0MonsterIds = { 5011, 5012, 5013 };
     [Tooltip("몬스터가 멈춰서 등장하는 위치(월드). 좌->우 3개")]
     [SerializeField] private Vector2[] _step0MonsterSpawnPositions =
     {
@@ -96,14 +131,29 @@ public class TutorialInGameDirector : MonoBehaviour
 
     [Header("step3 한계 체감 러시")]
     [SerializeField] private float _step3RushWarningDelay = 38f;
-    [SerializeField] private int _step3RushWarningScenarioStartId = 100035;
-    [SerializeField] private int _step3RushWarningScenarioEndId = 100035;
-    [SerializeField] private int _step3DefeatScenarioStartId = 100036;
-    [SerializeField] private int _step3DefeatScenarioEndId = 100039;
-    [SerializeField] private int[] _step3RushMonsterIds = { 11, 12, 13 };
+    [SerializeField] private int _step3RushWarningScenarioStartId = 100042;
+    [SerializeField] private int _step3RushWarningScenarioEndId = 100042;
+    [SerializeField] private int _step3DefeatScenarioStartId = 100043;
+    [SerializeField] private int _step3DefeatScenarioEndId = 100046;
+    [SerializeField] private int[] _step3RushMonsterIds = { 5011, 5012, 5013 };
     [SerializeField] private int _step3RushBatchAmount = 6;
     [SerializeField] private float _step3RushSpawnInterval = 0.35f;
     [SerializeField] private float _step3ForcedDefeatDelay = 12f;
+
+    [Header("step14 0-1챕터 재진입")]
+    [SerializeField] private int _step14EntryScenarioStartId = 100075;
+    [SerializeField] private int _step14EntryScenarioEndId = 100078;
+    [SerializeField] private int _step14BossScenarioId = 100079;
+    [Tooltip("100079 이후 조커 사용을 기다리는 동안 몬스터를 다시 멈추는 주기")]
+    [SerializeField] private float _step14JokerProtectionRefreshInterval = 0.1f;
+    [Tooltip("조커 사용 유도 중 몬스터에게 반복 적용할 짧은 스턴 시간")]
+    [SerializeField] private float _step14JokerProtectionStunDuration = 0.25f;
+
+    [Header("인게임 대화 버블")]
+    [Tooltip("인게임 다이제틱 대화를 재생할 프리젠터. 오버레이 프리팹 안에 두고 연결.")]
+    [SerializeField] private InGameTalkPresenter _talkPresenter;
+    [Tooltip("이 이름과 일치하는 대사는 에이프릴(플레이어), 나머지는 래리로 매핑.")]
+    [SerializeField] private string _aprilSpeakerName = "에이프릴";
 
     [Header("런타임 참조")]
     [SerializeField] private InGameGrowthSystem _growth;
@@ -117,7 +167,11 @@ public class TutorialInGameDirector : MonoBehaviour
     private TutorialDragArrow _step0DragArrow;
     private TutorialFingerGuide _step0Finger;
     private TutorialDimMask _step0DimMask;
+    private TutorialDimMask _enchantDimMask;
     private CanvasGroup _firstEnchantCanvasGroup;
+    private CombinationView _combinationView;
+    private EnchantCombinationModel _enchantCombinationModel;
+    private static FieldInfo _enchantSpawnedCardsField;
 
     private bool _active;
     private bool _step0DragArrowHidden;
@@ -130,16 +184,27 @@ public class TutorialInGameDirector : MonoBehaviour
     private bool _isStep3RushActive;
     private bool _isStep3DefeatHandled;
     private bool _isStep3ScenarioPaused;
-    private bool _previousFirstEnchantInteractable;
+    private bool _step14EntryScenarioPlayed;
+    private bool _step14BossScenarioPlayed;
+    private bool _isStep14ScenarioPaused;
+    private bool _wasStep14BossWavePopupVisible;
     private bool _previousFirstEnchantBlocksRaycasts;
+    private bool _temporaryCombinationRecipeShown;
+    private bool _temporaryFusionDataAdded;
     private int _runningStepId = -1;
     private float _previousTimeScale = 1f;
     private float _step3PreviousTimeScale = 1f;
+    private float _step14PreviousTimeScale = 1f;
     private Coroutine _step3Routine;
     private Coroutine _step3RushRoutine;
     private Coroutine _step3ForceDefeatRoutine;
+    private Coroutine _step14Routine;
+    private Coroutine _step14BossScenarioRoutine;
+    private Coroutine _step14JokerProtectionRoutine;
 
     private Coroutine _step0Routine;
+    private Coroutine _step1Routine;
+    private bool _step0ComboLessonPlayed;
     private readonly List<MonsterAI> _step0Monsters = new List<MonsterAI>(3);
     private int _step0KillCount;
     private bool _step0PuzzlePhase;
@@ -179,18 +244,44 @@ public class TutorialInGameDirector : MonoBehaviour
             // 연출 도중 이탈 시 멈춰둔 시간을 복구한다.
             if (Time.timeScale == 0f) Time.timeScale = 1f;
         }
+        if (_step1Routine != null)
+        {
+            StopCoroutine(_step1Routine);
+            _step1Routine = null;
+            if (Time.timeScale == 0f) Time.timeScale = 1f;
+        }
+        if (_step14Routine != null)
+        {
+            StopCoroutine(_step14Routine);
+            _step14Routine = null;
+            ResumeStep14ScenarioPause();
+        }
+        if (_step14BossScenarioRoutine != null)
+        {
+            StopCoroutine(_step14BossScenarioRoutine);
+            _step14BossScenarioRoutine = null;
+            ResumeStep14ScenarioPause();
+        }
+        if (_step14JokerProtectionRoutine != null)
+        {
+            StopCoroutine(_step14JokerProtectionRoutine);
+            _step14JokerProtectionRoutine = null;
+        }
         _step0PuzzlePhase = false;
+        ClearEnchantDim();
+        ClearTemporaryCombinationRecipe();
+        SetFirstEnchantPopupVisible(true);
+        ClearEnchantDialogueBubblePosition();
         if (_inputHandler != null) _inputHandler.OnDragStarted -= HandleDragStarted;
         UnsubscribeGrowthLevelUp();
         UnsubscribePlayerDeath();
         ResumeGameplayAfterGuide();
         ResumeStep3ScenarioPause();
+        ResumeStep14ScenarioPause();
         UnlockFirstEnchantSelection();
         ReleaseStageForTutorialPractice();
         ClearTutorialPracticeOverrides();
         TutorialFirstEnchantSelectionOverride.ClearFixedChoiceState();
-        if (_firstEnchantScenarioDriver != null)
-            _firstEnchantScenarioDriver.OnFinished -= HandleFirstEnchantScenarioFinished;
     }
 
     private void Update()
@@ -207,14 +298,38 @@ public class TutorialInGameDirector : MonoBehaviour
         BeginCurrentStep();
     }
 
-    // 튜토리얼 중에는 스테이지 특수 웨이브가 띄우는 보스 경고 팝업을 같은 프레임에 눌러 억제한다.
+    // 튜토리얼 중에는 기획상 필요한 14단계를 제외하고 보스 경고 팝업을 같은 프레임에 눌러 억제한다.
     private void LateUpdate()
     {
         if (!_active) return;
 
         if (!_bossWavePopupResolved) ResolveBossWavePopup();
-        if (_bossWavePopup != null && _bossWavePopup.activeSelf)
+        if (_bossWavePopup == null) return;
+
+        if (IsCurrentStep(14))
+        {
+            WatchStep14BossWavePopup();
+            return;
+        }
+
+        if (_bossWavePopup.activeSelf)
             _bossWavePopup.SetActive(false);
+    }
+
+    private void WatchStep14BossWavePopup()
+    {
+        if (_step14BossScenarioPlayed || _step14BossScenarioRoutine != null) return;
+
+        bool isVisible = _bossWavePopup != null && _bossWavePopup.activeInHierarchy;
+        if (isVisible)
+        {
+            _wasStep14BossWavePopupVisible = true;
+            StartStep14JokerProtection();
+            return;
+        }
+
+        if (_wasStep14BossWavePopupVisible)
+            _step14BossScenarioRoutine = StartCoroutine(RunStep14BossScenario());
     }
 
     // ScreenNavigator의 보스 웨이브 팝업 참조를 런타임에 리플렉션으로 확보한다(런타임 스폰이라 인스펙터 연결 불가).
@@ -230,6 +345,13 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private static bool IsInGameStep(TutorialStep step)
         => step != null && step.scene == TutorialScene.InGame;
+
+    private static bool IsCurrentStep(int stepId)
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        return step != null && step.stepId == stepId;
+    }
 
     // 이번 인게임 런이 튜토리얼 런인지. 튜토 미완료 상태로 로비에서 일반 챕터를 선택해 들어오면
     // IsRunning만으로는 구분이 안 돼 디렉터가 일반 런을 하이재킹(보드 커스텀/정지, step3이면 강제 패배)하므로 게이트한다.
@@ -321,6 +443,7 @@ public class TutorialInGameDirector : MonoBehaviour
             case 1: RunStep1(); break;
             case 2: RunStep2(); break;
             case 3: RunStep3(); break;
+            case 14: RunStep14(); break;
             default:
                 ResumeGameplayAfterGuide();
                 ReleaseStageForTutorialPractice();
@@ -338,6 +461,11 @@ public class TutorialInGameDirector : MonoBehaviour
         ClearTutorialPracticeOverrides();
         HoldStageForTutorialGuide();   // 일반 웨이브만 정지 (timeScale은 코루틴이 제어)
 
+        // 로드 직후부터 지정 퍼즐 보드를 깔아둔다. 퍼즐 단계에서 세팅하면 인트로 동안 랜덤 보드가
+        // 보이다가 갑자기 바뀌어 어색하므로, step0 진입 시점에 미리 고정 보드로 맞춘다.
+        if (_sortSystem != null) _sortSystem.Initialize(_step0Seed);
+        SetupStep0Board();
+
         if (_step0Routine == null)
             _step0Routine = StartCoroutine(RunStep0CombatIntro());
     }
@@ -346,10 +474,13 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         Debug.Log("[TutorialInGameDirector] step0 전투 연출 시작");
 
-        // 도입 시나리오 (기존 3002 그룹 주입 방식 재사용). 재생 중 timeScale=0로 대기.
+        // 도입 시나리오. 재생 중 timeScale=0로 대기.
         float prevScale = Time.timeScale;
         Time.timeScale = 0f;
-        yield return PlayScenarioRange(_step0IntroScenarioId, _step0IntroScenarioId);
+
+        // 0챕터 진입 대사(몬스터 없는 화면) → 이후 몬스터 스폰 대사(100019)
+        yield return PlayWorldDialogue(_step0EntryScenarioStartId, _step0EntryScenarioEndId);
+        yield return PlayWorldDialogue(_step0IntroScenarioId, _step0IntroScenarioId);
 
         // 연출 구간: timeScale=0 유지 → 입력 차단 + 몬스터 자연 정지. 위치는 코드로 직접 제어.
         SpawnStep0FrozenMonsters();
@@ -358,6 +489,10 @@ public class TutorialInGameDirector : MonoBehaviour
         // 카메라는 건드리지 않는다. 소환된 몬스터만 잠깐 크게 키워 강조 → 원래 크기 → 하강.
         yield return EmphasizeStep0Monsters();
         yield return DescendStep0Monsters();
+
+        // 복귀 후 대사 → 퍼즐 조작 유도 대사(유저 터치로 넘김) → 퍼즐 가이드(딤+화살표)
+        yield return PlayWorldDialogue(_step0PostEmphasisScenarioStartId, _step0PostEmphasisScenarioEndId);
+        yield return PlayWorldDialogue(_step0PuzzleGuideScenarioId, _step0PuzzleGuideScenarioId);
 
         EnterStep0PuzzlePhase();
         _step0Routine = null;
@@ -370,8 +505,8 @@ public class TutorialInGameDirector : MonoBehaviour
         Time.timeScale = 1f;
         _step0PuzzlePhase = true;
 
-        if (_sortSystem != null) _sortSystem.Initialize(_step0Seed);
-        SetupStep0Board();
+        // 보드는 step0 진입 시점(RunStep0)에서 이미 고정 보드로 세팅했으므로 여기서 다시 깔지 않는다.
+        // (여기서 재세팅하면 timeScale=1 상태에서 클리어→재배치로 1프레임 깜빡임이 생길 수 있다.)
 
         var highlights = CollectStep0GuideHighlights();
         if (highlights.Count > 0)
@@ -526,11 +661,45 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private void RunStep1()
     {
+        if (_step1Routine == null)
+            _step1Routine = StartCoroutine(RunStep1Sequence());
+    }
+
+    // 3정렬 직후(step1 진입) 콤보 학습(2-3-3)을 먼저 재생하고, 이어서 자유 연습을 세팅한다.
+    private IEnumerator RunStep1Sequence()
+    {
+        if (!_step0ComboLessonPlayed)
+        {
+            _step0ComboLessonPlayed = true;
+
+            // 공격 직후 즉시 일시정지 + 콤보 카운트 UI만 남기고 딤 → 100027~29 → 딤 해제 + 재개
+            float prev = Time.timeScale;
+            Time.timeScale = 0f;
+            HighlightComboCountUI();
+            yield return PlayWorldDialogue(_step0ComboScenarioStartId, _step0ComboScenarioEndId);
+            ClearEnchantDim();
+            Time.timeScale = prev <= 0f ? 1f : prev;
+        }
+
         ResumeGameplayAfterGuide();
         HideStep0GuideVisuals();
         HideTutorialViewForFreePractice();
         ApplyTutorialPracticeOverrides();
         ReleaseStageForTutorialPractice();
+        _step1Routine = null;
+    }
+
+    // 2-3-3: 콤보 카운트 UI(ComboPopupCanvas/Boundary/ComboText)만 남기고 딤 처리해 강조한다.
+    private void HighlightComboCountUI()
+    {
+        GameObject canvas = GameObject.Find("ComboPopupCanvas");
+        if (canvas == null) return;
+
+        Transform found = FindDeepChild(canvas.transform, "ComboText");
+        if (found is not RectTransform rt) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.ShowWithHole(rt);
     }
 
     private void RunStep2()
@@ -553,6 +722,90 @@ public class TutorialInGameDirector : MonoBehaviour
 
         if (_step3Routine == null)
             _step3Routine = StartCoroutine(RunStep3RushSequence());
+    }
+
+    private void RunStep14()
+    {
+        ResumeGameplayAfterGuide();
+        HideStep0GuideVisuals();
+        ReleaseStageForTutorialPractice();
+        ClearTutorialPracticeOverrides();
+        ApplyStep14SpawnThrottle();
+        _wasStep14BossWavePopupVisible = false;
+
+        if (!_step14EntryScenarioPlayed && _step14Routine == null)
+            _step14Routine = StartCoroutine(RunStep14EntryScenario());
+    }
+
+    private IEnumerator RunStep14EntryScenario()
+    {
+        _step14EntryScenarioPlayed = true;
+        PauseStep14Scenario();
+        yield return PlayWorldDialogue(_step14EntryScenarioStartId, _step14EntryScenarioEndId);
+        ResumeStep14ScenarioPause();
+        _step14Routine = null;
+    }
+
+    private IEnumerator RunStep14BossScenario()
+    {
+        _step14BossScenarioPlayed = true;
+        PauseStep14Scenario();
+        HighlightJokerTable();
+        yield return PlayWorldDialogue(_step14BossScenarioId, _step14BossScenarioId);
+        ClearEnchantDim();
+        ResumeStep14ScenarioPause();
+        _step14BossScenarioRoutine = null;
+    }
+
+    private void HighlightJokerTable()
+    {
+        GameObject jokerTable = GameObject.Find("JokerTable");
+        if (jokerTable == null) return;
+
+        RectTransform target = jokerTable.GetComponent<RectTransform>();
+        if (target == null) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.ShowWithHole(target);
+    }
+
+    private void StartStep14JokerProtection()
+    {
+        StunAliveMonstersForStep14Joker();
+
+        if (_step14JokerProtectionRoutine == null)
+            _step14JokerProtectionRoutine = StartCoroutine(ProtectStep14JokerUse());
+    }
+
+    private IEnumerator ProtectStep14JokerUse()
+    {
+        bool jokerStarted = false;
+        float interval = Mathf.Max(0.02f, _step14JokerProtectionRefreshInterval);
+
+        while (IsCurrentStep(14))
+        {
+            StunAliveMonstersForStep14Joker();
+
+            JokerSystem joker = FindFirstObjectByType<JokerSystem>();
+            if (joker != null && joker.IsActive)
+                jokerStarted = true;
+            else if (jokerStarted)
+                break;
+
+            yield return new WaitForSeconds(interval);
+        }
+
+        _step14JokerProtectionRoutine = null;
+    }
+
+    private void StunAliveMonstersForStep14Joker()
+    {
+        float duration = Mathf.Max(0.05f, _step14JokerProtectionStunDuration);
+        foreach (MonsterAI monster in FindObjectsByType<MonsterAI>(FindObjectsSortMode.None))
+        {
+            if (monster != null)
+                monster.ApplyStun(duration);
+        }
     }
 
     private void HoldStageForTutorialGuide()
@@ -588,6 +841,27 @@ public class TutorialInGameDirector : MonoBehaviour
         _isStep3ScenarioPaused = false;
     }
 
+    private void PauseStep14Scenario()
+    {
+        if (_isStep14ScenarioPaused) return;
+
+        _step14PreviousTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+        if (_stageBootstrapper == null) _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
+        if (_stageBootstrapper != null) _stageBootstrapper.SetStageTickPaused(true);
+        _isStep14ScenarioPaused = true;
+    }
+
+    private void ResumeStep14ScenarioPause()
+    {
+        if (!_isStep14ScenarioPaused) return;
+
+        Time.timeScale = _step14PreviousTimeScale <= 0f ? 1f : _step14PreviousTimeScale;
+        if (_stageBootstrapper == null) _stageBootstrapper = FindFirstObjectByType<StageBootstrapper>();
+        if (_stageBootstrapper != null) _stageBootstrapper.SetStageTickPaused(false);
+        _isStep14ScenarioPaused = false;
+    }
+
     private void ApplyTutorialPracticeOverrides()
     {
         _hasTutorialSpawnOverride = true;
@@ -606,6 +880,15 @@ public class TutorialInGameDirector : MonoBehaviour
 
         _hasTutorialMonsterExpOverride = false;
         _tutorialMonsterExp = 0;
+    }
+
+    // 보스 스테이지(step14)는 60초 단일 웨이브라 가속 스폰이 걸리면 몬스터가 100마리 넘게 쌓여
+    // 데미지1이라도 누적으로 패배한다. 정규 스폰만 소량 고정해 누적을 막는다(경험치는 오버라이드하지 않음).
+    private void ApplyStep14SpawnThrottle()
+    {
+        _hasTutorialSpawnOverride = true;
+        _tutorialSpawnInterval = Step1TutorialSpawnInterval;
+        _tutorialSpawnAmount = Step1TutorialSpawnAmount;
     }
 
     private int ResolveTutorialPracticeExpPerKill()
@@ -659,30 +942,266 @@ public class TutorialInGameDirector : MonoBehaviour
         // InGameGrowthSystem은 OnLevelUp 이벤트 이후 같은 프레임에 인챈트 팝업을 연다.
         yield return null;
 
-        if (_firstEnchantScenarioDriver == null)
-            _firstEnchantScenarioDriver = FindFirstObjectByType<ScenarioDataDriver>();
-
-        if (_firstEnchantScenarioDriver == null)
-        {
-            Debug.LogWarning("[TutorialInGameDirector] 최초 인챈트 안내 시나리오 드라이버를 찾지 못했습니다.");
-            StartCoroutine(WaitForFirstEnchantChoiceClosed());
-            yield break;
-        }
-
-        _firstEnchantScenarioDriver.OnFinished -= HandleFirstEnchantScenarioFinished;
-        _firstEnchantScenarioDriver.OnFinished += HandleFirstEnchantScenarioFinished;
+        // 대화 동안 카드 선택 잠금 (마지막에 해제)
         LockFirstEnchantSelection();
-        if (!TryPlayTutorialScenarioRange(_firstEnchantScenarioGroupId, _firstEnchantScenarioEndId))
-            HandleFirstEnchantScenarioFinished();
-    }
+        SetEnchantDialogueBubblePosition();
 
-    private void HandleFirstEnchantScenarioFinished()
-    {
-        if (_firstEnchantScenarioDriver != null)
-            _firstEnchantScenarioDriver.OnFinished -= HandleFirstEnchantScenarioFinished;
+        // 4-3-1-2 도입 (전 카드 노출)
+        yield return PlayWorldDialogue(_firstEnchantScenarioGroupId, _firstEnchantScenarioEndId);
 
+        // 4-3-1-3 자동공격 스킬만 남기고 딤
+        DimEnchantExcept(EnchantCardAutoAttack);
+        yield return PlayWorldDialogue(_enchantAutoAttackStartId, _enchantAutoAttackEndId);
+
+        // 4-3-1-4 조합 스킬만 남기고 딤
+        DimEnchantExcept(EnchantCardCombination);
+        yield return PlayWorldDialogue(_enchantCombinationId, _enchantCombinationId);
+
+        // 4-3-1-5 팝업을 잠시 숨기고 조합식 테이블을 강조 → 100038 → 복귀
+        ClearEnchantDim();
+        SetFirstEnchantPopupVisible(false);
+        ShowTemporaryCombinationRecipe();
+        HighlightCombinationTable();
+        yield return PlayWorldDialogue(_enchantCombinationGuideId, _enchantCombinationGuideId);
+        ClearEnchantDim();
+        ClearTemporaryCombinationRecipe();
+        SetFirstEnchantPopupVisible(true);
+
+        // 4-3-1-6 콤보 스킬만 남기고 딤
+        DimEnchantExcept(EnchantCardCombo);
+        yield return PlayWorldDialogue(_enchantComboStartId, _enchantComboEndId);
+
+        // 4-3-1-7 스킬 딤 해제 후 마무리
+        ClearEnchantDim();
+        yield return PlayWorldDialogue(_enchantWrapupId, _enchantWrapupId);
+        ClearEnchantDialogueBubblePosition();
+
+        // 4-3-1-8 유저가 3장 중 1장 선택 → 팝업 닫힘 → 다음 단계
         UnlockFirstEnchantSelection();
         StartCoroutine(WaitForFirstEnchantChoiceClosed());
+    }
+
+    // 인챈트 팝업의 런타임 생성 카드(_spawnedCards)를 리플렉션으로 읽어 RectTransform 목록을 만든다.
+    private List<RectTransform> ResolveEnchantCardRects()
+    {
+        if (_firstEnchantSelectView == null)
+            _firstEnchantSelectView = FindFirstObjectByType<EnchantSelectView>();
+        if (_firstEnchantSelectView == null) return null;
+
+        _enchantSpawnedCardsField ??= typeof(EnchantSelectView)
+            .GetField("_spawnedCards", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (_enchantSpawnedCardsField == null) return null;
+
+        if (_enchantSpawnedCardsField.GetValue(_firstEnchantSelectView) is not List<GameObject> cards)
+            return null;
+
+        var rects = new List<RectTransform>(cards.Count);
+        foreach (GameObject card in cards)
+        {
+            if (card != null) rects.Add(card.GetComponent<RectTransform>());
+        }
+        return rects;
+    }
+
+    // 지정 카드만 남기고 나머지를 딤 처리(딤마스크 구멍).
+    private void DimEnchantExcept(int keepIndex)
+    {
+        List<RectTransform> rects = ResolveEnchantCardRects();
+        if (rects == null || keepIndex < 0 || keepIndex >= rects.Count || rects[keepIndex] == null) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null)
+        {
+            PrepareEnchantDimLayer(dim);
+            dim.ShowWithHoles(new[] { rects[keepIndex] });
+        }
+    }
+
+    private void ClearEnchantDim()
+    {
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim != null) dim.Hide();
+    }
+
+    private void PrepareEnchantDimLayer(TutorialDimMask dim)
+    {
+        if (dim == null) return;
+
+        if (_firstEnchantSelectView == null)
+            _firstEnchantSelectView = FindFirstObjectByType<EnchantSelectView>();
+
+        Canvas dimCanvas = dim.GetComponentInParent<Canvas>();
+        Canvas popupCanvas = _firstEnchantSelectView != null
+            ? _firstEnchantSelectView.GetComponentInParent<Canvas>()
+            : null;
+        if (dimCanvas == null || popupCanvas == null || dimCanvas == popupCanvas) return;
+
+        dimCanvas.overrideSorting = true;
+        dimCanvas.sortingLayerID = popupCanvas.sortingLayerID;
+        dimCanvas.sortingOrder = Mathf.Max(dimCanvas.sortingOrder, popupCanvas.sortingOrder + 1);
+    }
+
+    // 4-3-1-5: 인게임 조합식 테이블의 첫 슬롯(CombinationCanvas/Slot_1)만 남기고 딤 처리해 강조한다.
+    private void HighlightCombinationTable()
+    {
+        RectTransform target = ResolveCombinationSlot();
+        if (target == null) return;
+
+        TutorialDimMask dim = ResolveEnchantDimMask();
+        if (dim == null) return;
+
+        PrepareEnchantDimLayer(dim);
+        dim.ShowWithHole(target);
+    }
+
+    private void ShowTemporaryCombinationRecipe()
+    {
+        CombinationView view = ResolveCombinationView();
+        if (view == null) return;
+        if (!TryGetTutorialCombinationRecipe(out int recipeKey, out int[] ingredients, out SkillTableData skillData))
+            return;
+
+        EnsureTemporaryFusionData(recipeKey, skillData);
+        view.SetRecipe(0, recipeKey, ingredients);
+        _temporaryCombinationRecipeShown = true;
+    }
+
+    private void ClearTemporaryCombinationRecipe()
+    {
+        if (!_temporaryCombinationRecipeShown) return;
+
+        CombinationView view = ResolveCombinationView();
+        if (view != null) view.ClearRecipe(0);
+
+        RectTransform slot = ResolveCombinationSlot();
+        if (slot != null) slot.gameObject.SetActive(false);
+
+        if (_temporaryFusionDataAdded && _enchantCombinationModel != null && _enchantCombinationModel.FusionData != null)
+            _enchantCombinationModel.FusionData.Remove(TutorialCombinationSkillNameId);
+
+        _temporaryCombinationRecipeShown = false;
+        _temporaryFusionDataAdded = false;
+    }
+
+    private CombinationView ResolveCombinationView()
+    {
+        if (_combinationView == null)
+            _combinationView = FindFirstObjectByType<CombinationView>();
+        return _combinationView;
+    }
+
+    private bool TryGetTutorialCombinationRecipe(out int recipeKey, out int[] ingredients, out SkillTableData skillData)
+    {
+        recipeKey = TutorialCombinationSkillNameId;
+        ingredients = null;
+        skillData = null;
+
+        SpellRepo repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        SkillNameChainData chain = repo != null
+            ? repo.GetSkillChainByName(EnchantModel.GROUP_COMBINATION_SKILL, recipeKey)
+            : null;
+        skillData = chain != null ? chain.GetNextLevelData(0) : null;
+        if (skillData == null) return false;
+
+        var ingredientList = new List<int>(3);
+        AddIngredient(ingredientList, skillData.RequiredValue_1);
+        AddIngredient(ingredientList, skillData.RequiredValue_2);
+        AddIngredient(ingredientList, skillData.RequiredValue_3);
+        ingredients = ingredientList.ToArray();
+        return ingredients.Length > 0;
+    }
+
+    private static void AddIngredient(List<int> ingredients, float rawValue)
+    {
+        int unitType = ConvertRawIdToUnitType(rawValue);
+        if (unitType != (int)UnitType.None) ingredients.Add(unitType);
+    }
+
+    private static int ConvertRawIdToUnitType(float rawValue)
+    {
+        int id = Mathf.RoundToInt(rawValue);
+        return id switch
+        {
+            1001 => (int)UnitType.Red,
+            1002 => (int)UnitType.Blue,
+            1003 => (int)UnitType.Yellow,
+            1004 => (int)UnitType.Green,
+            1005 => (int)UnitType.Purple,
+            _ => (int)UnitType.None
+        };
+    }
+
+    private void EnsureTemporaryFusionData(int recipeKey, SkillTableData skillData)
+    {
+        if (_enchantCombinationModel == null)
+            _enchantCombinationModel = FindFirstObjectByType<EnchantCombinationModel>();
+        if (_enchantCombinationModel == null || _enchantCombinationModel.FusionData == null || skillData == null)
+            return;
+        if (_enchantCombinationModel.FusionData.ContainsKey(recipeKey)) return;
+
+        _enchantCombinationModel.FusionData.Add(recipeKey, new FusionEnchantData(
+            skillData.Skill_ID,
+            ConvertRawIdToUnitType(skillData.RequiredValue_1),
+            ConvertRawIdToUnitType(skillData.RequiredValue_2),
+            ConvertRawIdToUnitType(skillData.RequiredValue_3),
+            skillData.SkillIcon_ID));
+        _temporaryFusionDataAdded = true;
+    }
+
+    private void SetFirstEnchantPopupVisible(bool visible)
+    {
+        if (_firstEnchantSelectView == null)
+            _firstEnchantSelectView = FindFirstObjectByType<EnchantSelectView>();
+        if (_firstEnchantSelectView == null) return;
+
+        if (_firstEnchantCanvasGroup == null)
+            _firstEnchantCanvasGroup = _firstEnchantSelectView.GetComponent<CanvasGroup>();
+        if (_firstEnchantCanvasGroup == null)
+            _firstEnchantCanvasGroup = _firstEnchantSelectView.gameObject.AddComponent<CanvasGroup>();
+
+        _firstEnchantCanvasGroup.alpha = visible ? 1f : 0f;
+        _firstEnchantCanvasGroup.interactable = true;
+        if (_isFirstEnchantSelectionLocked)
+            _firstEnchantCanvasGroup.blocksRaycasts = false;
+    }
+
+    private void SetEnchantDialogueBubblePosition()
+    {
+        if (_talkPresenter != null)
+            _talkPresenter.SetBubbleViewportPosition(_enchantBubbleViewportPosition, _enchantBubbleScreenOffset);
+    }
+
+    private void ClearEnchantDialogueBubblePosition()
+    {
+        if (_talkPresenter != null)
+            _talkPresenter.ClearBubblePositionOverride();
+    }
+
+    private RectTransform ResolveCombinationSlot()
+    {
+        GameObject canvas = GameObject.Find("CombinationCanvas");
+        if (canvas == null) return null;
+
+        Transform slot = FindDeepChild(canvas.transform, "Slot_1");
+        return slot as RectTransform;
+    }
+
+    private static Transform FindDeepChild(Transform parent, string name)
+    {
+        if (parent.name == name) return parent;
+        foreach (Transform child in parent)
+        {
+            Transform found = FindDeepChild(child, name);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private TutorialDimMask ResolveEnchantDimMask()
+    {
+        if (_enchantDimMask == null)
+            _enchantDimMask = transform.root.GetComponentInChildren<TutorialDimMask>(true);
+        return _enchantDimMask;
     }
 
     private void LockFirstEnchantSelection()
@@ -697,10 +1216,10 @@ public class TutorialInGameDirector : MonoBehaviour
         if (_firstEnchantCanvasGroup == null)
             _firstEnchantCanvasGroup = _firstEnchantSelectView.gameObject.AddComponent<CanvasGroup>();
 
-        _previousFirstEnchantInteractable = _firstEnchantCanvasGroup.interactable;
         _previousFirstEnchantBlocksRaycasts = _firstEnchantCanvasGroup.blocksRaycasts;
 
-        _firstEnchantCanvasGroup.interactable = false;
+        _firstEnchantCanvasGroup.alpha = 1f;
+        _firstEnchantCanvasGroup.interactable = true;
         _firstEnchantCanvasGroup.blocksRaycasts = false;
         _isFirstEnchantSelectionLocked = true;
     }
@@ -709,7 +1228,7 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         if (!_isFirstEnchantSelectionLocked || _firstEnchantCanvasGroup == null) return;
 
-        _firstEnchantCanvasGroup.interactable = _previousFirstEnchantInteractable;
+        _firstEnchantCanvasGroup.alpha = 1f;
         _firstEnchantCanvasGroup.blocksRaycasts = _previousFirstEnchantBlocksRaycasts;
         _isFirstEnchantSelectionLocked = false;
     }
@@ -742,7 +1261,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (!_isStep3Running || _isStep3DefeatHandled) yield break;
 
         PauseStep3Scenario();
-        yield return PlayScenarioRange(_step3RushWarningScenarioStartId, _step3RushWarningScenarioEndId);
+        yield return PlayWorldDialogue(_step3RushWarningScenarioStartId, _step3RushWarningScenarioEndId);
         ResumeStep3ScenarioPause();
 
         StartStep3Rush();
@@ -842,7 +1361,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (_spawner != null) _spawner.StopSpawning();
 
         PauseStep3Scenario();
-        yield return PlayScenarioRange(_step3DefeatScenarioStartId, _step3DefeatScenarioEndId);
+        yield return PlayWorldDialogue(_step3DefeatScenarioStartId, _step3DefeatScenarioEndId);
         ResumeStep3ScenarioPause();
 
         TutorialManager tm = TutorialManager.Instance;
@@ -854,6 +1373,63 @@ public class TutorialInGameDirector : MonoBehaviour
             GameManager.Instance.LoadLobby();
         else
             UnityEngine.SceneManagement.SceneManager.LoadScene("_Lobby");
+    }
+
+    // 인게임 다이제틱 대화 버블로 라인들을 재생하고 종료까지 대기한다.
+    // 라인 소스(데이터 어댑터)는 이 함수 밖에서 만들어 넘긴다.
+    private IEnumerator PlayTalk(IReadOnlyList<TalkLine> lines)
+    {
+        if (_talkPresenter == null)
+        {
+            Debug.LogWarning("[TutorialInGameDirector] 대화 버블 프리젠터가 연결되지 않았습니다.");
+            yield break;
+        }
+        if (lines == null || lines.Count == 0) yield break;
+
+        bool finished = false;
+        Action handleFinished = () => finished = true;
+        _talkPresenter.OnFinished += handleFinished;
+        _talkPresenter.Play(lines);
+
+        while (!finished)
+            yield return null;
+
+        _talkPresenter.OnFinished -= handleFinished;
+    }
+
+    // 시나리오 소스 그룹(3002)에서 ID 범위를 골라 버블용 TalkLine으로 변환한다.
+    // 화자는 이름으로 매핑(에이프릴=플레이어, 그 외=래리). 데이터 교체 시 이 어댑터만 손보면 된다.
+    private List<TalkLine> BuildTutorialTalkLines(int startId, int endId)
+    {
+        var result = new List<TalkLine>();
+
+        StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
+        if (repo == null)
+        {
+            Debug.LogWarning("[TutorialInGameDirector] StoryRepo를 찾지 못해 대화 라인을 만들지 못했습니다.");
+            return result;
+        }
+
+        List<Story_TalkData> source = repo.GetTalkGroup(_tutorialScenarioSourceGroupId);
+        foreach (Story_TalkData line in CollectTutorialScenarioLines(source, startId, endId))
+        {
+            if (line == null) continue;
+            TalkSpeaker speaker = string.Equals(line.name_KR, _aprilSpeakerName)
+                ? TalkSpeaker.April
+                : TalkSpeaker.Rary;
+            result.Add(new TalkLine(speaker, line.name_KR, line.Text_KR));
+        }
+
+        return result;
+    }
+
+    // 월드(필드) 인게임 대사: 버블 프리젠터가 연결돼 있으면 스토리박스(버블)로, 없으면 기존 ScenarioView로 폴백.
+    private IEnumerator PlayWorldDialogue(int startId, int endId)
+    {
+        if (_talkPresenter != null)
+            yield return PlayTalk(BuildTutorialTalkLines(startId, endId));
+        else
+            yield return PlayScenarioRange(startId, endId);
     }
 
     private IEnumerator PlayScenarioRange(int startId, int endId)
@@ -1147,8 +1723,8 @@ public class TutorialInGameDirector : MonoBehaviour
 public static class TutorialFirstEnchantSelectionOverride
 {
     private const int FixedNormalSkillNameId = 50;
-    private const int FixedCombinationSkillNameId = 51;
-    private const int FixedComboSkillNameId = 53;
+    private const int FixedCombinationSkillNameId = 71;
+    private const int FixedComboSkillNameId = 54;
 
     private static bool _hasPendingFixedChoices;
 
@@ -1168,7 +1744,8 @@ public static class TutorialFirstEnchantSelectionOverride
         choices = null;
         IsShowingFixedChoices = false;
 
-        if (!_hasPendingFixedChoices) return false;
+        if (!_hasPendingFixedChoices && !ShouldForceFixedChoicesForTutorial())
+            return false;
 
         _hasPendingFixedChoices = false;
 
@@ -1197,6 +1774,17 @@ public static class TutorialFirstEnchantSelectionOverride
     public static void ClearFixedChoiceState()
     {
         IsShowingFixedChoices = false;
+    }
+
+    private static bool ShouldForceFixedChoicesForTutorial()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        return tm != null
+            && tm.IsRunning
+            && step != null
+            && (step.stepId == 1 || step.stepId == 2)
+            && !IsShowingFixedChoices;
     }
 
     private static void TryAddSkillChoice(
