@@ -1,5 +1,5 @@
 //담당자: 조규민
-// 수정 내용 : 구매 보유 가구 ID와 장착 가구 ID를 분리해 슬롯 상태를 계산
+// 수정 내용 : 구매 보유 가구 ID와 장착 가구 ID를 분리하고 구매 확인 대기 상태를 관리
 
 using System;
 using System.Collections.Generic;
@@ -22,17 +22,23 @@ public class HousingPlacementModel
     private readonly HashSet<int> _ownedFurnitureIds = new();
 
     private bool _isPlacementMode;
+    private bool _isPurchaseProcessing;
     private HousingPlacementCategory _selectedCategory = HousingPlacementCategory.Decoration;
     private HousingPlacementItemData _selectedItem;
+    private HousingPlacementItemData _pendingPurchaseItem;
 
     public event Action<bool> OnPlacementModeChanged;
     public event Action<HousingPlacementCategory> OnCategoryChanged;
     public event Action<HousingPlacementItemData> OnSelectedItemChanged;
+    public event Action<HousingPlacementItemData> OnPurchaseConfirmationChanged;
+    public event Action<bool> OnPurchaseProcessingChanged;
     public event Action OnItemsChanged;
 
     public bool IsPlacementMode => _isPlacementMode;
     public HousingPlacementCategory SelectedCategory => _selectedCategory;
     public HousingPlacementItemData SelectedItem => _selectedItem;
+    public HousingPlacementItemData PendingPurchaseItem => _pendingPurchaseItem;
+    public bool IsPurchaseProcessing => _isPurchaseProcessing;
 
     public HousingPlacementModel(IEnumerable<HousingPlacementItemData> _initialItems)
     {
@@ -76,6 +82,63 @@ public class HousingPlacementModel
 
         _selectedItem = _itemData;
         OnSelectedItemChanged?.Invoke(_selectedItem);
+    }
+
+    public bool RequestPurchaseConfirmation(HousingPlacementItemData _itemData)
+    {
+        if (_itemData == null || _pendingPurchaseItem != null || _isPurchaseProcessing)
+        {
+            return false;
+        }
+
+        _pendingPurchaseItem = _itemData;
+        OnPurchaseConfirmationChanged?.Invoke(_pendingPurchaseItem);
+        return true;
+    }
+
+    public bool BeginPurchase()
+    {
+        if (_pendingPurchaseItem == null || _isPurchaseProcessing)
+        {
+            return false;
+        }
+
+        _isPurchaseProcessing = true;
+        OnPurchaseProcessingChanged?.Invoke(true);
+        return true;
+    }
+
+    public void CompletePurchase()
+    {
+        SetPurchaseProcessing(false);
+        CancelPurchaseConfirmation();
+    }
+
+    public void CancelPurchaseConfirmation()
+    {
+        if (_isPurchaseProcessing)
+        {
+            return;
+        }
+
+        if (_pendingPurchaseItem == null)
+        {
+            return;
+        }
+
+        _pendingPurchaseItem = null;
+        OnPurchaseConfirmationChanged?.Invoke(null);
+    }
+
+    private void SetPurchaseProcessing(bool _isProcessing)
+    {
+        if (_isPurchaseProcessing == _isProcessing)
+        {
+            return;
+        }
+
+        _isPurchaseProcessing = _isProcessing;
+        OnPurchaseProcessingChanged?.Invoke(_isPurchaseProcessing);
     }
 
     public void SetItems(IEnumerable<HousingPlacementItemData> _newItems)

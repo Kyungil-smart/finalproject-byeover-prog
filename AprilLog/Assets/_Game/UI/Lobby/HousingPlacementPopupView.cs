@@ -1,7 +1,7 @@
 //담당자: 조규민
 
 /// 하우징 배치 팝업의 탭과 아이템 목록을 표시
-//  가구 배치 팝업에 카테고리 제목과 섹션별 아이템 그리드를 표시
+//  가구 배치 팝업에 카테고리 제목과 섹션별 아이템 그리드를 표시하고 구매 버튼 입력을 전달
 
 using System;
 using System.Collections.Generic;
@@ -64,6 +64,7 @@ public class HousingPlacementPopupView : MonoBehaviour
 
     public event Action<HousingPlacementCategory> OnCategoryClicked;
     public event Action<HousingPlacementItemData> OnItemClicked;
+    public event Action<HousingPlacementItemData> OnPurchaseClicked;
     public event Action OnApplyClicked;
 
     private void Awake()
@@ -247,6 +248,7 @@ public class HousingPlacementPopupView : MonoBehaviour
             }
 
             _slot.OnClicked -= HandleItemClicked;
+            _slot.OnPurchaseClicked -= HandlePurchaseClicked;
         }
 
         _spawnedSlots.Clear();
@@ -318,6 +320,7 @@ public class HousingPlacementPopupView : MonoBehaviour
                 : HousingPlacementItemState.Owned;
             _slot.SetData(_itemData, _state);
             _slot.OnClicked += HandleItemClicked;
+            _slot.OnPurchaseClicked += HandlePurchaseClicked;
             _spawnedSlots.Add(_slot);
         }
     }
@@ -627,6 +630,11 @@ public class HousingPlacementPopupView : MonoBehaviour
     private void HandleItemClicked(HousingPlacementItemData _itemData)
     {
         OnItemClicked?.Invoke(_itemData);
+    }
+
+    private void HandlePurchaseClicked(HousingPlacementItemData _itemData)
+    {
+        OnPurchaseClicked?.Invoke(_itemData);
     }
 
     private void HandleApplyClicked()

@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 수정 내용 : 미보유 가구 구매 입력을 슬롯 전체가 아닌 상태 버튼으로 분리
 
 using System;
 using TMPro;
@@ -42,10 +43,13 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
     [Header("입력")]
     [SerializeField] private Button _slotButton;
+    [SerializeField] private Button _stateButton;
 
     private HousingPlacementItemData _itemData;
+    private HousingPlacementItemState _itemState;
 
     public event Action<HousingPlacementItemData> OnClicked;
+    public event Action<HousingPlacementItemData> OnPurchaseClicked;
 
     private void Awake()
     {
@@ -55,17 +59,21 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (_slotButton == null)
+        if (_slotButton != null)
         {
-            return;
+            _slotButton.onClick.RemoveListener(HandleClicked);
         }
 
-        _slotButton.onClick.RemoveListener(HandleClicked);
+        if (_stateButton != null)
+        {
+            _stateButton.onClick.RemoveListener(HandlePurchaseClicked);
+        }
     }
 
     public void SetData(HousingPlacementItemData _data, HousingPlacementItemState _state)
     {
         _itemData = _data;
+        _itemState = _state;
 
         if (_data == null)
         {
@@ -77,6 +85,7 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         SetIcon(_data.Icon);
         SetName(_data);
         SetState(_data, _state);
+        SetPurchaseButtonInteractable(_state == HousingPlacementItemState.Price);
     }
 
     private void SetIcon(Sprite _icon)
@@ -240,6 +249,11 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         {
             _currencyIconImage = transform.Find("StateButton_Image/CurrencyIcon_Image")?.GetComponent<Image>();
         }
+
+        if (_stateButton == null)
+        {
+            _stateButton = transform.Find("StateButton_Image")?.GetComponent<Button>();
+        }
     }
 
     private void Bind()
@@ -252,6 +266,15 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
         _slotButton.onClick.RemoveListener(HandleClicked);
         _slotButton.onClick.AddListener(HandleClicked);
+
+        if (_stateButton == null)
+        {
+            Debug.LogWarning("[HousingPlacementItemSlotView] 상태 Button 연결이 필요합니다.", this);
+            return;
+        }
+
+        _stateButton.onClick.RemoveListener(HandlePurchaseClicked);
+        _stateButton.onClick.AddListener(HandlePurchaseClicked);
     }
 
     private void HandleClicked()
@@ -262,5 +285,24 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         }
 
         OnClicked?.Invoke(_itemData);
+    }
+
+    // 추가: 조규민 - 미보유 가구는 가격이 표시된 상태 버튼을 눌렀을 때만 구매 요청을 전달한다.
+    private void HandlePurchaseClicked()
+    {
+        if (_itemData == null || _itemState != HousingPlacementItemState.Price)
+        {
+            return;
+        }
+
+        OnPurchaseClicked?.Invoke(_itemData);
+    }
+
+    private void SetPurchaseButtonInteractable(bool _isInteractable)
+    {
+        if (_stateButton != null)
+        {
+            _stateButton.interactable = _isInteractable;
+        }
     }
 }
