@@ -6,7 +6,7 @@ using System;
 
 public interface ITutorialView
 {
-    /// <summary>매니저 -> 뷰 : 이 단계를 화면에 그려라(어두운 막 + step.highlightTargetId 강조 + step.guideText 말풍선).</summary>
+    /// <summary>매니저 -> 뷰 : 이 단계를 화면에 그려라(어두운 막 + step.highlightTargetId 강조).</summary>
     void ShowStep(TutorialStep step);
 
     /// <summary>매니저 -> 뷰 : 오버레이를 숨겨라(이 씬엔 보여줄 단계 없음 / 튜토리얼 종료).</summary>

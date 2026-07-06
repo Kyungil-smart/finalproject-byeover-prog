@@ -239,6 +239,12 @@ public class StageModel
             if (isTimeToEnd)
             {
                 // 웨이브 종료 시 보상 지급
+                if (TutorialInGameDirector.ShouldSkipBattleRewardTriggerForTutorial())
+                {
+                    _isSpecialWaveFinished = true;
+                    return;
+                }
+
                 var repo = DataManager.Instance.RewardRepo;
                 var data = repo.GetBattleRewardTrigger(_currentSpecialRule.SpecialWave_ID);
                 if(data == null) return;
@@ -426,6 +432,8 @@ public class StageModel
         // 전투 보상 중 특수 웨이브에 관여 된 트리거는 웨이브 클리어, 보스 킬, 엘리트 킬
         // 보스 킬, 엘리트 킬은 몬스터 사망 체인에 보상 지급을 호출해야되므로 스폰커멘드 구조체에 해당 트리거 ID를 삽입 하도록 함
 
+        bool shouldAttachBattleReward = !TutorialInGameDirector.ShouldSkipBattleRewardTriggerForTutorial();
+
         for (int i = 0; i < spawnAmount; i++)
         {
             int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
@@ -441,7 +449,7 @@ public class StageModel
                     ScalingData = scalingData,
                     AccumulateCount = accumulateCount,
                     Type = sType,
-                    IsContainBattleReward = true,
+                    IsContainBattleReward = shouldAttachBattleReward,
                     TriggerTargetId = _currentSpecialRule.SpecialWave_ID
                 });
             }
