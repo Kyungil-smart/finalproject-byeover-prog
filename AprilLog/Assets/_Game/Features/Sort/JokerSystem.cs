@@ -31,6 +31,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     [SerializeField] private UnitDataManager _dataManager;
 
     private JokerPatternData _activePattern;
+
     private int _currentIndex = 0;
     private int _currentCount = 2;
     private float _lastUsedTime = -60f;
@@ -39,9 +40,26 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     private void Start()
     {
+        RefreshJokerCount();
+
+        if (ArtifactManager.Instance != null)
+        {
+            ArtifactManager.Instance.OnInventoryUpdated += RefreshJokerCount;
+            ArtifactManager.Instance.OnEquipmentChanged += RefreshJokerCount;
+        }
+
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
         if (_coolDownText != null) _coolDownText.enabled = false;
         UpdateJokerUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (ArtifactManager.Instance != null)
+        {
+            ArtifactManager.Instance.OnInventoryUpdated -= RefreshJokerCount;
+            ArtifactManager.Instance.OnEquipmentChanged -= RefreshJokerCount;
+        }
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -193,10 +211,33 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         _currentCount = 2;
         UpdateJokerUI();
     }
-    
-    
+
+    public void RefreshJokerCount()
+    {
+        int baseCount = 0;
+        int bonus = 0;
+
+        var equippedArtifacts = ArtifactManager.Instance.MyArtifacts.FindAll(a => a.IsEquipped);
+
+        foreach (var artifact in equippedArtifacts)
+        {
+            if (artifact.MasterId == 60022)
+            {
+                bonus += 1;
+
+                if (artifact.CurrentLevel >= artifact.GetMaxLevelLimit())
+                {
+                    bonus += 1;
+                }
+            }
+        }
+
+        _currentCount = baseCount + bonus;
+        UpdateJokerUI();
+    }
+
     // ---------- 세이브 / 로드 (추가) ----------
-    
+
     // 현재 조커 보유량 반환 (Index + 1)
     public int GetJokerCount() => _currentCount;
     

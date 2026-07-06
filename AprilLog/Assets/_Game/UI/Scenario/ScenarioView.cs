@@ -79,6 +79,10 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private bool  _autoPlay = false;
     [Tooltip("텍스트 출력 완료 후 다음으로 넘어가기까지 대기 시간(초)")]
     [SerializeField] private float _autoDelay = 1.5f;
+    [Tooltip("자동진행 버튼 아이콘 — 자동진행 중일 때 회전")]
+    [SerializeField] private RectTransform _autoPlayIcon;
+    [Tooltip("아이콘 1회전에 걸리는 시간(초)")]
+    [SerializeField] private float _autoIconSpinDuration = 1f;
 
     [Header("초상화 슬라이드 인")]
     [SerializeField] private bool  _usePortraitSlide = true;
@@ -98,6 +102,7 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     private Coroutine _autoRoutine;
     private bool _isTyping;
     private bool _autoPaused;   // 로그 등이 열려 자동진행을 잠시 멈춘 상태
+    private Tween _autoIconTween;
 
     private Material _grayMaterial;
     private CanvasGroup _textboxGroup;
@@ -309,11 +314,34 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     public void SetAutoPlay(bool on)
     {
         _autoPlay = on;
+        SetAutoIconSpin(on);
         if (!on) StopAuto();
         else if (!_isTyping) OnTextFullyShown();   // 이미 텍스트 다 나왔으면 바로 타이머 시작
     }
 
     public void ToggleAutoPlay() => SetAutoPlay(!_autoPlay);
+
+    /// <summary>자동진행 중이면 아이콘을 계속 회전, 아니면 멈추고 각도 리셋</summary>
+    private void SetAutoIconSpin(bool on)
+    {
+        if (_autoPlayIcon == null) return;
+
+        _autoIconTween?.Kill();
+        _autoIconTween = null;
+
+        if (on)
+        {
+            _autoIconTween = _autoPlayIcon
+                .DORotate(new Vector3(0f, 0f, -360f), _autoIconSpinDuration, RotateMode.FastBeyond360)
+                .SetEase(Ease.Linear)
+                .SetLoops(-1, LoopType.Restart)
+                .SetUpdate(true);   // 타임스케일 영향 없이 회전
+        }
+        else
+        {
+            _autoPlayIcon.localRotation = Quaternion.identity;
+        }
+    }
 
    
     // 터치 진행
@@ -431,6 +459,8 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     {
         StopTyping();
         StopAuto();
+        _autoIconTween?.Kill();
+        _autoIconTween = null;
         if (_textboxGroup != null) _textboxGroup.DOKill();
         if (_bgImage != null) _bgImage.DOKill();
         if (_cgImage != null) _cgImage.DOKill();

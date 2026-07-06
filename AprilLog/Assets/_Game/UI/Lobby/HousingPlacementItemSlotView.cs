@@ -1,5 +1,5 @@
 //담당자: 조규민
-// 수정 내용 : 미보유 가구 구매 입력을 슬롯 전체가 아닌 상태 버튼으로 분리
+// 수정 내용 : 미보유 가구 구매 입력을 슬롯 전체가 아닌 상태 버튼으로 분리하고 가격 상태에서만 버튼 레이캐스트를 켬
 
 using System;
 using TMPro;
@@ -300,6 +300,11 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
     private void SetPurchaseButtonInteractable(bool _isInteractable)
     {
+        if (_stateButtonImage != null)
+        {
+            _stateButtonImage.raycastTarget = _isInteractable;
+        }
+
         if (_stateButton != null)
         {
             _stateButton.interactable = _isInteractable;
