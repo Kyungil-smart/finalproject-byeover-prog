@@ -54,11 +54,17 @@ public class ScenarioDataDriver : MonoBehaviour
     private bool _isPlaying;
     private bool _finished;
     private bool _subscribed;
+    private bool _isCloudDataLoaded;
 
     private void Awake()
     {
         if (_view == null) _view = GetComponent<ScenarioView>();
         if (_view == null) _view = FindFirstObjectByType<ScenarioView>();
+        if (GameManager.Instance != null)
+        {
+            _isCloudDataLoaded = GameManager.Instance.CloudData != null;
+            _startGroupId = GameManager.Instance.SelectedScenarioGroupId;
+        }
     }
 
     private void OnEnable()  => Subscribe();
@@ -72,7 +78,7 @@ public class ScenarioDataDriver : MonoBehaviour
     // ---------- 외부 API ----------
 
     /// <summary>지정 GroupID의 시나리오를 처음부터 재생한다.</summary>
-    public void Play(int groupId)
+    private void Play(int groupId)
     {
         if (_view == null)
         {
@@ -101,6 +107,7 @@ public class ScenarioDataDriver : MonoBehaviour
         _index = 0;
         _finished = false;
         _isPlaying = true;
+        SaveUnlockScenario(groupId);
         Show();
     }
 
@@ -198,6 +205,8 @@ public class ScenarioDataDriver : MonoBehaviour
         if (_subscribed || _view == null) return;
         _view.OnAdvanceRequested += Next;
         _view.OnSkipRequested    += Finish;   // 스킵 = 끝내고 다음으로
+        if(GameManager.Instance != null && !_isCloudDataLoaded)
+            GameManager.Instance.OnCloudDataReady += HandleCloudDataLoaded;
         _subscribed = true;
     }
 
@@ -206,6 +215,32 @@ public class ScenarioDataDriver : MonoBehaviour
         if (!_subscribed || _view == null) return;
         _view.OnAdvanceRequested -= Next;
         _view.OnSkipRequested    -= Finish;
+        if(GameManager.Instance != null)
+            GameManager.Instance.OnCloudDataReady -= HandleCloudDataLoaded;
         _subscribed = false;
+    }
+
+    private void SaveUnlockScenario(int groupId)
+    {
+        if (DataManager.Instance == null)
+        {
+            Debug.LogWarning("[ScenarioDataDriver] DataManager 미 감지. 시나리오 진행 저장되지 않음.");
+            return;
+        }
+
+        if (!_isCloudDataLoaded)
+        {
+            LoadedScenarioTempContainer.UnsavedFirstReadScenarioResister(groupId);
+            return;
+        }
+        
+        GameManager.Instance.SaveFirstReadScenario(groupId);
+    }
+
+    private void HandleCloudDataLoaded()
+    {
+        if(_isCloudDataLoaded) return;
+        LoadedScenarioTempContainer.SaveContainScenario();
+        _isCloudDataLoaded = true;
     }
 }
