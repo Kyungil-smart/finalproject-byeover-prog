@@ -364,10 +364,6 @@ public class TutorialLobbyDirector : MonoBehaviour
     {
         switch (stepId)
         {
-            case 4:
-                startId = 100048;
-                endId = 100053;
-                return true;
             case 6:
                 startId = 100054;
                 endId = 100058;
