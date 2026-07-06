@@ -98,8 +98,8 @@ public class TutorialInGameDirector : MonoBehaviour
     private const int EnchantCardCombo = 2;
 
     [Header("step0 전투 연출")]
-    [Tooltip("0챕터 진입 대사(몬스터 없는 화면). 100019 앞에 먼저 재생")]
-    [SerializeField] private int _step0EntryScenarioStartId = 100009;
+    [Tooltip("0챕터 진입 대사(몬스터 없는 화면). 100009(전체화면 오프닝 컷)는 인트로에서 재생하므로 인게임은 100010부터.")]
+    [SerializeField] private int _step0EntryScenarioStartId = 100010;
     [SerializeField] private int _step0EntryScenarioEndId = 100018;
     [Tooltip("몬스터 스폰 대사")]
     [SerializeField] private int _step0IntroScenarioId = 100019;
