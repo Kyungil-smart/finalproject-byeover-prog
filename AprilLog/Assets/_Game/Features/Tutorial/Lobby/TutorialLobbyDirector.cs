@@ -76,6 +76,11 @@ public class TutorialLobbyDirector : MonoBehaviour
 
         TryPlayLobbyStepScenario();
 
+        if (!IsArtifactUpgradeStepActive())
+            return;
+
+        HandleInventoryUpdated();
+
         if (!_ascendHandled || _equipHandled) return;
 
         ArtifactInstance seal = FindSealArtifact();
@@ -138,6 +143,7 @@ public class TutorialLobbyDirector : MonoBehaviour
     private void HandleInventoryUpdated()
     {
         if (!_active) return;
+        if (!IsArtifactUpgradeStepActive()) return;
 
         if (_artifacts == null)
             ResolveSystems();
@@ -164,6 +170,18 @@ public class TutorialLobbyDirector : MonoBehaviour
         {
             _lastKnownAscensionCount = seal.AscensionCount;
         }
+    }
+
+    private static bool IsArtifactUpgradeStepActive()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        if (step == null || step.scene != TutorialScene.Lobby)
+            return false;
+
+        return step.stepId == 12
+            || string.Equals(step.highlightTargetId, "ArtifactLevelUpButton", StringComparison.Ordinal)
+            || step.gameAction == TutorialGameAction.ArtifactEquip;
     }
 
     private IEnumerator HandleLevel5Reached()

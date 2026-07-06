@@ -60,6 +60,7 @@ public class PageMainLobbyController : MonoBehaviour
         }
         
         if (GameManager.Instance != null) GameManager.Instance.OnCloudDataReady += HandleCloudDataReady;
+        _data.InitChapters();
         ShowChapter(0, instant: true);
     }
 
@@ -125,7 +126,16 @@ public class PageMainLobbyController : MonoBehaviour
 
     private void ShowChapter(int index, bool instant)
     {
-        _currentIndex = Mathf.Clamp(index, 0, _data != null ? _data.ChapterCount - 1 : 0);
+        if (_data == null || _data.ChapterCount <= 0)
+        {
+            Debug.LogWarning("[PageMainLobbyController] 표시할 챕터 데이터가 없습니다.", this);
+            SetButtonVisible(_btnPrev, false);
+            SetButtonVisible(_btnNext, false);
+            SetStartButtonInteractable(false);
+            return;
+        }
+
+        _currentIndex = Mathf.Clamp(index, 0, _data.ChapterCount - 1);
         UpdateSlotData();
 
         if (instant && _slotRect != null)

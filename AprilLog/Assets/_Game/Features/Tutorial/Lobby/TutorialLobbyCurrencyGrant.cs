@@ -1,39 +1,72 @@
-// 로비 튜토리얼 시작 시 캐릭터 레벨업·아티팩트 강화에 필요한 재화를 한 번 넉넉히 지급한다.
-// 골드/양피지(캐릭터 레벨업), 강화석(아티팩트 강화)을 지급하고, PlayerPrefs로 1회만 지급되게 막는다.
-// 아티팩트 인장(기본/돌파용 중복)은 뽑기 단계에서 별도 지급된다.
+// 로비 튜토리얼 시작 시 캐릭터 레벨업/아티팩트 강화에 필요한 재화를 한 번 지급한다.
+// 골드/양피지(캐릭터 레벨업), 강화석(아티팩트 강화)을 지급하고 PlayerPrefs로 중복 지급을 막는다.
 
+using System.Collections;
 using UnityEngine;
 
 public class TutorialLobbyCurrencyGrant : MonoBehaviour
 {
-    // 튜토리얼 소요량 : 아티팩트 5레벨 강화(골드 6,000/강화석 120) + 돌파 1회(같은 장비 소모, 재화 0)
-    //                 + 캐릭터 레벨업 1회(골드 50/양피지 5). 여기에 여유분을 더해 지급한다.
-    [Header("지급량 (소요량 + 여유분)")]
+    [Header("지급량")]
     [SerializeField] private int _grantGold = 20000;
     [SerializeField] private int _grantParchment = 50;
     [SerializeField] private int _grantUpgradeStone = 300;
 
     [Header("1회 지급 가드")]
-    [Tooltip("이 키로 지급 여부를 저장한다. 테스트로 다시 지급하려면 비활성 상태에서 컨텍스트 메뉴로 초기화")]
+    [Tooltip("이 키로 지급 여부를 저장한다. 테스트로 다시 지급하려면 컨텍스트 메뉴로 초기화한다.")]
     [SerializeField] private string _grantedPrefKey = "tutorial_lobby_currency_granted";
 
     private void Start()
     {
-        var tm = TutorialManager.Instance;
-        if (tm == null || !tm.IsRunning) return;
-        if (PlayerPrefs.GetInt(_grantedPrefKey, 0) == 1) return;
+        StartCoroutine(GrantWhenReady());
+    }
 
-        // 영속 재화는 GameManager를 거친다. 부트 미경유 단독 씬 테스트면 지급하지 않는다.
-        if (GameManager.Instance == null) return;
+    private IEnumerator GrantWhenReady()
+    {
+        if (PlayerPrefs.GetInt(_grantedPrefKey, 0) == 1)
+        {
+            Debug.Log("[TutorialLobbyCurrencyGrant] 이미 지급된 상태라 재지급하지 않습니다.");
+            yield break;
+        }
 
+        const float timeout = 5f;
+        float elapsed = 0f;
+
+        while (elapsed < timeout)
+        {
+            bool tutorialReady = TutorialManager.Instance != null && TutorialManager.Instance.IsRunning;
+            bool gameReady = GameManager.Instance != null;
+            bool artifactReady = _grantUpgradeStone <= 0
+                || (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null);
+
+            if (tutorialReady && gameReady && artifactReady)
+            {
+                Grant();
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        Debug.LogWarning(
+            "[TutorialLobbyCurrencyGrant] 재화 지급 준비 실패. " +
+            $"TutorialRunning={TutorialManager.Instance != null && TutorialManager.Instance.IsRunning}, " +
+            $"GameManager={GameManager.Instance != null}, " +
+            $"ArtifactManager={GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null}",
+            this);
+    }
+
+    private void Grant()
+    {
         GameManager.Instance.AddCurrency(_grantGold, _grantParchment, "튜토리얼 로비 재화 지급");
 
-        var mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+        ArtifactManager mgr = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
         if (mgr != null && _grantUpgradeStone > 0)
             mgr.AddStone(_grantUpgradeStone);
 
         PlayerPrefs.SetInt(_grantedPrefKey, 1);
         PlayerPrefs.Save();
+
         Debug.Log($"[TutorialLobbyCurrencyGrant] 재화 지급 완료 (골드 +{_grantGold}, 양피지 +{_grantParchment}, 강화석 +{_grantUpgradeStone})");
     }
 
