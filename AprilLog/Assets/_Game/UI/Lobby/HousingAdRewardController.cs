@@ -1,4 +1,7 @@
 //담당자: 조규민
+// 광고·네트워크·보상 서비스 참조 해석과 외부 이벤트 등록·해제
+// 광고 로드·재생·보상 지급·실패 상태를 Presenter와 Model에 전달
+// 보상 종류에 따른 스태미나·다이아 지급과 팝업 상태 갱신
 
 using UnityEngine;
 using UnityEngine.Events;
@@ -78,6 +81,7 @@ public class HousingAdRewardController : MonoBehaviour
         _presenter?.Release();
     }
 
+    // 광고 로드·보상·종료와 네트워크 상태 이벤트 등록
     private void SubscribeExternalEvents()
     {
         ResolveAdReferences();
@@ -116,6 +120,7 @@ public class HousingAdRewardController : MonoBehaviour
         }
     }
 
+    // Inspector 누락 참조 자동 탐색과 서비스별 참조 분리
     private void ResolveReferences()
     {
         if (_buttonView == null)
@@ -160,6 +165,7 @@ public class HousingAdRewardController : MonoBehaviour
 
     private void InitializePresenter()
     {
+        _popupView?.SetRewardAmounts(_rewardStamina, _rewardDiamond);
         _model = new HousingAdRewardModel(_message, _rewardTitle, _confirmText, _cancelText);
         _presenter = new HousingAdRewardPresenter(_model, _popupView, _buttonView, HandleAdWatchRequested);
         _presenter.Initialize();
@@ -170,6 +176,7 @@ public class HousingAdRewardController : MonoBehaviour
         }
     }
 
+    // 네트워크와 광고 서비스 준비 상태 확인 후 보상형 광고 로드 요청
     private void PrepareAd()
     {
         if (!_loadAdOnEnable)
@@ -247,6 +254,7 @@ public class HousingAdRewardController : MonoBehaviour
         return TryShowRewardedAd();
     }
 
+    // 광고 준비 상태 검증 후 보상형 광고 표시 요청
     private bool TryShowRewardedAd()
     {
         if (_isShowingAd)
@@ -316,6 +324,7 @@ public class HousingAdRewardController : MonoBehaviour
         _onRewardGranted?.Invoke();
     }
 
+    // 선택된 광고 보상 종류에 따른 실제 재화 지급 분기
     private void GrantReward()
     {
         ResolveRewardReferences();
@@ -420,6 +429,7 @@ public class HousingAdRewardController : MonoBehaviour
         _presenter?.SetAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
     }
 
+    // 광고 실패 메시지와 재시도 가능 상태를 Model에 반영
     private void SetFailedState(string _messageText, bool _showPopup = false)
     {
         if (_showPopup)

@@ -5,9 +5,8 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// JGM 하우징 페이지 프리팹을 공용 로비 UI 프리팹에 연결합니다.
-/// </summary>
+
+// 하우징 UI 설치 도구를 순서대로 적용하고 저장
 public static class LobbyHousingPrefabApplier
 {
     private const string _lobbyScenePath = "Assets/Scenes/_Lobby.unity";
@@ -17,6 +16,7 @@ public static class LobbyHousingPrefabApplier
     private const string _oldHousingPageName = "Page_Housing_Old";
 
     [MenuItem("Tools/Housing/Apply JGM Housing To _Lobby Scene")]
+    // 열린 로비 씬과 원본 Prefab에 하우징 구성 일괄 적용
     public static void ApplyJgmHousingToLobbyScene()
     {
         Scene _scene = EditorSceneManager.OpenScene(_lobbyScenePath, OpenSceneMode.Single);
@@ -69,6 +69,7 @@ public static class LobbyHousingPrefabApplier
         EditorUtility.SetDirty(_lobbyPrefabRoot);
     }
 
+    // 교체 전 기존 하우징 페이지를 비활성 백업 오브젝트로 보존
     private static void BackupOldHousingPages(Transform _pageRoot)
     {
         int _backupIndex = 0;
@@ -88,6 +89,7 @@ public static class LobbyHousingPrefabApplier
         }
     }
 
+    // 새 하우징 페이지와 로비 탭 버튼을 LobbyPageController에 연결
     private static void ConnectLobbyPageController(GameObject _lobbyPrefabRoot, GameObject _housingPage)
     {
         LobbyPageController _pageController = _lobbyPrefabRoot.GetComponent<LobbyPageController>();

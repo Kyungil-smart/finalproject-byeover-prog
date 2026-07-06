@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 포인터 Raycast 차단 판정 결과를 캐싱해 드래그/핀치 입력 중 반복 계층 탐색을 줄임
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +11,9 @@ using UnityEngine.UI;
 /// <summary>
 /// 하우징 방 UI의 이동과 확대·축소 입력을 관리합니다.
 /// </summary>
+// 단일 터치 드래그와 두 손가락 확대·축소 입력 처리
+// 화면 경계에 맞춘 콘텐츠 위치 제한과 입력 종료 상태 초기화
+// 버튼 등 상호작용 UI 위에서 시작된 제스처 차단
 public class HousingViewportController : MonoBehaviour
 {
     private const int MaxSupportedTouchCount = 2;
@@ -42,6 +46,7 @@ public class HousingViewportController : MonoBehaviour
     [SerializeField] private bool _resetOnEnable = true;
 
     private readonly List<RaycastResult> _raycastResults = new();
+    private readonly Dictionary<Transform, bool> _interactiveTransformCache = new();
 
     private Canvas _parentCanvas;
     private EventSystem _eventSystem;
@@ -64,6 +69,7 @@ public class HousingViewportController : MonoBehaviour
     private void OnEnable()
     {
         Initialize();
+        _interactiveTransformCache.Clear();
         ResetInputState();
 
         if (_resetOnEnable)
@@ -77,6 +83,7 @@ public class HousingViewportController : MonoBehaviour
 
     private void OnDisable()
     {
+        _interactiveTransformCache.Clear();
         ResetInputState();
     }
 
@@ -149,6 +156,7 @@ public class HousingViewportController : MonoBehaviour
         SetContentScale(Mathf.Clamp(_currentZoom, _minZoom, _maxZoom));
     }
 
+    // 활성 터치 개수에 따른 드래그 또는 핀치 입력 분기
     private void HandleTouchInput()
     {
         Touchscreen _touchscreen = Touchscreen.current;
@@ -212,6 +220,7 @@ public class HousingViewportController : MonoBehaviour
         return _touchCount;
     }
 
+    // 단일 터치 시작·이동·종료 단계별 화면 드래그 처리
     private void HandleSingleTouch(TouchControl _touch)
     {
         if (_touch == null)
@@ -236,6 +245,7 @@ public class HousingViewportController : MonoBehaviour
         }
     }
 
+    // 두 터치 간 거리 변화 기반 확대·축소 처리
     private void HandlePinchTouch(TouchControl _firstTouch, TouchControl _secondTouch)
     {
         ResetDragState();
@@ -347,6 +357,7 @@ public class HousingViewportController : MonoBehaviour
         return Mathf.Max(MinValidScale, _content.localScale.x);
     }
 
+    // 확대 배율과 Viewport 크기 기준 콘텐츠 이동 범위 제한
     private void ClampContentPosition()
     {
         if (_viewport == null || _content == null)
@@ -389,6 +400,7 @@ public class HousingViewportController : MonoBehaviour
         return IsBlockedByInteractiveUi(_screenPosition) == false;
     }
 
+    // 포인터 위치의 버튼·스크롤 등 상호작용 UI 검사
     private bool IsBlockedByInteractiveUi(Vector2 _screenPosition)
     {
         ResolveEventSystem();
@@ -425,6 +437,23 @@ public class HousingViewportController : MonoBehaviour
     }
 
     private bool IsInteractiveTransform(Transform _target)
+    {
+        if (_target == null)
+        {
+            return false;
+        }
+
+        if (_interactiveTransformCache.TryGetValue(_target, out bool _isInteractive))
+        {
+            return _isInteractive;
+        }
+
+        _isInteractive = ResolveInteractiveTransform(_target);
+        _interactiveTransformCache[_target] = _isInteractive;
+        return _isInteractive;
+    }
+
+    private static bool ResolveInteractiveTransform(Transform _target)
     {
         if (_target.GetComponentInParent<Selectable>() != null)
         {

@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 부팅·로그인 Canvas 배경을 화면 비율에 맞게 확대하고 씬 로드 시 자동 연결
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -47,6 +48,7 @@ public class BootFullscreenBackgroundView : MonoBehaviour
         ApplyCoverSize();
     }
 
+    // 배경 Image와 RectTransform 참조 자동 탐색
     private void CacheReferences()
     {
         if (_targetImage == null)
@@ -65,6 +67,7 @@ public class BootFullscreenBackgroundView : MonoBehaviour
         _targetImage.raycastTarget = false;
     }
 
+    // 원본 이미지 비율을 유지하며 화면 전체를 덮는 크기 계산
     private void ApplyCoverSize()
     {
         if (_targetImage == null || _targetImage.sprite == null)
@@ -134,6 +137,7 @@ public static class BootFullscreenBackgroundRuntimeApplier
         ApplyToScene(_scene);
     }
 
+    // 로드된 씬의 시작·로그인 Canvas 배경에 화면 맞춤 기능 연결
     private static void ApplyToScene(Scene _scene)
     {
         if (!_scene.IsValid() || _scene.name != _bootSceneName)
