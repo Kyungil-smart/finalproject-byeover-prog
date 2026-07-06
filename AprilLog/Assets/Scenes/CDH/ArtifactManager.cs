@@ -10,6 +10,8 @@ using System.IO;
 
 public class ArtifactManager : MonoBehaviour
 {
+    public static ArtifactManager Instance { get; private set; }
+
     private const int GoldItemId = 70001;
     private const int UpgradeStoneId = 70004;
     private const int LegendaryShardId = 70005;
@@ -27,7 +29,18 @@ public class ArtifactManager : MonoBehaviour
     public event Action OnInventoryUpdated;
 
     public List<ArtifactInstance> MyArtifacts = new List<ArtifactInstance>();
-    
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+
+        else Destroy(gameObject);
+    }
+
     public void InitializeItems(int upgradeStone, int legendaryShard)
     {
         if (GameManager.Instance != null)
