@@ -7,6 +7,8 @@ using UnityEngine;
 /// <summary>
 /// 하우징 가구 배치 UI 입력과 적용 흐름을 중재합니다.
 /// </summary>
+// 배치 Model과 버튼·목록·구매 확인 View 이벤트 연결
+// 아이템 선택·구매·적용 상태 전환과 방 슬롯 반영
 public class HousingPlacementPresenter
 {
     private readonly HousingPlacementModel _model;
@@ -43,6 +45,7 @@ public class HousingPlacementPresenter
         this._canAffordFurniturePurchase = _canAffordFurniturePurchase;
     }
 
+    // Model·배치 버튼·팝업·구매 확인 View 이벤트 연결
     public void Initialize()
     {
         if (_model == null || _buttonView == null || _popupView == null)
@@ -70,6 +73,7 @@ public class HousingPlacementPresenter
         _model.OnPurchaseConfirmationChanged += HandlePurchaseConfirmationChanged;
         _model.OnPurchaseProcessingChanged += HandlePurchaseProcessingChanged;
         _model.OnItemsChanged += RefreshItems;
+        SubscribeLocalization();
 
         _buttonView.SetPlacementMode(_model.IsPlacementMode);
         _popupView.SetSelectedItem(_model.SelectedItem);
@@ -111,11 +115,39 @@ public class HousingPlacementPresenter
         _model.OnPurchaseConfirmationChanged -= HandlePurchaseConfirmationChanged;
         _model.OnPurchaseProcessingChanged -= HandlePurchaseProcessingChanged;
         _model.OnItemsChanged -= RefreshItems;
+        UnsubscribeLocalization();
     }
 
     private void HandlePlacementButtonClicked()
     {
         _model.TogglePlacementMode();
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+            LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+        }
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+        }
+    }
+
+    private void HandleLanguageChanged()
+    {
+        RefreshItems();
+
+        if (_model.PendingPurchaseItem != null)
+        {
+            _purchaseConfirmView?.ShowConfirmation(BuildPurchaseConfirmationMessage(_model.PendingPurchaseItem));
+        }
     }
 
     private void HandleCloseButtonClicked()
@@ -130,6 +162,7 @@ public class HousingPlacementPresenter
         _model.SelectCategory(_category);
     }
 
+    // 선택 아이템 변경과 슬롯 목록 선택 상태 갱신
     private void HandleItemClicked(HousingPlacementItemData _itemData)
     {
         if (_itemData == null)
@@ -167,6 +200,7 @@ public class HousingPlacementPresenter
         _model.RequestPurchaseConfirmation(_itemData);
     }
 
+    // 재화 검증·차감·보유 처리 후 구매 팝업 닫음
     private void HandlePurchaseConfirmed()
     {
         HousingPlacementItemData _itemData = _model.PendingPurchaseItem;
@@ -239,12 +273,14 @@ public class HousingPlacementPresenter
         ApplySelectedItem();
     }
 
+    // 선택 카테고리와 아이템 상태 기반 구역·슬롯 UI 갱신
     private void RefreshItems()
     {
         List<HousingPlacementSectionData> _sections = _model.GetSections(_model.SelectedCategory);
         _popupView.RefreshSections(_sections, _model.SelectedCategory, ResolveItemState);
     }
 
+    // 선택 아이템의 보유·해금 여부 검증 후 방 슬롯 적용
     private void ApplySelectedItem()
     {
         if (_isApplyingItem)
@@ -349,13 +385,38 @@ public class HousingPlacementPresenter
     private static string BuildPurchaseConfirmationMessage(HousingPlacementItemData _itemData)
     {
         string _currencyName = _itemData.PriceCurrency == HousingPlacementPriceCurrency.Diamond
-            ? "다이아"
-            : "골드";
-        string _displayName = string.IsNullOrWhiteSpace(_itemData.DisplayName)
+            ? "Diamond"
+            : "Gold";
+        string _displayName = ResolveLocalizedItemName(_itemData);
+        int _price = Mathf.Max(0, _itemData.Price);
+
+        if (LocalizationManager.Instance == null)
+        {
+            return $"{_currencyName} {_price:N0} / {_displayName}";
+        }
+
+        string _template = LocalizationManager.Instance.Get(13019, LocalizingType.UI);
+        return _template
+            .Replace("{0}", _price.ToString("N0"))
+            .Replace("{Currency}", _currencyName)
+            .Replace("{Furniturename}", _displayName);
+    }
+
+    private static string ResolveLocalizedItemName(HousingPlacementItemData _itemData)
+    {
+        if (_itemData.NameId > 0 && LocalizationManager.Instance != null)
+        {
+            string _localizedName = LocalizationManager.Instance.Get(_itemData.NameId, LocalizingType.Housing);
+
+            if (!string.IsNullOrWhiteSpace(_localizedName) && !_localizedName.StartsWith("["))
+            {
+                return _localizedName;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(_itemData.DisplayName)
             ? _itemData.ItemId
             : _itemData.DisplayName;
-        int _price = Mathf.Max(0, _itemData.Price);
-        return $"<{_currencyName}> {_price:N0}개를 소모하여\n<{_displayName}>을(를)\n구매하시겠습니까?";
     }
 
     private bool ApplyItemToRoomSlot(HousingPlacementItemData _itemData)

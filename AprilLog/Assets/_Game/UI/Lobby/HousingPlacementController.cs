@@ -14,6 +14,8 @@ using UnityEngine.Serialization;
 /// <summary>
 /// 하우징 배치 UI, 표시 데이터, 저장된 가구 배치를 연결합니다.
 /// </summary>
+// Inspector 설정과 Repository 데이터를 배치 아이템으로 변환하고 MVP 구성 초기화
+// 저장된 배치·보유 상태 로드와 변경 결과 저장 요청
 public class HousingPlacementController : MonoBehaviour
 {
     private const string _furnitureRootName = "FurnitureRoot";
@@ -45,6 +47,7 @@ public class HousingPlacementController : MonoBehaviour
     private HousingPlacementItemMapper _itemMapper;
     private List<HousingPlacementItemData> _placementItems;
 
+    // 배치 데이터 구성과 저장 상태 복원 후 MVP 기능 초기화
     private void Awake()
     {
         _itemMapper = new HousingPlacementItemMapper(_iconSprites);
@@ -103,6 +106,7 @@ public class HousingPlacementController : MonoBehaviour
         _model.SetItems(_placementItems);
     }
 
+    // Repository와 Inspector 데이터를 화면용 배치 아이템 목록으로 변환
     private IEnumerable<HousingPlacementItemData> BuildInitialItems()
     {
         if (!_useHousingRepo)
@@ -129,6 +133,7 @@ public class HousingPlacementController : MonoBehaviour
         return _repoItems;
     }
 
+    // 저장된 위치별 가구 식별자를 Model 선택 상태와 실제 슬롯에 복원
     private void RestoreSavedPlacements()
     {
         if (_slotView == null || GameManager.Instance == null || GameManager.Instance.CloudData == null)

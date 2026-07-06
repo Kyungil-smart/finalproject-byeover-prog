@@ -9,6 +9,8 @@ using UnityEngine.UI;
 /// <summary>
 /// 가구 상호작용과 연출 연결을 구성
 /// </summary>
+// 침대·의자 상호작용 View와 종료 영역 생성 및 Controller 참조 연결
+// 기존 캐릭터 오버라이드 제거 후 상호작용용 캐릭터 시각 오브젝트 재구성
 public static class HousingInteractionPrefabInstaller
 {
     private const string HousingPrefabPath = "Assets/_Game/Prefabs/UI/Lobby/Page/Housing/Page_Housing.prefab";
@@ -45,6 +47,7 @@ public static class HousingInteractionPrefabInstaller
     }
 
     [MenuItem("Tools/Housing/가구 상호작용 연결")]
+    // 로비 Prefab 로드와 침대·의자 상호작용 구성 설치 후 저장
     public static void Install()
     {
         DownCharacterSettings _downCharacterSettings = CaptureAndRemoveDownCharacterOverride();
@@ -155,6 +158,7 @@ public static class HousingInteractionPrefabInstaller
         return GetOrAddComponent<HousingInteractionView>(_touchArea);
     }
 
+    // 기존 누운 캐릭터 Prefab Override 정보 보존 후 중복 오브젝트 제거
     private static DownCharacterSettings CaptureAndRemoveDownCharacterOverride()
     {
         GameObject _lobbyUiRoot = PrefabUtility.LoadPrefabContents(LobbyUiPrefabPath);
@@ -263,6 +267,7 @@ public static class HousingInteractionPrefabInstaller
         _rectTransform.pivot = new Vector2(0.5f, 0.5f);
     }
 
+    // 방 전체를 덮는 상호작용 종료 입력 영역 재사용 또는 생성
     private static HousingInteractionExitView GetOrCreateExitView(Transform _roomPanel)
     {
         const string _exitObjectName = "TouchArea_FurnitureInteractionExit";
@@ -331,6 +336,7 @@ public static class HousingInteractionPrefabInstaller
         _serializedView.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    // 가구 View·종료 View·이동 Controller 직렬화 참조 연결
     private static void ConfigureController(
         HousingInteractionController _controller,
         HousingInteractionView _bedView,

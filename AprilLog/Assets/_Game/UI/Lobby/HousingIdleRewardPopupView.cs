@@ -8,6 +8,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// 누적 시간·보상 수량·게이지·수령 버튼 상태를 Model 데이터로 갱신
+// 확인·취소 버튼과 다국어 변경 이벤트 등록·해제
 public class HousingIdleRewardPopupView : MonoBehaviour
 {
     [Header("루트")]
@@ -22,6 +24,7 @@ public class HousingIdleRewardPopupView : MonoBehaviour
     [Header("상단 가구")]
     [SerializeField] private Image _furnitureIconImage;
     [SerializeField] private TextMeshProUGUI _messageText;
+    [SerializeField] private TextMeshProUGUI _rewardTitleText;
 
     [Header("재화 아이콘")]
     [SerializeField] private Image _goldIconImage;
@@ -40,19 +43,37 @@ public class HousingIdleRewardPopupView : MonoBehaviour
 
     [Header("버튼")]
     [SerializeField] private Button _confirmButton;
+    [SerializeField] private TextMeshProUGUI _confirmButtonText;
     [SerializeField] private Button _cancelButton;
+    [SerializeField] private TextMeshProUGUI _cancelButtonText;
 
     public event Action OnConfirmClicked;
     public event Action OnCancelClicked;
 
+    private HousingIdleRewardState _lastState;
+    private bool _hasState;
+
     private void Awake()
     {
         ResolveRoot();
+        ResolveLocalizationReferences();
         BindButtons();
+    }
+
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        UpdateLocalizedTexts();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
     }
 
     private void OnDestroy()
     {
+        UnsubscribeLocalization();
         UnbindButtons();
     }
 
@@ -77,17 +98,14 @@ public class HousingIdleRewardPopupView : MonoBehaviour
         }
     }
 
+    // 방치 보상 상태 기반 게이지·시간·재화·확인 버튼 갱신
     public void Refresh(HousingIdleRewardState _state)
     {
+        _lastState = _state;
+        _hasState = true;
         SetGauge(_state.Progress);
-        SetProgressText(_state);
-        SetRewardTexts(_state);
+        UpdateLocalizedTexts();
         SetConfirmInteractable(_state);
-
-        if (_messageText != null)
-        {
-            _messageText.text = "누적된 재화를 수령하시겠습니까?";
-        }
     }
 
     public void SetFurnitureIcon(Sprite _sprite)
@@ -109,6 +127,53 @@ public class HousingIdleRewardPopupView : MonoBehaviour
         }
     }
 
+    private void ResolveLocalizationReferences()
+    {
+        Transform _root = _popupRoot != null ? _popupRoot.transform : transform;
+        _rewardTitleText ??= FindChildText(_root, "Text_RewardTitle");
+        _confirmButtonText ??= FindChildText(_confirmButton?.transform, "Text_Label");
+        _cancelButtonText ??= FindChildText(_cancelButton?.transform, "Text_Label");
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+            LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedTexts;
+        }
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+        }
+    }
+
+    private void UpdateLocalizedTexts()
+    {
+        if (LocalizationManager.Instance == null)
+        {
+            return;
+        }
+
+        SetText(_messageText, LocalizationManager.Instance.Get(13016, LocalizingType.UI));
+        SetText(_rewardTitleText, LocalizationManager.Instance.Get(12040, LocalizingType.UI));
+        SetText(_confirmButtonText, LocalizationManager.Instance.Get(11081, LocalizingType.UI));
+        SetText(_cancelButtonText, LocalizationManager.Instance.Get(11082, LocalizingType.UI));
+
+        if (!_hasState)
+        {
+            return;
+        }
+
+        SetProgressText(_lastState);
+        SetRewardTexts(_lastState);
+    }
+
+    // 확인·취소 버튼 리스너 중복 제거 후 등록
     private void BindButtons()
     {
         if (_confirmButton != null)
@@ -141,6 +206,7 @@ public class HousingIdleRewardPopupView : MonoBehaviour
         _cancelButton.onClick.RemoveListener(HandleCancelClicked);
     }
 
+    // 누적 진행률을 게이지 이미지와 슬라이더에 적용
     private void SetGauge(float _progress)
     {
         float _clampedProgress = Mathf.Clamp01(_progress);
@@ -176,17 +242,19 @@ public class HousingIdleRewardPopupView : MonoBehaviour
             return;
         }
 
-        _progressText.text = $"{_state.ProgressPercent}%";
+        _progressText.text = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.Get(13014, LocalizingType.UI, _state.ProgressPercent)
+            : $"{_state.ProgressPercent}%";
     }
 
     private void SetRewardTexts(HousingIdleRewardState _state)
     {
-        SetText(_goldAmountText, FormatAmount(_state.GoldPerHour) + "/h");
-        SetText(_parchmentAmountText, FormatAmount(_state.ParchmentPerHour) + "/h");
-        SetText(_diamondAmountText, FormatAmount(_state.DiamondPerHour) + "/h");
-        SetText(_goldRewardText, FormatAmount(_state.GoldReward));
-        SetText(_parchmentRewardText, FormatAmount(_state.ParchmentReward));
-        SetText(_diamondRewardText, FormatAmount(_state.DiamondReward));
+        SetText(_goldAmountText, GetFormattedText(13018, FormatAmount(_state.GoldPerHour)));
+        SetText(_parchmentAmountText, GetFormattedText(13018, FormatAmount(_state.ParchmentPerHour)));
+        SetText(_diamondAmountText, GetFormattedText(13018, FormatAmount(_state.DiamondPerHour)));
+        SetText(_goldRewardText, GetFormattedText(13018, FormatAmount(_state.GoldReward)));
+        SetText(_parchmentRewardText, GetFormattedText(13018, FormatAmount(_state.ParchmentReward)));
+        SetText(_diamondRewardText, GetFormattedText(13018, FormatAmount(_state.DiamondReward)));
     }
 
     private void SetConfirmInteractable(HousingIdleRewardState _state)
@@ -220,6 +288,38 @@ public class HousingIdleRewardPopupView : MonoBehaviour
 
         float _value = _amount / 1000f;
         return _value.ToString(_value % 1f == 0f ? "0" : "0.##") + "k";
+    }
+
+    private static string GetFormattedText(int _id, object _value)
+    {
+        return LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.Get(_id, LocalizingType.UI, _value)
+            : _value?.ToString() ?? string.Empty;
+    }
+
+    private static TextMeshProUGUI FindChildText(Transform _root, string _name)
+    {
+        if (_root == null)
+        {
+            return null;
+        }
+
+        if (_root.name == _name)
+        {
+            return _root.GetComponent<TextMeshProUGUI>();
+        }
+
+        for (int _index = 0; _index < _root.childCount; _index++)
+        {
+            TextMeshProUGUI _found = FindChildText(_root.GetChild(_index), _name);
+
+            if (_found != null)
+            {
+                return _found;
+            }
+        }
+
+        return null;
     }
 
     private void HandleConfirmClicked()

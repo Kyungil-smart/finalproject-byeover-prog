@@ -1,14 +1,19 @@
 ﻿//담당자: 조규민
 
-// 수정 내용 : 하우징 가구 이미지를 Resources 폴더가 아닌 Inspector에 연결된 Imports Sprite 참조에서 찾도록 변경
+// 하우징 가구 이미지를 Resources 폴더가 아닌 Inspector에 연결된 Imports Sprite 참조에서 찾도록 변경
+// 가구 적용 때마다 위치와 Sprite 목록을 반복 탐색하지 않도록 런타임 캐시를 추가
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
 /// 하우징 가구 데이터를 방 안의 고정 슬롯 이미지에 적용합니다.
 /// </summary>
+// 배치 아이템 위치 키에 맞는 이미지와 Sprite 탐색 후 가구 슬롯 표시 갱신
+// 위치·Sprite 키 캐시 구성으로 반복 탐색 비용 절감
 public class HousingFurnitureSlotView : MonoBehaviour
 {
     [Serializable]
@@ -52,6 +57,21 @@ public class HousingFurnitureSlotView : MonoBehaviour
     [Tooltip("DB Resources 값과 연결할 Imports/OutUI/Housing 가구 Sprite 목록입니다.")]
     [SerializeField] private HousingSpriteBinding[] _furnitureSprites;
 
+    private readonly Dictionary<string, Image> _targetImageByLocation = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Sprite> _spriteByResourceKey = new(StringComparer.Ordinal);
+    private bool _isCacheBuilt;
+
+    private void Awake()
+    {
+        BuildCaches();
+    }
+
+    private void OnValidate()
+    {
+        _isCacheBuilt = false;
+    }
+
+    // 위치 키와 Sprite 키 검증 후 대상 가구 이미지 교체
     public bool ApplyFurniture(HousingPlacementItemData _itemData)
     {
         if (_itemData == null)
@@ -97,34 +117,64 @@ public class HousingFurnitureSlotView : MonoBehaviour
         return _color;
     }
 
+    // 정규화된 위치 키 기반 가구 슬롯 이미지 탐색
     private Image ResolveTargetImage(string _locationKey)
     {
-        Image _boundImage = FindBoundImage(_locationKey);
+        EnsureCaches();
+        string _normalizedLocation = NormalizeKey(_locationKey);
 
-        if (_boundImage != null)
-        {
-            return _boundImage;
-        }
-
-        string _objectName = FindDefaultObjectName(_locationKey);
-
-        if (string.IsNullOrWhiteSpace(_objectName))
+        if (string.IsNullOrEmpty(_normalizedLocation))
         {
             return null;
         }
 
-        Transform _target = FindChildRecursive(transform, _objectName);
-        return _target != null ? _target.GetComponent<Image>() : null;
+        return _targetImageByLocation.TryGetValue(_normalizedLocation, out Image _targetImage)
+            ? _targetImage
+            : null;
     }
 
-    private Image FindBoundImage(string _locationKey)
+    private Sprite LoadFurnitureSprite(string _resourceKey)
+    {
+        EnsureCaches();
+        string _normalizedKey = NormalizeSpriteKey(_resourceKey);
+
+        if (string.IsNullOrEmpty(_normalizedKey))
+        {
+            return null;
+        }
+
+        return _spriteByResourceKey.TryGetValue(_normalizedKey, out Sprite _sprite)
+            ? _sprite
+            : null;
+    }
+
+    private void EnsureCaches()
+    {
+        if (_isCacheBuilt)
+        {
+            return;
+        }
+
+        BuildCaches();
+    }
+
+    // 배치 위치 이미지와 Resources 가구 Sprite 캐시 구성
+    private void BuildCaches()
+    {
+        _targetImageByLocation.Clear();
+        _spriteByResourceKey.Clear();
+        CacheBoundLocationImages();
+        CacheDefaultLocationImages();
+        CacheFurnitureSprites();
+        _isCacheBuilt = true;
+    }
+
+    private void CacheBoundLocationImages()
     {
         if (_locationBindings == null)
         {
-            return null;
+            return;
         }
-
-        string _normalizedLocation = NormalizeKey(_locationKey);
 
         for (int _index = 0; _index < _locationBindings.Length; _index++)
         {
@@ -135,42 +185,64 @@ public class HousingFurnitureSlotView : MonoBehaviour
                 continue;
             }
 
-            if (NormalizeKey(_binding.LocationKey) != _normalizedLocation)
+            string _normalizedLocation = NormalizeKey(_binding.LocationKey);
+
+            if (string.IsNullOrEmpty(_normalizedLocation) || _targetImageByLocation.ContainsKey(_normalizedLocation))
             {
                 continue;
             }
 
-            return _binding.TargetImage;
+            _targetImageByLocation.Add(_normalizedLocation, _binding.TargetImage);
         }
-
-        return null;
     }
 
-    private Sprite LoadFurnitureSprite(string _resourceKey)
+    private void CacheDefaultLocationImages()
     {
-        if (string.IsNullOrWhiteSpace(_resourceKey))
-        {
-            return null;
-        }
-
-        return HousingSpriteBinding.FindSprite(_furnitureSprites, _resourceKey);
-    }
-
-    private static string FindDefaultObjectName(string _locationKey)
-    {
-        string _normalizedLocation = NormalizeKey(_locationKey);
-
         for (int _index = 0; _index < _defaultLocationBindings.Length; _index++)
         {
             DefaultLocationBinding _binding = _defaultLocationBindings[_index];
+            string _normalizedLocation = NormalizeKey(_binding.LocationKey);
 
-            if (NormalizeKey(_binding.LocationKey) == _normalizedLocation)
+            if (string.IsNullOrEmpty(_normalizedLocation) || _targetImageByLocation.ContainsKey(_normalizedLocation))
             {
-                return _binding.ObjectName;
+                continue;
+            }
+
+            Transform _target = FindChildRecursive(transform, _binding.ObjectName);
+            Image _targetImage = _target != null ? _target.GetComponent<Image>() : null;
+
+            if (_targetImage != null)
+            {
+                _targetImageByLocation.Add(_normalizedLocation, _targetImage);
             }
         }
+    }
 
-        return null;
+    private void CacheFurnitureSprites()
+    {
+        if (_furnitureSprites == null)
+        {
+            return;
+        }
+
+        for (int _index = 0; _index < _furnitureSprites.Length; _index++)
+        {
+            HousingSpriteBinding _binding = _furnitureSprites[_index];
+
+            if (_binding == null || _binding.Sprite == null)
+            {
+                continue;
+            }
+
+            string _normalizedKey = NormalizeSpriteKey(_binding.SpriteKey);
+
+            if (string.IsNullOrEmpty(_normalizedKey) || _spriteByResourceKey.ContainsKey(_normalizedKey))
+            {
+                continue;
+            }
+
+            _spriteByResourceKey.Add(_normalizedKey, _binding.Sprite);
+        }
     }
 
     private static Transform FindChildRecursive(Transform _parent, string _name)
@@ -201,5 +273,12 @@ public class HousingFurnitureSlotView : MonoBehaviour
     private static string NormalizeKey(string _value)
     {
         return string.IsNullOrWhiteSpace(_value) ? string.Empty : _value.Trim().ToLowerInvariant();
+    }
+
+    private static string NormalizeSpriteKey(string _value)
+    {
+        return string.IsNullOrWhiteSpace(_value)
+            ? string.Empty
+            : Path.GetFileNameWithoutExtension(_value.Trim()).ToLowerInvariant();
     }
 }

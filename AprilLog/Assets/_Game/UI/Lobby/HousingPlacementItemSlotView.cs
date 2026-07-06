@@ -9,6 +9,8 @@ using UnityEngine.UI;
 /// <summary>
 /// 하우징 배치 아이템 한 칸을 표시합니다.
 /// </summary>
+// 배치 아이템 상태에 따른 아이콘·가격·잠금·선택·구매 버튼 표시 갱신
+// 슬롯 클릭과 구매 클릭 이벤트를 구분해 Presenter에 전달
 public class HousingPlacementItemSlotView : MonoBehaviour
 {
     [Header("표시 요소")]
@@ -57,8 +59,20 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         Bind();
     }
 
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        RefreshLocalizedContent();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
+    }
+
     private void OnDestroy()
     {
+        UnsubscribeLocalization();
         if (_slotButton != null)
         {
             _slotButton.onClick.RemoveListener(HandleClicked);
@@ -70,6 +84,7 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         }
     }
 
+    // ViewModel 성격의 아이템 데이터와 상태 기반 슬롯 전체 갱신
     public void SetData(HousingPlacementItemData _data, HousingPlacementItemState _state)
     {
         _itemData = _data;
@@ -105,10 +120,11 @@ public class HousingPlacementItemSlotView : MonoBehaviour
     {
         if (_nameText != null)
         {
-            _nameText.text = string.IsNullOrWhiteSpace(_data.DisplayName) ? _data.ItemId : _data.DisplayName;
+            _nameText.text = ResolveLocalizedName(_data);
         }
     }
 
+    // 잠금·구매 가능·보유·장착 상태별 UI 표시 전환
     private void SetState(HousingPlacementItemData _data, HousingPlacementItemState _state)
     {
         if (_stateText == null)
@@ -123,11 +139,11 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         {
             case HousingPlacementItemState.Equipped:
                 SetPreviewFrame(_equippedPreviewFrameSprite);
-                SetStateVisual(_equippedStateSprite, _equippedStateColor, "장착됨");
+                SetStateVisual(_equippedStateSprite, _equippedStateColor, GetLocalizedText(13006));
                 break;
             case HousingPlacementItemState.Owned:
                 SetPreviewFrame(_defaultPreviewFrameSprite);
-                SetStateVisual(_ownedStateSprite, _ownedStateColor, "보유중");
+                SetStateVisual(_ownedStateSprite, _ownedStateColor, GetLocalizedText(13005));
                 break;
             case HousingPlacementItemState.Price:
                 SetPreviewFrame(_defaultPreviewFrameSprite);
@@ -167,9 +183,64 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
     private void SetPriceState(HousingPlacementItemData _data)
     {
-        SetStateVisual(_priceStateSprite, _priceStateColor, FormatPrice(_data));
+        SetStateVisual(_priceStateSprite, _priceStateColor, GetLocalizedText(13007, FormatPrice(_data)));
         SetCurrencyIcon(ResolvePriceCurrencyIcon(_data));
         SetCurrencyVisible(true);
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= RefreshLocalizedContent;
+            LocalizationManager.Instance.OnLanguageChanged += RefreshLocalizedContent;
+        }
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= RefreshLocalizedContent;
+        }
+    }
+
+    private void RefreshLocalizedContent()
+    {
+        if (_itemData == null)
+        {
+            return;
+        }
+
+        SetName(_itemData);
+        SetState(_itemData, _itemState);
+    }
+
+    private static string ResolveLocalizedName(HousingPlacementItemData _data)
+    {
+        if (_data?.NameId > 0 && LocalizationManager.Instance != null)
+        {
+            string _localizedName = LocalizationManager.Instance.Get(_data.NameId, LocalizingType.Housing);
+
+            if (!string.IsNullOrWhiteSpace(_localizedName) && !_localizedName.StartsWith("["))
+            {
+                return _localizedName;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(_data?.DisplayName) ? _data?.ItemId ?? string.Empty : _data.DisplayName;
+    }
+
+    private static string GetLocalizedText(int _id, params object[] _args)
+    {
+        if (LocalizationManager.Instance == null)
+        {
+            return $"[{_id}]";
+        }
+
+        return _args == null || _args.Length == 0
+            ? LocalizationManager.Instance.Get(_id, LocalizingType.UI)
+            : LocalizationManager.Instance.Get(_id, LocalizingType.UI, _args);
     }
 
     private string FormatPrice(HousingPlacementItemData _data)

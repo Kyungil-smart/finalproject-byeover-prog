@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 부팅 중 세로 화면 고정과 Safe Area 재계산 완료까지의 안정화 대기
 
 using System.Collections;
 using UnityEngine;
