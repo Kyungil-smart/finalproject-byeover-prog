@@ -145,6 +145,9 @@ public class PageMainLobbyController : MonoBehaviour
         // 첫 챕터면 이전 숨김, 마지막 챕터면 다음 숨김 (그 외엔 보이고 활성)
         SetButtonVisible(_btnPrev, hasPrev);
         SetButtonVisible(_btnNext, hasNext);
+        
+        // 클라우드 세이브의 맵 해금 상태를 확인하여 현재 스타트 버튼의 활성화 여부를 제어한다.
+        SwitchStartButtonInteractable();
     }
 
     private void SetButtonsInteractable(bool value)
@@ -161,5 +164,44 @@ public class PageMainLobbyController : MonoBehaviour
         if (button == null) return;
         button.gameObject.SetActive(visible);
         button.interactable = visible;
+    }
+    
+    private void SetStartButtonInteractable(bool value)
+    {
+        if(_btnStart != null) _btnStart.interactable = value;
+    }
+
+    private bool GetChapterUnLock(int index)
+    {
+        if(GameManager.Instance == null)
+        {
+            Debug.LogWarning("[PageMainLobbyController] 게임 매니저 미 감지. 임시로 전 스테이지 해금.");
+            return true;
+        }
+        
+        if (GameManager.Instance.CloudData == null)
+        {
+            Debug.LogError("[PageMainLobbyController]클라우드 데이터를 찾을 수 없습니다. 클라우드 데이터를 확인해주세요");
+            return false;
+        }
+
+        var repo = DataManager.Instance.StageRepo;
+        int chapterId = repo.GetChapterIdByIndex(index);
+        if (chapterId == -1)
+        {
+            Debug.LogError($"[PageMainLobbyController]잘못된 인덱스로 접근 {index}. 인덱스를 확인해주세요.");
+            return false;
+        }
+        int stageId = repo.GetStageId(chapterId, 1);
+        
+        if (stageId != -1) return GameManager.Instance.CloudData.unlockedStages.Contains(stageId);
+        
+        Debug.LogError($"[PageMainLobbyController]잘못된 인덱스로 접근 {index}. 인덱스를 확인해주세요.");
+        return false;
+    }
+
+    private void SwitchStartButtonInteractable()
+    {
+       SetStartButtonInteractable(GetChapterUnLock(_currentIndex));
     }
 }
