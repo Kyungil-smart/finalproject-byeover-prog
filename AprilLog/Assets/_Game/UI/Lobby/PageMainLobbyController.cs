@@ -61,6 +61,7 @@ public class PageMainLobbyController : MonoBehaviour
         }
         
         if (GameManager.Instance != null) GameManager.Instance.OnCloudDataReady += HandleCloudDataReady;
+        _data.InitChapters();
         ShowChapter(0, instant: true);
     }
 

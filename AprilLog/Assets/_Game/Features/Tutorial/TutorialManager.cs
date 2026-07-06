@@ -31,10 +31,13 @@ public class TutorialManager : MonoBehaviour
     private const string DONE_KEY = "Tutorial_Completed";
     private const string IN_GAME_SCENE_NAME = "_InGame";
     private const string IN_GAME_OVERLAY_RESOURCE = "Tutorial/TutorialInGameOverlay";
+    private const string LOBBY_SCENE_NAME = "_Lobby";
+    private const string LOBBY_OVERLAY_RESOURCE = "Tutorial/--- Tutorial ---";
 
     private int _currentIndex = -1;     // -1 = 진행 중 아님
     private ITutorialView _view;        // 현재 씬의 오버레이(있을 때만)
     private GameObject _spawnedInGameOverlay;
+    private GameObject _spawnedLobbyOverlay;
 
     public bool IsCompleted => GameManager.Instance != null
         ? GameManager.Instance.IsTutorialCompleted()
@@ -154,23 +157,37 @@ public class TutorialManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name != IN_GAME_SCENE_NAME)
+        // 씬별 튜토리얼 오버레이를 진행 중일 때만 스폰한다. 이전 씬 오버레이는 씬 언로드로 이미 파괴됐으니 참조만 정리.
+        if (scene.name == IN_GAME_SCENE_NAME)
+        {
+            _spawnedLobbyOverlay = null;
+            TrySpawnOverlay(IN_GAME_OVERLAY_RESOURCE, ref _spawnedInGameOverlay);
+        }
+        else if (scene.name == LOBBY_SCENE_NAME)
         {
             _spawnedInGameOverlay = null;
-            return;
+            TrySpawnOverlay(LOBBY_OVERLAY_RESOURCE, ref _spawnedLobbyOverlay);
         }
+        else
+        {
+            _spawnedInGameOverlay = null;
+            _spawnedLobbyOverlay = null;
+        }
+    }
 
-        if (!IsRunning || _spawnedInGameOverlay != null) return;
+    private void TrySpawnOverlay(string resourcePath, ref GameObject spawned)
+    {
+        if (!IsRunning || spawned != null) return;
 
-        GameObject prefab = Resources.Load<GameObject>(IN_GAME_OVERLAY_RESOURCE);
+        GameObject prefab = Resources.Load<GameObject>(resourcePath);
         if (prefab == null)
         {
-            Debug.LogWarning($"[Tutorial] 인게임 오버레이 프리팹을 찾지 못했습니다: Resources/{IN_GAME_OVERLAY_RESOURCE}");
+            Debug.LogWarning($"[Tutorial] 튜토리얼 오버레이 프리팹을 찾지 못했습니다: Resources/{resourcePath}");
             return;
         }
 
-        _spawnedInGameOverlay = Instantiate(prefab);
-        _spawnedInGameOverlay.name = prefab.name;
+        spawned = Instantiate(prefab);
+        spawned.name = prefab.name;
     }
 
     private bool IsStepForActiveScene(TutorialStep step)

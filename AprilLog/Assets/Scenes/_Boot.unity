@@ -3859,6 +3859,58 @@ MonoBehaviour:
   _useFixedEditorGoogleTestUser: 0
   _editorGoogleTestUserKey: 
   _editorGoogleTestDisplayName: "\uB198\uB9AC\uB3C4 \uC544\uB2C8\uC57C01"
+--- !u!1 &1550826089
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1550826091}
+  - component: {fileID: 1550826090}
+  m_Layer: 0
+  m_Name: SceneTransition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1550826090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1550826089}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81b06563428fce942b89c0f29609b7a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneTransition
+  _columns: 8
+  _rows: 11
+  _tileColor: {r: 0.8490566, g: 0.8490566, b: 0.8490566, a: 1}
+  _tileFadeDuration: 0.18
+  _diagonalStagger: 0.035
+  _holdBetween: 0.05
+  _ease: 4
+  _origin: 0
+--- !u!4 &1550826091
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1550826089}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 387.01175, y: 1169.7247, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1558893739
 GameObject:
   m_ObjectHideFlags: 0
@@ -6497,3 +6549,4 @@ SceneRoots:
   - {fileID: 2101000001}
   - {fileID: 4000000002}
   - {fileID: 1941710102}
+  - {fileID: 1550826091}

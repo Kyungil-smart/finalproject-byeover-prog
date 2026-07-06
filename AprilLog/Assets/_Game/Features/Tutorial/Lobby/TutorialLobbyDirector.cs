@@ -76,6 +76,11 @@ public class TutorialLobbyDirector : MonoBehaviour
 
         TryPlayLobbyStepScenario();
 
+        if (!IsArtifactUpgradeStepActive())
+            return;
+
+        HandleInventoryUpdated();
+
         if (!_ascendHandled || _equipHandled) return;
 
         ArtifactInstance seal = FindSealArtifact();
@@ -138,6 +143,7 @@ public class TutorialLobbyDirector : MonoBehaviour
     private void HandleInventoryUpdated()
     {
         if (!_active) return;
+        if (!IsArtifactUpgradeStepActive()) return;
 
         if (_artifacts == null)
             ResolveSystems();
@@ -164,6 +170,18 @@ public class TutorialLobbyDirector : MonoBehaviour
         {
             _lastKnownAscensionCount = seal.AscensionCount;
         }
+    }
+
+    private static bool IsArtifactUpgradeStepActive()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        if (step == null || step.scene != TutorialScene.Lobby)
+            return false;
+
+        return step.stepId == 12
+            || string.Equals(step.highlightTargetId, "ArtifactLevelUpButton", StringComparison.Ordinal)
+            || step.gameAction == TutorialGameAction.ArtifactEquip;
     }
 
     private IEnumerator HandleLevel5Reached()
@@ -310,16 +328,32 @@ public class TutorialLobbyDirector : MonoBehaviour
             return;
         if (_isPlayingBubble || _stepScenarioRoutine != null || _level5Routine != null || _equipRoutine != null)
             return;
-        if (!TryGetLobbyStepScenarioRange(step.stepId, out int startId, out int endId))
-            return;
 
-        _playedLobbyScenarioStepId = step.stepId;
-        _stepScenarioRoutine = StartCoroutine(PlayLobbyStepScenario(startId, endId));
+        if (TryGetLobbyStepScenarioRange(step.stepId, out int startId, out int endId))
+        {
+            _playedLobbyScenarioStepId = step.stepId;
+            _stepScenarioRoutine = StartCoroutine(PlayLobbyStepScenario(startId, endId));
+            return;
+        }
+
+        // 별도 시나리오가 없는 단계는 그 단계의 안내 문구를 버블 한 줄로 표시한다.
+        if (!string.IsNullOrWhiteSpace(step.guideText))
+        {
+            _playedLobbyScenarioStepId = step.stepId;
+            _stepScenarioRoutine = StartCoroutine(PlayLobbyStepGuideText(step.guideText));
+        }
     }
 
     private IEnumerator PlayLobbyStepScenario(int startId, int endId)
     {
         yield return PlayScenarioRange(startId, endId);
+        _stepScenarioRoutine = null;
+    }
+
+    private IEnumerator PlayLobbyStepGuideText(string text)
+    {
+        var line = new Story_TalkData { name_KR = string.Empty, Text_KR = text };
+        yield return PlayBubbleLines(new List<Story_TalkData> { line });
         _stepScenarioRoutine = null;
     }
 

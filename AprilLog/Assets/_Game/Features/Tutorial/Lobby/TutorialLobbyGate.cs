@@ -239,6 +239,9 @@ public class TutorialLobbyGate : MonoBehaviour
 
 #if UNITY_EDITOR
 
+    // 에디터에서는 아이콘 원본 스프라이트 캐싱만 한다.
+    // 잠금 상태(interactable/SetActive)를 여기서 미리 적용하면 리컴파일·빌드마다 OnValidate가
+    // 버튼의 직렬화 값을 덮어써 interactable 체크가 계속 풀린다. 실제 잠금은 런타임 Start/SetPhase에서 처리한다.
     private void OnValidate()
     {
         if (Application.isPlaying)
@@ -247,43 +250,6 @@ public class TutorialLobbyGate : MonoBehaviour
         }
 
         CacheNormalSprites();
-
-        if (!_applyOnStart)
-        {
-            return;
-        }
-
-        if (_elements == null)
-        {
-            return;
-        }
-
-        foreach (GatedElement element in _elements)
-        {
-            ApplyElementInEditor(element, _startPhase);
-        }
-    }
-
-    private void ApplyElementInEditor(
-        GatedElement element,
-        int phase)
-    {
-        if (element == null)
-        {
-            return;
-        }
-
-        bool unlocked = phase >= element.unlockPhase;
-
-        if (element.showHideTarget != null)
-        {
-            element.showHideTarget.SetActive(unlocked);
-        }
-
-        if (element.lockTarget != null)
-        {
-            element.lockTarget.interactable = unlocked;
-        }
     }
 
     [ContextMenu("단계 0 적용")]

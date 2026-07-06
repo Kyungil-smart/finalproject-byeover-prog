@@ -177,15 +177,18 @@ public class ScenarioDataDriver : MonoBehaviour
     // ---------- 스프라이트 해석 ----------
 
     // 캐릭터 ID → Story_CharacterData.Resource_ID → Resources에서 스프라이트 로드.
-    private Sprite ResolvePortrait(int characterId)
+    private Sprite ResolvePortrait(int portraitId)
     {
-        if (characterId <= 0) return null;
+        if (portraitId <= 0) return null;
 
+        // 데이터가 캐릭터 ID를 넣은 경우: 캐릭터의 Resource_ID로 매핑한다.
         StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
-        Story_CharacterData ch = repo != null ? repo.GetCharacterData(characterId) : null;
-        if (ch == null || ch.Resource_ID <= 0) return null;
+        Story_CharacterData ch = repo != null ? repo.GetCharacterData(portraitId) : null;
+        if (ch != null && ch.Resource_ID > 0)
+            return LoadSprite(_portraitPath + ch.Resource_ID);
 
-        return LoadSprite(_portraitPath + ch.Resource_ID);
+        // 데이터가 Resource_ID(그림 파일 번호)를 직접 넣은 경우: 값 그대로 로드한다.
+        return LoadSprite(_portraitPath + portraitId);
     }
 
     private Sprite ResolveScene(string pathPrefix, int resourceId)

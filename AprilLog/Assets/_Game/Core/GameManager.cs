@@ -594,6 +594,7 @@ public class GameManager : MonoBehaviour
 
         // 3. 로컬 데이터 초기화
         DeleteLocalSave();
+        _firestoreService?.DeleteLocalBackup();   // 게스트 로컬 백업(cloud_backup*.json)까지 지워야 재로그인 시 옛 데이터가 안 돌아온다.
         PlayerPrefs.DeleteAll();
         CloudData = null;
 
@@ -727,6 +728,12 @@ public class GameManager : MonoBehaviour
         EnsureCloudIdentity(data);
         CloudData = data;
 
+        // 튜토리얼 진행 중에는 실제 저장을 보류
+        // 미러는 계속 갱신하되 디스크/클라우드 쓰기는 완료 시점에 한 번에 확정
+        // 완료 시 IsRunning=false가 되어 이 지점을 통과한다.
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+            return;
+
         if (IsLoggedIn)
             StartCoroutine(_firestoreService.SaveCoroutine(data));   // 클라우드(+내부에서 로컬백업도)
         else
@@ -773,6 +780,25 @@ public class GameManager : MonoBehaviour
         // CloudData에 저장된 아티팩트를 매니저로 복원한다.
         // (manager.LoadData()를 다시 부르면 LoadData ↔ Apply 무한 재귀로 StackOverflow가 난다.)
         manager.MyArtifacts = CloneArtifactList(CloudData.myArtifacts);
+    }
+
+    // 튜토리얼 시작 시 아웃게임 상태(아티팩트/캐릭터 레벨)를 기본값으로 되돌린다.
+    // 이전에 저장된 진행이 남아 있어도 튜토리얼은 항상 같은 시작 상태에서 진행되어야 한다.
+    // (예: 이미 max로 저장된 아티팩트가 남으면 강화 단계가 진행되지 않는다.)
+    // SyncToCloud 게이트로 실제 저장은 보류되고, 튜토리얼 완료 시점에 최종 상태가 한 번에 확정 저장된다.
+    public void ResetOutGameStateForTutorial(PlayerProgressModel progressModel, ArtifactManager artifactManager)
+    {
+        if (CloudData != null)
+        {
+            CloudData.myArtifacts = new List<ArtifactInstance>();
+            CloudData.characterLevel = PlayerProgressModel.StartLevel;
+        }
+
+        if (artifactManager != null)
+            artifactManager.MyArtifacts = new List<ArtifactInstance>();
+
+        if (progressModel != null)
+            progressModel.SetCharacterLevel(PlayerProgressModel.StartLevel);
     }
 
     public void SaveOutGameProgress(PlayerProgressModel progressModel)

@@ -38,6 +38,10 @@ public class TutorialView : MonoBehaviour, ITutorialView
     [SerializeField]
     private List<HighlightTarget> _highlightTargets = new();
 
+    [Tooltip("StageStartButton 단계에서 먼저 강조할 메인 탭 버튼입니다.")]
+    [SerializeField]
+    private RectTransform _stageStartMainTabTarget;
+
     [Header("디버그")]
     [Tooltip("활성화하면 튜토리얼 대상 탐색과 버튼 바인딩 상태를 콘솔에 출력합니다.")]
     [SerializeField]
@@ -58,6 +62,7 @@ public class TutorialView : MonoBehaviour, ITutorialView
 
     private string _pendingId;
     private bool _highlightApplied;
+    private bool _stageStartMainTabTapped;
 
     // 동일한 실패 로그가 매 프레임 출력되는 것을 방지하기 위한 값
     private bool _targetMissingWarningPrinted;
@@ -184,6 +189,7 @@ public class TutorialView : MonoBehaviour, ITutorialView
 
         _pendingId = step.highlightTargetId;
         _highlightApplied = false;
+        _stageStartMainTabTapped = false;
 
         TryApplyHighlight();
     }
@@ -232,6 +238,17 @@ public class TutorialView : MonoBehaviour, ITutorialView
             return;
         }
 
+        if (ShouldStayOnStageStartStepAfterMainTabTap())
+        {
+            _stageStartMainTabTapped = true;
+            _highlightApplied = false;
+            _targetMissingWarningPrinted = false;
+            _buttonBindingWarningPrinted = false;
+            UnbindTap();
+            TryApplyHighlight();
+            return;
+        }
+
         LogDebug(
             $"강조 대상 클릭 완료. " +
             $"StepId={_currentStep.stepId}, " +
@@ -239,6 +256,15 @@ public class TutorialView : MonoBehaviour, ITutorialView
             $"Button={(_tappedButton != null ? _tappedButton.name : "NULL")}");
 
         OnStepActionCompleted?.Invoke();
+    }
+
+    private bool ShouldStayOnStageStartStepAfterMainTabTap()
+    {
+        return _currentStep != null
+            && string.Equals(_currentStep.highlightTargetId, "StageStartButton", StringComparison.Ordinal)
+            && !_stageStartMainTabTapped
+            && _tappedButton != null
+            && string.Equals(_tappedButton.name, "Btn_Main", StringComparison.Ordinal);
     }
 
     // =========================================================
@@ -338,6 +364,16 @@ public class TutorialView : MonoBehaviour, ITutorialView
             return null;
         }
 
+        if (ShouldUseStageStartMainTabTarget(id))
+        {
+            if (_stageStartMainTabTarget != null && _stageStartMainTabTarget.gameObject.activeInHierarchy)
+            {
+                return _stageStartMainTabTarget;
+            }
+
+            return null;
+        }
+
         for (int i = 0; i < _highlightTargets.Count; i++)
         {
             HighlightTarget item = _highlightTargets[i];
@@ -349,18 +385,24 @@ public class TutorialView : MonoBehaviour, ITutorialView
 
             if (item.target == null)
             {
-                return null;
+                continue;
             }
 
             if (!item.target.gameObject.activeInHierarchy)
             {
-                return null;
+                continue;
             }
 
             return item.target;
         }
 
         return null;
+    }
+
+    private bool ShouldUseStageStartMainTabTarget(string id)
+    {
+        return string.Equals(id, "StageStartButton", StringComparison.Ordinal)
+            && !_stageStartMainTabTapped;
     }
 
     // =========================================================
@@ -580,6 +622,7 @@ public class TutorialView : MonoBehaviour, ITutorialView
         bool targetAssigned = false;
         bool targetActive = false;
         string registeredTargetName = "NULL";
+        bool usesStageStartMainTabTarget = ShouldUseStageStartMainTabTarget(_pendingId);
 
         for (int i = 0; i < _highlightTargets.Count; i++)
         {
@@ -610,6 +653,9 @@ public class TutorialView : MonoBehaviour, ITutorialView
             $"Target 연결 여부={targetAssigned}\n" +
             $"Target 활성 여부={targetActive}\n" +
             $"연결된 Target={registeredTargetName}\n" +
+            $"StageStart 메인 탭 별도 참조 사용={usesStageStartMainTabTarget}\n" +
+            $"StageStart 메인 탭 연결 여부={(_stageStartMainTabTarget != null)}\n" +
+            $"StageStart 메인 탭 활성 여부={(_stageStartMainTabTarget != null && _stageStartMainTabTarget.gameObject.activeInHierarchy)}\n" +
             $"TutorialView의 Highlight Targets 인스펙터 연결과 " +
             $"대상 GameObject의 활성 상태를 확인하세요.",
             this);
