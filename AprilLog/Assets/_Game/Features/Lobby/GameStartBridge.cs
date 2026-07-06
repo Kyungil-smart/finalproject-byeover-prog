@@ -84,7 +84,7 @@ public class GameStartBridge : MonoBehaviour
         
         if (IsFirstSeenScenario(groupId))
         {
-            GameStart(groupId);
+            GameStart(chapterId);
         }
         else
         {
