@@ -1,6 +1,7 @@
 ﻿//담당자: 조규민
 // 하우징 시간 누적 보상 팝업의 표시와 입력 전달을 담당합니다.
 // 시간당 생산량 표시는 누적 수령량이 아닌 Model의 생산량 값을 사용하도록 변경
+// 중첩 프리팹에서 추가된 UI보다 팝업이 항상 위에 표시되도록 열 때 최종 형제 순서로 이동
 
 using System;
 using TMPro;
@@ -61,6 +62,7 @@ public class HousingIdleRewardPopupView : MonoBehaviour
 
         if (_popupRoot != null)
         {
+            _popupRoot.transform.SetAsLastSibling();
             _popupRoot.SetActive(true);
         }
     }
