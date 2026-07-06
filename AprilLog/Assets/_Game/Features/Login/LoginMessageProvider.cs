@@ -1,4 +1,5 @@
 //담당자: 조규민
+// Google 로그인 결과와 실패 유형에 대응하는 사용자 안내 문구 제공
 
 // 로그인 결과 안내 문구를 한 곳에서 관리한다.
 public static class LoginMessageProvider

@@ -9,6 +9,9 @@ using UnityEngine.UI;
 // 각 슬롯은 챕터 제목, 에피소드 제목, 상태 텍스트를 표시하며, 클리어된 경우에만 보기 버튼이 활성화됩니다. 
 // 잠긴 경우에는 잠김 표시가 나타납니다.
 
+// 1차 수정자 : 조규민
+// 수정 내용 : 다시보기 슬롯의 고정 문구와 데이터 표시 형식을 LocalizationManager ID 기반으로 갱신
+
 public class ReplayStorySlot : MonoBehaviour
 {
     [Header("텍스트")]
@@ -18,11 +21,24 @@ public class ReplayStorySlot : MonoBehaviour
 
     [Header("버튼")]
     [SerializeField] private Button buttonView;
+    [SerializeField] private TextMeshProUGUI _textView;
 
     [Header("잠김 표시")]
     [SerializeField] private GameObject dim;
 
     private UnityAction currentClickHandler;
+    private ReplayStoryData _currentData;
+
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        UpdateLocalizedTexts();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
+    }
 
     public void SetData(ReplayStoryData data, Action<ReplayStoryData> onClick)
     {
@@ -32,12 +48,11 @@ public class ReplayStorySlot : MonoBehaviour
             return;
         }
 
+        _currentData = data;
         ResolveMissingReferences();
         ValidateReferences();
         EnsureDim();
-        SetText(textHeaderReplay, data.ChapterTitle);
-        SetText(textEpisodeTitle, data.EpisodeTitle);
-        SetText(textState, GetStateText(data));
+        UpdateLocalizedTexts();
 
         bool isCleared = data.State == ReplayStoryState.Cleared;
 
@@ -66,8 +81,56 @@ public class ReplayStorySlot : MonoBehaviour
 
     private void OnDestroy()
     {
+        UnsubscribeLocalization();
         if (buttonView != null && currentClickHandler != null)
             buttonView.onClick.RemoveListener(currentClickHandler);
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null)
+            return;
+
+        LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+        LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedTexts;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+    }
+
+    private void UpdateLocalizedTexts()
+    {
+        if (LocalizationManager.Instance == null)
+            return;
+
+        SetText(_textView, LocalizationManager.Instance.Get(13025, LocalizingType.UI));
+
+        if (_currentData == null)
+            return;
+
+        string _header = LocalizationManager.Instance.Get(
+            11015,
+            LocalizingType.UI,
+            ResolveChapterFormatValue(_currentData.ChapterTitle));
+        string _episode = LocalizationManager.Instance.Get(11014, LocalizingType.UI)
+            .Replace("{chaptername}", _currentData.EpisodeTitle ?? string.Empty);
+        SetText(textHeaderReplay, _header);
+        SetText(textEpisodeTitle, _episode);
+        SetText(textState, LocalizationManager.Instance.Get(13026, LocalizingType.UI));
+    }
+
+    private static string ResolveChapterFormatValue(string _chapterTitle)
+    {
+        if (string.IsNullOrWhiteSpace(_chapterTitle))
+            return string.Empty;
+
+        int _separatorIndex = _chapterTitle.LastIndexOf('.');
+        return _separatorIndex >= 0 && _separatorIndex < _chapterTitle.Length - 1
+            ? _chapterTitle.Substring(_separatorIndex + 1).Trim()
+            : _chapterTitle.Trim();
     }
 
     private void EnsureDim()
@@ -148,6 +211,9 @@ public class ReplayStorySlot : MonoBehaviour
 
         if (buttonView == null)
             buttonView = FindChildComponentByName<Button>("Button_View");
+
+        if (_textView == null && buttonView != null)
+            _textView = FindChildComponentByName<TextMeshProUGUI>("Text_View");
 
         if (dim == null)
         {

@@ -11,6 +11,8 @@ using UnityEngine.UI;
 /// <summary>
 /// 인게임 인챈트 링크 버튼과 확인 팝업 UI 배치를 씬에 적용한다.
 /// </summary>
+// 인게임 씬의 인챈트 종료 버튼과 확인 팝업 UI 배치 및 런타임 컴포넌트 연결
+// 메뉴·명령줄 실행 경로별 씬 적용과 로드 검증
 public static class InGameEnchantLinkButtonSceneInstaller
 {
     private const string _targetScenePathArgument = "-targetScenePath";
@@ -25,6 +27,7 @@ public static class InGameEnchantLinkButtonSceneInstaller
         ApplyToOpenScene();
     }
 
+    // 현재 열린 인게임 씬에 버튼과 확인 팝업 배치 적용
     public static void ApplyToOpenScene()
     {
         Scene scene = SceneManager.GetActiveScene();
@@ -89,6 +92,7 @@ public static class InGameEnchantLinkButtonSceneInstaller
         Debug.Log($"[InGameEnchantLinkButtonSceneInstaller] {scene.path} 씬 로드 검증만 완료했습니다.");
     }
 
+    // 대상 오브젝트 탐색 후 링크 버튼·팝업·런타임 참조 순차 구성
     private static void ApplyLayout(Scene scene)
     {
         GameObject linkButtonBoundary = FindSceneObject(scene, "LinkButtonBoundary");
@@ -145,6 +149,7 @@ public static class InGameEnchantLinkButtonSceneInstaller
         ClearPersistentOnClicks(buttonSetObject);
     }
 
+    // 확인 팝업 탐색 또는 생성 후 배치와 시각 요소 설정
     private static GameObject ConfigureConfirmPopup(Scene scene)
     {
         GameObject popupObject = FindConfirmPopup(scene);
@@ -199,6 +204,7 @@ public static class InGameEnchantLinkButtonSceneInstaller
         return FindSceneObject(scene, "ToLobbyWarningCanvas");
     }
 
+    // View·Model·Presenter 런타임 컴포넌트와 직렬화 참조 연결
     private static void ConfigureRuntimeComponents(Scene scene, GameObject linkButtonBoundary, GameObject confirmPopupObject)
     {
         if (confirmPopupObject == null)
@@ -807,6 +813,7 @@ public static class InGameEnchantLinkButtonSceneInstaller
         EditorUtility.SetDirty(button);
     }
 
+    // 씬 저장 전 버튼의 기존 Inspector OnClick 연결 제거
     private static void ClearPersistentOnClicks(GameObject rootObject)
     {
         if (rootObject == null)

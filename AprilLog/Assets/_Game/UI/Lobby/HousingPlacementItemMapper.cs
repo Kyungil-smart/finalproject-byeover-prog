@@ -8,6 +8,8 @@ using UnityEngine;
 /// <summary>
 /// HousingRepo의 가구 데이터를 하우징 배치 UI 표시 데이터로 변환합니다.
 /// </summary>
+// 원본 아이템 데이터와 하우징 Sprite 연결 정보를 배치 화면용 데이터로 변환
+// 해금·보유·가격 정보 누락 시 기존 데이터와 기본 표시값 조합
 public class HousingPlacementItemMapper
 {
     private const string _categoryFunction = "function";
@@ -23,6 +25,7 @@ public class HousingPlacementItemMapper
         this._iconSprites = _iconSprites;
     }
 
+    // Repository 가구·장식 데이터를 중복 없이 배치 아이템 목록으로 변환
     public List<HousingPlacementItemData> Map(HousingRepo _housingRepo)
     {
         List<HousingPlacementItemData> _items = new();
@@ -91,6 +94,7 @@ public class HousingPlacementItemMapper
         }
     }
 
+    // 원본 데이터와 Sprite 바인딩을 하나의 슬롯 표시 데이터로 조합
     private HousingPlacementItemData CreateItemData(HousingFurnitureData _furniture)
     {
         string _itemId = _furniture.Furniture_ID.ToString();
@@ -163,6 +167,7 @@ public class HousingPlacementItemMapper
         return HousingPlacementCategory.Decoration;
     }
 
+    // 정규화된 아이콘 키로 Inspector Sprite 바인딩 탐색
     private Sprite LoadIcon(string _iconKey)
     {
         if (string.IsNullOrWhiteSpace(_iconKey))

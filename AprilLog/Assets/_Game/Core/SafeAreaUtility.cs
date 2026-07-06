@@ -1,4 +1,5 @@
 // 담당자 : 조규민
+// 화면 해상도와 적용할 가장자리 기준 Safe Area 좌표 계산 및 RectTransform 적용
 // 설명   : Safe Area 계산 API
 // 수정자 : 정승우
 // 수정내용 : Screen.safeArea를 UI anchor와 inset 정보로 변환하는 유틸리티 추가

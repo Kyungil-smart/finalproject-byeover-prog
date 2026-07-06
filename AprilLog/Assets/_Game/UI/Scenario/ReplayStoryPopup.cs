@@ -5,7 +5,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // 1차 수정자 : 조규민
-// 수정 내용 : 하우징 책장 다시보기에서 ChapterTestDataSO 기준 챕터 목록을 표시하고 선택 정보를 _Story 씬으로 전달
+// 수정 내용 : 하우징 책장 다시보기에서 ChapterTestDataSO 기준 챕터 목록을 표시하고 선택 정보를 _Story 씬으로 전달,
+// 다시보기 제목을 언어 변경 시 LocalizationManager 기준으로 갱신
 
 public class ReplayStoryPopup : MonoBehaviour
 {
@@ -39,13 +40,21 @@ public class ReplayStoryPopup : MonoBehaviour
 
     private void OnEnable()
     {
+        SubscribeLocalization();
         ResolveMissingReferences();
         BindCloseButton();
+        UpdateLocalizedTexts();
         RefreshList();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
     }
 
     private void OnDestroy()
     {
+        UnsubscribeLocalization();
         if (boundCloseButton != null)
             boundCloseButton.onClick.RemoveListener(Close);
     }
@@ -108,8 +117,7 @@ public class ReplayStoryPopup : MonoBehaviour
         if (!ValidateReferences())
             return;
 
-        if (textHeaderReplayStory != null)
-            textHeaderReplayStory.text = "시나리오 다시보기";
+        UpdateLocalizedTexts();
 
         ClearSpawnedSlots();
 
@@ -125,6 +133,27 @@ public class ReplayStoryPopup : MonoBehaviour
             slot.SetData(testData[i], PlayStory);
             spawnedSlots.Add(slot);
         }
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null)
+            return;
+
+        LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+        LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedTexts;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+    }
+
+    private void UpdateLocalizedTexts()
+    {
+        if (textHeaderReplayStory != null && LocalizationManager.Instance != null)
+            textHeaderReplayStory.text = LocalizationManager.Instance.Get(13024, LocalizingType.UI);
     }
 
     private void ClearSpawnedSlots()

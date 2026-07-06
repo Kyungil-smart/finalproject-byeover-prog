@@ -1,4 +1,6 @@
 //담당자: 조규민
+// 확인 팝업 버튼 이벤트 등록·해제와 메시지·표시 상태 갱신
+// 현재 선택 버튼에 따른 배경과 글자 색상 적용
 
 using System;
 using TMPro;
@@ -99,6 +101,7 @@ public class InGameConfirmPopupView : MonoBehaviour
     public event Action OnNoClicked;
     public event Action OnCloseClicked;
 
+    // 팝업 참조 해석과 확인·취소·닫기 버튼 이벤트 등록
     private void Awake()
     {
         ResolveReferences();
@@ -122,6 +125,7 @@ public class InGameConfirmPopupView : MonoBehaviour
         _messageText.text = message;
     }
 
+    // Model 표시 상태에 따른 팝업 루트 활성화
     public void SetVisible(bool isVisible)
     {
         GameObject _targetObject = _rootObject != null ? _rootObject : gameObject;
@@ -152,6 +156,7 @@ public class InGameConfirmPopupView : MonoBehaviour
         _noVisual.Resolve(_noButton);
     }
 
+    // 선택 버튼에 따른 배경 Sprite와 글자 색상 갱신
     public void ShowSelectedButton(InGameConfirmPopupButtonType selectedButtonType)
     {
         _yesVisual.Apply(selectedButtonType == InGameConfirmPopupButtonType.Yes);

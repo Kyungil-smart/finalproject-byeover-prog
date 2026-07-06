@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 하우징 배치 버튼과 배치 모드 표시를 담당합니다.
 /// </summary>
+// 배치 모드 진입·종료 버튼 이벤트 전달과 모드 문구·팝업 표시 상태 갱신
 public class HousingPlacementButtonView : MonoBehaviour
 {
     [Header("버튼")]
@@ -16,6 +17,7 @@ public class HousingPlacementButtonView : MonoBehaviour
 
     [Header("상태 표시")]
     [SerializeField] private TextMeshProUGUI _placementModeText;
+    [SerializeField] private TextMeshProUGUI _placementButtonLabelText;
 
     [Header("팝업")]
     [SerializeField] private GameObject _popupRoot;
@@ -25,12 +27,25 @@ public class HousingPlacementButtonView : MonoBehaviour
 
     private void Awake()
     {
+        ResolveLocalizationReferences();
         Bind();
         SetPlacementMode(false);
     }
 
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        UpdateLocalizedTexts();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
+    }
+
     private void OnDestroy()
     {
+        UnsubscribeLocalization();
         if (_placementButton != null)
         {
             _placementButton.onClick.RemoveListener(HandlePlacementButtonClicked);
@@ -42,6 +57,40 @@ public class HousingPlacementButtonView : MonoBehaviour
         }
     }
 
+    private void ResolveLocalizationReferences()
+    {
+        if (_placementButtonLabelText == null && _placementButton != null)
+        {
+            _placementButtonLabelText = _placementButton.transform.Find("Text_Label")?.GetComponent<TextMeshProUGUI>();
+        }
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+            LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedTexts;
+        }
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+        }
+    }
+
+    private void UpdateLocalizedTexts()
+    {
+        if (_placementButtonLabelText != null && LocalizationManager.Instance != null)
+        {
+            _placementButtonLabelText.text = LocalizationManager.Instance.Get(13000, LocalizingType.UI);
+        }
+    }
+
+    // 배치 모드 여부에 따른 팝업·버튼·안내 문구 표시 전환
     public void SetPlacementMode(bool _isActive)
     {
         if (_placementModeText != null)
@@ -80,6 +129,7 @@ public class HousingPlacementButtonView : MonoBehaviour
         _closeButton.onClick.AddListener(HandleCloseButtonClicked);
     }
 
+    // 배치 모드 전환 요청 이벤트 전달
     private void HandlePlacementButtonClicked()
     {
         OnPlacementButtonClicked?.Invoke();

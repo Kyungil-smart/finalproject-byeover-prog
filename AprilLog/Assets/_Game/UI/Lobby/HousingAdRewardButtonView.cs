@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 광고 보상 버튼 클릭 전달과 광고 상태에 따른 입력 가능 여부 갱신
 
 using System;
 using UnityEngine;
@@ -31,6 +32,7 @@ public class HousingAdRewardButtonView : MonoBehaviour, IPointerClickHandler
         EnsureClickable();
     }
 
+    // 상호작용 가능한 상태에서 광고 보상 요청 이벤트 전달
     public void OnPointerClick(PointerEventData _eventData)
     {
         if (!_isInteractable)
@@ -41,6 +43,7 @@ public class HousingAdRewardButtonView : MonoBehaviour, IPointerClickHandler
         OnClicked?.Invoke();
     }
 
+    // 광고 이용 가능 여부에 따른 버튼 입력과 시각 상태 갱신
     public void SetInteractable(bool _canInteract)
     {
         _isInteractable = _canInteract;

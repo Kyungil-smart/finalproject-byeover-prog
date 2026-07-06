@@ -27,6 +27,7 @@ public enum HousingPlacementPriceCurrency
 /// 하우징 배치 UI에 표시할 가구 항목 데이터입니다.
 /// </summary>
 [Serializable]
+// 배치 아이템 식별자·해금·보유·가격·Sprite 연결 정보를 묶은 표시 데이터
 public class HousingPlacementItemData
 {
     [Header("기본 정보")]

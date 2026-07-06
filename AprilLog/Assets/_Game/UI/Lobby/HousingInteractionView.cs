@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 개별 가구의 입력을 전달하고 활성 연출 오브젝트를 표시합니다.
 /// </summary>
+// 가구 클릭 입력 전달과 상호작용 종류별 캐릭터 시각 오브젝트 표시
 public class HousingInteractionView : MonoBehaviour, IPointerClickHandler
 {
     [Header("상호작용 식별")]
@@ -42,11 +43,13 @@ public class HousingInteractionView : MonoBehaviour, IPointerClickHandler
         }
     }
 
+    // 활성 입력 상태에서 가구 선택 이벤트 전달
     public void OnPointerClick(PointerEventData _eventData)
     {
         OnClicked?.Invoke(this);
     }
 
+    // 상호작용 여부에 따른 기본 가구와 캐릭터 연출 오브젝트 전환
     public void SetInteractionActive(bool _isActive)
     {
         SetObjectsActive(_objectsShownWhileActive, _isActive);

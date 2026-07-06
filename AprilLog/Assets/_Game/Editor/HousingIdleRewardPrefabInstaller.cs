@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// Page_Housing 프리팹에 시간 누적 보상 UI를 배치합니다.
 /// </summary>
+// 로비 Prefab에 방치 보상 버튼·팝업·Controller 생성 및 참조 연결
 public static class HousingIdleRewardPrefabInstaller
 {
     private const string _prefabPath = "Assets/_Game/Prefabs/UI/Lobby/Page/Housing/Page_Housing.prefab";
@@ -17,6 +18,7 @@ public static class HousingIdleRewardPrefabInstaller
     private const string _circleSpritePath = "Assets/Imports/Cartoon Coffee/2D Deluxe VFX/Masks/Circle Mask 001.png";
 
     [MenuItem("Tools/Housing/Install Idle Reward UI")]
+    // 대상 로비 Prefab 로드와 방치 보상 구성 설치 후 저장
     public static void Install()
     {
         GameObject _prefabRoot = PrefabUtility.LoadPrefabContents(_prefabPath);
@@ -58,6 +60,7 @@ public static class HousingIdleRewardPrefabInstaller
         _controllerObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    // 게이지·보상 수량·확인 버튼을 포함한 방치 보상 팝업 생성
     private static HousingIdleRewardPopupView CreatePopup(Transform _pageRoot, Sprite _furnitureSprite)
     {
         bool _isNewPopup = _pageRoot.Find(_popupRootName) == null;
@@ -145,6 +148,7 @@ public static class HousingIdleRewardPrefabInstaller
         return _popupView;
     }
 
+    // 방치 보상 Controller 생성과 버튼·팝업 참조 연결
     private static HousingIdleRewardController CreateController(Transform _pageRoot)
     {
         GameObject _controllerRoot = CreateRectObject(_controllerRootName, _pageRoot, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);

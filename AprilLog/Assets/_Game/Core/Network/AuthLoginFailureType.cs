@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 인증 서비스 오류를 로그인 UI 메시지로 구분하기 위한 실패 유형 정의
 
 // 로그인 실패 상황을 UI 문구로 변환할 수 있도록 구분한다.
 public enum AuthLoginFailureType

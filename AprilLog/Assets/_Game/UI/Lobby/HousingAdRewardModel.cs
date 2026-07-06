@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 광고 보상 팝업 표시·광고 상태·확인 가능 여부 저장과 상태 변경 알림
 
 using System;
 
@@ -36,6 +37,7 @@ public class HousingAdRewardModel
         SetVisible(false);
     }
 
+    // 광고 상태·안내 문구·확인 가능 여부를 새 상태로 반영
     public void SetAdStatus(HousingAdRewardStatus _status, string _statusMessage, bool _canConfirm)
     {
         _currentState = _currentState.WithAdStatus(_status, _statusMessage, _canConfirm);
@@ -50,6 +52,7 @@ public class HousingAdRewardModel
         OnStateChanged?.Invoke(_currentState);
     }
 
+    // 표시 여부 변경 시 불변 상태 복사와 변경 이벤트 발행
     private void SetVisible(bool _isVisible)
     {
         if (_currentState.IsVisible == _isVisible)

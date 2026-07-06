@@ -8,9 +8,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-/// <summary>
-/// JGM_Lobby 씬에 하우징 배치 UI를 구성합니다.
-/// </summary>
+// 로비 씬에 배치 팝업·카테고리·슬롯 템플릿 UI 생성
+// 배치 Controller와 View의 직렬화 참조 및 테스트 아이템 설정
 public static class HousingPlacementSceneInstaller
 {
     private const string ScenePath = "Assets/Scenes/JGM/JGM_Lobby.unity";
@@ -23,6 +22,7 @@ public static class HousingPlacementSceneInstaller
     private const string DiamondPriceIconPath = "Assets/Imports/NewResource/Icon_128_Gem_03.png";
 
     [MenuItem("Tools/Housing/Install Placement UI To JGM Lobby")]
+    // 열린 로비 씬에 배치 기능 UI와 Controller 일괄 생성
     public static void InstallJgmLobby()
     {
         Scene _scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -69,6 +69,7 @@ public static class HousingPlacementSceneInstaller
         Debug.Log("[HousingPlacementSceneInstaller] JGM_Lobby 하우징 배치 UI 설치 완료");
     }
 
+    // 카테고리·목록·닫기 버튼을 포함한 배치 팝업 계층 생성
     private static GameObject CreatePopup(Transform _parent, out HousingPlacementPopupView _popupView, out Button _closeButton)
     {
         GameObject _popupRoot = CreateRectObject("Panel_PlacementPopup", _parent, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 0f));
@@ -168,6 +169,7 @@ public static class HousingPlacementSceneInstaller
         _scroll.content = _contentRect;
     }
 
+    // 아이콘·상태·가격 표시를 포함한 재사용 슬롯 템플릿 생성
     private static HousingPlacementItemSlotView CreateSlotTemplate(Transform _parent)
     {
         // 추가: 조규민 - 배치 슬롯을 실제 프리팹과 동일한 프레임, 이름, 상태 버튼 계층으로 생성한다.
@@ -347,6 +349,7 @@ public static class HousingPlacementSceneInstaller
         _property.FindPropertyRelative("_labelText").objectReferenceValue = _buttonTransform.Find("Text_Label").GetComponent<TextMeshProUGUI>();
     }
 
+    // 배치 Controller에 View와 초기 아이템 데이터 직렬화 연결
     private static void ConfigureController(HousingPlacementController _controller, HousingPlacementButtonView _buttonView, HousingPlacementPopupView _popupView)
     {
         SerializedObject _serializedController = new SerializedObject(_controller);

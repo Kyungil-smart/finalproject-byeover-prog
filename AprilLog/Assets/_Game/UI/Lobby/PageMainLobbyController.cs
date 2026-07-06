@@ -34,6 +34,7 @@ public class PageMainLobbyController : MonoBehaviour
     // ------------------------------------------------------------------
     private int  _currentIndex;
     private bool _isAnimating;
+    private bool _isInitialized;
     public event Action<int> OnGameStart; 
 
     // ------------------------------------------------------------------
@@ -72,6 +73,7 @@ public class PageMainLobbyController : MonoBehaviour
     private void Start()
     {
         _data.InitChapters();
+        _isInitialized = true;
         ShowChapter(0, instant: true);
     }
 
@@ -126,16 +128,9 @@ public class PageMainLobbyController : MonoBehaviour
 
     private void ShowChapter(int index, bool instant)
     {
-        if (_data == null || _data.ChapterCount <= 0)
-        {
-            Debug.LogWarning("[PageMainLobbyController] 표시할 챕터 데이터가 없습니다.", this);
-            SetButtonVisible(_btnPrev, false);
-            SetButtonVisible(_btnNext, false);
-            SetStartButtonInteractable(false);
-            return;
-        }
-
-        _currentIndex = Mathf.Clamp(index, 0, _data.ChapterCount - 1);
+        if(!_isInitialized) return;
+        
+        _currentIndex = Mathf.Clamp(index, 0, _data != null ? _data.ChapterCount - 1 : 0);
         UpdateSlotData();
 
         if (instant && _slotRect != null)

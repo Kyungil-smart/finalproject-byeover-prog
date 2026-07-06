@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 인챈트 이미지 키에 해당하는 Sprite 로드와 누락 시 아이콘 초기화
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,6 +11,7 @@ public static class EnchantIconLoader
 {
     private const string _iconResourceFolder = "EnchantIcons/";
 
+    // 이미지 키 기반 인챈트 Sprite 로드와 Image 표시
     public static void ApplyIcon(Image targetImage, string imageKey)
     {
         if (targetImage == null)
@@ -36,6 +38,7 @@ public static class EnchantIconLoader
         targetImage.preserveAspect = true;
     }
 
+    // 유효한 Sprite 미확인 시 기존 아이콘 제거
     private static void ClearIcon(Image targetImage)
     {
         targetImage.sprite = null;

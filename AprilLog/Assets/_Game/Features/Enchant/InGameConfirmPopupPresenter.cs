@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 팝업 Model과 View 연결 및 확인·취소 입력에 따른 콜백 실행과 닫음 처리
 
 using System;
 
@@ -32,12 +33,14 @@ public class InGameConfirmPopupPresenter
         _view.OnCloseClicked -= HandleCancelClicked;
     }
 
+    // 확인 동작 보관 후 Model 팝업 열기 요청
     public void Open(string message, Action confirmAction)
     {
         _confirmAction = confirmAction;
         _model.Open(message);
     }
 
+    // 팝업 닫음 후 보관된 확인 동작 일회 실행
     private void HandleYesClicked()
     {
         Action _action = _confirmAction;
