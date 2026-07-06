@@ -55,15 +55,20 @@ public class ScenarioDataDriver : MonoBehaviour
     private bool _finished;
     private bool _subscribed;
     private bool _isCloudDataLoaded;
-
+    
     private void Awake()
     {
         if (_view == null) _view = GetComponent<ScenarioView>();
         if (_view == null) _view = FindFirstObjectByType<ScenarioView>();
+        
         if (GameManager.Instance != null)
         {
             _isCloudDataLoaded = GameManager.Instance.CloudData != null;
-            _startGroupId = GameManager.Instance.SelectedScenarioGroupId;
+            
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted) return;
+            
+            _startGroupId = GameManager.Instance.SelectedScenarioGroupId != 0 ? 
+                GameManager.Instance.SelectedScenarioGroupId : _startGroupId;
         }
     }
 
@@ -78,7 +83,7 @@ public class ScenarioDataDriver : MonoBehaviour
     // ---------- 외부 API ----------
 
     /// <summary>지정 GroupID의 시나리오를 처음부터 재생한다.</summary>
-    private void Play(int groupId)
+    public void Play(int groupId)
     {
         if (_view == null)
         {
@@ -107,6 +112,7 @@ public class ScenarioDataDriver : MonoBehaviour
         _index = 0;
         _finished = false;
         _isPlaying = true;
+        _startGroupId = groupId;
         SaveUnlockScenario(groupId);
         Show();
     }
