@@ -328,16 +328,32 @@ public class TutorialLobbyDirector : MonoBehaviour
             return;
         if (_isPlayingBubble || _stepScenarioRoutine != null || _level5Routine != null || _equipRoutine != null)
             return;
-        if (!TryGetLobbyStepScenarioRange(step.stepId, out int startId, out int endId))
-            return;
 
-        _playedLobbyScenarioStepId = step.stepId;
-        _stepScenarioRoutine = StartCoroutine(PlayLobbyStepScenario(startId, endId));
+        if (TryGetLobbyStepScenarioRange(step.stepId, out int startId, out int endId))
+        {
+            _playedLobbyScenarioStepId = step.stepId;
+            _stepScenarioRoutine = StartCoroutine(PlayLobbyStepScenario(startId, endId));
+            return;
+        }
+
+        // 별도 시나리오가 없는 단계는 그 단계의 안내 문구를 버블 한 줄로 표시한다.
+        if (!string.IsNullOrWhiteSpace(step.guideText))
+        {
+            _playedLobbyScenarioStepId = step.stepId;
+            _stepScenarioRoutine = StartCoroutine(PlayLobbyStepGuideText(step.guideText));
+        }
     }
 
     private IEnumerator PlayLobbyStepScenario(int startId, int endId)
     {
         yield return PlayScenarioRange(startId, endId);
+        _stepScenarioRoutine = null;
+    }
+
+    private IEnumerator PlayLobbyStepGuideText(string text)
+    {
+        var line = new Story_TalkData { name_KR = string.Empty, Text_KR = text };
+        yield return PlayBubbleLines(new List<Story_TalkData> { line });
         _stepScenarioRoutine = null;
     }
 

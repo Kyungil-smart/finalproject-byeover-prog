@@ -38,6 +38,10 @@ public class TutorialView : MonoBehaviour, ITutorialView
     [SerializeField]
     private List<HighlightTarget> _highlightTargets = new();
 
+    [Tooltip("StageStartButton 단계에서 먼저 강조할 메인 탭 버튼입니다.")]
+    [SerializeField]
+    private RectTransform _stageStartMainTabTarget;
+
     [Header("디버그")]
     [Tooltip("활성화하면 튜토리얼 대상 탐색과 버튼 바인딩 상태를 콘솔에 출력합니다.")]
     [SerializeField]
@@ -58,7 +62,6 @@ public class TutorialView : MonoBehaviour, ITutorialView
 
     private string _pendingId;
     private bool _highlightApplied;
-    private RectTransform _runtimeResolvedTarget;
     private bool _stageStartMainTabTapped;
 
     // 동일한 실패 로그가 매 프레임 출력되는 것을 방지하기 위한 값
@@ -239,7 +242,6 @@ public class TutorialView : MonoBehaviour, ITutorialView
         {
             _stageStartMainTabTapped = true;
             _highlightApplied = false;
-            _runtimeResolvedTarget = null;
             _targetMissingWarningPrinted = false;
             _buttonBindingWarningPrinted = false;
             UnbindTap();
@@ -362,7 +364,15 @@ public class TutorialView : MonoBehaviour, ITutorialView
             return null;
         }
 
-        _runtimeResolvedTarget = null;
+        if (ShouldUseStageStartMainTabTarget(id))
+        {
+            if (_stageStartMainTabTarget != null && _stageStartMainTabTarget.gameObject.activeInHierarchy)
+            {
+                return _stageStartMainTabTarget;
+            }
+
+            return null;
+        }
 
         for (int i = 0; i < _highlightTargets.Count; i++)
         {
@@ -386,113 +396,13 @@ public class TutorialView : MonoBehaviour, ITutorialView
             return item.target;
         }
 
-        _runtimeResolvedTarget = ResolveTargetFromActiveScene(id);
-        return _runtimeResolvedTarget;
-    }
-
-    private RectTransform ResolveTargetFromActiveScene(string id)
-    {
-        string[] candidateNames = GetRuntimeTargetCandidateNames(id);
-        if (candidateNames == null || candidateNames.Length == 0)
-        {
-            return null;
-        }
-
-        RectTransform[] rects = FindObjectsByType<RectTransform>(
-            FindObjectsInactive.Include,
-            FindObjectsSortMode.None);
-
-        for (int i = 0; i < candidateNames.Length; i++)
-        {
-            RectTransform target = FindRuntimeTarget(rects, candidateNames[i], true);
-            if (target != null)
-            {
-                LogDebug($"런타임 강조 대상 탐색 성공. TargetId={id}, Object={target.name}");
-                return target;
-            }
-        }
-
-        for (int i = 0; i < candidateNames.Length; i++)
-        {
-            RectTransform target = FindRuntimeTarget(rects, candidateNames[i], false);
-            if (target != null)
-            {
-                LogDebug($"런타임 강조 대상 탐색 성공. TargetId={id}, Object={target.name}");
-                return target;
-            }
-        }
-
         return null;
     }
 
-    private static RectTransform FindRuntimeTarget(
-        RectTransform[] rects,
-        string candidateName,
-        bool requireActive)
+    private bool ShouldUseStageStartMainTabTarget(string id)
     {
-        if (rects == null || string.IsNullOrWhiteSpace(candidateName))
-        {
-            return null;
-        }
-
-        RectTransform fallback = null;
-
-        for (int i = 0; i < rects.Length; i++)
-        {
-            RectTransform rect = rects[i];
-            if (rect == null)
-            {
-                continue;
-            }
-
-            if (!string.Equals(rect.name, candidateName, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (requireActive && !rect.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            if (rect.GetComponent<Button>() != null)
-            {
-                return rect;
-            }
-
-            fallback ??= rect;
-        }
-
-        return fallback;
-    }
-
-    private string[] GetRuntimeTargetCandidateNames(string id)
-    {
-        switch (id)
-        {
-            case "CharacterGrowthButton":
-                return new[] { "Btn_PlayerLevel", "Button_CharLv" };
-            case "LevelUpButton":
-                return new[] { "Button_Confrim", "Button_LvUp", "Button_LvUp&Description" };
-            case "ShopButton":
-                return new[] { "Btn_Shop" };
-            case "GachaButton":
-                return new[] { "Button_Once", "Button_Gacha", "Button_LegendaryGacha" };
-            case "GachaConfirmButton":
-                return new[] { "Button_Confrim" };
-            case "ArtifactGrowthButton":
-                return new[] { "Button_Artifact" };
-            case "ArtifactList":
-                return new[] { "Artifacts_SlotEntry", "Artifacts_Slot", "Artifacts_Slot_List" };
-            case "ArtifactLevelUpButton":
-                return new[] { "Button_LvUp&Description", "Button_Confrim" };
-            case "StageStartButton":
-                return _stageStartMainTabTapped
-                    ? new[] { "Btn_GameStart" }
-                    : new[] { "Btn_Main" };
-            default:
-                return null;
-        }
+        return string.Equals(id, "StageStartButton", StringComparison.Ordinal)
+            && !_stageStartMainTabTapped;
     }
 
     // =========================================================
@@ -677,7 +587,6 @@ public class TutorialView : MonoBehaviour, ITutorialView
 
         _pendingId = null;
         _highlightApplied = false;
-        _runtimeResolvedTarget = null;
 
         _targetMissingWarningPrinted = false;
         _buttonBindingWarningPrinted = false;
@@ -713,6 +622,7 @@ public class TutorialView : MonoBehaviour, ITutorialView
         bool targetAssigned = false;
         bool targetActive = false;
         string registeredTargetName = "NULL";
+        bool usesStageStartMainTabTarget = ShouldUseStageStartMainTabTarget(_pendingId);
 
         for (int i = 0; i < _highlightTargets.Count; i++)
         {
@@ -735,9 +645,6 @@ public class TutorialView : MonoBehaviour, ITutorialView
             break;
         }
 
-        bool runtimeTargetAssigned = _runtimeResolvedTarget != null;
-        bool runtimeTargetActive = runtimeTargetAssigned && _runtimeResolvedTarget.gameObject.activeInHierarchy;
-
         Debug.LogWarning(
             $"[TutorialView] 강조 대상을 아직 찾지 못했습니다.\n" +
             $"StepId={(_currentStep != null ? _currentStep.stepId : -1)}\n" +
@@ -746,9 +653,9 @@ public class TutorialView : MonoBehaviour, ITutorialView
             $"Target 연결 여부={targetAssigned}\n" +
             $"Target 활성 여부={targetActive}\n" +
             $"연결된 Target={registeredTargetName}\n" +
-            $"런타임 탐색 Target={(_runtimeResolvedTarget != null ? _runtimeResolvedTarget.name : "NULL")}\n" +
-            $"런타임 Target 연결 여부={runtimeTargetAssigned}\n" +
-            $"런타임 Target 활성 여부={runtimeTargetActive}\n" +
+            $"StageStart 메인 탭 별도 참조 사용={usesStageStartMainTabTarget}\n" +
+            $"StageStart 메인 탭 연결 여부={(_stageStartMainTabTarget != null)}\n" +
+            $"StageStart 메인 탭 활성 여부={(_stageStartMainTabTarget != null && _stageStartMainTabTarget.gameObject.activeInHierarchy)}\n" +
             $"TutorialView의 Highlight Targets 인스펙터 연결과 " +
             $"대상 GameObject의 활성 상태를 확인하세요.",
             this);

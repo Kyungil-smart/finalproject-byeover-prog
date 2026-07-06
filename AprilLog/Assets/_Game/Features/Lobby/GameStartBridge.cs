@@ -41,13 +41,19 @@ public class GameStartBridge : MonoBehaviour
 
     private void SetStage(int index)
     {
-        // 튜토리얼 매니저가 가동 중이고, 완료가 되지 않았다면 동작은 튜토리얼 매니저가 우선임
-        if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
+        // 튜토리얼의 StageStart 단계는 게임 스타트로 인게임에 재진입해야 하는 단계다.
+        bool tutorialStageStart = TutorialManager.Instance != null
+            && !TutorialManager.Instance.IsCompleted
+            && IsTutorialStageStartStep();
+
+        // 튜토리얼 진행 중에는 게임 스타트를 튜토리얼이 우선한다. StageStart 단계만 통과시킨다.
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted
+            && !tutorialStageStart)
         {
             Debug.Log("[GameStartBridge] 튜토리얼 진행중. 튜토리얼 우선");
             return;
         }
-        
+
         _stageRepo ??= DataManager.Instance.StageRepo;
         int chapterId = _stageRepo.GetChapterIdByIndex(index);
         if (chapterId == -1)
@@ -61,10 +67,29 @@ public class GameStartBridge : MonoBehaviour
             Debug.Log($"[GameStartBridge] 스태미너가 소모되지 않았습니다. 이동을 취소합니다");
             return;
         }
-        
+
+        // 튜토리얼 StageStart 재진입은 스토리 자동재생을 건너뛰고 바로 인게임으로 들어간다.
+        // 인자 없는 GameStart를 써서 SelectedChapterId를 건드리지 않는다(0 유지). 그래야
+        // InGameBootstrap이 튜토리얼 재진입 챕터를 잡고, TutorialInGameDirector도 튜토리얼 런으로 인식해
+        // step14 시퀀스(대화 버블)를 재생한다. (스토리 분기는 튜토리얼 이후 추가된 기능이라 개입시키지 않는다.)
+        if (tutorialStageStart)
+        {
+            GameStart();
+            return;
+        }
+
         SetNextScene(chapterId);
     }
     
+    // 현재 튜토리얼 단계가 게임 스타트(StageStart)로 인게임에 재진입하는 단계인지.
+    private static bool IsTutorialStageStartStep()
+    {
+        TutorialStep step = TutorialManager.Instance != null ? TutorialManager.Instance.CurrentStep : null;
+        return step != null
+            && step.scene == TutorialScene.Lobby
+            && string.Equals(step.highlightTargetId, "StageStartButton", StringComparison.Ordinal);
+    }
+
     private void SetNextScene(int chapterId)
     {
         if (GameManager.Instance == null)
