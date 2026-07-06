@@ -69,6 +69,9 @@ public class GameManager : MonoBehaviour
 
     // 로비에서 선택한 챕터
     public int SelectedChapterId { get; set; }
+    
+    // 재생 해야 될 시나리오 그룹
+    public int SelectedScenarioGroupId { get; set; }
 
     // ---------- 생명주기 ----------
     // 추가: 조규민 - Unity Splash 이전에 Portrait를 먼저 고정해 첫 화면 회전 보정이 늦게 적용되는 상황을 줄인다.
@@ -268,11 +271,25 @@ public class GameManager : MonoBehaviour
         StartCoroutine(LoadSceneCoroutine("_InGame")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
     }
 
+    public void LoadInGame(int chapterId)
+    {
+        SelectedChapterId = chapterId;
+        ChangeState(GameState.InGame);
+        StartCoroutine(LoadSceneCoroutine("_InGame"));
+    }
+
     // 추가: 정승우 - 최초 실행 튜토리얼 인트로 시나리오 씬으로 진입.
     // 시나리오 종료 시 그 씬의 흐름(TempStoryToGameFlow 등)이 인게임으로 넘긴다.
     public void LoadScenarioIntro()
     {
+        SelectedScenarioGroupId = 3001; // 인트로 그룹 ID
         StartCoroutine(LoadSceneCoroutine("_Story")); // 시나리오 재생 씬(_Boot/_Lobby/_InGame/_Story 규칙)
+    }
+
+    public void LoadScenarioByGroupId(int groupId)
+    {
+        SelectedScenarioGroupId = groupId;
+        StartCoroutine(LoadSceneCoroutine("_Story"));
     }
 
     private IEnumerator LoadSceneCoroutine(string sceneName)
@@ -809,6 +826,28 @@ public class GameManager : MonoBehaviour
 
         SyncToCloud(data);
         RaiseCurrencyChanged();   // 단계②: 전투 보상이 View(로비 등)에 전파되도록 단일 이벤트 발행
+    }
+
+    // ---------- 시나리오 저장/조회 ----------
+    public void SaveFirstReadScenario(int groupId)
+    {
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+
+        if (!IsFirstReadScenario(groupId))
+        {
+            CloudData.firstReadScenarios.Add(groupId);
+        }
+        
+        SyncToCloud(data);
+    }
+
+    public bool IsFirstReadScenario(int groupId)
+    {
+        if (CloudData != null) return CloudData.firstReadScenarios.Contains(groupId);
+        
+        Debug.LogWarning("[GameManager] 클라우드 데이터를 찾을 수 없음");
+        return false;
     }
 
     // ---------- 최초 클리어 보상 (1회성, 영속) ----------
