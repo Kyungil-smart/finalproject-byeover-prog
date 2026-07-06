@@ -10,6 +10,10 @@
 // 3차 수정자 : 조규민
 // 수정 내용 : 정산 팝업 TOP3 인챈트 데미지에 스킬 아이콘을 함께 표시하고 보상 표시 갱신 안정화
 
+// 4차 수정자 : 김영찬
+// 수정 내용 : 이제 씬 전환(재시작 포함)은 InGameNextSceneLoader.cs에서 일괄 담당 -> 이벤트 발송만 남겨둠
+//           클리어 시 초회 클리어 시나리오를 보지 않았다면 로비로 돌아가기 이외의 버튼을 비활성화 하는 기능 추가
+
 using System;
 using TMPro;
 using UnityEngine;
@@ -167,43 +171,12 @@ public class ResultPopup : MonoBehaviour
     {
         Close();
         OnRetryClicked?.Invoke();
-        if (GameManager.Instance != null)
-            GameManager.Instance.LoadInGame();   // 현재 스테이지 다시 시작
     }
 
     private void NextChapter()
     {
         Close();
         OnNextChapterClicked?.Invoke();
-        if (GameManager.Instance == null) return;
-
-        // 옛 SelectedChapterId += 1 산술은 값이 비어(0) 있으면 존재하지 않는 챕터 1로 들어가 빈 인게임에 갇히고,
-        // 풀 Stage_ID가 들어 있어도 "다음 스테이지"가 될 뿐 다음 챕터가 아니다. 방금 끝난 챕터 기준으로 데이터 역조회한다.
-        var loop = FindFirstObjectByType<StageLoopManager>();
-        int currentChapterId = loop != null ? loop.CurrentChapterId : 0;
-        int nextStageId = ResolveNextChapterFirstStageId(currentChapterId);
-        if (nextStageId <= 0)
-        {
-            // 다음 챕터가 없으면(마지막 챕터, 튜토리얼/0챕터) 로비로.
-            GoLobby();
-            return;
-        }
-
-        GameManager.Instance.SelectedChapterId = nextStageId;   // 계약: SelectedChapterId에는 항상 풀 Stage_ID를 넣는다
-        GameManager.Instance.LoadInGame();
-    }
-
-    // 다음 챕터의 1스테이지 Stage_ID. 챕터+1 → 없으면 다음 테마 1챕터(105 다음은 201). 튜토/0챕터(98xx/99xx)는 본편 진행이 아니라 -1.
-    private static int ResolveNextChapterFirstStageId(int chapterId)
-    {
-        if (chapterId <= 0 || chapterId >= 9000) return -1;
-        var repo = DataManager.Instance != null ? DataManager.Instance.StageRepo : null;
-        if (repo == null) return -1;
-
-        int next = repo.GetStageId(chapterId + 1, 1);
-        if (next > 0) return next;
-
-        return repo.GetStageId((chapterId / 100 + 1) * 100 + 1, 1);
     }
 
     private void GoLobby()
@@ -337,6 +310,12 @@ public class ResultPopup : MonoBehaviour
             default:
                 return (legacySkillId / 1000) * 10000 + (legacySkillId % 1000);
         }
+    }
+
+    public void DisableButtonForScenarioPlay(bool disable)
+    {
+        if(_retryButton != null) _retryButton.interactable = !disable;
+        if(_nextChapterButton != null) _nextChapterButton.interactable = !disable;
     }
 }
 

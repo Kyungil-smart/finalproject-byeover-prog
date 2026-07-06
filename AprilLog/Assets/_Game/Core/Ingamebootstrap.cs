@@ -386,6 +386,7 @@ public class InGameBootstrap : MonoBehaviour
 
     // 웨이브 시스템(StageLoopManager+StageBootstrapper)을 보장하고 챕터를 시작한다.
     // 씬에 없으면 런타임 생성 — 두 컴포넌트가 서로/스포너/플레이어를 자동 탐색해 연결된다.
+    // 추가 - 클리어 시 스토리 연결을 위한 InGameNextSceneLoader의 연결작업을 병행한다.
     private void StartWaveSystem(int chapterId, int startStageIndex, int seed)
     {
         var loop = FindFirstObjectByType<StageLoopManager>();
@@ -395,10 +396,23 @@ public class InGameBootstrap : MonoBehaviour
             go.AddComponent<StageBootstrapper>();
             loop = go.AddComponent<StageLoopManager>();
         }
-
+        
+        var sceneLoader = FindAnyObjectByType<InGameNextSceneLoader>();
+        if (sceneLoader == null)
+        {
+            var go = new GameObject("InGameNextSceneLoader");
+            go.AddComponent<InGameNextSceneLoader>();
+            sceneLoader = go.AddComponent<InGameNextSceneLoader>();
+            sceneLoader.SetLoopManager(loop);
+        }
+        
         // 챕터 종료(승/패) → 정산 팝업
         loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지
         loop.OnChapterEnd += ShowSettlement;
+
+        // 챕터 종료(승/패) -> 승리 했을 경우 초회 스토리 있을 시 씬 이동 전 또는 재시작 전에 감상하도록 하기 위함
+        loop.OnChapterEnd -= sceneLoader.HandleChapterCleared; // 중복 구독 방지
+        loop.OnChapterEnd += sceneLoader.HandleChapterCleared;
 
         // 튜토리얼 마지막 단계(ChapterClear)가 챕터 승리로 진행/완료되도록 훅 연결.
         // (이 연결이 없으면 마지막 단계가 영원히 안 끝나 매 전투가 튜토 챕터로 반복된다.)

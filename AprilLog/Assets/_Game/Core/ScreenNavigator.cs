@@ -7,6 +7,9 @@
 // 2차 수정자 : 조규민
 // 수정 내용 : 로비 복귀 확인 팝업의 예 버튼에서 GameManager가 없는 직접 실행 환경도 _Lobby 씬으로 복귀하도록 보강
 
+// 3차 수정자 : 김영찬
+// 수정 내용 : 씬 전환을 InGameNextSceneLoader.cs에서 일괄 담당하도록 함. 실제 로비 이동 부분을 이벤트 발송만 남김
+
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -51,8 +54,6 @@ public class ScreenNavigator : MonoBehaviour
     [SerializeField][Range(0,10f)] private float _specialWavePopupTime = 3f;
 
     // ---------- private ----------
-    private const string _lobbySceneName = "_Lobby";
-
     private float _comboPopupTimer;
     private float _wavePopupTimer;
     
@@ -262,15 +263,6 @@ public class ScreenNavigator : MonoBehaviour
 
         Debug.Log("[ScreenNavigator] 로비로 이동");
         OnLobbyClicked?.Invoke();
-
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.LoadLobby();
-            return;
-        }
-
-        Debug.LogWarning("[ScreenNavigator] GameManager.Instance가 없어 _Lobby 씬을 직접 로드합니다.", this);
-        SceneManager.LoadScene(_lobbySceneName);
     }
     
     // ---------- 특수 웨이브 ----------
