@@ -577,6 +577,7 @@ public class GameManager : MonoBehaviour
 
         // 3. 로컬 데이터 초기화
         DeleteLocalSave();
+        _firestoreService?.DeleteLocalBackup();   // 게스트 로컬 백업(cloud_backup*.json)까지 지워야 재로그인 시 옛 데이터가 안 돌아온다.
         PlayerPrefs.DeleteAll();
         CloudData = null;
 

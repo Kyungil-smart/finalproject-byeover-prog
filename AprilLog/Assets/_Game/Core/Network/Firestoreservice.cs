@@ -841,6 +841,21 @@ public class FirestoreService : MonoBehaviour
 
     public bool HasLocalBackup() => File.Exists(GetBackupPath());
 
+    // 계정 삭제/초기화 시 로컬 백업(cloud_backup*.json)을 전부 지운다.
+    // 게스트는 로컬 백업이 사실상 유일한 저장소라, 이걸 남기면 재로그인 시 옛 데이터가 복원된다.
+    public void DeleteLocalBackup()
+    {
+        try
+        {
+            foreach (string file in Directory.GetFiles(Application.persistentDataPath, "cloud_backup*.json"))
+                File.Delete(file);
+        }
+        catch (Exception exception)
+        {
+            OnError?.Invoke(exception.Message);
+        }
+    }
+
     private string GetBackupPath()
     {
         if (string.IsNullOrWhiteSpace(_uid))
