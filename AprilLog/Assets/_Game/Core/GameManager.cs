@@ -38,6 +38,7 @@ public class GameManager : MonoBehaviour
     public event Action<AuthLoginFailureType, string> OnLoginFailedWithType; // 추가: 조규민 - Google 로그인 실패 안내 문구를 구분할 수 있도록 실패 유형을 전달한다.
     public event Action OnRegistrationRequired;
     public event Action<string> OnRegistrationFailed;
+    public event Action OnCloudDataReady; // 추가 - 김영찬 : 클라우드 데이터가 스크립트 내부 로직보다 늦게 로딩 되는 경우 대비하여 이벤트 발송
 
     // ---------- SerializeField ----------
     [Header("네트워크 서비스")]
@@ -608,6 +609,8 @@ public class GameManager : MonoBehaviour
         // 이벤트가 안 왔으면 대기
         if (!loaded)
             yield return new WaitUntil(() => loaded);
+
+        OnCloudDataReady?.Invoke();
     }
 
     public void LoadLocalProgress()

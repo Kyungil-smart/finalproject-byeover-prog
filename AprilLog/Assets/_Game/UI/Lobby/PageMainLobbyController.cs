@@ -58,7 +58,14 @@ public class PageMainLobbyController : MonoBehaviour
             Debug.LogWarning("[PageMainLobbyController] ChapterTestDataSO 미연결", this);
             return;
         }
+        
+        if (GameManager.Instance != null) GameManager.Instance.OnCloudDataReady += HandleCloudDataReady;
         ShowChapter(0, instant: true);
+    }
+
+    private void OnDisable()
+    {
+        if(GameManager.Instance != null) GameManager.Instance.OnCloudDataReady -= HandleCloudDataReady;
     }
 
     private void Start()
@@ -203,5 +210,10 @@ public class PageMainLobbyController : MonoBehaviour
     private void SwitchStartButtonInteractable()
     {
        SetStartButtonInteractable(GetChapterUnLock(_currentIndex));
+    }
+    
+    private void HandleCloudDataReady()
+    {
+        RefreshButtons();
     }
 }
