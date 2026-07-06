@@ -1,6 +1,6 @@
 ﻿//담당자: 조규민
 
-// 수정 내용 : 하우징 아이콘을 Resources 폴더가 아닌 Inspector에 연결된 Imports Sprite 참조에서 찾도록 변경
+// 수정 내용 : 하우징 아이콘을 Inspector Sprite 참조에서 찾고 Name_ID로 현재 언어의 가구 이름을 조회
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -124,6 +124,18 @@ public class HousingPlacementItemMapper
 
     private string ResolveDisplayName(HousingFurnitureData _furniture)
     {
+        if (_furniture.Name_ID > 0 && LocalizationManager.Instance != null)
+        {
+            string _localizedName = LocalizationManager.Instance.Get(
+                _furniture.Name_ID,
+                LocalizingType.Housing);
+
+            if (!string.IsNullOrWhiteSpace(_localizedName) && !_localizedName.StartsWith("["))
+            {
+                return _localizedName;
+            }
+        }
+
         string _typeName = ResolveTypeName(_furniture.Type);
         return $"{_typeName} #{_furniture.Furniture_ID}";
     }
