@@ -214,6 +214,16 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     public void RefreshJokerCount()
     {
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
+        {
+            return;
+        }
+
+        if (ArtifactManager.Instance == null)
+        {
+            return;
+        }
+
         int baseCount = 0;
         int bonus = 0;
 
