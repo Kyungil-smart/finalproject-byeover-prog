@@ -17,7 +17,7 @@ public class StoryRepo : MonoBehaviour
     private Dictionary<int, Story_CharacterData> _character; // ID, data
     private Dictionary<int, List<Story_TalkData>> _talkGroup; // GroupID, 그룹 내 텍스트 데이터의 List
     private Dictionary<(int, string), StoryTriggerData> _triggersByChapterID; // (ChapterID, TriggerType), data
-    private Dictionary<int, StoryTriggerData>  _triggersByTriggerId;
+    private Dictionary<int, StoryTriggerData>  _triggersByGroupId; // GroupID, data
 
     private bool _isInitialized = false;
 
@@ -29,7 +29,7 @@ public class StoryRepo : MonoBehaviour
         _character = BuildDictionary(_characterTable, nameof(_characterTable), r => r.ID);
         _talkGroup = BuildTalkGroup();
         _triggersByChapterID = BuildDictionary(_triggerTable, nameof(_triggerTable), r => (r.Target_ID, r.TriggerType));
-        _triggersByTriggerId = BuildDictionary(_triggerTable, nameof(_triggerTable), r => r.StoryTrigger_ID);
+        _triggersByGroupId = BuildDictionary(_triggerTable, nameof(_triggerTable), r => r.Story_ID);
 
         _isInitialized = true;
         Debug.Log($"[StoryRepo] Initialized! Talk Groups: {_talkGroup.Count}, Characters: {_character.Count}");
@@ -39,7 +39,8 @@ public class StoryRepo : MonoBehaviour
     public Story_CharacterData GetCharacterData(int charId) => GetData(_character, charId, nameof(GetCharacterData));
     public List<Story_TalkData> GetTalkGroup(int groupId) => GetData(_talkGroup, groupId, nameof(GetTalkGroup));
     public StoryTriggerData GetTriggerDataByChapterID(int chapterID, string triggerType) => GetData(_triggersByChapterID, (chapterID, triggerType), nameof(GetTriggerDataByChapterID));
-    public StoryTriggerData GetTriggerDataByTriggerID(int triggerId) => GetData(_triggersByTriggerId, triggerId, nameof(GetTriggerDataByTriggerID));
+    public StoryTriggerData GetTriggerDataByGroupID(int groupId) => GetData(_triggersByGroupId, groupId, nameof(GetTriggerDataByGroupID));
+    
     
     // ---------- 보조 함수 ----------
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(

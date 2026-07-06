@@ -17,7 +17,7 @@ public class GameStartBridge : MonoBehaviour
     
     private const string INGAME_SCENE_NAME = "_InGame";
     private const string STORY_SCENE_NAME = "_Story";
-    private const string SCENARIO_TRIGGER_TYPE = "ChapterStart";
+    private const string SCENARIO_TRIGGER_TYPE_CHAPTER_START = "ChapterStart";
     
 
     // ---------- 생명주기 ----------
@@ -42,9 +42,10 @@ public class GameStartBridge : MonoBehaviour
     private void SetStage(int index)
     {
         // 튜토리얼 매니저가 가동 중이고, 완료가 되지 않았다면 동작은 튜토리얼 매니저가 우선임
-        if (TutorialManager.Instance != null)
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
         {
-            if (!TutorialManager.Instance.IsCompleted) return;
+            Debug.Log("[GameStartBridge] 튜토리얼 진행중. 튜토리얼 우선");
+            return;
         }
         
         _stageRepo ??= DataManager.Instance.StageRepo;
@@ -153,7 +154,7 @@ public class GameStartBridge : MonoBehaviour
     private int GetScenarioGroupId(int chapterId)
     {
         _storyRepo ??= DataManager.Instance.StoryRepo;
-        var data = _storyRepo.GetTriggerDataByChapterID(chapterId, SCENARIO_TRIGGER_TYPE);
+        var data = _storyRepo.GetTriggerDataByChapterID(chapterId, SCENARIO_TRIGGER_TYPE_CHAPTER_START);
         
         if (data != null)
         {
