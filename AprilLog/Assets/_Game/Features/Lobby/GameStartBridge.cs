@@ -95,4 +95,9 @@ public class GameStartBridge : MonoBehaviour
         while (!op.isDone)
             yield return null;
     }
+
+    private bool AutoStartCurrentScenario(int chapterId)
+    {
+        return false;
+    }
 }
