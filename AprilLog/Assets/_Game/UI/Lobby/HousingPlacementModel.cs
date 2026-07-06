@@ -7,6 +7,8 @@ using System.Collections.Generic;
 /// <summary>
 /// 하우징 배치 UI 상태를 보관
 /// </summary>
+// 배치 모드·카테고리·선택 아이템·보유 상태 저장과 변경 이벤트 발행
+// 구매 가능 여부 검증과 구매 확정 후 재화·보유 데이터 갱신
 public class HousingPlacementModel
 {
     private const string _locationTable = "location4";
@@ -45,6 +47,7 @@ public class HousingPlacementModel
         SetItems(_initialItems);
     }
 
+    // 배치 모드 상태 변경과 관련 선택 상태 초기화
     public void SetPlacementMode(bool _isActive)
     {
         if (_isPlacementMode == _isActive)
@@ -61,6 +64,7 @@ public class HousingPlacementModel
         SetPlacementMode(_isPlacementMode == false);
     }
 
+    // 카테고리 변경 후 현재 선택 아이템 해제
     public void SelectCategory(HousingPlacementCategory _category)
     {
         if (_selectedCategory == _category)
@@ -73,6 +77,7 @@ public class HousingPlacementModel
         OnCategoryChanged?.Invoke(_selectedCategory);
     }
 
+    // 목록에 존재하는 아이템만 현재 선택 상태로 반영
     public void SelectItem(HousingPlacementItemData _itemData)
     {
         if (_selectedItem == _itemData)
@@ -84,6 +89,7 @@ public class HousingPlacementModel
         OnSelectedItemChanged?.Invoke(_selectedItem);
     }
 
+    // 잠금·보유·가격 조건 검증 후 구매 확인 상태 저장
     public bool RequestPurchaseConfirmation(HousingPlacementItemData _itemData)
     {
         if (_itemData == null || _pendingPurchaseItem != null || _isPurchaseProcessing)
@@ -108,6 +114,7 @@ public class HousingPlacementModel
         return true;
     }
 
+    // 구매 처리 중인 아이템을 보유 상태로 전환하고 관련 이벤트 발행
     public void CompletePurchase()
     {
         SetPurchaseProcessing(false);
@@ -260,17 +267,17 @@ public class HousingPlacementModel
         switch (_category)
         {
             case HousingPlacementCategory.Decoration:
-                AddSectionByLocation(_sections, _category, "\uD14C\uC774\uBE14", _locationTable);
-                AddSectionByLocation(_sections, _category, "\uC18C\uD30C", _locationSofa);
+                AddSectionByLocation(_sections, _category, "\uD14C\uC774\uBE14", 13001, _locationTable);
+                AddSectionByLocation(_sections, _category, "\uC18C\uD30C", 13008, _locationSofa);
                 break;
             case HousingPlacementCategory.Background:
-                AddSectionByType(_sections, _category, "\uBC14\uB2E5", _typeFloor);
-                AddSectionByType(_sections, _category, "\uBC30\uACBD", _typeWall);
+                AddSectionByType(_sections, _category, "\uBC14\uB2E5", 13009, _typeFloor);
+                AddSectionByType(_sections, _category, "\uBC30\uACBD", 13010, _typeWall);
                 break;
             case HousingPlacementCategory.Function:
-                AddSectionByType(_sections, _category, "\uCE68\uB300", _typeBed);
-                AddSectionByType(_sections, _category, "\uC8FC\uBC29", _typeKitchen);
-                AddSectionByType(_sections, _category, "\uCC45\uC0C1", _typeDesk);
+                AddSectionByType(_sections, _category, "\uCE68\uB300", 13011, _typeBed);
+                AddSectionByType(_sections, _category, "\uC8FC\uBC29", 13012, _typeKitchen);
+                AddSectionByType(_sections, _category, "\uCC45\uC0C1", 13013, _typeDesk);
                 break;
         }
 
@@ -281,23 +288,26 @@ public class HousingPlacementModel
         List<HousingPlacementSectionData> _sections,
         HousingPlacementCategory _category,
         string _title,
+        int _titleLanguageId,
         string _location)
     {
-        AddSection(_sections, _title, FindItems(_category, _location, null));
+        AddSection(_sections, _title, _titleLanguageId, FindItems(_category, _location, null));
     }
 
     private void AddSectionByType(
         List<HousingPlacementSectionData> _sections,
         HousingPlacementCategory _category,
         string _title,
+        int _titleLanguageId,
         string _sourceType)
     {
-        AddSection(_sections, _title, FindItems(_category, null, _sourceType));
+        AddSection(_sections, _title, _titleLanguageId, FindItems(_category, null, _sourceType));
     }
 
     private static void AddSection(
         List<HousingPlacementSectionData> _sections,
         string _title,
+        int _titleLanguageId,
         List<HousingPlacementItemData> _items)
     {
         if (_items.Count <= 0)
@@ -305,7 +315,7 @@ public class HousingPlacementModel
             return;
         }
 
-        _sections.Add(new HousingPlacementSectionData(_title, _items));
+        _sections.Add(new HousingPlacementSectionData(_title, _items, _titleLanguageId));
     }
 
     private List<HousingPlacementItemData> FindItems(

@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 시간 누적 보상 가구의 클릭 입력을 Presenter로 전달합니다.
 /// </summary>
+// 방치 보상 버튼 클릭 입력 전달을 위한 포인터 이벤트 연결
 public class HousingIdleRewardButtonView : MonoBehaviour, IPointerClickHandler
 {
     [Header("입력")]
@@ -24,6 +25,7 @@ public class HousingIdleRewardButtonView : MonoBehaviour, IPointerClickHandler
         EnsureClickable();
     }
 
+    // 방치 보상 팝업 열기 요청 이벤트 전달
     public void OnPointerClick(PointerEventData _eventData)
     {
         OnClicked?.Invoke();

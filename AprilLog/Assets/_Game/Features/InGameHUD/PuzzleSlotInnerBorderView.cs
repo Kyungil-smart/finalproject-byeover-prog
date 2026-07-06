@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 퍼즐 책 슬롯 가장자리에 내부 테두리를 생성하고 슬롯 색상 변화에 맞춰 갱신
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -28,6 +29,7 @@ public class PuzzleSlotInnerBorderView : MonoBehaviour
         RefreshBorders();
     }
 
+    // 퍼즐 책 슬롯만 선별해 네 방향 내부 테두리 생성
     private void BuildBorders()
     {
         Image[] images = GetComponentsInChildren<Image>(true);
@@ -106,6 +108,7 @@ public class PuzzleSlotInnerBorderView : MonoBehaviour
         rect.offsetMax = new Vector2(isLeft ? _borderThickness : 0f, -_borderThickness);
     }
 
+    // 원본 슬롯 색상을 각 테두리 색상에 동기화
     private void RefreshBorders()
     {
         foreach (SlotBorder slotBorder in _slotBorders)

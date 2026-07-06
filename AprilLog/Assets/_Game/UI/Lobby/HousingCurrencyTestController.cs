@@ -5,6 +5,7 @@ using UnityEngine;
 /// <summary>
 /// 하우징 구매 테스트용 재화 지급을 담당합니다.
 /// </summary>
+// 하우징 재화 테스트 입력을 GameManager 또는 CurrencyModel에 전달
 public class HousingCurrencyTestController : MonoBehaviour
 {
     [Header("테스트 재화 지급")]
@@ -42,6 +43,7 @@ public class HousingCurrencyTestController : MonoBehaviour
         AddTestCurrency(_testGoldAmount, _testParchmentAmount, _testDiamondAmount);
     }
 
+    // 테스트 재화 수량 검증 후 사용 가능한 재화 Model에 지급 요청
     private void AddTestCurrency(int _gold, int _parchment, int _diamond)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -84,6 +86,7 @@ public class HousingCurrencyTestController : MonoBehaviour
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+    // GameManager 재화 경로 우선 사용과 성공 여부 반환
     private bool TryAddByGameManager(int _gold, int _parchment, int _diamond)
     {
         if (GameManager.Instance == null)

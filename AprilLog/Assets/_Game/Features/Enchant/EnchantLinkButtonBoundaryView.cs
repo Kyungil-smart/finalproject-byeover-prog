@@ -1,4 +1,6 @@
 //담당자: 조규민
+// 인챈트 종료 버튼 참조 탐색과 입력 이벤트 등록·해제
+// 선택된 버튼의 배경·아이콘 시각 상태 갱신
 
 using System;
 using System.Collections.Generic;
@@ -141,6 +143,7 @@ public class EnchantLinkButtonBoundaryView : MonoBehaviour
     public event Action OnReturnLobbyClicked;
     public event Action OnRestartChapterClicked;
 
+    // 버튼·시각 요소 참조 해석과 Presenter 생성 및 입력 이벤트 등록
     private void Awake()
     {
         ResolveReferences();
@@ -150,6 +153,7 @@ public class EnchantLinkButtonBoundaryView : MonoBehaviour
         CreatePresenters();
     }
 
+    // 버튼 입력 이벤트와 Presenter 구독 해제
     private void OnDestroy()
     {
         UnbindButtons();
@@ -203,6 +207,7 @@ public class EnchantLinkButtonBoundaryView : MonoBehaviour
         _restartChapterVisual.Resolve(_restartChapterButtonSet, _restartChapterButton);
     }
 
+    // 선택된 종료 동작에 맞춘 버튼 그룹 시각 상태 갱신
     public void ShowSelectedButton(EnchantLinkButtonType selectedButtonType)
     {
         _continueVisual.Apply(selectedButtonType == EnchantLinkButtonType.Continue);

@@ -1,4 +1,6 @@
 //담당자: 조규민
+// 로비 진입 시 클라우드 데이터 적용과 아웃게임 데이터 변경 이벤트 연결
+// 연속 변경을 묶기 위한 지연 저장 예약 및 클라우드 저장 요청
 
 using System.Collections;
 using UnityEngine;
@@ -45,6 +47,7 @@ public class LobbyCloudDataBinder : MonoBehaviour
         }
     }
 
+    // 로그인 사용자의 클라우드 데이터를 로비 Model에 반영
     private void ApplyCloudData()
     {
         if (GameManager.Instance == null)
@@ -58,6 +61,7 @@ public class LobbyCloudDataBinder : MonoBehaviour
         _isApplyingCloudData = false;
     }
 
+    // 로비 재화·진행 데이터 변경 이벤트 등록
     private void BindEvents()
     {
         if (_isBound)
@@ -115,6 +119,7 @@ public class LobbyCloudDataBinder : MonoBehaviour
         ScheduleSave();
     }
 
+    // 연속 변경 저장 요청 통합을 위한 지연 저장 예약
     private void ScheduleSave()
     {
         if (_isApplyingCloudData || GameManager.Instance == null)

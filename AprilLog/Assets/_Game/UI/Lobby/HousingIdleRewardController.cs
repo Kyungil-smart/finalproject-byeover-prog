@@ -1,6 +1,7 @@
 ﻿//담당자: 조규민
 
-// 수정 내용 : 기존 지급 API가 성공한 경우에만 Presenter가 방치 보상 수령 상태를 확정하도록 결과를 반환
+// 기존 지급 API가 성공한 경우에만 Presenter가 방치 보상 수령 상태를 확정하도록 결과를 반환
+// Inspector 충전 시간과 수동 보상값이 유효 범위를 벗어나지 않도록 자동 보정
 
 using System;
 using UnityEngine;
@@ -10,6 +11,8 @@ using UnityEngine.UI;
 /// <summary>
 /// 하우징 시간 누적 보상 UI와 계정 저장 데이터를 연결합니다.
 /// </summary>
+// 저장된 충전 시각과 현재 챕터 보상 테이블로 방치 보상 기능 초기화
+// 주기적 Model 갱신과 수령 결과에 따른 로컬 재화 지급
 public class HousingIdleRewardController : MonoBehaviour
 {
     [Header("View 연결")]
@@ -43,6 +46,17 @@ public class HousingIdleRewardController : MonoBehaviour
         InitializePresenter();
     }
 
+    private void OnValidate()
+    {
+        _defaultClearChapter = Mathf.Max(1, _defaultClearChapter);
+        _manualGoldReward = Mathf.Max(0, _manualGoldReward);
+        _manualParchmentReward = Mathf.Max(0, _manualParchmentReward);
+        _manualDiamondReward = Mathf.Max(0, _manualDiamondReward);
+        _maxChargeSeconds = Mathf.Max(1, _maxChargeSeconds);
+        _rewardIntervalSeconds = Mathf.Clamp(_rewardIntervalSeconds, 1, _maxChargeSeconds);
+        _refreshIntervalSeconds = Mathf.Max(0.25f, _refreshIntervalSeconds);
+    }
+
     private void OnEnable()
     {
         StartRefreshLoop();
@@ -58,6 +72,7 @@ public class HousingIdleRewardController : MonoBehaviour
         _presenter?.Release();
     }
 
+    // 방치 보상 버튼·팝업과 재화 지급 대상 참조 탐색
     private void ResolveReferences()
     {
         if (_rewardButtonView == null)
@@ -87,6 +102,7 @@ public class HousingIdleRewardController : MonoBehaviour
         _popupView?.Hide();
     }
 
+    // 저장 데이터의 충전 시작 시각 로드와 유효하지 않은 값 보정
     private DateTime ResolveSavedChargeStartUtc()
     {
         if (GameManager.Instance != null)
@@ -97,6 +113,7 @@ public class HousingIdleRewardController : MonoBehaviour
         return DateTime.UtcNow;
     }
 
+    // 현재 챕터 데이터 우선 조회 후 Inspector 기본 보상표 대체
     private HousingIdleRewardTable ResolveRewardTable()
     {
         if (!_useHousingRewardTable)
@@ -184,6 +201,7 @@ public class HousingIdleRewardController : MonoBehaviour
         _popupView.SetFurnitureIcon(_furnitureImage.sprite);
     }
 
+    // 활성화 상태에서 주기적인 방치 보상 UI 갱신 시작
     private void StartRefreshLoop()
     {
         CancelInvoke(nameof(RefreshPresenter));
@@ -196,6 +214,7 @@ public class HousingIdleRewardController : MonoBehaviour
         _presenter?.Refresh();
     }
 
+    // 수령 결과 검증 후 재화 지급과 저장 데이터 반영
     private bool HandleClaimRequested(HousingIdleRewardClaimResult _claimResult)
     {
         HousingIdleRewardState _state = _claimResult.State;
