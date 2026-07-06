@@ -240,7 +240,10 @@ public class StageModel
             {
                 // 웨이브 종료 시 보상 지급
                 var repo = DataManager.Instance.RewardRepo;
-                if (repo.GetBattleRewardTrigger(_currentSpecialRule.SpecialWave_ID).Contains(REWARD_TRIGGER_WAVECLEAR))
+                var data = repo.GetBattleRewardTrigger(_currentSpecialRule.SpecialWave_ID);
+                if(data == null) return;
+                
+                if (data.Contains(REWARD_TRIGGER_WAVECLEAR))
                 {
                     if (_rewardManager == null)
                     {
