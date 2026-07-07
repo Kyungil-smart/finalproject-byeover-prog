@@ -33,32 +33,47 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     private JokerPatternData _activePattern;
 
     private int _currentIndex = 0;
-    private int _currentCount = 2;
+    private int _currentCount = 0;
     private float _lastUsedTime = -60f;
     private const float _coolDown = 60f;
-    private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정
+    private float _totalInGameTime = 0f;
+    private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정  
+    private bool _isLobby = false;
+
+    private void Update()
+    {
+        // 로비가 아닐 때만 시간 증가
+        if (!_isLobby)
+        {
+            _totalInGameTime += Time.deltaTime;
+        }
+    }
 
     private void Start()
     {
-        RefreshJokerCount();
-
-        if (ArtifactManager.Instance != null)
+        if (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null)
         {
-            ArtifactManager.Instance.OnInventoryUpdated += RefreshJokerCount;
-            ArtifactManager.Instance.OnEquipmentChanged += RefreshJokerCount;
+            var am = GameStateManager.Instance.ArtifactManager;
+            am.OnInventoryUpdated += RefreshJokerCount;
+            am.OnEquipmentChanged += RefreshJokerCount;
+
+            Invoke("RefreshJokerCount", 0.5f);
         }
 
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
         if (_coolDownText != null) _coolDownText.enabled = false;
+
+        SyncCooldownUI();
         UpdateJokerUI();
     }
 
     private void OnDestroy()
     {
-        if (ArtifactManager.Instance != null)
+        if (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null)
         {
-            ArtifactManager.Instance.OnInventoryUpdated -= RefreshJokerCount;
-            ArtifactManager.Instance.OnEquipmentChanged -= RefreshJokerCount;
+            var am = GameStateManager.Instance.ArtifactManager;
+            am.OnInventoryUpdated -= RefreshJokerCount;
+            am.OnEquipmentChanged -= RefreshJokerCount;
         }
     }
 
@@ -67,9 +82,11 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         ActivateJoker();
     }
 
+    public void SetLobbyMode(bool isLobby) => _isLobby = isLobby;
+
     public void ActivateJoker()
     {
-        if (Time.time - _lastUsedTime < _coolDown)
+        if (_totalInGameTime - _lastUsedTime < _coolDown)
         {
             Debug.Log("쿨타임 중입니다!");
             return;
@@ -86,7 +103,8 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         _currentCount--;
         UpdateJokerUI();
 
-        _lastUsedTime = Time.time;
+        _lastUsedTime = _totalInGameTime;
+
         StartCoroutine(CooldownRoutine());
         _activePattern = _patternLibrary.patterns[Random.Range(0, _patternLibrary.patterns.Count)];
         _currentIndex = 0;
@@ -184,17 +202,20 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
         if (_coolDownText != null) _coolDownText.enabled = true;
 
-        float timer = _coolDown;
+        float timer = GetRemainingCooldown();
 
         while (timer > 0)
         {
-            timer -= Time.deltaTime;
+            if (!_isLobby)
+            {
+                timer -= Time.deltaTime;
 
-            if (_coolTimeImage != null) _coolTimeImage.fillAmount = timer / _coolDown;
+                if (_coolTimeImage != null) _coolTimeImage.fillAmount = timer / _coolDown;
 
-            if (_coolDownText != null) _coolDownText.text = Mathf.CeilToInt(timer).ToString();
+                if (_coolDownText != null) _coolDownText.text = Mathf.CeilToInt(timer).ToString();
 
-            yield return null;
+                yield return null;
+            }
         }
 
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
@@ -219,7 +240,9 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        if (ArtifactManager.Instance == null)
+        var am = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+
+        if (am == null)
         {
             return;
         }
@@ -227,11 +250,11 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         int baseCount = 0;
         int bonus = 0;
 
-        var equippedArtifacts = ArtifactManager.Instance.MyArtifacts.FindAll(a => a.IsEquipped);
+        var equippedArtifacts = am.MyArtifacts.FindAll(a => a.IsEquipped);
 
         foreach (var artifact in equippedArtifacts)
         {
-            if (artifact.MasterId == 60022)
+            if (artifact.MasterId == 56002) 
             {
                 bonus += 1;
 
@@ -246,14 +269,31 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         UpdateJokerUI();
     }
 
+    private void SyncCooldownUI()
+    {
+        float remaining = GetRemainingCooldown();
+        if (remaining > 0)
+        {
+            if (_coolTimeImage != null) _coolTimeImage.enabled = true;
+            if (_coolDownText != null) _coolDownText.enabled = true;
+
+            StartCoroutine(CooldownRoutine());
+        }
+        else
+        {
+            if (_coolTimeImage != null) _coolTimeImage.enabled = false;
+            if (_coolDownText != null) _coolDownText.enabled = false;
+        }
+    }
+
     // ---------- 세이브 / 로드 (추가) ----------
 
-    // 현재 조커 보유량 반환 (Index + 1)
+        // 현재 조커 보유량 반환 (Index + 1)
     public int GetJokerCount() => _currentCount;
     
     public float GetRemainingCooldown()
     {
-        float elapsed = Time.time - _lastUsedTime;
+        float elapsed = _totalInGameTime - _lastUsedTime;
         return elapsed >= _coolDown ? 0f : _coolDown - elapsed;
     }
 
@@ -262,10 +302,10 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     {
         _currentCount = savedJokerCount;
         UpdateJokerUI();
-        
+
         if (savedRemainingCooldown > 0)
         {
-            _lastUsedTime = Time.time - (_coolDown - savedRemainingCooldown);
+            _lastUsedTime = _totalInGameTime - (_coolDown - savedRemainingCooldown);
             StartCoroutine(CooldownRoutine());
         }
         else

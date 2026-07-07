@@ -7,7 +7,19 @@ public class GameStateManager : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
+
+        transform.SetParent(null);
+
+        DontDestroyOnLoad(gameObject);
+
         ArtifactManager.Initialize();
     }
 }
+
