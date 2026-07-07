@@ -100,6 +100,8 @@ public class ReplayStorySlot : MonoBehaviour
             return;
         }
 
+        backgroundImage.raycastTarget = false; // 배경이 버튼 클릭을 가로채지 않게
+
         if (string.IsNullOrEmpty(resourcePath))
             return;
 
@@ -128,6 +130,7 @@ public class ReplayStorySlot : MonoBehaviour
             Color color = image.color;
             color.a = dimAlpha / 255f;
             image.color = color;
+            image.raycastTarget = false; // 딤이 버튼 클릭을 가로채지 않게
         }
     }
 
