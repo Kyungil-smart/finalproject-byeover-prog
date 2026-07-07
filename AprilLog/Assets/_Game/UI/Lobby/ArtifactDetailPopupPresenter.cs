@@ -345,9 +345,20 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
         if (_nameText != null) _nameText.text = ResolveName(master);
         if (_gradeText != null) _gradeText.text = ArtifactGradeInfo.DisplayName(grade);
-        if (_equipAttackText != null) _equipAttackText.text = master.AttackBaseAmount.ToString();
-        if (_ownedAttackText != null) _ownedAttackText.text = ResolveOwnedAttack(master).ToString();
+        SetAttackValueText(_equipAttackText, master.AttackBaseAmount);
+        SetAttackValueText(_ownedAttackText, ResolveOwnedAttack(master));
         if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
+    }
+
+    private static void SetAttackValueText(TMP_Text text, int value)
+    {
+        if (text == null || IsHeaderText(text)) return;
+        text.text = value.ToString();
+    }
+
+    private static bool IsHeaderText(TMP_Text text)
+    {
+        return text != null && text.gameObject.name.StartsWith("Text_Header");
     }
 
     private void RefreshPopupSlotViews(int gearId, ArtifactInstance inst)
