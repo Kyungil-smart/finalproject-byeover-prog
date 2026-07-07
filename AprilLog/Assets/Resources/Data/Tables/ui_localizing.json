@@ -118,7 +118,7 @@
       "EN": " {chaptername}",
       "#Explanation": "로비/챕터 설명",
       "#Reference": "{chaptername} = 해당 챕터 이름",
-      "#Location": "v.1.08_맵 데이터 테이블\n[0.11] 시나리오 테이블_Aprilogue_장윤우."
+      "#Location": "v.1.03_UI 로컬라이징 테이블_이가현"
     },
     {
       "Language_ID": 11015,
@@ -402,10 +402,10 @@
     },
     {
       "Language_ID": 11050,
-      "KR": "{0}/{1}",
-      "EN": "{0}/{1}",
+      "KR": "{0} / {1}",
+      "EN": "{0} / {1}",
       "#Explanation": "아티팩트",
-      "#Reference": "{0} = 보유 조각 갯수 / {1} = 필요 조각 갯수",
+      "#Reference": "{0} = 보유 아티팩트 갯수 / {1} = 최대 보유 갯수",
       "#Location": ""
     },
     {
@@ -482,8 +482,8 @@
     },
     {
       "Language_ID": 11060,
-      "KR": "+{0}",
-      "EN": "+{0}",
+      "KR": "+ {0}",
+      "EN": "+ {0}",
       "#Explanation": "아티팩트",
       "#Reference": "{0} = 돌파 단계",
       "#Location": ""
@@ -501,7 +501,7 @@
       "KR": "{0}",
       "EN": "{0}",
       "#Explanation": "아티팩트",
-      "#Reference": "{0} = 현재 레벨 체력 능력치 값",
+      "#Reference": "{0} = 현재 아티팩트의 체력 능력치 상승 값",
       "#Location": ""
     },
     {
@@ -509,7 +509,7 @@
       "KR": "{0}",
       "EN": "{0}",
       "#Explanation": "아티팩트",
-      "#Reference": "{0} = 다음 레벨 체력 능력치 값",
+      "#Reference": "{0} = 다음 레벨 아티펙트의 체력 능력치 값",
       "#Location": ""
     },
     {
@@ -517,7 +517,7 @@
       "KR": "{0}",
       "EN": "{0}",
       "#Explanation": "아티팩트",
-      "#Reference": "{0} = 현재 레벨 공격력 능쳑치 값",
+      "#Reference": "{0} = 현재 레벨 아티팩트의 공격력 능쳑치 값",
       "#Location": ""
     },
     {
@@ -525,7 +525,7 @@
       "KR": "{0}",
       "EN": "{0}",
       "#Explanation": "아티팩트",
-      "#Reference": "{0} = 다음 레벨 공격력 능쳑치 값",
+      "#Reference": "{0} = 다음 레벨 아티팩트의 공격력 능쳑치 값",
       "#Location": ""
     },
     {
@@ -889,6 +889,70 @@
       "#Location": ""
     },
     {
+      "Language_ID": 11111,
+      "KR": "최종 능력치",
+      "EN": "Fianl States",
+      "#Explanation": "아티팩트",
+      "#Reference": "",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 11112,
+      "KR": "{0}",
+      "EN": "{0}",
+      "#Explanation": "아티팩트",
+      "#Reference": "{0} = 캐릭터 최종 체력 수치",
+      "#Location": "v.1.06_장비 데이터 테이블_한재환"
+    },
+    {
+      "Language_ID": 11113,
+      "KR": "{0}",
+      "EN": "{0}",
+      "#Explanation": "아티팩트",
+      "#Reference": "{0} = 캐릭터 최종 공격력 수치",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 11114,
+      "KR": "{OwnedExplanation}",
+      "EN": "{OwnedExplanation}",
+      "#Explanation": "아티팩트",
+      "#Reference": "{OwnedExplanation} = 아티팩트 보유효과",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 11115,
+      "KR": "{ArtifactsName}",
+      "EN": "{ArtifactsName}",
+      "#Explanation": "아티팩트",
+      "#Reference": "{ArtifactsName} = 아티팩트 이름",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 11116,
+      "KR": "{ArtifactsGrade}",
+      "EN": "{ArtifactsGrade}",
+      "#Explanation": "아티팩트",
+      "#Reference": "{ArtifactsGrade} = 아티팩트 등급",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 11117,
+      "KR": "{SpecialExplanation}",
+      "EN": "{SpecialExplanation}",
+      "#Explanation": "아티팩트",
+      "#Reference": "{SpecialExplanation} = 아티팩트 보유 효과",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 11118,
+      "KR": "{0} / {1}",
+      "EN": "{0} / {1}",
+      "#Explanation": "아티팩트",
+      "#Reference": "{0} = 보유 골드 / {1} = 필요 골드 ",
+      "#Location": ""
+    },
+    {
       "Language_ID": 12000,
       "KR": "Ch. {0}",
       "EN": "Ch. {0}",
@@ -922,8 +986,8 @@
     },
     {
       "Language_ID": 12004,
-      "KR": "조커",
-      "EN": "joker",
+      "KR": "유물 고서",
+      "EN": "Relics",
       "#Explanation": "인챈트",
       "#Reference": "",
       "#Location": ""
@@ -1478,6 +1542,30 @@
       "EN": "{0}",
       "#Explanation": "하우징",
       "#Reference": "{0} = 획득 다이아 량",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 13024,
+      "KR": "서사 보관소",
+      "EN": "Story Archive",
+      "#Explanation": "하우징",
+      "#Reference": "",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 13025,
+      "KR": "다시보기",
+      "EN": "Replay",
+      "#Explanation": "하우징",
+      "#Reference": "",
+      "#Location": ""
+    },
+    {
+      "Language_ID": 13026,
+      "KR": "해당 챕터 클리어 후 확인 가능",
+      "EN": "Please Clear Chapter",
+      "#Explanation": "하우징",
+      "#Reference": "",
       "#Location": ""
     }
   ]
