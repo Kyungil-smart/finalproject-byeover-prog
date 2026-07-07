@@ -153,6 +153,8 @@ public class HousingPlacementPopupView : MonoBehaviour
             return;
         }
 
+        int _createdSectionIndex = 0;
+
         for (int _index = 0; _index < _sections.Count; _index++)
         {
             HousingPlacementSectionData _section = _sections[_index];
@@ -162,7 +164,8 @@ public class HousingPlacementPopupView : MonoBehaviour
                 continue;
             }
 
-            CreateSection(_section, _stateResolver);
+            CreateSection(_section, _stateResolver, _createdSectionIndex);
+            _createdSectionIndex++;
         }
     }
 
@@ -420,16 +423,19 @@ public class HousingPlacementPopupView : MonoBehaviour
     // 구역 제목과 아이템 개수에 맞는 그리드 생성 및 슬롯 배치
     private void CreateSection(
         HousingPlacementSectionData _section,
-        Func<HousingPlacementItemData, HousingPlacementItemState> _stateResolver)
+        Func<HousingPlacementItemData, HousingPlacementItemState> _stateResolver,
+        int _sectionIndex)
     {
         string _title = ResolveSectionTitle(_section);
         GameObject _sectionRoot = CreateSectionRoot(_title);
+        _sectionRoot.transform.SetSiblingIndex(_sectionIndex);
         RectTransform _gridRoot = CreateSectionContent(_sectionRoot.transform, _title, _section.Items.Count);
 
         for (int _index = 0; _index < _section.Items.Count; _index++)
         {
             HousingPlacementItemSlotView _slot = GetItemSlot(_gridRoot);
             _slot.gameObject.SetActive(true);
+            _slot.transform.SetSiblingIndex(_index);
             HousingPlacementItemData _itemData = _section.Items[_index];
             HousingPlacementItemState _state = _stateResolver != null
                 ? _stateResolver(_itemData)

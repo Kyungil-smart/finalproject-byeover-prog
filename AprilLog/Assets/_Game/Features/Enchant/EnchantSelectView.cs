@@ -22,6 +22,9 @@
 // 수정 내용 : 기존 인첸트 선택 로직과 신규 인첸트 선택 로직을 선택해 게임에 적용 가능 하도록 수정
 //           이 기능은 인스팩터에서 작동 되며, 게임 씬 구동 전에 선택 해둬야됨. (빌드나 에디터 실행 도중에는 스위치 되지 않음)
 
+// 수정 내용 : RerollBoundary 기반 우상단 리롤 횟수 표시 UI 의존성 제거
+//            인챈트 교체 팝업이 선택 직후 닫히지 않도록 카드 선택 후 View 직접 닫기 제거
+
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -59,8 +62,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [Tooltip("Horizontal Layout Group이 붙은 Content")]
     [SerializeField] private Transform _choiceContainer;
     [SerializeField] private Button _skipButton;
-    [SerializeField] private Button _rerollButton;
-    [SerializeField] private TMP_Text _rerollCountText;
     [Tooltip("현재 스킬/스탯 인첸트 선택 종류를 표시하는 제목")]
     [SerializeField] private TMP_Text _headerText;
     [SerializeField] private string _skillSelectionHeader = "스킬 인첸트 선택";
@@ -85,7 +86,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     
     // 런타임에 생성된 카드들을 추적하기 위한 캐시 리스트
     private List<GameObject> _spawnedCards = new List<GameObject>();
-    private TMP_Text _resolvedRerollCountText;
     private bool _currentRerollAvailable;
     private int _currentRerollRemaining;
     private bool[] _currentCardRerollAvailable;
@@ -135,11 +135,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             }
             
             _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
-            if (_rerollButton != null)
-            {
-                ConfigureRerollCountDisplay();
-                SetLegacyRerollVisible(true);
-            }
             
             _isInitialized = true;
         }
@@ -250,8 +245,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 cardUI.OnCardClicked += () =>
                 {
                     DisableAllCardButtons();
-                    SelectChoice(index); 
-                    Hide();              
+                    SelectChoice(index);
                 };
 
                 cardUI.OnRerollClicked += () => OnCardRerollSelected?.Invoke(index);
@@ -272,9 +266,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     {
         _currentRerollAvailable = available;
         _currentRerollRemaining = remaining;
-
-        SetLegacyRerollVisible(true);
-        UpdateRerollCountText(remaining);
 
         for (int i = 0; i < _spawnedCards.Count; i++)
         {
@@ -416,78 +407,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         if (!isActiveAndEnabled || _rerollOverlay == null) return;
 
         RefreshRerollPositions();
-    }
-
-    private void SetLegacyRerollVisible(bool visible)
-    {
-        if (_rerollButton == null) return;
-
-        GameObject rerollRoot = GetRerollRoot();
-        if (rerollRoot != null)
-            rerollRoot.SetActive(visible);
-        else
-            _rerollButton.gameObject.SetActive(visible);
-    }
-
-    private GameObject GetRerollRoot()
-    {
-        if (_rerollButton == null || _rerollButton.transform.parent == null)
-            return null;
-
-        return _rerollButton.transform.parent.gameObject;
-    }
-
-    private void ConfigureRerollCountDisplay()
-    {
-        GameObject rerollRoot = GetRerollRoot();
-        if (rerollRoot == null) return;
-
-        _rerollButton.enabled = false;
-
-        Graphic[] graphics = rerollRoot.GetComponentsInChildren<Graphic>(true);
-        foreach (Graphic graphic in graphics)
-        {
-            if (graphic == null) continue;
-
-            graphic.raycastTarget = false;
-        }
-    }
-
-    private void UpdateRerollCountText(int remaining)
-    {
-        TMP_Text countText = ResolveRerollCountText();
-        if (countText == null) return;
-
-        string remainingText = remaining < 0 ? "INF" : Mathf.Max(0, remaining).ToString();
-        countText.text = $"X {remainingText}";
-    }
-
-    private TMP_Text ResolveRerollCountText()
-    {
-        if (_rerollCountText != null)
-            return _rerollCountText;
-
-        if (_resolvedRerollCountText != null)
-            return _resolvedRerollCountText;
-
-        GameObject rerollRoot = GetRerollRoot();
-        if (rerollRoot == null)
-            return null;
-
-        TMP_Text[] texts = rerollRoot.GetComponentsInChildren<TMP_Text>(true);
-        foreach (TMP_Text text in texts)
-        {
-            if (text != null && text.name.Contains("RerollCountText"))
-            {
-                _resolvedRerollCountText = text;
-                return _resolvedRerollCountText;
-            }
-        }
-
-        if (texts.Length > 0)
-            _resolvedRerollCountText = texts[0];
-
-        return _resolvedRerollCountText;
     }
 
     // 추가: 조규민 - 선택 카드 생성 전 필수 UI와 데이터 참조 누락을 검사한다.

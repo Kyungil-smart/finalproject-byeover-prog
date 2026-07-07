@@ -10,6 +10,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 인챈트 교체 팝업의 기존 인챈트 선택 정보 초기화, 선택 강조, 교체 버튼 활성 상태 제어
 public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
 {
     [Header("UI Elements")]
@@ -29,6 +31,8 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
     [SerializeField] private EnchantListView _listView;
     
     private int _selectedDiscardNameId = -1;
+    private EnchantChangeInfoTableUI _beforeEnchantChangeInfoTable;
+    private readonly List<EnchantChangeSelectButtonUI> _boundButtonUIs = new List<EnchantChangeSelectButtonUI>();
     
     public event Action<int> OnDiscardConfirmed;
     public event Action OnCancelClicked;
@@ -50,11 +54,24 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
         {
             _cancelButton.onClick.AddListener(() => OnCancelClicked?.Invoke());
         }
+
+        SetConfirmButtonInteractable(false);
+    }
+
+    private void OnDestroy()
+    {
+        UnbindSelectButtons();
     }
 
     // Presenter가 새 인챈트 정보를 줄 때
     public void SetNewEnchantInfo(EnchantDisplayData newData)
     {
+        if (_afterEnchantChangeInfoTable == null)
+        {
+            Debug.LogWarning("[EnchantChangeView] After EnchantChangeInfoTable Not Serialized", this);
+            return;
+        }
+
         _afterEnchantChangeInfoTable.SetInfo(newData);
     }
 
@@ -62,6 +79,9 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
     public void SetOwnedEnchantList(List<EnchantDisplayData> ownedList)
     {
         _selectedDiscardNameId = -1;
+        SetConfirmButtonInteractable(false);
+        UnbindSelectButtons();
+        ResolveBeforeInfoTable()?.ClearInfo();
 
         if(_changeSkillSelectButtons == null)
         {
@@ -69,10 +89,10 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
             return;
         }
 
-        for (int i = 0; i < _changeSkillSelectButtons.Length; i++)
+        for (int _index = 0; _index < _changeSkillSelectButtons.Length; _index++)
         {
-            EnchantDisplayData _ownedData = ownedList != null && i < ownedList.Count ? ownedList[i] : null;
-            Button _button = _changeSkillSelectButtons[i];
+            EnchantDisplayData _ownedData = ownedList != null && _index < ownedList.Count ? ownedList[_index] : null;
+            Button _button = _changeSkillSelectButtons[_index];
             if (_button == null)
             {
                 continue;
@@ -81,8 +101,8 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
             EnchantChangeSelectButtonUI _buttonUI = _button.GetComponent<EnchantChangeSelectButtonUI>();
             if (_buttonUI != null)
             {
-                _buttonUI.OnEnchantSelected -= SetDiscardName;
                 _buttonUI.SetInfo(_ownedData);
+                _buttonUI.SetSelected(false);
             }
 
             _button.interactable = _ownedData != null;
@@ -91,13 +111,101 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
             if (_ownedData != null && _buttonUI != null)
             {
                 _buttonUI.OnEnchantSelected += SetDiscardName;
+                _buttonUI.OnEnchantDisplaySelected += SetDiscardInfo;
+                _boundButtonUIs.Add(_buttonUI);
             }
         }
     }
     
-    private void SetDiscardName(int discard)
+    private void SetDiscardName(int _discardNameId)
     {
-        _selectedDiscardNameId = discard;
+        _selectedDiscardNameId = _discardNameId;
+        SetConfirmButtonInteractable(true);
+    }
+
+    private void SetDiscardInfo(EnchantDisplayData _selectedData)
+    {
+        if (_selectedData == null)
+        {
+            return;
+        }
+
+        EnchantChangeInfoTableUI _infoTable = ResolveBeforeInfoTable();
+        if (_infoTable != null)
+        {
+            _infoTable.SetInfo(_selectedData);
+        }
+
+        for (int _index = 0; _index < _boundButtonUIs.Count; _index++)
+        {
+            EnchantChangeSelectButtonUI _buttonUI = _boundButtonUIs[_index];
+            if (_buttonUI == null)
+            {
+                continue;
+            }
+
+            _buttonUI.SetSelected(_buttonUI.EnchantDisplayData == _selectedData);
+        }
+    }
+
+    private EnchantChangeInfoTableUI ResolveBeforeInfoTable()
+    {
+        if (_beforeEnchantChangeInfoTable != null)
+        {
+            return _beforeEnchantChangeInfoTable;
+        }
+
+        if (_changeSkillSelectButtons == null)
+        {
+            return null;
+        }
+
+        for (int _index = 0; _index < _changeSkillSelectButtons.Length; _index++)
+        {
+            Button _button = _changeSkillSelectButtons[_index];
+            if (_button == null)
+            {
+                continue;
+            }
+
+            EnchantChangeSelectButtonUI _buttonUI = _button.GetComponent<EnchantChangeSelectButtonUI>();
+            if (_buttonUI == null || _buttonUI.InfoTableUI == null)
+            {
+                continue;
+            }
+
+            _beforeEnchantChangeInfoTable = _buttonUI.InfoTableUI;
+            return _beforeEnchantChangeInfoTable;
+        }
+
+        return null;
+    }
+
+    private void SetConfirmButtonInteractable(bool _isInteractable)
+    {
+        if (_confirmButton == null)
+        {
+            return;
+        }
+
+        _confirmButton.interactable = _isInteractable;
+    }
+
+    private void UnbindSelectButtons()
+    {
+        for (int _index = 0; _index < _boundButtonUIs.Count; _index++)
+        {
+            EnchantChangeSelectButtonUI _buttonUI = _boundButtonUIs[_index];
+            if (_buttonUI == null)
+            {
+                continue;
+            }
+
+            _buttonUI.OnEnchantSelected -= SetDiscardName;
+            _buttonUI.OnEnchantDisplaySelected -= SetDiscardInfo;
+        }
+
+        _boundButtonUIs.Clear();
     }
 
     // EnchantListPresenter 받아옴 (Presenter는 유니티를 모름으로 대신 컴포넌트를 받아옴)

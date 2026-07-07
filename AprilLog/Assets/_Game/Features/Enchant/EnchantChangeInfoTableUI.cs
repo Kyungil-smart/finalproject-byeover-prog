@@ -8,6 +8,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 교체 정보 테이블의 SkillImage/Image 구조 자동 참조 보강
 public class EnchantChangeInfoTableUI : MonoBehaviour
 {
     [Header("UI Elements")]
@@ -119,14 +121,19 @@ public class EnchantChangeInfoTableUI : MonoBehaviour
             _skillImage = _namedInfoImage;
         }
 
+        if (_skillImage == null)
+        {
+            _skillImage = FindImageByParentName("SkillImage") ?? FindImageByName("Image");
+        }
+
         if (_nameText == null)
         {
-            _nameText = FindTextByParentName("NameArea") ?? FindFirstTextByObjectName("Text (TMP)");
+            _nameText = FindTextByParentName("NameArea") ?? FindFirstTextByObjectName("NameText (TMP)") ?? FindFirstTextByObjectName("Text (TMP)");
         }
 
         if (_typeText == null)
         {
-            _typeText = FindTextByParentName("TypeArea");
+            _typeText = FindTextByParentName("TypeArea") ?? FindFirstTextByObjectName("TypeText (TMP)");
         }
 
         if (_levelText == null)
@@ -147,6 +154,26 @@ public class EnchantChangeInfoTableUI : MonoBehaviour
         {
             Image _image = _images[_index];
             if (_image != null && _image.gameObject.name == _objectName)
+            {
+                return _image;
+            }
+        }
+
+        return null;
+    }
+
+    private Image FindImageByParentName(string _parentName)
+    {
+        Image[] _images = GetComponentsInChildren<Image>(true);
+        for (int _index = 0; _index < _images.Length; _index++)
+        {
+            Image _image = _images[_index];
+            if (_image == null || _image.transform.parent == null)
+            {
+                continue;
+            }
+
+            if (_image.transform.parent.name == _parentName)
             {
                 return _image;
             }

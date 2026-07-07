@@ -337,7 +337,48 @@ public class HousingPlacementModel
             _sectionItems.Add(_item);
         }
 
+        SortSectionItems(_sectionItems);
         return _sectionItems;
+    }
+
+    // 추가: 조규민 - 구매/교체 후 목록을 다시 그려도 가구 출력 순서가 바뀌지 않도록 고정 정렬한다.
+    private static void SortSectionItems(List<HousingPlacementItemData> _sectionItems)
+    {
+        _sectionItems.Sort(ComparePlacementItems);
+    }
+
+    private static int ComparePlacementItems(HousingPlacementItemData _left, HousingPlacementItemData _right)
+    {
+        if (ReferenceEquals(_left, _right))
+        {
+            return 0;
+        }
+
+        if (_left == null)
+        {
+            return 1;
+        }
+
+        if (_right == null)
+        {
+            return -1;
+        }
+
+        int _furnitureCompare = _left.FurnitureId.CompareTo(_right.FurnitureId);
+
+        if (_furnitureCompare != 0)
+        {
+            return _furnitureCompare;
+        }
+
+        int _itemCompare = string.CompareOrdinal(_left.ItemId, _right.ItemId);
+
+        if (_itemCompare != 0)
+        {
+            return _itemCompare;
+        }
+
+        return string.CompareOrdinal(_left.DisplayName, _right.DisplayName);
     }
 
     private static bool IsMatchingSectionItem(
