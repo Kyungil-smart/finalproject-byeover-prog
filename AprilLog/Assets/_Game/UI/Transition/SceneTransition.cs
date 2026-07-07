@@ -49,7 +49,7 @@ public class SceneTransition : MonoBehaviour
     [Tooltip("로드 완료 후 로딩 텍스트 점 애니메이션을 몇 사이클 더 보여줄지")]
     [SerializeField] private int _nowLoadingHoldCycles = 2;
     [Tooltip("흰 화면과 로딩 화면을 부드럽게 이어주는 시간")]
-    [SerializeField] private float _loadingBlendDuration = 0.25f;
+    [SerializeField] private float _loadingBlendDuration = 0.5f;
     [Tooltip("로딩 캔버스 뒤에 자동으로 깔 전체 화면 배경색")]
     [SerializeField] private Color _loadingBackgroundColor = Color.white;
 
@@ -83,6 +83,8 @@ public class SceneTransition : MonoBehaviour
     private CanvasGroup _loadingCanvasGroup;
     private Image _loadingBackgroundImage;
     private int _nowLoadingFrameIndex;
+    private BootLoadingVideoView _bootLoadingView;
+    private Coroutine _bootLoadingRoutine;
 
     /// <summary>필요 시 오버레이를 생성하고 반환하는 싱글턴 접근자.</summary>
     public static SceneTransition Instance
@@ -258,6 +260,35 @@ public class SceneTransition : MonoBehaviour
             _loadingAnimationObject.SetActive(show);
         if (_nowLoadingText != null)
             _nowLoadingText.gameObject.SetActive(show && _showNowLoadingText);
+
+        if (show)
+            StartBootLoadingAnimation();
+        else
+            StopBootLoadingAnimation();
+    }
+
+    // 프레임 이미지 로딩 애니메이션 재생. Play()가 내부 루트를 켜고(Show) 프레임을 순서대로 돌린다.
+    // 로딩 내내 유지되려면 BootLoadingVideoView를 반복 재생(Play Once 끄고 재생 시간을 넉넉히)으로 설정한다.
+    private void StartBootLoadingAnimation()
+    {
+        if (_bootLoadingView == null)
+            return;
+
+        // Awake에서 자기 루트를 꺼둔 경우가 있어 재생 전에 오브젝트를 확실히 켠다.
+        if (!_bootLoadingView.gameObject.activeSelf)
+            _bootLoadingView.gameObject.SetActive(true);
+        if (!_bootLoadingView.gameObject.activeInHierarchy)
+            return;
+
+        StopBootLoadingAnimation();
+        _bootLoadingRoutine = _bootLoadingView.StartCoroutine(_bootLoadingView.Play());
+    }
+
+    private void StopBootLoadingAnimation()
+    {
+        if (_bootLoadingRoutine != null && _bootLoadingView != null)
+            _bootLoadingView.StopCoroutine(_bootLoadingRoutine);
+        _bootLoadingRoutine = null;
     }
 
     private void StartNowLoadingText()
@@ -512,6 +543,9 @@ public class SceneTransition : MonoBehaviour
         if (_loadingCanvasGroup == null)
             _loadingCanvasGroup = _loadingCanvas.AddComponent<CanvasGroup>();
         _loadingCanvasGroup.alpha = 1f;
+
+        // 프레임 이미지 로딩 애니메이션(BootLoadingVideoView)을 로딩 구간에 직접 재생한다.
+        _bootLoadingView = _loadingCanvas.GetComponentInChildren<BootLoadingVideoView>(true);
 
         BuildLoadingBackgroundIfNeeded();
     }
