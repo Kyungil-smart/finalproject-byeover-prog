@@ -54,6 +54,10 @@ public class MonsterSpawner : MonoBehaviour
     [Header("공격 타겟 선택")]
     [Tooltip("같은 거리로 판단할 제곱거리 오차")]
     [SerializeField] private float _distanceTieThreshold = 0.0001f;
+    
+    [Header("최대 몬스터 제한")]
+    [Tooltip("제한이 넘어가는 몬스터는 다른 몬스터가 사망 시 소환됨. 단 엘리트와 보스 제외")]
+    [SerializeField] private int _maxMonsterCount = 30;
 
     // ---------- Private ----------
     private List<MonsterAI> _aliveMonsters = new List<MonsterAI>(32);
@@ -105,6 +109,15 @@ public class MonsterSpawner : MonoBehaviour
         Debug.Log($"{delay}초의 간격을 두고 총 {queue.Count}만큼 생산명령 접수.");
         while (queue.Count > 0)
         {
+            var nextCmd = queue.Peek(); 
+            bool isNextBoss = nextCmd.Type == StageModel.SpawnType.Elite || nextCmd.Type == StageModel.SpawnType.Boss;
+            
+            if (!isNextBoss && GetNormalMonsterCount() >= _maxMonsterCount)
+            {
+                // 필드의 일반 몬스터 수가 제한 아래로 떨어질 때까지 코루틴 일시 정지
+                yield return new WaitUntil(() => GetNormalMonsterCount() < _maxMonsterCount);
+            }
+            
             var cmd = queue.Dequeue();
             Vector3 spawnPos = PickSpawnPosition(cmd.Type);
             
@@ -412,5 +425,20 @@ public class MonsterSpawner : MonoBehaviour
         {
             _rewardManager.AddBattleReward(_pendingRewards.Dequeue());
         }
+    }
+    
+    // 몬스터 소환 하드캡을 위한 계수기
+    private int GetNormalMonsterCount()
+    {
+        int count = 0;
+        for (int i = 0; i < _aliveMonsters.Count; i++)
+        {
+            // null 체크 및 보스/엘리트(IsBoss)가 아닌 경우만 카운트
+            if (_aliveMonsters[i] != null && !_aliveMonsters[i].IsBoss)
+            {
+                count++;
+            }
+        }
+        return count;
     }
 }
