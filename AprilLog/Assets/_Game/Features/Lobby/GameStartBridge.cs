@@ -18,6 +18,7 @@ public class GameStartBridge : MonoBehaviour
     private const string INGAME_SCENE_NAME = "_InGame";
     private const string STORY_SCENE_NAME = "_Story";
     private const string SCENARIO_TRIGGER_TYPE_CHAPTER_START = "ChapterStart";
+    private const int StaminaId = 10001;
     
 
     // ---------- 생명주기 ----------
@@ -26,7 +27,7 @@ public class GameStartBridge : MonoBehaviour
         if(_controller == null) 
             _controller = GetComponent<PageMainLobbyController>();
         if(_staminaModel == null)
-            _staminaModel = FindAnyObjectByType<StaminaModel>();
+            _staminaModel = FindFirstObjectByType<StaminaModel>(FindObjectsInactive.Include);
     }
 
     private void OnEnable()
@@ -158,7 +159,27 @@ public class GameStartBridge : MonoBehaviour
             return false;
         }
         
-        bool result = _staminaModel.Spend(data.StaminaCost);
+        int cost = Mathf.Max(0, data.StaminaCost);
+        if (cost == 0) return true;
+
+        if (_staminaModel == null)
+            _staminaModel = FindFirstObjectByType<StaminaModel>(FindObjectsInactive.Include);
+
+        if (_staminaModel != null)
+            return _staminaModel.Spend(cost);
+
+        var resourceRepo = DataManager.Instance != null ? DataManager.Instance.ResourceRepo : null;
+        var staminaSlot = resourceRepo != null ? resourceRepo.GetStaminaSlot(StaminaId) : null;
+        if (staminaSlot == null)
+        {
+            Debug.LogWarning("[GameStartBridge] StaminaModel/ResourceRepo를 찾지 못해 행동력을 차감할 수 없습니다. 이동을 취소합니다.");
+            return false;
+        }
+
+        bool result = resourceRepo.UseStamina(StaminaId, cost);
+        if (result && GameManager.Instance != null)
+            GameManager.Instance.SyncAndSaveResourceCloudData();
+
         return result;
     }
 

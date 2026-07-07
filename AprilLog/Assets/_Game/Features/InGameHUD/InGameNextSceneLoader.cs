@@ -40,7 +40,7 @@ public class InGameNextSceneLoader : MonoBehaviour
     private void Init()
     {
         _navigator = FindAnyObjectByType<ScreenNavigator>();
-        _resultPopup = FindAnyObjectByType<ResultPopup>();
+        _resultPopup ??= FindFirstObjectByType<ResultPopup>(FindObjectsInactive.Include);
         _nextGroupId = -1;
     }
     
@@ -72,13 +72,21 @@ public class InGameNextSceneLoader : MonoBehaviour
     
     // ---------- 이벤트 핸들러 ----------
     public void HandleChapterCleared(bool isCleared)
+{
+    if (!isCleared || GameManager.Instance == null)
+        return;
+
+    if (_resultPopup == null)
     {
-        if (isCleared && GameManager.Instance != null)
-        {
-            _resultPopup.DisableButtonForScenarioPlay(
-                IsRemainFirstReadScenario(GameManager.Instance.SelectedChapterId, out _nextGroupId));
-        }
+        Debug.LogError("[InGameNextSceneLoader] ResultPopup이 연결되지 않았습니다.", this);
+        return;
     }
+
+    _resultPopup.DisableButtonForScenarioPlay(
+        IsRemainFirstReadScenario(
+            GameManager.Instance.SelectedChapterId,
+            out _nextGroupId));
+}
 
     private void HandleGoToLobby()
     {

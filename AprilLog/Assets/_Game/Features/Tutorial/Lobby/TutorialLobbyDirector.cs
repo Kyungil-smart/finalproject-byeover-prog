@@ -336,12 +336,7 @@ public class TutorialLobbyDirector : MonoBehaviour
             return;
         }
 
-        // 별도 시나리오가 없는 단계는 그 단계의 안내 문구를 버블 한 줄로 표시한다.
-        if (!string.IsNullOrWhiteSpace(step.guideText))
-        {
-            _playedLobbyScenarioStepId = step.stepId;
-            _stepScenarioRoutine = StartCoroutine(PlayLobbyStepGuideText(step.guideText));
-        }
+        _playedLobbyScenarioStepId = step.stepId;
     }
 
     private IEnumerator PlayLobbyStepScenario(int startId, int endId)
@@ -364,10 +359,6 @@ public class TutorialLobbyDirector : MonoBehaviour
     {
         switch (stepId)
         {
-            case 4:
-                startId = 100048;
-                endId = 100053;
-                return true;
             case 6:
                 startId = 100054;
                 endId = 100058;

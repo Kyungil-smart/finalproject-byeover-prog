@@ -126,11 +126,9 @@ public class TutorialView : MonoBehaviour, ITutorialView
         TryApplyHighlight();
     }
 
-    private static bool ShouldHideGuideTextForLobbyScenario(TutorialStep step)
+    private static string ResolveGuideText(TutorialStep step)
     {
-        return step != null
-            && step.scene == TutorialScene.Lobby
-            && TutorialLobbyDirector.HasScenarioForStep(step.stepId);
+        return string.Empty;
     }
 
     // =========================================================
@@ -156,11 +154,7 @@ public class TutorialView : MonoBehaviour, ITutorialView
 
         if (_guideText != null)
         {
-            _guideText.text = ShouldHideGuideTextForLobbyScenario(step)
-                ? string.Empty
-                : step != null
-                    ? step.guideText
-                    : string.Empty;
+            _guideText.text = ResolveGuideText(step);
         }
 
         if (step == null)

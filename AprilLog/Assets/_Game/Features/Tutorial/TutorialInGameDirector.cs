@@ -37,6 +37,16 @@ public class TutorialInGameDirector : MonoBehaviour
         return _hasTutorialMonsterExpOverride;
     }
 
+    public static bool ShouldSkipBattleRewardTriggerForTutorial()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        return tm != null
+            && tm.IsRunning
+            && IsInGameStep(step)
+            && IsTutorialChapterRun();
+    }
+
     [System.Serializable]
     private struct Step0BoardSlot
     {
