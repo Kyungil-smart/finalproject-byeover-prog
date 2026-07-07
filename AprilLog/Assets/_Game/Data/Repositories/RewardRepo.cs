@@ -53,37 +53,61 @@ public class RewardRepo : MonoBehaviour
     // ---------- 조회 API ----------
     public ChangeRewardData GetChangeRewardRule(int ruleId) => GetData(_changeRewardDict, ruleId, nameof(GetChangeRewardRule));
 
-    public void GetFirstStageRewards(int stageId, out List<RewardRecipe> rewardList)
-    {
-        rewardList = new ();
-        
-        if(_changeRewardFirst == null || _changeRewardFirst.Count == 0 || !_isStageStepMappingSetted) return;
-
-        foreach (var data in _changeRewardFirst)
-        {
-            if (stageId >= data.StartId && stageId <= data.EndId)
-            {
-                int step = _stageStepMapping[stageId] - _stageStepMapping[data.StartId];
-                rewardList.Add(new RewardRecipe {TargetId = stageId, RewardId = data.DataId ,currentStep = step});
-            }
-        }
-    }
-    
     public void GetFirstChapterRewards(int chapterId, out List<RewardRecipe> rewardList)
+{
+    rewardList = new ();
+    
+    if (_changeRewardFirst == null || _changeRewardFirst.Count == 0 || !_isStageStepMappingSetted) return;
+    
+    foreach (var data in _changeRewardFirst)
     {
-        rewardList = new ();
-        
-        if(_changeRewardFirst == null || _changeRewardFirst.Count == 0 || !_isStageStepMappingSetted) return;
-
-        foreach (var data in _changeRewardFirst)
+        if (chapterId >= data.StartId && chapterId <= data.EndId)
         {
-            if (chapterId >= data.StartId && chapterId <= data.EndId)
+            if (!_chapterStepMapping.TryGetValue(chapterId, out int currentChapterStep))
             {
-                int step = _chapterStepMapping[chapterId] - _chapterStepMapping[data.StartId];
-                rewardList.Add(new RewardRecipe {TargetId = chapterId, RewardId = data.DataId ,currentStep = step,});
+                Debug.LogWarning($"[RewardRepo] 현재 챕터 ID {chapterId}가 맵핑에 존재하지 않습니다.");
+                continue;
             }
+            
+            if (!_chapterStepMapping.TryGetValue(data.StartId, out int startChapterStep))
+            {
+                Debug.LogWarning($"[RewardRepo] 시작 챕터 ID {data.StartId}가 맵핑에 존재하지 않습니다.");
+                continue;
+            }
+
+            int step = currentChapterStep - startChapterStep;
+            rewardList.Add(new RewardRecipe { TargetId = chapterId, RewardId = data.DataId, currentStep = step });
         }
     }
+}
+
+public void GetFirstStageRewards(int stageId, out List<RewardRecipe> rewardList)
+{
+    rewardList = new ();
+    
+    if (_changeRewardFirst == null || _changeRewardFirst.Count == 0 || !_isStageStepMappingSetted) return;
+    
+    foreach (var data in _changeRewardFirst)
+    {
+        if (stageId >= data.StartId && stageId <= data.EndId)
+        {
+            if (!_stageStepMapping.TryGetValue(stageId, out int currentStageStep))
+            {
+                Debug.LogWarning($"[RewardRepo] 현재 스테이지 ID {stageId}가 맵핑에 존재하지 않습니다.");
+                continue;
+            }
+            
+            if (!_stageStepMapping.TryGetValue(data.StartId, out int startStageStep))
+            {
+                Debug.LogWarning($"[RewardRepo] 시작 스테이지 ID {data.StartId}가 맵핑에 존재하지 않습니다.");
+                continue;
+            }
+
+            int step = currentStageStep - startStageStep;
+            rewardList.Add(new RewardRecipe { TargetId = stageId, RewardId = data.DataId, currentStep = step });
+        }
+    }
+}
 
     public void GetRepeatStageRewards(int stageId, out List<RewardRecipe> rewardList)
     {
@@ -94,8 +118,20 @@ public class RewardRepo : MonoBehaviour
         {
             if (stageId >= data.StartId && stageId <= data.EndId)
             {
-                int step = _stageStepMapping[stageId] - _chapterStepMapping[data.StartId];
-                rewardList.Add(new RewardRecipe {TargetId = stageId, RewardId = data.DataId ,currentStep = step});
+                if (!_stageStepMapping.TryGetValue(stageId, out int currentStageStep))
+                {
+                    Debug.LogWarning($"[RewardRepo] 스테이지 ID {stageId}가 존재하지 않습니다.");
+                    continue;
+                }
+
+                if (!_stageStepMapping.TryGetValue(data.StartId, out int startStageStep))
+                {
+                    Debug.LogWarning($"[RewardRepo] 시작 스테이지 ID {data.StartId}가 존재하지 않습니다.");
+                    continue;
+                }
+
+                int step = currentStageStep - startStageStep;
+                rewardList.Add(new RewardRecipe { TargetId = stageId, RewardId = data.DataId, currentStep = step });
             }
         }
     }
