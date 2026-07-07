@@ -32,6 +32,24 @@ public class ReplayStoryPopup : MonoBehaviour
     // 추가:조규민 기능 설명: 하우징 책장 다시보기 목록을 ChapterTestData.asset 기준으로 생성한다.
     [SerializeField] private ChapterTestDataSO chapterTestData;
 
+    [Header("스토리 트리거 데이터")]
+    [Tooltip("스토리 목록/해금 조건 소스. 비우면 로드된 StoryTriggerTable을 자동 탐색한다")]
+    [SerializeField] private StoryTriggerTable storyTriggerTable;
+
+    [Header("인트로(튜토리얼) 슬롯")]
+    [Tooltip("항상 해금 상태로 목록 맨 앞에 넣는 인트로 스토리 그룹 ID")]
+    [SerializeField] private int introStoryId = 3001;
+    [SerializeField] private string introChapterTitleKr = "프롤로그";
+    [SerializeField] private string introChapterTitleEn = "Prologue";
+    [SerializeField] private string introEpisodeTitleKr = "마법의 책장";
+    [SerializeField] private string introEpisodeTitleEn = "The Magic Bookshelf";
+    [Tooltip("인트로 슬롯 배경 리소스 경로. 비우면 대사 데이터에서 자동 탐색")]
+    [SerializeField] private string introBackgroundResourcePath = "Story/Cutscenes/20008";
+
+    // 챕터 제목 Localization 규칙: 헤더 = 15000 + (챕터-1)*6, 에피소드 = 헤더 + 스테이지
+    private const int _chapterTitleBaseId = 15000;
+    private const int _chapterTitleStride = 6;
+
     private readonly List<ReplayStorySlot> spawnedSlots = new();
     private Button boundCloseButton;
     private bool useChapterTestDataForCurrentOpen;
@@ -276,6 +294,15 @@ public class ReplayStoryPopup : MonoBehaviour
         // 추가:조규민 기능 설명: Inspector 연결이 비어 있을 때 ChapterTestData 에셋을 자동 탐색한다.
         if (chapterTestData == null)
             chapterTestData = FindChapterTestData();
+
+        if (storyTriggerTable == null)
+            storyTriggerTable = FindStoryTriggerTable();
+    }
+
+    private static StoryTriggerTable FindStoryTriggerTable()
+    {
+        StoryTriggerTable[] assets = Resources.FindObjectsOfTypeAll<StoryTriggerTable>();
+        return assets.Length > 0 ? assets[0] : null;
     }
 
     private static T FindChildComponentByName<T>(Transform root, string objectName) where T : Component
@@ -311,7 +338,146 @@ public class ReplayStoryPopup : MonoBehaviour
         if (useChapterTestDataForCurrentOpen)
             Debug.LogWarning("[ReplayStoryPopup] ChapterTestDataSO가 연결되지 않아 기존 임시 다시보기 데이터를 사용합니다.", this);
 
-        return CreateFallbackData();
+        List<ReplayStoryData> storyData = CreateStoryTriggerData();
+        return storyData.Count > 0 ? storyData : CreateFallbackData();
+    }
+
+    // 스토리 트리거 테이블 + 진행도 기반으로 전체 스토리 목록을 생성한다. (인트로 + 트리거 전체)
+    private List<ReplayStoryData> CreateStoryTriggerData()
+    {
+        List<ReplayStoryData> list = new List<ReplayStoryData>();
+
+        if (storyTriggerTable == null || storyTriggerTable.rows == null)
+            return list;
+
+        // 인트로: 항상 해금.
+        ReplayStoryData intro = new ReplayStoryData(
+            introStoryId.ToString(),
+            LocalizeSystem(introChapterTitleKr, introChapterTitleEn),
+            LocalizeSystem(introEpisodeTitleKr, introEpisodeTitleEn),
+            ReplayStoryState.Cleared,
+            string.Empty);
+        intro.BackgroundResourcePath = !string.IsNullOrEmpty(introBackgroundResourcePath)
+            ? introBackgroundResourcePath
+            : ResolveStoryBackgroundPath(introStoryId);
+        list.Add(intro);
+
+        int currentOrder = GetCurrentStageOrder();
+
+        for (int i = 0; i < storyTriggerTable.rows.Count; i++)
+        {
+            StoryTriggerData row = storyTriggerTable.rows[i];
+            if (row == null)
+                continue;
+
+            int chapter = row.Target_ID / 100;
+            int stage = row.Target_ID % 100;
+            bool needClear = !IsStartTrigger(row.TriggerType);
+
+            // 도달(Start): Target_ID <= 현재 진행 / 클리어(End·Theme): Target_ID < 현재 진행
+            bool unlocked = needClear ? row.Target_ID < currentOrder : row.Target_ID <= currentOrder;
+
+            ReplayStoryData data = new ReplayStoryData(
+                row.Story_ID.ToString(),
+                GetChapterTitle(chapter),
+                GetEpisodeTitle(chapter, stage),
+                unlocked ? ReplayStoryState.Cleared : ReplayStoryState.Locked,
+                unlocked ? string.Empty : BuildUnlockText(chapter, stage, needClear));
+            data.BackgroundResourcePath = ResolveStoryBackgroundPath(row.Story_ID);
+            list.Add(data);
+        }
+
+        return list;
+    }
+
+    // 스토리 대사그룹의 대표 배경 경로를 찾는다. 배경(BG) 우선, 실제 리소스가 있는 것만 사용한다.
+    private static string ResolveStoryBackgroundPath(int storyGroupId)
+    {
+        StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
+        if (repo == null)
+        {
+            Debug.LogWarning("[ReplayStoryPopup] StoryRepo가 없어 배경을 찾지 못했습니다.");
+            return string.Empty;
+        }
+
+        List<Story_TalkData> lines = repo.GetTalkGroup(storyGroupId);
+        if (lines == null)
+            return string.Empty;
+
+        // 대사 순서대로 BG(Backgrounds) 후보 중 실제 파일이 있는 첫 번째를 사용한다.
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (lines[i] == null || lines[i].BG <= 0) continue;
+            string bgPath = "Story/Backgrounds/" + lines[i].BG;
+            if (ResourceSpriteExists(bgPath))
+                return bgPath;
+        }
+
+        // BG가 전부 없으면 CG(Cutscenes) 후보 시도.
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (lines[i] == null || lines[i].CG <= 0) continue;
+            string cgPath = "Story/Cutscenes/" + lines[i].CG;
+            if (ResourceSpriteExists(cgPath))
+                return cgPath;
+        }
+
+        Debug.LogWarning($"[ReplayStoryPopup] 스토리 {storyGroupId} 배경 리소스를 찾지 못함 (해당 그룹 BG/CG 파일 없음).");
+        return string.Empty;
+    }
+
+    private static bool ResourceSpriteExists(string path)
+    {
+        return !string.IsNullOrEmpty(path) && Resources.Load<Sprite>(path) != null;
+    }
+
+    private static bool IsStartTrigger(string triggerType)
+    {
+        return !string.IsNullOrEmpty(triggerType) && triggerType.Trim() == "ChapterStart";
+    }
+
+    // 현재 진행 위치를 챕터*100+스테이지 순번으로 변환 (Target_ID와 동일 체계)
+    private static int GetCurrentStageOrder()
+    {
+        var cloud = GameManager.Instance != null ? GameManager.Instance.CloudData : null;
+        int chapter = cloud != null ? Mathf.Max(1, cloud.currentChapter) : 1;
+        int stage = cloud != null ? Mathf.Max(1, cloud.currentStage) : 1;
+        return chapter * 100 + stage;
+    }
+
+    private static string BuildUnlockText(int chapter, int stage, bool needClear)
+    {
+        string stageLabel = chapter + "-" + stage;
+        if (Application.systemLanguage == SystemLanguage.Korean)
+            return needClear ? stageLabel + " 클리어 필요" : stageLabel + " 도달 필요";
+
+        return needClear ? "Clear " + stageLabel + " to unlock" : "Reach " + stageLabel + " to unlock";
+    }
+
+    private static string GetChapterTitle(int chapter)
+    {
+        int id = _chapterTitleBaseId + (chapter - 1) * _chapterTitleStride;
+        return GetChapterLocalized(id, "Chapter " + chapter);
+    }
+
+    private static string GetEpisodeTitle(int chapter, int stage)
+    {
+        int id = _chapterTitleBaseId + (chapter - 1) * _chapterTitleStride + stage;
+        return GetChapterLocalized(id, chapter + "-" + stage);
+    }
+
+    private static string GetChapterLocalized(int id, string fallback)
+    {
+        if (LocalizationManager.Instance == null)
+            return fallback;
+
+        string text = LocalizationManager.Instance.Get(id, LocalizingType.Chapter);
+        return IsMissingLocalizationText(text, id) ? fallback : text;
+    }
+
+    private static string LocalizeSystem(string kr, string en)
+    {
+        return Application.systemLanguage == SystemLanguage.Korean ? kr : en;
     }
 
     private List<ReplayStoryData> CreateChapterTestData()
