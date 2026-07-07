@@ -345,8 +345,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
         if (_nameText != null) _nameText.text = ResolveName(master);
         if (_gradeText != null) _gradeText.text = ArtifactGradeInfo.DisplayName(grade);
-        if (_equipAttackText != null) _equipAttackText.text = $"장착 시 공격력 +{master.AttackBaseAmount}";
-        if (_ownedAttackText != null) _ownedAttackText.text = $"보유 시 공격력 +{ResolveOwnedAttack(master)}";
+        if (_equipAttackText != null) _equipAttackText.text = master.AttackBaseAmount.ToString();
+        if (_ownedAttackText != null) _ownedAttackText.text = ResolveOwnedAttack(master).ToString();
         if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
     }
 
