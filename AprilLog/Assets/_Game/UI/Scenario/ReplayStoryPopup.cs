@@ -7,13 +7,19 @@ using UnityEngine.UI;
 // 1차 수정자 : 조규민
 // 수정 내용 : 하우징 책장 다시보기에서 ChapterTestDataSO 기준 챕터 목록을 표시하고 선택 정보를 _Story 씬으로 전달,
 // 다시보기 제목을 언어 변경 시 LocalizationManager 기준으로 갱신,
-// LocalizationManager 초기화 전에는 기본 문구를 표시하고 리스트 생성 후 ScrollRect 레이아웃을 갱신
+// LocalizationManager 초기화 전에는 기본 문구를 표시하고 리스트 생성 후 ScrollRect 레이아웃을 갱신,
+// ChapterTestDataSO 표시 목록도 실제 Story_TalkTable GroupID와 클라우드 최초 감상 상태를 기준으로 재생/잠금 처리,
+// StoryTriggerTable 기반으로 다시보기 목록을 구성해 DB의 Story_ID와 실제 재생 GroupID를 일치시킴
 
 public class ReplayStoryPopup : MonoBehaviour
 {
     private const int _headerTextId = 13024;
     private const string _headerFallbackKr = "서사 보관소";
     private const string _headerFallbackEn = "Story Archive";
+    private const string _lockedFallbackCondition = "스토리 최초 감상 필요";
+    private const string _triggerTypeChapterStart = "ChapterStart";
+    private const string _triggerTypeChapterEnd = "ChapterEnd";
+    private const string _triggerTypeThemeEnd = "ThemeEnd";
 
     [Header("상단")]
     [SerializeField] private Button buttonCloseReplayStory;
@@ -34,7 +40,6 @@ public class ReplayStoryPopup : MonoBehaviour
 
     private readonly List<ReplayStorySlot> spawnedSlots = new();
     private Button boundCloseButton;
-    private bool useChapterTestDataForCurrentOpen;
     private bool _returnToHousingPageAfterStory;
     private ScrollRect _replayScrollRect;
     private RectTransform _contentRect;
@@ -68,16 +73,12 @@ public class ReplayStoryPopup : MonoBehaviour
 
     public void Open()
     {
-        // 추가:조규민 기능 설명: 기존 로비 옵션 다시보기는 기존 임시 다시보기 목록을 유지한다.
-        useChapterTestDataForCurrentOpen = false;
         _returnToHousingPageAfterStory = false;
         OpenInternal();
     }
 
     public void OpenForHousingBookcase()
     {
-        // 추가:조규민 기능 설명: 하우징 책장 진입 시에만 ChapterTestData.asset 기반 4개 챕터 목록을 사용한다.
-        useChapterTestDataForCurrentOpen = true;
         _returnToHousingPageAfterStory = true;
         OpenInternal();
     }
@@ -304,19 +305,46 @@ public class ReplayStoryPopup : MonoBehaviour
 
     private List<ReplayStoryData> CreateReplayStoryData()
     {
-        // 추가:조규민 기능 설명: 하우징 책장 모드에서만 ChapterTestDataSO 4개 챕터 목록을 사용한다.
-        if (useChapterTestDataForCurrentOpen && chapterTestData != null && chapterTestData.ChapterCount > 0)
+        List<ReplayStoryData> storyRepoData = CreateStoryRepoData();
+        if (storyRepoData.Count > 0)
+            return storyRepoData;
+
+        if (chapterTestData != null && chapterTestData.ChapterCount > 0)
             return CreateChapterTestData();
 
-        if (useChapterTestDataForCurrentOpen)
-            Debug.LogWarning("[ReplayStoryPopup] ChapterTestDataSO가 연결되지 않아 기존 임시 다시보기 데이터를 사용합니다.", this);
+        Debug.LogWarning("[ReplayStoryPopup] StoryRepo/ChapterTestDataSO 목록을 만들지 못해 기존 임시 다시보기 데이터를 사용합니다.", this);
 
         return CreateFallbackData();
     }
 
+    private List<ReplayStoryData> CreateStoryRepoData()
+    {
+        List<ReplayStoryData> replayData = new();
+        StoryRepo storyRepo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
+        if (storyRepo == null)
+            return replayData;
+
+        List<StoryTriggerData> triggerData = storyRepo.GetAllTriggerData();
+        for (int i = 0; i < triggerData.Count; i++)
+        {
+            StoryTriggerData trigger = triggerData[i];
+            if (!CanUseReplayTrigger(storyRepo, trigger))
+                continue;
+
+            ReplayStoryData data = CreateReplayStoryData(
+                trigger.Story_ID,
+                BuildReplayChapterTitle(trigger),
+                BuildReplayEpisodeTitle(trigger),
+                BuildReplayUnlockCondition(trigger));
+            replayData.Add(data);
+        }
+
+        return replayData;
+    }
+
     private List<ReplayStoryData> CreateChapterTestData()
     {
-        // 추가:조규민 기능 설명: ChapterTestDataSO의 챕터 표시 데이터를 다시보기 슬롯 데이터로 변환한다.
+        // 추가:조규민 기능 설명: StoryRepo가 준비되지 않은 경우에만 ChapterTestDataSO를 임시 표시 데이터로 사용한다.
         List<ReplayStoryData> replayData = new List<ReplayStoryData>();
 
         for (int i = 0; i < chapterTestData.ChapterCount; i++)
@@ -332,11 +360,11 @@ public class ReplayStoryPopup : MonoBehaviour
                 ? "Chapter " + (i + 1)
                 : chapter.chapterName;
 
-            replayData.Add(new ReplayStoryData(
-                i.ToString(),
+            int groupId = ResolveFallbackGroupId(i);
+            replayData.Add(CreateReplayStoryData(
+                groupId,
                 chapterLabel,
                 chapterName,
-                ReplayStoryState.Cleared,
                 chapter.description));
         }
 
@@ -347,22 +375,41 @@ public class ReplayStoryPopup : MonoBehaviour
     {
         return new List<ReplayStoryData>
         {
-            new("3001", "Tutorial", "마법의 책장", ReplayStoryState.Cleared, string.Empty),
-            new("3002", "Chapter.1", "절벽 끝의 부름", ReplayStoryState.Cleared, string.Empty),
-            new("3003", "Chapter.1", "동화 세계로의 추락", ReplayStoryState.Cleared, string.Empty),
-            new("3004", "Chapter.1", "래리와의 재회", ReplayStoryState.Locked, "1-2 클리어 필요"),
-            new("3005", "Chapter.1", "첫 전투 이후", ReplayStoryState.Locked, "1-3 클리어 필요"),
-            new("3006", "Chapter.1", "왕을 향한 여정", ReplayStoryState.Locked, "1-4 클리어 필요"),
-            new("3007", "Chapter.1", "버섯 무리의 흔적", ReplayStoryState.Locked, "1-5 클리어 필요"),
-            new("3008", "Chapter.2", "낯선 숲의 아침", ReplayStoryState.Locked, "Chapter.1 클리어 필요"),
-            new("3009", "Chapter.2", "사라진 길잡이", ReplayStoryState.Locked, "2-1 클리어 필요"),
-            new("3010", "Chapter.2", "책장 너머의 마을", ReplayStoryState.Locked, "2-2 클리어 필요"),
-            new("3011", "Chapter.2", "잠든 이야기의 문", ReplayStoryState.Locked, "2-3 클리어 필요"),
-            new("3012", "Side Story", "래리의 장난", ReplayStoryState.Locked, "Chapter.2 클리어 필요"),
-            new("3013", "Side Story", "무녀의 기억", ReplayStoryState.Locked, "외전 개방 필요"),
-            new("3014", "Chapter.3", "오래된 왕관", ReplayStoryState.Locked, "Chapter.2 클리어 필요"),
-            new("3015", "Chapter.3", "다시 쓰는 결말", ReplayStoryState.Locked, "3-1 클리어 필요"),
+            CreateReplayStoryData(3001, "Tutorial", "마법의 책장", string.Empty),
+            CreateReplayStoryData(3002, "Chapter.1", "절벽 끝의 부름", string.Empty),
+            CreateReplayStoryData(3003, "Chapter.1", "동화 세계로의 추락", string.Empty),
+            CreateReplayStoryData(3004, "Chapter.1", "래리와의 재회", "1-2 클리어 필요"),
+            CreateReplayStoryData(3005, "Chapter.1", "첫 전투 이후", "1-3 클리어 필요"),
+            CreateReplayStoryData(3006, "Chapter.1", "왕을 향한 여정", "1-4 클리어 필요"),
+            CreateReplayStoryData(3007, "Chapter.1", "버섯 무리의 흔적", "1-5 클리어 필요"),
+            CreateReplayStoryData(3008, "Chapter.2", "낯선 숲의 아침", "Chapter.1 클리어 필요"),
+            CreateReplayStoryData(3009, "Chapter.2", "사라진 길잡이", "2-1 클리어 필요"),
+            CreateReplayStoryData(3010, "Chapter.2", "책장 너머의 마을", "2-2 클리어 필요"),
+            CreateReplayStoryData(3011, "Chapter.2", "잠든 이야기의 문", "2-3 클리어 필요"),
+            CreateReplayStoryData(3012, "Side Story", "래리의 장난", "Chapter.2 클리어 필요"),
+            CreateReplayStoryData(3013, "Side Story", "무녀의 기억", "외전 개방 필요"),
+            CreateReplayStoryData(3014, "Chapter.3", "오래된 왕관", "Chapter.2 클리어 필요"),
+            CreateReplayStoryData(3015, "Chapter.3", "다시 쓰는 결말", "3-1 클리어 필요"),
         };
+    }
+
+    private ReplayStoryData CreateReplayStoryData(
+        int _groupId,
+        string _chapterTitle,
+        string _episodeTitle,
+        string _unlockConditionText)
+    {
+        ReplayStoryState _state = ResolveReplayStoryState(_groupId);
+        string _conditionText = _state == ReplayStoryState.Cleared
+            ? string.Empty
+            : ResolveUnlockConditionText(_unlockConditionText);
+
+        return new ReplayStoryData(
+            _groupId.ToString(),
+            _chapterTitle,
+            _episodeTitle,
+            _state,
+            _conditionText);
     }
 
     private void PlayStory(ReplayStoryData data)
@@ -373,11 +420,20 @@ public class ReplayStoryPopup : MonoBehaviour
             return;
         }
 
-        int chapterIndex = ResolveChapterIndex(data);
+        int groupId = ResolveStoryGroupId(data);
+        if (groupId <= 0)
+        {
+            Debug.LogWarning($"[ReplayStoryPopup] StoryId를 GroupID로 변환하지 못했습니다. StoryId: {data.StoryId}", this);
+            return;
+        }
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.SelectedScenarioGroupId = groupId;
+
         if (_returnToHousingPageAfterStory)
         {
             ReplayStorySelectionContext.SetReplay(
-                chapterIndex,
+                groupId,
                 data.ChapterTitle,
                 data.EpisodeTitle,
                 data.UnlockConditionText,
@@ -387,26 +443,137 @@ public class ReplayStoryPopup : MonoBehaviour
         else
         {
             ReplayStorySelectionContext.SetReplay(
-                chapterIndex,
+                groupId,
                 data.ChapterTitle,
                 data.EpisodeTitle,
                 data.UnlockConditionText,
                 returnSceneName);
         }
 
-        Debug.Log($"[ReplayStory] 보기 클릭: {data.ChapterTitle} / {data.EpisodeTitle}");
+        Debug.Log($"[ReplayStory] 보기 클릭: {data.ChapterTitle} / {data.EpisodeTitle} / GroupID: {groupId}");
         LoadStoryScene();
     }
 
-    private static int ResolveChapterIndex(ReplayStoryData _data)
+    private static int ResolveStoryGroupId(ReplayStoryData _data)
     {
         if (_data == null || string.IsNullOrWhiteSpace(_data.StoryId))
             return 0;
 
-        if (int.TryParse(_data.StoryId, out int _chapterIndex))
-            return _chapterIndex;
+        if (int.TryParse(_data.StoryId, out int _groupId))
+            return _groupId;
 
         return 0;
+    }
+
+    private static int ResolveFallbackGroupId(int _index)
+    {
+        return 3001 + Mathf.Max(0, _index);
+    }
+
+    private static ReplayStoryState ResolveReplayStoryState(int _groupId)
+    {
+        if (GameManager.Instance == null)
+            return ReplayStoryState.Cleared;
+
+        return GameManager.Instance.IsFirstReadScenario(_groupId)
+            ? ReplayStoryState.Cleared
+            : ReplayStoryState.Locked;
+    }
+
+    private static string ResolveUnlockConditionText(string _unlockConditionText)
+    {
+        return string.IsNullOrWhiteSpace(_unlockConditionText)
+            ? _lockedFallbackCondition
+            : _unlockConditionText;
+    }
+
+    private static bool CanUseReplayTrigger(StoryRepo _storyRepo, StoryTriggerData _trigger)
+    {
+        if (_storyRepo == null || _trigger == null)
+            return false;
+
+        if (_trigger.Story_ID <= 0)
+            return false;
+
+        return _storyRepo.HasTalkGroup(_trigger.Story_ID);
+    }
+
+    private static string BuildReplayChapterTitle(StoryTriggerData _trigger)
+    {
+        int _themeNumber = ResolveThemeNumber(_trigger.Target_ID);
+        return _themeNumber > 0 ? "CHAPTER." + _themeNumber : "STORY";
+    }
+
+    private static string BuildReplayEpisodeTitle(StoryTriggerData _trigger)
+    {
+        string _triggerType = NormalizeTriggerType(_trigger.TriggerType);
+        string _chapterName = BuildChapterName(_trigger.Target_ID);
+
+        if (_triggerType == _triggerTypeChapterStart)
+            return _chapterName + " 시작";
+
+        if (_triggerType == _triggerTypeChapterEnd)
+            return _chapterName + " 클리어 후";
+
+        if (_triggerType == _triggerTypeThemeEnd)
+            return BuildThemeName(_trigger.Target_ID) + " 완료";
+
+        return _chapterName + " 스토리";
+    }
+
+    private static string BuildReplayUnlockCondition(StoryTriggerData _trigger)
+    {
+        string _triggerType = NormalizeTriggerType(_trigger.TriggerType);
+        string _chapterName = BuildChapterName(_trigger.Target_ID);
+
+        if (_triggerType == _triggerTypeChapterStart)
+            return _chapterName + " 진입 스토리 최초 감상 필요";
+
+        if (_triggerType == _triggerTypeChapterEnd)
+            return _chapterName + " 클리어 스토리 최초 감상 필요";
+
+        if (_triggerType == _triggerTypeThemeEnd)
+            return BuildThemeName(_trigger.Target_ID) + " 완료 스토리 최초 감상 필요";
+
+        return _lockedFallbackCondition;
+    }
+
+    private static string NormalizeTriggerType(string _triggerType)
+    {
+        return string.IsNullOrWhiteSpace(_triggerType) ? string.Empty : _triggerType.Trim();
+    }
+
+    private static int ResolveThemeNumber(int _chapterId)
+    {
+        if (_chapterId <= 0)
+            return 0;
+
+        return _chapterId / 100;
+    }
+
+    private static int ResolveChapterNumber(int _chapterId)
+    {
+        if (_chapterId <= 0)
+            return 0;
+
+        return _chapterId % 100;
+    }
+
+    private static string BuildChapterName(int _chapterId)
+    {
+        int _themeNumber = ResolveThemeNumber(_chapterId);
+        int _chapterNumber = ResolveChapterNumber(_chapterId);
+
+        if (_themeNumber <= 0 || _chapterNumber <= 0)
+            return "챕터 " + _chapterId;
+
+        return _themeNumber + "-" + _chapterNumber;
+    }
+
+    private static string BuildThemeName(int _chapterId)
+    {
+        int _themeNumber = ResolveThemeNumber(_chapterId);
+        return _themeNumber > 0 ? "CHAPTER." + _themeNumber : "테마";
     }
 
     private void LoadStoryScene()
