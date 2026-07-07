@@ -100,6 +100,7 @@ public static class DataTableSchemaRegistry
         new DataTableSchema("GearLocalizing", "gear_localizing", "LocalizationData", "GearLocalizationTable", true),
         new DataTableSchema("UILocalizing", "ui_localizing", "LocalizationData", "UILocalizationTable", true),
         new DataTableSchema("HousingLocalizing", "housing_localizing", "LocalizationData", "HousingLocalizationTable", true),
+        new DataTableSchema("ChapterLocalizing", "chapter_localizing", "LocalizationData", "ChapterLocalizationTable", true),
         
         // Legacy List
         new DataTableSchema("SkillMaster", "skill_master", "Legacy_SkillMasterData", "Legacy_SkillMasterTable", false),

@@ -141,5 +141,6 @@ public enum LocalizingType
     Enchant,
     Gear,
     UI,
-    Housing
+    Housing,
+    Chapter
 }
