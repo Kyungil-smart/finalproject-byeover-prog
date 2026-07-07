@@ -516,6 +516,7 @@ public class EnchantCalculator : MonoBehaviour
             status = PlayerStatus.Hp;
             formula = CalFormula.Rate;
             amount = tempHp;
+            return;
         }
 
         if (TryGetStatVariation(data, ATTACK, out var tempAttack))
@@ -523,6 +524,7 @@ public class EnchantCalculator : MonoBehaviour
             status = PlayerStatus.Attack;
             formula = CalFormula.Rate;
             amount = tempAttack;
+            return;
         }
 
         if (TryGetStatVariation(data, ATTACK_SPEED, out var tempAttackSpeed))
@@ -530,6 +532,7 @@ public class EnchantCalculator : MonoBehaviour
             status = PlayerStatus.AttackSpeed;
             formula = CalFormula.Rate;
             amount = tempAttackSpeed;
+            return;
         }
         
         Debug.LogWarning($"[EnchantCalculator] The {data.ValueType_2} increase type hasn't been set. Please define a new type.");
