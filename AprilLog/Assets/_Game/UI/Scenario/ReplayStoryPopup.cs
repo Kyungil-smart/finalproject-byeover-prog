@@ -6,10 +6,15 @@ using UnityEngine.UI;
 
 // 1차 수정자 : 조규민
 // 수정 내용 : 하우징 책장 다시보기에서 ChapterTestDataSO 기준 챕터 목록을 표시하고 선택 정보를 _Story 씬으로 전달,
-// 다시보기 제목을 언어 변경 시 LocalizationManager 기준으로 갱신
+// 다시보기 제목을 언어 변경 시 LocalizationManager 기준으로 갱신,
+// LocalizationManager 초기화 전에는 기본 문구를 표시하고 리스트 생성 후 ScrollRect 레이아웃을 갱신
 
 public class ReplayStoryPopup : MonoBehaviour
 {
+    private const int _headerTextId = 13024;
+    private const string _headerFallbackKr = "서사 보관소";
+    private const string _headerFallbackEn = "Story Archive";
+
     [Header("상단")]
     [SerializeField] private Button buttonCloseReplayStory;
     [SerializeField] private TextMeshProUGUI textHeaderReplayStory;
@@ -31,6 +36,8 @@ public class ReplayStoryPopup : MonoBehaviour
     private Button boundCloseButton;
     private bool useChapterTestDataForCurrentOpen;
     private bool _returnToHousingPageAfterStory;
+    private ScrollRect _replayScrollRect;
+    private RectTransform _contentRect;
 
     private void Awake()
     {
@@ -133,6 +140,8 @@ public class ReplayStoryPopup : MonoBehaviour
             slot.SetData(testData[i], PlayStory);
             spawnedSlots.Add(slot);
         }
+
+        RebuildListLayout();
     }
 
     private void SubscribeLocalization()
@@ -152,8 +161,43 @@ public class ReplayStoryPopup : MonoBehaviour
 
     private void UpdateLocalizedTexts()
     {
-        if (textHeaderReplayStory != null && LocalizationManager.Instance != null)
-            textHeaderReplayStory.text = LocalizationManager.Instance.Get(13024, LocalizingType.UI);
+        if (textHeaderReplayStory != null)
+            textHeaderReplayStory.text = GetLocalizedText(_headerTextId, _headerFallbackKr, _headerFallbackEn);
+    }
+
+    private static string GetLocalizedText(int _id, string _fallbackKr, string _fallbackEn)
+    {
+        if (LocalizationManager.Instance == null)
+            return GetSystemLanguageFallback(_fallbackKr, _fallbackEn);
+
+        string _text = LocalizationManager.Instance.Get(_id, LocalizingType.UI);
+        return IsMissingLocalizationText(_text, _id)
+            ? GetSystemLanguageFallback(_fallbackKr, _fallbackEn)
+            : _text;
+    }
+
+    private static bool IsMissingLocalizationText(string _text, int _id)
+    {
+        return string.IsNullOrWhiteSpace(_text) || _text == $"[{_id}]";
+    }
+
+    private static string GetSystemLanguageFallback(string _fallbackKr, string _fallbackEn)
+    {
+        return Application.systemLanguage == SystemLanguage.Korean ? _fallbackKr : _fallbackEn;
+    }
+
+    private void RebuildListLayout()
+    {
+        if (_contentRect == null && content != null)
+            _contentRect = content as RectTransform;
+
+        if (_contentRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_contentRect);
+
+        Canvas.ForceUpdateCanvases();
+
+        if (_replayScrollRect != null)
+            _replayScrollRect.verticalNormalizedPosition = 1f;
     }
 
     private void ClearSpawnedSlots()
@@ -208,6 +252,12 @@ public class ReplayStoryPopup : MonoBehaviour
 
             content = contentTransform;
         }
+
+        if (_contentRect == null && content != null)
+            _contentRect = content as RectTransform;
+
+        if (_replayScrollRect == null)
+            _replayScrollRect = FindChildComponentByName<ScrollRect>(transform, "RePlayList");
 
         if (slotPrefab == null && content != null)
         {
