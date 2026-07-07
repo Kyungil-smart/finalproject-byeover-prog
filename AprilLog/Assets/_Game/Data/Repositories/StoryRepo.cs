@@ -1,5 +1,8 @@
 // 담당자 : 김영찬
 // 설명   : 스토리/시나리오 대사 및 캐릭터 데이터 저장소
+// 1차 수정자 : 조규민
+// 수정 내용 : 다시보기 UI가 StoryTriggerTable 기반 목록을 만들 수 있도록 읽기 전용 조회 API 추가,
+// StoryTriggerTable 문자열 앞뒤 공백 때문에 ThemeEnd 조회가 실패하지 않도록 TriggerType 정규화
 
 using System;
 using System.Collections.Generic;
@@ -28,7 +31,7 @@ public class StoryRepo : MonoBehaviour
 
         _character = BuildDictionary(_characterTable, nameof(_characterTable), r => r.ID);
         _talkGroup = BuildTalkGroup();
-        _triggersByChapterID = BuildDictionary(_triggerTable, nameof(_triggerTable), r => (r.Target_ID, r.TriggerType));
+        _triggersByChapterID = BuildDictionary(_triggerTable, nameof(_triggerTable), r => (r.Target_ID, NormalizeTriggerType(r.TriggerType)));
         _triggersByGroupId = BuildDictionary(_triggerTable, nameof(_triggerTable), r => r.Story_ID);
 
         _isInitialized = true;
@@ -38,8 +41,46 @@ public class StoryRepo : MonoBehaviour
     // ---------- 조회 API ----------
     public Story_CharacterData GetCharacterData(int charId) => GetData(_character, charId, nameof(GetCharacterData));
     public List<Story_TalkData> GetTalkGroup(int groupId) => GetData(_talkGroup, groupId, nameof(GetTalkGroup));
-    public StoryTriggerData GetTriggerDataByChapterID(int chapterID, string triggerType) => GetData(_triggersByChapterID, (chapterID, triggerType), nameof(GetTriggerDataByChapterID));
+    public StoryTriggerData GetTriggerDataByChapterID(int chapterID, string triggerType) => GetData(_triggersByChapterID, (chapterID, NormalizeTriggerType(triggerType)), nameof(GetTriggerDataByChapterID));
     public StoryTriggerData GetTriggerDataByGroupID(int groupId) => GetData(_triggersByGroupId, groupId, nameof(GetTriggerDataByGroupID));
+
+    // 추가: 조규민 - 다시보기 UI가 DB 테이블을 직접 참조하지 않고 StoryRepo를 통해 후보 목록을 읽는다.
+    public List<StoryTriggerData> GetAllTriggerData()
+    {
+        List<StoryTriggerData> result = new();
+
+        if (_triggerTable == null)
+        {
+            Debug.LogWarning("[StoryRepo] StoryTriggerTable is not assigned. Empty list will be used.");
+            return result;
+        }
+
+        if (_triggerTable.rows == null)
+        {
+            Debug.LogWarning("[StoryRepo] StoryTriggerTable.rows is null. Empty list will be used.");
+            return result;
+        }
+
+        for (int i = 0; i < _triggerTable.rows.Count; i++)
+        {
+            StoryTriggerData row = _triggerTable.rows[i];
+            if (row != null)
+                result.Add(row);
+        }
+
+        result.Sort((a, b) => a.StoryTrigger_ID.CompareTo(b.StoryTrigger_ID));
+        return result;
+    }
+
+    public bool HasTalkGroup(int groupId)
+    {
+        return _talkGroup != null && _talkGroup.ContainsKey(groupId);
+    }
+
+    private static string NormalizeTriggerType(string triggerType)
+    {
+        return string.IsNullOrWhiteSpace(triggerType) ? string.Empty : triggerType.Trim();
+    }
     
     
     // ---------- 보조 함수 ----------
