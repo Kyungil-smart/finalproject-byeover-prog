@@ -2,7 +2,7 @@
 // 설명   : Firebase 인증 서비스 -- 구글 로그인(Google Sign-In) + 게스트 로그인
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름, 기존 Editor Email/Password 계정 로그인 전용 흐름, 기존 익명 세션 재사용 방어 추가
+// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름, 기존 Editor Email/Password 계정 로그인 전용 흐름, 기존 익명 세션 재사용 방어 추가, Google 로그인 실패 유형 전달 누락 보정
 
 #if FIREBASE_ENABLED
 using Firebase;
@@ -152,7 +152,7 @@ public class FirebaseAuthService : MonoBehaviour
         catch (Exception exception)
         {
             LogExceptionDetails("[Auth][GoogleSignIn] SignIn() call exception", exception);
-            CompleteFailedSignIn(GetGoogleSignInExceptionMessage(exception));
+            CompleteFailedSignIn(GetGoogleSignInFailureType(exception), GetGoogleSignInExceptionMessage(exception));
             yield break;
         }
 
@@ -167,14 +167,14 @@ public class FirebaseAuthService : MonoBehaviour
         if (signInTask.IsCanceled)
         {
             Debug.LogWarning("[Auth][GoogleSignIn] SignIn() task canceled.");
-            CompleteFailedSignIn("구글 로그인이 취소되었습니다.");
+            CompleteFailedSignIn(AuthLoginFailureType.Canceled, "구글 로그인이 취소되었습니다.");
             yield break;
         }
 
         if (signInTask.IsFaulted)
         {
             LogExceptionDetails("[Auth][GoogleSignIn] SignIn() task faulted", signInTask.Exception);
-            CompleteFailedSignIn(GetGoogleSignInExceptionMessage(signInTask.Exception));
+            CompleteFailedSignIn(GetGoogleSignInFailureType(signInTask.Exception), GetGoogleSignInExceptionMessage(signInTask.Exception));
             yield break;
         }
 
@@ -493,7 +493,7 @@ public class FirebaseAuthService : MonoBehaviour
         if (authTask.IsFaulted)
         {
             LogExceptionDetails("[Auth][FirebaseAuth] SignInWithCredentialAsync faulted", authTask.Exception);
-            CompleteFailedSignIn(GetExceptionMessage(authTask.Exception, "Firebase 인증 실패"));
+            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, GetExceptionMessage(authTask.Exception, "Firebase 인증 실패"));
             yield break;
         }
 
