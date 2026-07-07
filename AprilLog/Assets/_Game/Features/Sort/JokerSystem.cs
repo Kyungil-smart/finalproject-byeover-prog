@@ -33,19 +33,20 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     private JokerPatternData _activePattern;
 
     private int _currentIndex = 0;
-    private int _currentCount = 2;
+    private int _currentCount = 0;
     private float _lastUsedTime = -60f;
     private const float _coolDown = 60f;
     private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정
 
     private void Start()
     {
-        RefreshJokerCount();
-
-        if (ArtifactManager.Instance != null)
+        if (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null)
         {
-            ArtifactManager.Instance.OnInventoryUpdated += RefreshJokerCount;
-            ArtifactManager.Instance.OnEquipmentChanged += RefreshJokerCount;
+            var am = GameStateManager.Instance.ArtifactManager;
+            am.OnInventoryUpdated += RefreshJokerCount;
+            am.OnEquipmentChanged += RefreshJokerCount;
+
+            Invoke("RefreshJokerCount", 0.5f);
         }
 
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
@@ -55,10 +56,11 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     private void OnDestroy()
     {
-        if (ArtifactManager.Instance != null)
+        if (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null)
         {
-            ArtifactManager.Instance.OnInventoryUpdated -= RefreshJokerCount;
-            ArtifactManager.Instance.OnEquipmentChanged -= RefreshJokerCount;
+            var am = GameStateManager.Instance.ArtifactManager;
+            am.OnInventoryUpdated -= RefreshJokerCount;
+            am.OnEquipmentChanged -= RefreshJokerCount;
         }
     }
 
@@ -219,7 +221,9 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        if (ArtifactManager.Instance == null)
+        var am = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+
+        if (am == null)
         {
             return;
         }
@@ -227,11 +231,11 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         int baseCount = 0;
         int bonus = 0;
 
-        var equippedArtifacts = ArtifactManager.Instance.MyArtifacts.FindAll(a => a.IsEquipped);
+        var equippedArtifacts = am.MyArtifacts.FindAll(a => a.IsEquipped);
 
         foreach (var artifact in equippedArtifacts)
         {
-            if (artifact.MasterId == 60022)
+            if (artifact.MasterId == 56002) 
             {
                 bonus += 1;
 
