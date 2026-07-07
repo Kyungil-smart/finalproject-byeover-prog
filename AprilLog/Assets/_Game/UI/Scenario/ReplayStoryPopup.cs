@@ -490,6 +490,9 @@ public class ReplayStoryPopup : MonoBehaviour
         if (storyRepo == null)
             return replayData;
 
+        // 인트로: 항상 해금 상태로 목록 맨 앞에 넣는다.
+        replayData.Add(CreateIntroReplayData());
+
         List<StoryTriggerData> triggerData = storyRepo.GetAllTriggerData();
         for (int i = 0; i < triggerData.Count; i++)
         {
@@ -570,12 +573,29 @@ public class ReplayStoryPopup : MonoBehaviour
             ? string.Empty
             : ResolveUnlockConditionText(_unlockConditionText);
 
-        return new ReplayStoryData(
+        ReplayStoryData _data = new ReplayStoryData(
             _groupId.ToString(),
             _chapterTitle,
             _episodeTitle,
             _state,
             _conditionText);
+        _data.BackgroundResourcePath = ResolveStoryBackgroundPath(_groupId);
+        return _data;
+    }
+
+    // 인트로(튜토리얼) 슬롯: 항상 해금, 고정 제목/배경.
+    private ReplayStoryData CreateIntroReplayData()
+    {
+        ReplayStoryData intro = new ReplayStoryData(
+            introStoryId.ToString(),
+            LocalizeSystem(introChapterTitleKr, introChapterTitleEn),
+            LocalizeSystem(introEpisodeTitleKr, introEpisodeTitleEn),
+            ReplayStoryState.Cleared,
+            string.Empty);
+        intro.BackgroundResourcePath = !string.IsNullOrEmpty(introBackgroundResourcePath)
+            ? introBackgroundResourcePath
+            : ResolveStoryBackgroundPath(introStoryId);
+        return intro;
     }
 
     private void PlayStory(ReplayStoryData data)
