@@ -14,6 +14,8 @@ using UnityEngine.UI;
 
 public class ArtifactCraftPopupPresenter : MonoBehaviour
 {
+    private const string IconResourceFolder = "Artifact/";
+
     [Header("제작 팝업 (POPUP_ArtifactCraft)")]
     [Tooltip("팝업 루트. 비우면 이 컴포넌트가 붙은 게임오브젝트를 사용한다.")]
     [SerializeField] private GameObject _popup;
@@ -171,11 +173,8 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         if (_artifactIcon != null)
         {
             Sprite icon = LoadIcon(master.IconSpriteKey);
-            if (icon != null)
-            {
-                _artifactIcon.sprite = icon;
-                _artifactIcon.enabled = true;
-            }
+            _artifactIcon.sprite = icon;
+            _artifactIcon.enabled = icon != null;
         }
 
         if (_nameText != null) _nameText.text = ResolveName(master);
@@ -350,8 +349,7 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
 
     private static Sprite LoadIcon(int iconId)
     {
-        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
-        return null;
+        return Resources.Load<Sprite>(IconResourceFolder + iconId);
     }
 
     private static ArtifactGrade ToGrade(string gradeName)

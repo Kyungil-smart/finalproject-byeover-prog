@@ -15,8 +15,8 @@ public class GachaResultSlotView : MonoBehaviour
     [Tooltip("등급/이름 텍스트 (선택)")]
     [SerializeField] private TMP_Text _label;
 
-    [Tooltip("아이콘 Sprite 를 Resources 에서 찾을 때의 폴더 경로 (예: Resources/Icons/Gear -> \"Icons/Gear\")")]
-    [SerializeField] private string _iconResourceFolder = "Icons/Gear";
+    [Tooltip("아이콘 Sprite 를 Resources 에서 찾을 때의 폴더 경로 (예: Resources/Artifact -> \"Artifact\")")]
+    [SerializeField] private string _iconResourceFolder = "Artifact";
 
     // 외부(Presenter)에서 호출. 뽑힌 Gear_ID 하나를 슬롯에 반영한다.
     public void SetData(int gearId)
@@ -64,7 +64,9 @@ public class GachaResultSlotView : MonoBehaviour
 
     private Sprite LoadIcon(int iconId)
     {
-        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
-        return null;
+        string folder = string.IsNullOrWhiteSpace(_iconResourceFolder)
+            ? string.Empty
+            : _iconResourceFolder.Trim().TrimEnd('/') + "/";
+        return Resources.Load<Sprite>(folder + iconId);
     }
 }
