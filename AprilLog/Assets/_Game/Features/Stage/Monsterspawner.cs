@@ -280,6 +280,8 @@ public class MonsterSpawner : MonoBehaviour
     private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss)
     {
         monster.OnDeath -= HandleMonsterDeath;
+        monster.OnRewardContained -= HandlePrizeReward;
+        
         _aliveMonsters.Remove(monster);
 
         OnMonsterDied?.Invoke(monster, isKamikaze);
@@ -297,7 +299,6 @@ public class MonsterSpawner : MonoBehaviour
 
     private void HandlePrizeReward(MonsterAI monster, int triggerId)
     {
-        monster.OnDeath -= HandleMonsterDeath;
         if (_rewardManager == null)
         {
             RequestRewardManager?.Invoke();
