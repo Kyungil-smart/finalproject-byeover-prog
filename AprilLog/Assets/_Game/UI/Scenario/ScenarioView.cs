@@ -75,6 +75,14 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private bool  _useTextFade = false;
     [SerializeField] private float _textFadeDuration = 0.2f;
 
+    [Header("텍스트 가독성")]
+    [Tooltip("기본 대사/이름 색(대부분의 씬·텍스트박스 위).")]
+    [SerializeField] private Color _textColorDefault = Color.white;
+    [Tooltip("밝은 배경 위 boxless 라인일 때의 대사/이름 색.")]
+    [SerializeField] private Color _textColorOnBright = Color.black;
+    [Tooltip("여기에 연결한 배경/컷씬 스프라이트가 깔린 boxless 라인은 밝은 배경으로 보고 글자를 어둡게 한다. (예: 흰 화면 배경)")]
+    [SerializeField] private Sprite[] _brightScenes;
+
     [Header("자동 진행")]
     [SerializeField] private bool  _autoPlay = false;
     [Tooltip("텍스트 출력 완료 후 다음으로 넘어가기까지 대기 시간(초)")]
@@ -137,6 +145,24 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
             _skipButton.onClick.AddListener(() => OnSkipRequested?.Invoke());
     }
 
+    // 배경에 따라 대사/이름 색을 정한다. 밝은 배경 위 boxless 라인만 어둡게, 그 외엔 기본색.
+    private void ApplyTextColor(bool showTextbox, Sprite background, Sprite cutscene)
+    {
+        bool bright = !showTextbox && (IsBrightScene(background) || IsBrightScene(cutscene));
+        Color c = bright ? _textColorOnBright : _textColorDefault;
+
+        if (_dialogueText != null) _dialogueText.color = c;
+        if (_nameText != null)     _nameText.color = c;
+    }
+
+    private bool IsBrightScene(Sprite sprite)
+    {
+        if (sprite == null || _brightScenes == null) return false;
+        for (int i = 0; i < _brightScenes.Length; i++)
+            if (_brightScenes[i] == sprite) return true;
+        return false;
+    }
+
     private void OnDestroy()
     {
         StopAllScenarioTweens();
@@ -158,6 +184,7 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
         SetName(name);
         SetBackground(background);
         SetCutscene(cutscene);
+        ApplyTextColor(showTextbox, background, cutscene);
 
         ApplyPortrait(_portraitLeft,   0, portraitLeft,   speaker == ScenarioSpeakerSlot.Left);
         ApplyPortrait(_portraitCenter, 1, portraitCenter, speaker == ScenarioSpeakerSlot.Center);
