@@ -1,5 +1,7 @@
 //담당자: 조규민
 
+//배치 팝업이 열려 있는 동안 Button_Placement를 숨기고 닫히면 다시 표시
+
 using System;
 using TMPro;
 using UnityEngine;
@@ -93,6 +95,11 @@ public class HousingPlacementButtonView : MonoBehaviour
     // 배치 모드 여부에 따른 팝업·버튼·안내 문구 표시 전환
     public void SetPlacementMode(bool _isActive)
     {
+        if (_placementButton != null)
+        {
+            _placementButton.gameObject.SetActive(!_isActive);
+        }
+
         if (_placementModeText != null)
         {
             _placementModeText.gameObject.SetActive(_isActive);
