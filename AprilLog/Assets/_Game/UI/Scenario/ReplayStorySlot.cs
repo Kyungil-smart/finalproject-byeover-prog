@@ -10,10 +10,21 @@ using UnityEngine.UI;
 // 잠긴 경우에는 잠김 표시가 나타납니다.
 
 // 1차 수정자 : 조규민
-// 수정 내용 : 다시보기 슬롯의 고정 문구와 데이터 표시 형식을 LocalizationManager ID 기반으로 갱신
+// 수정 내용 : 다시보기 슬롯의 고정 문구와 데이터 표시 형식을 LocalizationManager ID 기반으로 갱신,
+// LocalizationManager 초기화 전에는 숫자 ID 대신 기본 문구를 표시
 
 public class ReplayStorySlot : MonoBehaviour
 {
+    private const int _viewButtonTextId = 13025;
+    private const int _lockStateTextId = 13026;
+    private const int _chapterFormatTextId = 11015;
+    private const int _episodeFormatTextId = 11014;
+    private const string _viewButtonFallbackKr = "다시보기";
+    private const string _viewButtonFallbackEn = "Replay";
+    private const string _lockStateFallbackKr = "해당 챕터 클리어 후 확인 가능";
+    private const string _lockStateFallbackEn = "Please Clear Chapter";
+    private const string _chapterFormatFallback = "CHAPTER. {0}";
+
     [Header("텍스트")]
     [SerializeField] private TextMeshProUGUI textHeaderReplay;
     [SerializeField] private TextMeshProUGUI textEpisodeTitle;
@@ -103,23 +114,53 @@ public class ReplayStorySlot : MonoBehaviour
 
     private void UpdateLocalizedTexts()
     {
-        if (LocalizationManager.Instance == null)
-            return;
-
-        SetText(_textView, LocalizationManager.Instance.Get(13025, LocalizingType.UI));
+        SetText(_textView, GetLocalizedText(_viewButtonTextId, _viewButtonFallbackKr, _viewButtonFallbackEn));
 
         if (_currentData == null)
             return;
 
-        string _header = LocalizationManager.Instance.Get(
-            11015,
-            LocalizingType.UI,
-            ResolveChapterFormatValue(_currentData.ChapterTitle));
-        string _episode = LocalizationManager.Instance.Get(11014, LocalizingType.UI)
+        string _chapterFormatValue = ResolveChapterFormatValue(_currentData.ChapterTitle);
+        string _header = GetLocalizedText(
+            _chapterFormatTextId,
+            string.Format(_chapterFormatFallback, _chapterFormatValue),
+            string.Format(_chapterFormatFallback, _chapterFormatValue),
+            _chapterFormatValue);
+        string _episode = GetLocalizedText(
+            _episodeFormatTextId,
+            _currentData.EpisodeTitle ?? string.Empty,
+            _currentData.EpisodeTitle ?? string.Empty)
             .Replace("{chaptername}", _currentData.EpisodeTitle ?? string.Empty);
         SetText(textHeaderReplay, _header);
         SetText(textEpisodeTitle, _episode);
-        SetText(textState, LocalizationManager.Instance.Get(13026, LocalizingType.UI));
+        SetText(textState, GetLocalizedText(_lockStateTextId, _lockStateFallbackKr, _lockStateFallbackEn));
+    }
+
+    private static string GetLocalizedText(int _id, string _fallbackKr, string _fallbackEn)
+    {
+        return GetLocalizedText(_id, _fallbackKr, _fallbackEn, null);
+    }
+
+    private static string GetLocalizedText(int _id, string _fallbackKr, string _fallbackEn, params object[] _args)
+    {
+        if (LocalizationManager.Instance == null)
+            return GetSystemLanguageFallback(_fallbackKr, _fallbackEn);
+
+        string _text = _args == null
+            ? LocalizationManager.Instance.Get(_id, LocalizingType.UI)
+            : LocalizationManager.Instance.Get(_id, LocalizingType.UI, _args);
+        return IsMissingLocalizationText(_text, _id)
+            ? GetSystemLanguageFallback(_fallbackKr, _fallbackEn)
+            : _text;
+    }
+
+    private static bool IsMissingLocalizationText(string _text, int _id)
+    {
+        return string.IsNullOrWhiteSpace(_text) || _text == $"[{_id}]";
+    }
+
+    private static string GetSystemLanguageFallback(string _fallbackKr, string _fallbackEn)
+    {
+        return Application.systemLanguage == SystemLanguage.Korean ? _fallbackKr : _fallbackEn;
     }
 
     private static string ResolveChapterFormatValue(string _chapterTitle)
