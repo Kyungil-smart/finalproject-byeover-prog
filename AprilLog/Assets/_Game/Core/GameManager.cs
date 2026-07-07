@@ -294,9 +294,8 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator LoadSceneCoroutine(string sceneName)
     {
-        var op = SceneManager.LoadSceneAsync(sceneName);
-        while (!op.isDone)
-            yield return null;
+        SceneTransition.Load(sceneName); // 전환 오버레이가 내부에서 비동기 로드까지 처리
+        yield break;
     }
 
     // ---------- Firebase 초기화 ----------
