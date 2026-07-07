@@ -48,6 +48,8 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private GameObject _boxFrame;
     [Tooltip("이름+대사 묶음 (텍스트 페이드용, 항상 표시)")]
     [SerializeField] private GameObject _textboxRoot;
+    [SerializeField] private GameObject _nameLine;
+    [SerializeField] private GameObject _storyLine;
     [SerializeField] private TMP_Text  _nameText;
     [SerializeField] private TMP_Text  _dialogueText;
 
@@ -55,6 +57,13 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private Image _portraitLeft;    // 왼쪽 화자
     [SerializeField] private Image _portraitCenter;  // 중앙 화자
     [SerializeField] private Image _portraitRight;   // 오른쪽 화자
+
+    [Header("초상화 크기")]
+    [SerializeField] private bool _usePortraitAutoSize = true;
+    [Tooltip("초상화 표시 기준 높이(px)")]
+    [SerializeField] private float _portraitTargetHeight = 1800f;
+    [Tooltip("초상화가 너무 넓어지는 것을 막는 최대 너비(px)")]
+    [SerializeField] private float _portraitMaxWidth = 1000f;
 
     [Header("배경 / 컷씬")]
     [SerializeField] private Image _bgImage;   // BG
@@ -208,6 +217,9 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
 
     public void SetName(string name)
     {
+        if (_nameLine != null)
+            _nameLine.SetActive(!string.IsNullOrWhiteSpace(name));
+
         if (_nameText != null)
             _nameText.text = name ?? string.Empty;
     }
@@ -231,6 +243,9 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
 
     public void PlayText(string text)
     {
+        if (_storyLine != null)
+            _storyLine.SetActive(!string.IsNullOrWhiteSpace(text));
+
         if (_dialogueText == null) return;
 
         StopTyping();
@@ -405,6 +420,7 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
         }
 
         image.sprite = sprite;
+        ApplyPortraitSize(image, sprite);
         image.gameObject.SetActive(true);
 
         // 라이팅: 화자=원본+litColor / 비화자=그레이스케일+dimColor
@@ -422,6 +438,25 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
         // 슬라이드 인: 새로 등장할 때만
         if (_usePortraitSlide && !wasActive)
             PlaySlideIn(image, slotIndex);
+    }
+
+    private void ApplyPortraitSize(Image image, Sprite sprite)
+    {
+        if (!_usePortraitAutoSize || image == null || sprite == null) return;
+        if (sprite.rect.height <= 0f) return;
+
+        float aspect = sprite.rect.width / sprite.rect.height;
+        float height = Mathf.Max(1f, _portraitTargetHeight);
+        float width = height * aspect;
+
+        if (_portraitMaxWidth > 0f && width > _portraitMaxWidth)
+        {
+            width = _portraitMaxWidth;
+            height = width / aspect;
+        }
+
+        image.preserveAspect = true;
+        image.rectTransform.sizeDelta = new Vector2(width, height);
     }
 
     private void PlaySlideIn(Image image, int slotIndex)

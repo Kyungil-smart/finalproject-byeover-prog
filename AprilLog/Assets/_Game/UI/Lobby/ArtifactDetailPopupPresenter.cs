@@ -8,6 +8,8 @@ using UnityEngine.UI;
 //          팝업 표시/닫기까지가 UI 영역이며, 내부 데이터 채우기는 OnPopupOpened(Gear_ID)를 구독해 처리한다.
 public class ArtifactDetailPopupPresenter : MonoBehaviour
 {
+    private const string IconResourceFolder = "Artifact/";
+
     [Header("슬롯 클릭 소스")]
     [SerializeField] private ArtifactListBinder _listBinder;   // 리스트 슬롯 클릭
     [SerializeField] private ArtifactEquipBinder _equipBinder; // 장착 슬롯 클릭(선택)
@@ -337,18 +339,26 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_artifactIcon != null)
         {
             Sprite icon = LoadIcon(master.IconSpriteKey);
-            if (icon != null)
-            {
-                _artifactIcon.sprite = icon;
-                _artifactIcon.enabled = true;
-            }
+            _artifactIcon.sprite = icon;
+            _artifactIcon.enabled = icon != null;
         }
 
         if (_nameText != null) _nameText.text = ResolveName(master);
         if (_gradeText != null) _gradeText.text = ArtifactGradeInfo.DisplayName(grade);
-        if (_equipAttackText != null) _equipAttackText.text = $"장착 시 공격력 +{master.AttackBaseAmount}";
-        if (_ownedAttackText != null) _ownedAttackText.text = $"보유 시 공격력 +{ResolveOwnedAttack(master)}";
+        SetAttackValueText(_equipAttackText, master.AttackBaseAmount);
+        SetAttackValueText(_ownedAttackText, ResolveOwnedAttack(master));
         if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
+    }
+
+    private static void SetAttackValueText(TMP_Text text, int value)
+    {
+        if (text == null || IsHeaderText(text)) return;
+        text.text = value.ToString();
+    }
+
+    private static bool IsHeaderText(TMP_Text text)
+    {
+        return text != null && text.gameObject.name.StartsWith("Text_Header");
     }
 
     private void RefreshPopupSlotViews(int gearId, ArtifactInstance inst)
@@ -539,8 +549,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     private static Sprite LoadIcon(int iconId)
     {
-        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
-        return null;
+        return Resources.Load<Sprite>(IconResourceFolder + iconId);
     }
 
     private static ArtifactGrade ToGrade(string gradeName)
