@@ -409,10 +409,17 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     // 초기 배치 메서드 구현
     private void PreFillBoard(int count)
     {
-        var emptySlots = new List<(int t, int s)>();
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
         {
-            for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
+            int unit = RandomUnit();
+            _model.PlaceUnit(t, 0, unit);
+        }
+
+        var emptySlots = new List<(int t, int s)>();
+
+        for (int t = 0; t < SortModel.TABLE_COUNT; t++)
+        {
+            for (int s = 1; s < SortModel.SLOTS_PER_TABLE; s++)
             {
                 emptySlots.Add((t, s));
             }
@@ -426,7 +433,8 @@ public class SortSystem : MonoBehaviour, ISortNotifier
             emptySlots[randomIndex] = temp;
         }
 
-        int filled = 0;
+        int filled = 9;
+
         foreach (var slot in emptySlots)
         {
             if (filled >= count) break;
