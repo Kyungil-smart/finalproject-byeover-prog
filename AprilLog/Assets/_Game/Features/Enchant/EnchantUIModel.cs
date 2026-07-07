@@ -119,7 +119,7 @@ public class EnchantUIModel : MonoBehaviour
                         Level = data.Level,
                         TypeLabel = "스킬",
                         Name = _localizationManager.Get(data.Data.Name, LocalizingType.Enchant),
-                        Description = _localizationManager.Get(data.Data.Skill_Descrip, LocalizingType.Enchant),
+                        Description = _localizationManager.Get(data.Data.Skill_Descrip, LocalizingType.Enchant, data.Data.RequiredValue_1),
                         ImageKey = $"{data.Data.SkillIcon_ID}"
                     });
                 }

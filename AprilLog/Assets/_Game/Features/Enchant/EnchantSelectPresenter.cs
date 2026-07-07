@@ -210,7 +210,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
                     TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
                     Name = _localizationManager.Get(candidate.Name_ID, LocalizingType.Enchant), 
                     Description = candidate.Type == EnchantType.Skill ? 
-                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant, candidate.SkillData.RequiredValue_1) : 
                         _localizationManager.Get(candidate.StatData.StatDescrip, LocalizingType.Enchant),
                     // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
                     ImageKey = candidate.Type == EnchantType.Skill ? 
