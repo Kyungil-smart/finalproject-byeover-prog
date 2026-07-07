@@ -293,7 +293,7 @@ public class StageRepo : MonoBehaviour
     public int GetChapterIdByStep(int targetChapterId, int step)
     {
         int index = GetIndexByChapterId(targetChapterId);
-        if(index != -1) return index;
+        if(index == -1) return -1;
         
         int temp = index - step;
         int id = GetChapterIdByIndex(temp);
@@ -304,7 +304,7 @@ public class StageRepo : MonoBehaviour
     public int GetStageIdByStep(int targetStageId, int step)
     {
         int index = GetIndexByStageId(targetStageId);
-        if(index != -1) return index;
+        if(index == -1) return -1;
 
         int temp = index - step;
         int id = GetStageIdByIndex(temp);
@@ -470,13 +470,13 @@ public class StageRepo : MonoBehaviour
     {
         var result = new Dictionary<int, List<StageWaveRuleData>>();
 
-        if (_poolTable == null)
+        if (_waveRuleTable == null)
         {
             Debug.LogWarning($"[StageRepo] {nameof(_waveRuleTable)} is not assigned. Empty pool dictionary will be used.");
             return result;
         }
 
-        if (_poolTable.rows == null)
+        if (_waveRuleTable.rows == null)
         {
             Debug.LogWarning($"[StageRepo] {nameof(_waveRuleTable)}.rows is null. Empty pool dictionary will be used.");
             return result;

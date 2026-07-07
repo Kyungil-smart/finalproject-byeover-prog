@@ -3,6 +3,10 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+// 1차 수정자 : 조규민
+// 수정 내용 : 시나리오 다시보기 모드에서는 정식 스토리 종료 후 전투/로비 전환 로직을 실행하지 않도록 예외 처리,
+// StoryTriggerTable 문자열 공백과 GameManager 미연결 상태에서도 다음 씬 전환이 끊기지 않도록 방어 처리
+
 public class ScenarioNextSceneLoader : MonoBehaviour
 {
     [SerializeField] private ScenarioDataDriver _driver;
@@ -26,6 +30,10 @@ public class ScenarioNextSceneLoader : MonoBehaviour
 
     private void HandleOnFinished()
     {
+        // 추가: 조규민 - 다시보기 종료 복귀는 TempStoryToGameFlow가 담당하므로 정식 전투/로비 이동을 막는다.
+        if (ReplayStorySelectionContext.IsReplayMode)
+            return;
+
         // 튜토리얼 매니저가 가동 중이고, 완료가 되지 않았다면 동작은 튜토리얼 매니저가 우선임
         if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
         {
@@ -41,6 +49,7 @@ public class ScenarioNextSceneLoader : MonoBehaviour
         if (GameManager.Instance == null)
         {
             StartCoroutine(LoadSceneCoroutine(INGAME_SCENE_NAME));
+            return;
         }
         
         GameManager.Instance.LoadInGame();
@@ -51,6 +60,7 @@ public class ScenarioNextSceneLoader : MonoBehaviour
         if (GameManager.Instance == null)
         {
             StartCoroutine(LoadSceneCoroutine(LOBBY_SCENE_NAME));
+            return;
         }
         
         GameManager.Instance.LoadLobby();
@@ -80,10 +90,30 @@ public class ScenarioNextSceneLoader : MonoBehaviour
 
     private void SetTriggerNextScene()
     {
+        if (GameManager.Instance == null)
+        {
+            GoToInGameScene();
+            return;
+        }
+
         _storyRepo ??= DataManager.Instance.StoryRepo;
+        if (_storyRepo == null)
+        {
+            Debug.LogWarning("[ScenarioNextSceneLoader] StoryRepo를 찾지 못했습니다.", this);
+            GoToInGameScene();
+            return;
+        }
+
         var groupId = GameManager.Instance.SelectedScenarioGroupId;
         var data = _storyRepo.GetTriggerDataByGroupID(groupId);
-        switch (data.TriggerType)
+        if (data == null)
+        {
+            Debug.LogWarning($"[ScenarioNextSceneLoader] StoryTriggerData를 찾지 못했습니다. GroupID: {groupId}", this);
+            GoToInGameScene();
+            return;
+        }
+
+        switch (NormalizeTriggerType(data.TriggerType))
         {
             case SCENARIO_TRIGGER_CHAPTER_END:
                 if(IsContinuePlaying(groupId, out int nextGroupId))
@@ -100,6 +130,11 @@ public class ScenarioNextSceneLoader : MonoBehaviour
                 GoToInGameScene();
                 break;
         }
+    }
+
+    private static string NormalizeTriggerType(string triggerType)
+    {
+        return string.IsNullOrWhiteSpace(triggerType) ? string.Empty : triggerType.Trim();
     }
     
     
