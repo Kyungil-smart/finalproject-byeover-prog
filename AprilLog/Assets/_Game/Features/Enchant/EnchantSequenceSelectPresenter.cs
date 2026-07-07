@@ -292,7 +292,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                     TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
                     Name = _localizationManager.Get(candidate.Name_ID, LocalizingType.Enchant), 
                     Description = candidate.Type == EnchantType.Skill ? 
-                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant, candidate.SkillData.RequiredValue_1) : 
                         _localizationManager.Get(candidate.StatData.StatDescrip, LocalizingType.Enchant),
                     // 추가: 조규민 - 분리형 선택 흐름에서도 인챈트 아이콘 키를 카드 UI로 전달한다.
                     ImageKey = candidate.Type == EnchantType.Skill ? 

@@ -165,7 +165,8 @@ public class LocalizationManager : MonoBehaviour
     public string Get(int id, LocalizingType localizingType, params object[] args)
     {
         string template = Get(id, localizingType);
-        if (template.StartsWith("[")) return template;
+        if (template.StartsWith("[") || args == null || args.Length == 0) 
+            return template;
 
         try
         {

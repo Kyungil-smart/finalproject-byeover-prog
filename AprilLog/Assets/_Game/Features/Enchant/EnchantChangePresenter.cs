@@ -84,7 +84,7 @@ public class EnchantChangePresenter
                 TypeLabel = _pendingEnchant.Type == EnchantType.Skill ? "스킬" : "스탯",
                 Name = _localizationManager.Get(_pendingEnchant.Name_ID, LocalizingType.Enchant),
                 Description = _pendingEnchant.Type == EnchantType.Skill ? 
-                    _localizationManager.Get(_pendingEnchant.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                    _localizationManager.Get(_pendingEnchant.SkillData.Skill_Descrip, LocalizingType.Enchant, _pendingEnchant.SkillData.RequiredValue_1) : 
                     _localizationManager.Get(_pendingEnchant.StatData.StatDescrip, LocalizingType.Enchant),
                 // ToDo : 차후 이미지 컬럼 변경 가능성 있으며, 이미지 불러오는 방법 결정 되면 수정해야됨
                 ImageKey = _pendingEnchant.Type == EnchantType.Skill ? 
