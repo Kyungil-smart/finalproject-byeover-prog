@@ -405,6 +405,10 @@ public class InGameBootstrap : MonoBehaviour
             sceneLoader = go.AddComponent<InGameNextSceneLoader>();
             sceneLoader.SetLoopManager(loop);
         }
+
+        // 챕터당 고유 BG가 있음 - 기획 요청 사항
+        var bgController = FindAnyObjectByType<InGameBackgroundImageController>();
+        bgController.SetBackground(chapterId);
         
         // 챕터 종료(승/패) → 정산 팝업
         loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지
