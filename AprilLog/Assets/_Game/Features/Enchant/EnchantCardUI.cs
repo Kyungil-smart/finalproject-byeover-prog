@@ -97,7 +97,7 @@ public class EnchantCardUI : MonoBehaviour
         // 인챈트 상세 설명 반영
         if (_descriptionText != null)
         {
-            _descriptionText.text = RemoveDescriptionTags(data.Description);
+            _descriptionText.text = data.Description;
         }
 
         // 추가: 조규민 - 인챈트 선택 카드의 ImageKey를 Resources/EnchantIcons 경로의 Sprite로 표시한다.
