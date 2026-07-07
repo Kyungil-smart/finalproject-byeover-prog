@@ -59,7 +59,7 @@ public class CombinationEmptySlotAlphaView : MonoBehaviour
         }
 
         string name = image.gameObject.name;
-        return name == "Unit_1" || name == "Unit_2" || name == "Unit_3";
+        return name == "Unit_1" || name == "Unit_2" || name == "Unit_3" || name == "Skill_Icon";
     }
 
     // 슬롯 비어 있음 여부에 따른 내부 이미지 투명도 적용
