@@ -419,7 +419,7 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
         {
-            for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
+            for (int s = 1; s < SortModel.SLOTS_PER_TABLE; s++)
             {
                 emptySlots.Add((t, s));
             }
