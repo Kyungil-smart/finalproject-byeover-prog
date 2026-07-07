@@ -48,6 +48,8 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private GameObject _boxFrame;
     [Tooltip("이름+대사 묶음 (텍스트 페이드용, 항상 표시)")]
     [SerializeField] private GameObject _textboxRoot;
+    [SerializeField] private GameObject _nameLine;
+    [SerializeField] private GameObject _storyLine;
     [SerializeField] private TMP_Text  _nameText;
     [SerializeField] private TMP_Text  _dialogueText;
 
@@ -208,6 +210,9 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
 
     public void SetName(string name)
     {
+        if (_nameLine != null)
+            _nameLine.SetActive(!string.IsNullOrWhiteSpace(name));
+
         if (_nameText != null)
             _nameText.text = name ?? string.Empty;
     }
@@ -231,6 +236,9 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
 
     public void PlayText(string text)
     {
+        if (_storyLine != null)
+            _storyLine.SetActive(!string.IsNullOrWhiteSpace(text));
+
         if (_dialogueText == null) return;
 
         StopTyping();
