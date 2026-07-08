@@ -43,21 +43,30 @@ MonoBehaviour:
   - Language_ID: 80010
     KR: "\uB2E4\uC774\uC544"
     EN: Gems
-  - Language_ID: 80508
+  - Language_ID: 80011
     KR: "\uAC15\uD654\uC11D"
     EN: Upgrade Stone
-  - Language_ID: 80509
+  - Language_ID: 80012
     KR: "\uB808\uC804\uB354\uB9AC \uC870\uAC01"
     EN: Legendary Piece
-  - Language_ID: 80510
+  - Language_ID: 80013
     KR: "\uACE0\uAE09 \uC0C1\uC790 \uBF51\uAE30\uAD8C"
     EN: Premium Chest Ticket
-  - Language_ID: 80511
+  - Language_ID: 80014
     KR: "\uC5D0\uD53D \uC7A5\uBE44 \uB79C\uB364 \uC9C0\uAE09\uAD8C"
     EN: Random Epic Ticket
-  - Language_ID: 80512
+  - Language_ID: 80015
     KR: "\uB808\uC804\uB354\uB9AC \uC7A5\uBE44 \uB79C\uB364 \uC9C0\uAE09\uAD8C"
     EN: Random Legendary Ticket
+  - Language_ID: 80510
+    KR: "\uB808\uC5B4"
+    EN: Rare
+  - Language_ID: 80511
+    KR: "\uC5D0\uD53D"
+    EN: Epic
+  - Language_ID: 80512
+    KR: "\uB808\uC804\uB354\uB9AC"
+    EN: Legendary
   - Language_ID: 80513
     KR: "\uC218\uC2B5 \uB9C8\uBC95\uC0AC\uC758 \uC778\uC7A5"
     EN: Apprentice Wizard's Seal
@@ -149,147 +158,173 @@ MonoBehaviour:
     KR: "\uB9AC\uCE58\uC758 \uB4F1\uBD88"
     EN: "Lich\u2019s Lantern"
   - Language_ID: 81513
-    KR: "\uACF5\uACA9\uB825\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C \uAC15\uB825\uD574\uC9D1\uB2C8\uB2E4.
-      \\n \uACF5\uACA9\uB825\uC744 {0}% \uC99D\uAC00"
-    EN: Increases the Attack Power of all attacks by a percentage. \n {0}% ATK
+    KR: "\uACF5\uACA9\uB825\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C \uAC15\uB825\uD574\uC9D1\uB2C8\uB2E4.\\n\uACF5\uACA9\uB825\uC744
+      {0}% \uC99D\uAC00"
+    EN: 'Increases the Attack Power of all attacks by a percentage.\nATK +{0}% '
   - Language_ID: 81514
-    KR: "\uCE90\uB9AD\uD130\uC758 \uCD5C\uB300 \uCCB4\uB825(\uB610\uB294 \uBC29\uC5B4\uB9C9\uC758
-      \uCD5C\uB300 \uB0B4\uAD6C\uB3C4)\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C
-      \uC99D\uAC00\uD569\uB2C8\uB2E4. \\n \uCD5C\uB300 \uCCB4\uB825 {0}% \uC99D\uAC00"
-    EN: Increases Maximum HP by a percentage. \n {0}% Max HP
+    KR: "\uBC29\uBCBD\uC758 \uCD5C\uB300 \uB0B4\uAD6C\uB3C4\uAC00 \uD37C\uC13C\uD2B8(%)
+      \uB2E8\uC704\uB85C \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBC29\uBCBD \uB0B4\uAD6C\uB3C4
+      {0}% \uC99D\uAC00"
+    EN: Increases the maximum durability of the barrier by a percentage.\nBarrier
+      Durability +{0}%
   - Language_ID: 81515
     KR: "\uC77C\uBC18\uACF5\uACA9\uACFC \uC790\uB3D9 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00
-      \uC99D\uAC00\uD569\uB2C8\uB2E4. \\n \uBB34\uC18D\uC131 \uD53C\uD574\uB7C9 {0}%
+      \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBB34\uC18D\uC131 \uD53C\uD574\uB7C9 {0}%
       \uC99D\uAC00 "
-    EN: Increases the damage of basic and auto-attacks. \n {0}% Auto-Attack DMG
+    EN: Increases the damage of basic and auto-attacks.\nAuto-Attack DMG +{0}%
   - Language_ID: 81516
-    KR: "\uBC88\uAC1C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBC88\uAC1C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Lightning damage. \n {0}% Lightning DMG
+    KR: "\uBC88\uAC1C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBC88\uAC1C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Elec. damage.\nElec. DMG +{0}%
   - Language_ID: 81517
-    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uC5BC\uC74C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Ice damage. \n {0}% Ice DMG
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uC5BC\uC74C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Ice damage.\nIce DMG +{0}%
   - Language_ID: 81518
-    KR: "\uBC14\uB78C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBC14\uB78C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Wind damage. \n {0}% Wind DMG
+    KR: "\uBC14\uB78C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBC14\uB78C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Wind damage.\nWind DMG +{0}%
   - Language_ID: 81519
-    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBB3C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Water damage. \n {0}% Water DMG
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBB3C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Water damage.\nWater DMG +{0}%
   - Language_ID: 81520
-    KR: "\uBD88 \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBD88 \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Fire damage. \n {0}% Fire DMG
+    KR: "\uBD88 \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBD88
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Fire damage.\nFire DMG +{0}%
   - Language_ID: 81521
     KR: "\uD55C \uC6E8\uC774\uBE0C\uB97C \uBB34\uC0AC\uD788 \uB9C9\uC544\uB0BC \uB54C\uB9C8\uB2E4,
-      \uCD5C\uB300 \uCCB4\uB825\uC758 \uC77C\uC815 \uBE44\uC728\uC744 \uD68C\uBCF5\uD569\uB2C8\uB2E4.
-      \\n \uC6E8\uC774\uBE0C \uD074\uB9AC\uC5B4 \uC2DC \uCCB4\uB825 {0}% \uD68C\uBCF5"
-    EN: Restores a percentage of Max HP upon clearing a wave. \n {0}% HP Recovery
-      on Wave Clear
+      \uBC29\uBCBD \uB0B4\uAD6C\uB3C4\uC758 \uC77C\uC815 \uBE44\uC728\uC744 \uC218\uB9AC\uD569\uB2C8\uB2E4.\\n\uC6E8\uC774\uBE0C
+      \uD074\uB9AC\uC5B4 \uC2DC \uB0B4\uAD6C\uB3C4 {0}% \uC218\uB9AC"
+    EN: Repairs a portion of the barrier's durability each time a wave is successfully
+      defended.\nRepairs {0}% Durability upon Wave Clear
   - Language_ID: 81522
     KR: "\uC2A4\uD14C\uC774\uC9C0 \uD074\uB9AC\uC5B4 \uBC0F \uAC8C\uC784 \uC815\uC0B0
       \uC2DC \uD68D\uB4DD\uD558\uB294 \uACE8\uB4DC\uAC00 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C
-      \uB298\uC5B4\uB0A9\uB2C8\uB2E4. \\n \uCD94\uAC00 \uACE8\uB4DC \uD68D\uB4DD\uB7C9
+      \uB298\uC5B4\uB0A9\uB2C8\uB2E4.\\n\uCD94\uAC00 \uACE8\uB4DC \uD68D\uB4DD\uB7C9
       {0}% \uC99D\uAC00"
-    EN: Increases Gold earned from stages and final rewards. \n {0}% Gold Gain
+    EN: Increases Gold earned from stages and final rewards.\nGold Gain +{0}%
   - Language_ID: 81523
-    KR: "\uACF5\uACA9\uB825\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C \uAC15\uB825\uD574\uC9D1\uB2C8\uB2E4.
-      \\n \uACF5\uACA9\uB825 {0}% \uC99D\uAC00"
-    EN: Increases the Attack Power of all attacks by a percentage. \n {0}% ATK
+    KR: "\uACF5\uACA9\uB825\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C \uAC15\uB825\uD574\uC9D1\uB2C8\uB2E4.\\n\uACF5\uACA9\uB825
+      {0}% \uC99D\uAC00"
+    EN: Increases the Attack Power of all attacks by a percentage.\n{0}% ATK
   - Language_ID: 81524
-    KR: "\uCE90\uB9AD\uD130\uC758 \uCD5C\uB300 \uCCB4\uB825(\uB610\uB294 \uBC29\uC5B4\uB9C9\uC758
-      \uCD5C\uB300 \uB0B4\uAD6C\uB3C4)\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C
-      \uC99D\uAC00\uD569\uB2C8\uB2E4. \\n \uCD5C\uB300 \uCCB4\uB825 {0}% \uC99D\uAC00"
-    EN: Increases Maximum HP by a percentage. \n {0}% Max HP
+    KR: "\uBC29\uBCBD\uC758 \uCD5C\uB300 \uB0B4\uAD6C\uB3C4\uAC00 \uD37C\uC13C\uD2B8(%)
+      \uB2E8\uC704\uB85C \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uCD5C\uB300 \uBC29\uBCBD
+      \uB0B4\uAD6C\uB3C4 {0}% \uC99D\uAC00"
+    EN: Increases the maximum durability of the barrier by a percentage.\nMax Barrier
+      Durability +{0}%
   - Language_ID: 81525
     KR: "\uBAA8\uB4E0 \uACF5\uACA9 \uC2DC \uAC15\uB825\uD55C \uCE58\uBA85\uD0C0\uAC00
-      \uBC1C\uB3D9\uD560 \uD655\uB960\uC774 \uB192\uC544\uC9D1\uB2C8\uB2E4. \\n \uCE58\uBA85\uD0C0
+      \uBC1C\uB3D9\uD560 \uD655\uB960\uC774 \uB192\uC544\uC9D1\uB2C8\uB2E4.\\n\uCE58\uBA85\uD0C0
       \uD655\uB960 {0}% \uC99D\uAC00"
-    EN: Increases the chance to land a critical strike. \n {0}% Critical Hit Chance
+    EN: Increases the chance to land a critical strike.\n{0}% Critical Hit Chance
   - Language_ID: 81526
     KR: "\uC77C\uBC18\uACF5\uACA9\uACFC \uC790\uB3D9 \uACF5\uACA9\uC758 \uB370\uBBF8\uC9C0\uAC00
-      \uC99D\uAC00\uD569\uB2C8\uB2E4.  \\n \uBB34\uC18D\uC131 \uD53C\uD574\uB7C9
-      {0}% \uC99D\uAC00 "
-    EN: Increases the damage of basic and auto-attacks. \n {0}% Auto-Attack DMG
+      \uC99D\uAC00\uD569\uB2C8\uB2E4. \\n\uBB34\uC18D\uC131 \uD53C\uD574\uB7C9 {0}%
+      \uC99D\uAC00 "
+    EN: Increases the damage of basic and auto-attacks.\n{0}% Auto-Attack DMG
   - Language_ID: 81527
-    KR: "\uBC88\uAC1C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBC88\uAC1C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Lightning damage. \n {0}% Lightning DMG
+    KR: "\uBC88\uAC1C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBC88\uAC1C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Elec. damage.\nElec. DMG +{0}%
   - Language_ID: 81528
-    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uC5BC\uC74C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Ice damage. \n {0}% Ice DMG
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uC5BC\uC74C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Ice damage.\nIce DMG +{0}%
   - Language_ID: 81529
-    KR: "\uBC14\uB78C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBC14\uB78C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Wind damage. \n {0}% Wind DMG
+    KR: "\uBC14\uB78C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBC14\uB78C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Wind damage.\nWind DMG +{0}%
   - Language_ID: 81530
-    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBB3C \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Water damage. \n {0}% Water DMG
+    KR: "\uC5BC\uC74C \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBB3C
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Water damage.\nWater DMG +{0}%
   - Language_ID: 81531
-    KR: "\uBD88 \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBD88 \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
-    EN: Increases Fire damage. \n {0}% Fire DMG
+    KR: "\uBD88 \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBD88
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00 "
+    EN: Increases Fire damage.\nFire DMG +{0}%
   - Language_ID: 81532
     KR: "\uC2A4\uD14C\uC774\uC9C0 \uD074\uB9AC\uC5B4 \uBC0F \uAC8C\uC784 \uC815\uC0B0
       \uC2DC \uD68D\uB4DD\uD558\uB294 \uACE8\uB4DC\uAC00 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C
-      \uB298\uC5B4\uB0A9\uB2C8\uB2E4. \\n \uCD94\uAC00 \uACE8\uB4DC \uD68D\uB4DD\uB7C9
+      \uB298\uC5B4\uB0A9\uB2C8\uB2E4.\\n\uCD94\uAC00 \uACE8\uB4DC \uD68D\uB4DD\uB7C9
       {0}% \uC99D\uAC00"
-    EN: Increases Gold earned from stages and final rewards. \n {0}% Gold Gain
+    EN: Increases Gold earned from stages and final rewards.\nGold Gain +{0}%
   - Language_ID: 81533
-    KR: "\uACF5\uACA9\uB825\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C \uAC15\uB825\uD574\uC9D1\uB2C8\uB2E4.
-      \\n \uACF5\uACA9\uB825 {0}% \uC99D\uAC00"
-    EN: Increases the Attack Power of all attacks by a percentage. \n {0}% ATK
-  - Language_ID: 81534
-    KR: "\uC778\uAC8C\uC784\uC5D0\uC11C \uBB34\uC791\uC704 \uC120\uD0DD\uC9C0\uAC00
-      \uB9C8\uC74C\uC5D0 \uB4E4\uC9C0 \uC54A\uC744 \uB54C, \uB2E4\uC2DC \uAD74\uB9B4
-      \uC218 \uC788\uB294 \uAE30\uD68C\uAC00 \uB298\uC5B4\uB0A9\uB2C8\uB2E4. \\n
-      \uC0C8\uB85C\uACE0\uCE68 \uD69F\uC218 {0}\uD68C \uCD94\uAC00"
-    EN: Adds extra reroll chances for random in-game choices. \n {0} Rerolls
-  - Language_ID: 81535
-    KR: "\uBAA8\uB4E0 \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uBAA8\uB4E0 \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00"
-    EN: Increases the damage of all elemental attributes. \n {0}% All Elemental DMG
-  - Language_ID: 81536
-    KR: "\uC870\uAC74 \uC5C6\uC774 \uC790\uB3D9\uACF5\uACA9 \uD69F\uC218\uB85C \uBC1C\uB3D9\uD558\uB294
-      \uC2A4\uD0AC \uB4E4\uC758 \uD53C\uD574\uB7C9\uC774 \uC99D\uAC00\uD569\uB2C8\uB2E4.
-      \\n \uC790\uB3D9 \uACF5\uACA9 \uC2A4\uD0AC \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00"
-    EN: Increases the damage of automatic triggering skills. \n {0}% Auto-Skill DMG
-  - Language_ID: 81537
-    KR: "\uC870\uD569\uC2DD\uC744 \uC644\uC131\uD558\uC5EC \uC2A4\uD0AC\uC758 \uD53C\uD574\uB7C9\uC774
-      \uC99D\uAC00\uD569\uB2C8\uB2E4. \\n \uC870\uD569 \uC2A4\uD0AC \uD53C\uD574\uB7C9
+    KR: "\uACF5\uACA9\uB825\uC774 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C \uAC15\uB825\uD574\uC9D1\uB2C8\uB2E4.\\n\uACF5\uACA9\uB825
       {0}% \uC99D\uAC00"
-    EN: Increases the damage of merged (Recipe) skills. \n {0}% Recipe Skill DMG
+    EN: Increases the Attack Power of all attacks by a percentage.\nATK +{0}%
+  - Language_ID: 81534
+    KR: "\uAC8C\uC784\uC744 \uC2DC\uC791\uD560 \uB54C \uC720\uBB3C \uACE0\uC11C\uB97C
+      \uBCF4\uC720\uD558\uACE0 \uC2DC\uC791\uD569\uB2C8\uB2E4.'\\n\uC720\uBB3C \uACE0\uC11C
+      {0}\uAD8C \uCD94\uAC00"
+    EN: "Start the game with a Relic Tome.\\n+{0} Relic Tome\u3134"
+  - Language_ID: 81535
+    KR: "\uBAA8\uB4E0 \uC18D\uC131 \uB370\uBBF8\uC9C0\uAC00 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uBAA8\uB4E0
+      \uC18D\uC131 \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00"
+    EN: Increases the damage of all elemental attributes.\nAll Elemental DMG +{0}%
+  - Language_ID: 81536
+    KR: "\uC77C\uBC18 \uC2A4\uD0AC\uC758 \uD53C\uD574\uB7C9\uC774 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uC77C\uBC18
+      \uC2A4\uD0AC \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00"
+    EN: Increases the damage of Nomal skills.\nNomal Skill DMG +{0}%
+  - Language_ID: 81537
+    KR: "\uC870\uD569 \uC2A4\uD0AC\uC758 \uD53C\uD574\uB7C9\uC774 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uC870\uD569
+      \uC2A4\uD0AC \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00"
+    EN: Increases the damage of Recipe skills.\nRecipe Skill DMG +{0}%
   - Language_ID: 81538
-    KR: "\uCF64\uBCF4\uB85C \uC778\uD574 \uBC1C\uB3D9\uD558\uB294 \uC2A4\uD0AC\uC758
-      \uD53C\uD574\uB7C9\uC774 \uC99D\uAC00\uD569\uB2C8\uB2E4. \\n \uCF64\uBCF4 \uC2A4\uD0AC
-      \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00"
-    EN: Increases the damage of skills triggered by combos. \n {0}% Combo Skill DMG
+    KR: "\uCF64\uBCF4 \uC2A4\uD0AC\uC758 \uD53C\uD574\uB7C9\uC774 \uC99D\uAC00\uD569\uB2C8\uB2E4.\\n\uCF64\uBCF4
+      \uC2A4\uD0AC \uD53C\uD574\uB7C9 {0}% \uC99D\uAC00"
+    EN: Increases the damage of Combo skills.\nCombo Skill DMG +{0}%
   - Language_ID: 81539
     KR: "\uCCB4\uB825\uC774 \uC77C\uC815 \uBE44\uC728 \uC774\uD558\uB85C \uB5A8\uC5B4\uC9C4
       \uC77C\uBC18 \uBAAC\uC2A4\uD130\uB97C \uACF5\uACA9\uD558\uBA74, \uB0A8\uC740
-      \uCCB4\uB825\uACFC \uC0C1\uAD00\uC5C6\uC774 \uC989\uC0AC\uC2DC\uD0B5\uB2C8\uB2E4.
-      \\n \uCCB4\uB825 {0}% \uC774\uD558 \uBAAC\uC2A4\uD130 \uCC98\uD615"
-    EN: Instantly executes normal monsters when their HP drops below a certain percentage.
-      \n Execute Monsters below {0}% HP
+      \uCCB4\uB825\uACFC \uC0C1\uAD00\uC5C6\uC774 \uC989\uC0AC\uC2DC\uD0B5\uB2C8\uB2E4.\\n\uCCB4\uB825
+      {0}% \uC774\uD558 \uBAAC\uC2A4\uD130 \uCC98\uD615"
+    EN: Instantly executes normal monsters when their HP drops below a certain percentage.\nExecute
+      Monsters below {0}% HP
   - Language_ID: 81540
     KR: "\uC2A4\uD14C\uC774\uC9C0 \uD074\uB9AC\uC5B4 \uBC0F \uAC8C\uC784 \uC815\uC0B0
       \uC2DC \uD68D\uB4DD\uD558\uB294 \uACE8\uB4DC\uAC00 \uD37C\uC13C\uD2B8(%) \uB2E8\uC704\uB85C
-      \uB298\uC5B4\uB0A9\uB2C8\uB2E4. \\n \uCD94\uAC00 \uACE8\uB4DC \uD68D\uB4DD\uB7C9
+      \uB298\uC5B4\uB0A9\uB2C8\uB2E4.\\n\uCD94\uAC00 \uACE8\uB4DC \uD68D\uB4DD\uB7C9
       {0}% \uC99D\uAC00"
-    EN: Increases Gold earned from stages and final rewards. \n {0}% Gold Gain
+    EN: Increases Gold earned from stages and final rewards.\nGold Gain +{0}%
   - Language_ID: 81541
-    KR: "\uD55C \uBC88 \uCD5C\uB300 \uCCB4\uB825\uC758 \uC77C\uC815 \uBE44\uC728\uC744
-      \uAC00\uC9C4 \uCC44\uB85C \uBD80\uD65C\uD569\uB2C8\uB2E4. \\n \uBD80\uD65C
-      (\uCCB4\uB825 {0}% \uC0C1\uD0DC\uB85C \uBD80\uD65C)"
-    EN: Revives you once with a percentage of your Max HP. \n Revive with {0}% HP
+    KR: "\uBCA0\uB9AC\uC5B4 \uCD5C\uB300 \uB0B4\uAD6C\uB3C4\uC758 \uC77C\uC815 \uBE44\uC728\uC744
+      \uBCF4\uC720\uD55C \uCC44 \uBD80\uD65C\uD569\uB2C8\uB2E4.\\n\uBD80\uD65C (\uB0B4\uAD6C\uB3C4
+      {0}% \uC0C1\uD0DC\uB85C \uBD80\uD65C)"
+    EN: Revives while retaining a certain percentage of the barrier's maximum durability.\nRevive
+      (Revives with {0}% Durability)
   - Language_ID: 81542
-    KR: "\uBAAC\uC2A4\uD130\uB97C 20 \uB9C8\uB9AC \uCC98\uCE58\uD560 \uB54C\uB9C8\uB2E4,
-      \uCD5C\uB300 \uCCB4\uB825\uC758 \uC77C\uC815 \uBE44\uC728\uC744 \uC989\uC2DC
-      \uD68C\uBCF5\uD569\uB2C8\uB2E4. \\n \uC801 20 \uB9C8\uB9AC \uCC98\uCE58 \uC2DC
-      \uCCB4\uB825 {0}% \uD68C\uBCF5"
-    EN: Restores a percentage of Max HP for every {N} enemies defeated. \n Restore
-      {0}% HP per 20 Kills
+    KR: "\uBAAC\uC2A4\uD130\uB97C 25 \uB9C8\uB9AC \uCC98\uCE58\uD560 \uB54C\uB9C8\uB2E4,
+      \uBCA0\uB9AC\uC5B4 \uB0B4\uAD6C\uB3C4\uC758 \uC77C\uC815 \uBE44\uC728\uC744
+      \uC989\uC2DC \uC218\uB9AC\uD569\uB2C8\uB2E4.\\n\uC801 25 \uB9C8\uB9AC \uCC98\uCE58
+      \uC2DC \uB0B4\uAD6C\uB3C4 {0}% \uC218\uB9AC"
+    EN: Instantly repairs a certain percentage of barrier durability for every 25
+      monsters defeated.\nRepairs {0}% Durability upon defeating 25 enemies
+  - Language_ID: 82513
+    KR: "\uACF5\uACA9\uB825 {0} \uC99D\uAC00"
+    EN: ATK + {0}
+  - Language_ID: 82514
+    KR: "\uBC29\uBCBD \uB0B4\uAD6C\uB3C4 {0} \uC99D\uAC00"
+    EN: HP + {0}
+  - Language_ID: 82515
+    KR: "\uC6E8\uC774\uBE0C \uD074\uB9AC\uC5B4\uC2DC {0}% \uBC29\uBCBD \uC218\uB9AC"
+    EN: WaveHeal +{0}%
+  - Language_ID: 82516
+    KR: "\uACE8\uB4DC \uBCF4\uB108\uC2A4 {0}%"
+    EN: GoldBonus + {0}%
+  - Language_ID: 82517
+    KR: "\uACF5\uACA9\uB825 {0}% \uC99D\uAC00"
+    EN: ATK + {0}%
+  - Language_ID: 82518
+    KR: "\uCCB4\uB825 {0}% \uC99D\uAC00"
+    EN: HP + {0}%
+  - Language_ID: 82519
+    KR: "\uCE58\uBA85\uD0C0 \uD655\uB960 {0}% \uC99D\uAC00"
+    EN: CritRate + {0}%
+  - Language_ID: 82520
+    KR: "\uC720\uBB3C \uACE0\uC11C {0} \uBCF4\uC720"
+    EN: Relic Tomes +{0}
+  - Language_ID: 82521
+    KR: "\uBAAC\uC2A4\uD130 \uCC98\uCE58 25 \uB2F9 \uBC29\uBCBD {0}% \uC218\uB9AC"
+    EN: HealOnKC + {0}%
