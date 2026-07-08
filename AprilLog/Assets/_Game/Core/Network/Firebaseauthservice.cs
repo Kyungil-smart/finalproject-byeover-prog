@@ -736,6 +736,14 @@ public class FirebaseAuthService : MonoBehaviour
             Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=generated google-services.xml value=" + MaskWebClientId(generatedXmlClientId));
             return generatedXmlClientId.Trim();
         }
+
+        string googleSignInJsonClientId = TryGetGoogleServicesJsonWebClientId();
+        if (!string.IsNullOrWhiteSpace(googleSignInJsonClientId))
+        {
+            Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=Assets/GoogleSignIn/google-services.json value=" + MaskWebClientId(googleSignInJsonClientId));
+            return googleSignInJsonClientId.Trim();
+        }
+
         Debug.LogWarning("[Auth][GoogleSignIn] ResolveWebClientId failed: default_web_client_id is null/empty in all sources.");
 
         return null;
@@ -797,6 +805,56 @@ public class FirebaseAuthService : MonoBehaviour
         }
 
         return xml.Substring(valueStart + 1, valueEnd - valueStart - 1);
+    }
+
+    // 추가: 조규민 - Assets/GoogleSignIn/google-services.json을 사용하는 프로젝트 기준에 맞춰 Web Client ID 보조 해석 경로를 둔다.
+    private string TryGetGoogleServicesJsonWebClientId()
+    {
+        string path = Path.Combine(Application.dataPath, "GoogleSignIn/google-services.json");
+        if (!File.Exists(path))
+        {
+            Debug.Log("[Auth][GoogleSignIn] google-services.json fallback not found. path=" + path);
+            return null;
+        }
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            string clientTypeMarker = "\"client_type\": 3";
+            int clientTypeIndex = json.IndexOf(clientTypeMarker, StringComparison.Ordinal);
+            if (clientTypeIndex < 0)
+            {
+                Debug.LogWarning("[Auth][GoogleSignIn] google-services.json fallback missing client_type 3 web client.");
+                return null;
+            }
+
+            int clientIdKeyIndex = json.LastIndexOf("\"client_id\"", clientTypeIndex, StringComparison.Ordinal);
+            if (clientIdKeyIndex < 0)
+            {
+                Debug.LogWarning("[Auth][GoogleSignIn] google-services.json fallback missing client_id before client_type 3.");
+                return null;
+            }
+
+            return ReadJsonStringValue(json, clientIdKeyIndex);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning("[Auth][GoogleSignIn] google-services.json fallback read failed: " + exception.Message);
+            return null;
+        }
+    }
+
+    private string ReadJsonStringValue(string json, int keyIndex)
+    {
+        int colonIndex = json.IndexOf(':', keyIndex);
+        int valueStart = colonIndex < 0 ? -1 : json.IndexOf('"', colonIndex + 1);
+        int valueEnd = valueStart < 0 ? -1 : json.IndexOf('"', valueStart + 1);
+        if (valueStart < 0 || valueEnd < 0 || valueEnd <= valueStart)
+        {
+            return null;
+        }
+
+        return json.Substring(valueStart + 1, valueEnd - valueStart - 1);
     }
 
     private IEnumerator WaitForTask(Task task, float timeoutSeconds, Action<bool> onCompleted)
