@@ -152,21 +152,25 @@ public class InGameHUDPresenter
 
     private void PlayEffect()
     {
-        if (_onHitFeedBackTimer > 0 && _isFeedBackBarColorOrigin)
+        if (_onHitFeedBackTimer > 0)
         {
-            ApplyEffectColor(_feedBackColor.GetOnHitColor());
-            return;
+            if (_isFeedBackBarColorOrigin) 
+            {
+                ApplyEffectColor(_feedBackColor.GetOnHitColor());
+            }
         }
-
-        if (!_isFeedBackBarColorOrigin)
+        else 
         {
-            ResetEffectColor();
+            if (!_isFeedBackBarColorOrigin)
+            {
+                ResetEffectColor();
+            }
         }
     }
 
     private void ApplyEffectColor(Color color)
     {
-        _view.SetFeedBackBarColor(_feedBackColor.GetOnHitColor());
+        _view.SetFeedBackBarColor(color);
         _isFeedBackBarColorOrigin = color == _defaultColor;
     }
     

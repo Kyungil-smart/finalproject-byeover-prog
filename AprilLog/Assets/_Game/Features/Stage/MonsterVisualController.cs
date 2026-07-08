@@ -140,6 +140,7 @@ public class MonsterVisualController : MonoBehaviour
         if (_renderers == null || _renderers.Length == 0) return;
 
         _onHitRootTime = Time.time + duration;
+        ApplyEffectColor(_feedBackColor.GetOnHitColor());
     }
 
     private void SetCCEffect(CrowdControlType ccType, float duration)
@@ -153,7 +154,6 @@ public class MonsterVisualController : MonoBehaviour
     {
         if (Time.time < _onHitRootTime)
         {
-            ApplyEffectColor(_feedBackColor.GetOnHitColor());
             return;
         }
         
