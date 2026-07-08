@@ -197,6 +197,9 @@ public class LobbyPageController : MonoBehaviour
             bool isTargetPage = pair.Key == pageType;
             pair.Value.SetActive(isTargetPage);
         }
+
+        // SFX 가이드 하우징 1: 하우징 화면 입장 시 BGM 교체, 나가면 로비 BGM 복귀. (같은 곡이면 무시되므로 매 호출 안전)
+        AudioManager.Bgm(pageType == LobbyPageType.Housing ? SfxId.HousingBgm : SfxId.LobbyBgm);
     }
 
     public void ShowDefaultPage()

@@ -238,6 +238,7 @@ public class ArtifactManager : MonoBehaviour
 
         string materialType = useShard ? "Shard" : "SameGear";
         var costData = DataManager.Instance.GearRepo.GetAscensionCosts(item.MasterData.GearGrade, materialType);
+        int ascensionBefore = item.AscensionCount;   // 성공 판정용(아래 경로 중 하나라도 ++ 되면 성공)
 
         if (useShard)
         {
@@ -260,6 +261,9 @@ public class ArtifactManager : MonoBehaviour
             item.AscensionCount++;
         }
 
+        if (item.AscensionCount > ascensionBefore)
+            AudioManager.Play(SfxId.ArtifactAscension);   // SFX 가이드 아웃게임 4: 돌파 성공
+
         OnInventoryUpdated?.Invoke();
     }
 
@@ -276,6 +280,7 @@ public class ArtifactManager : MonoBehaviour
         item.CurrentCount -= countToDisassemble;
 
         GiveReward(item.MasterData.GearGrade, countToDisassemble);
+        AudioManager.Play(SfxId.ArtifactDisassemble);   // SFX 가이드 아웃게임 5: 아티팩트 분해
 
         OnInventoryUpdated?.Invoke();
     }

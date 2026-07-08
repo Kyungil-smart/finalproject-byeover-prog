@@ -215,6 +215,7 @@ public class ScreenNavigator : MonoBehaviour
     // ---------- 게임 일시 정지 / 해제 ----------
     private void OpenMenu()
     {
+        AudioManager.Play(SfxId.PopupOpen);   // SFX 가이드 아웃게임 8: 모든 팝업 등장(공용 단일 지점)
         Time.timeScale = 0f;
     }
 

@@ -157,8 +157,9 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                 if (_model.CanAcquireNewSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID))
                 {
                     _model.AcquireSkill(selected.Name_ID, selected.SkillData.SkillGroup_ID);
+                    AudioManager.Play(SfxId.EnchantSelect);
                     ClearTutorialFixedChoiceState();
-                    ClosePopupAndCountUp(); 
+                    ClosePopupAndCountUp();
                 }
                 else
                 {
@@ -171,6 +172,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                 if (_model.CanAcquireNewStat(selected.Name_ID, selected.StatData.StatGroup_ID))
                 {
                     _model.AcquireStat(selected.Name_ID, selected.StatData.StatGroup_ID);
+                    AudioManager.Play(SfxId.EnchantSelect);
                     ClearTutorialFixedChoiceState();
                     ClosePopupAndCountUp();
                 }
@@ -208,6 +210,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
             _rerollRemaining--;
         }
         
+        AudioManager.Play(SfxId.EnchantReroll);
         GenerateChoicesByTurnType(_pickCount);
         ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : _pickCount);
         SaveSnapshot(_model.TotalDrawCount);   // 리롤 결과도 스냅샷 갱신(남은 리롤 수 포함)
@@ -249,6 +252,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         MarkCardRerollUsed(index);
         _seenEnchantIds.Add(newChoice.Name_ID);
 
+        AudioManager.Play(SfxId.EnchantReroll);
         SaveSnapshot(_model.TotalDrawCount);   // 개별 리롤 결과도 스냅샷 갱신
         DisplayChoicesToView();
     }

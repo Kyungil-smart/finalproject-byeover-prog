@@ -348,6 +348,7 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         }
 
         progressModel.SetCharacterLevel(currentLevel + 1);
+        AudioManager.Play(SfxId.CharacterLevelUp);   // SFX 가이드 아웃게임 2: 레벨 업 성공
 
         // 레벨업 후 다음 레벨 소모량 계산 (or MAX)
         int nextLevel = progressModel.CharacterLevel;

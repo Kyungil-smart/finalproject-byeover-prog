@@ -122,6 +122,10 @@ public class HousingInteractionPresenter
         }
 
         _model.Activate(_interactionId);
+
+        // SFX 가이드 하우징 5: 침대 터치. 클립은 기획 미확정이라 SoundLibrary.asset에 비워져 있음 - 꽂으면 즉시 재생된다.
+        if (_interactionId == "bed_sleep")
+            AudioManager.Play(SfxId.HousingBed);
     }
 
     private void HandleExitClicked()

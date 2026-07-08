@@ -17,6 +17,9 @@ public class TempSceneLoader : MonoBehaviour
             Debug.LogWarning("[TempSceneLoader] 씬 이름이 비어있습니다.", this);
             return;
         }
+        // 현재 유일한 사용처가 로비 PLAY 버튼이라 여기서 재생. 로비 스테이지 선택이 정식 배선되면
+        // 이 파일 삭제와 함께 스타트 버튼 핸들러로 옮길 것. (SFX 가이드 아웃게임 9: 인게임 입장)
+        AudioManager.Play(SfxId.EnterInGame);
         SceneManager.LoadScene(_sceneName);
     }
 
