@@ -19,6 +19,10 @@ public class TutorialLobbyDirector : MonoBehaviour
     [SerializeField] private int _equipDoneScenarioEndId = 100074;
     [SerializeField] private int _scenarioSourceGroupId = 3002;
 
+    [Header("아티팩트 선택 단계(뽑은 아티팩트 지목)")]
+    [Tooltip("비우면 씬에서 자동 탐색한다.")]
+    [SerializeField] private ArtifactListBinder _artifactList;
+
     [Header("팝업/버튼 참조")]
     [SerializeField] private ArtifactDetailPopupPresenter _detailPopup;
     [SerializeField] private RectTransform _ascendButton;   // 돌파(=레벨업) 버튼
@@ -42,6 +46,8 @@ public class TutorialLobbyDirector : MonoBehaviour
     private TMP_Text _ascendButtonText;
 
     private bool _active;
+    private bool _artifactSelectGuideShown;
+    private bool _levelUpGuideShown;
     private bool _level5Handled;
     private bool _ascendHandled;
     private bool _equipHandled;
@@ -76,10 +82,14 @@ public class TutorialLobbyDirector : MonoBehaviour
 
         TryPlayLobbyStepScenario();
 
+        HandleArtifactSelectStep();
+
         if (!IsArtifactUpgradeStepActive())
             return;
 
         HandleInventoryUpdated();
+
+        UpdateLevelUpGuide();
 
         if (!_ascendHandled || _equipHandled) return;
 
@@ -244,6 +254,74 @@ public class TutorialLobbyDirector : MonoBehaviour
             ? repo.GetAscensionCosts(master.GearGrade, "SameGear")
             : null;
         return cost != null ? Mathf.Max(1, cost.CostAmount) : 1;
+    }
+
+    // 스텝11(뽑은 아티팩트 선택): 튜토리얼 아티팩트 슬롯만 남기고 나머지를 딤·터치차단, 손가락으로 지목한다.
+    // 리스트는 맨 위로 스크롤해 대상이 보이도록 한다. 딤 구멍이 대상만 통과시키므로 엉뚱한 아티팩트를 눌러 진행되는 것도 막힌다.
+    private void HandleArtifactSelectStep()
+    {
+        if (!IsArtifactSelectStepActive())
+        {
+            if (_artifactSelectGuideShown)
+            {
+                HideGuide();
+                _artifactSelectGuideShown = false;
+            }
+            return;
+        }
+
+        if (_artifactSelectGuideShown)
+            return;   // 이미 표시 중이면 딤/손가락이 대상 슬롯을 매 프레임 추적한다.
+
+        ArtifactListBinder list = ResolveArtifactList();
+        if (list == null) return;
+
+        RectTransform slot = list.GetSlotRect(_sealGearId);
+        if (slot == null || !slot.gameObject.activeInHierarchy) return;
+
+        ResolveGuideIfNeeded();
+        list.ScrollToTop();
+        if (_dimMask != null) _dimMask.ShowWithHole(slot);
+        if (_finger != null) _finger.PointAt(slot);
+        _artifactSelectGuideShown = true;
+    }
+
+    private static bool IsArtifactSelectStepActive()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        if (step == null || step.scene != TutorialScene.Lobby)
+            return false;
+
+        return step.gameAction == TutorialGameAction.ArtifactOpen;
+    }
+
+    private ArtifactListBinder ResolveArtifactList()
+    {
+        if (_artifactList == null)
+            _artifactList = FindFirstObjectByType<ArtifactListBinder>(FindObjectsInactive.Include);
+        return _artifactList;
+    }
+
+    // step12: 레벨업 5회를 채우는 동안 레벨업(=돌파) 버튼을 계속 손가락으로 강조한다.
+    // 레벨5 도달 후에는 HandleLevel5Reached → 돌파/장착 가이드가 같은 버튼을 이어받는다.
+    private void UpdateLevelUpGuide()
+    {
+        if (_level5Handled) return;   // 레벨5 이후는 돌파/장착 흐름이 담당
+
+        // 팝업이 닫혀 버튼이 사라지면 다시 열릴 때 재강조하도록 초기화한다.
+        if (_ascendButton == null || !_ascendButton.gameObject.activeInHierarchy)
+        {
+            _levelUpGuideShown = false;
+            return;
+        }
+
+        if (_levelUpGuideShown) return;
+
+        ResolveGuideIfNeeded();
+        if (_dimMask != null) _dimMask.Hide();   // step12는 딤 없이 손가락만(noDim)
+        if (_finger != null) _finger.PointAt(_ascendButton);
+        _levelUpGuideShown = true;
     }
 
     private void ShowAscendGuide()
