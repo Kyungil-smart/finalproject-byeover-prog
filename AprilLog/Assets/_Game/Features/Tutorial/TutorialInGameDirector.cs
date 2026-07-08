@@ -1080,14 +1080,18 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         if (!_temporaryCombinationRecipeShown) return;
 
-        CombinationView view = ResolveCombinationView();
-        if (view != null) view.ClearRecipe(0);
-
-        RectTransform slot = ResolveCombinationSlot();
-        if (slot != null) slot.gameObject.SetActive(false);
-
+        // 임시 조합식 아이콘 조회에 쓴 FusionData를 먼저 제거해 아래 SetRecipe가 빈 아이콘으로 복원되게 한다.
         if (_temporaryFusionDataAdded && _enchantCombinationModel != null && _enchantCombinationModel.FusionData != null)
             _enchantCombinationModel.FusionData.Remove(TutorialCombinationSkillNameId);
+
+        // 첫 슬롯을 비활성화하지 않고 빈 상태로 되돌린다.
+        // 비활성화하면 조합 외 인챈트를 획득할 때 슬롯이 다시 켜지지 않아 첫 칸이 사라진다.
+        CombinationView view = ResolveCombinationView();
+        if (view != null)
+        {
+            view.ClearRecipe(0);
+            view.SetRecipe(0, TutorialCombinationSkillNameId, null);
+        }
 
         _temporaryCombinationRecipeShown = false;
         _temporaryFusionDataAdded = false;
