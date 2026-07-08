@@ -170,7 +170,16 @@ public class InGameHUDPresenter
 
     private void ApplyEffectColor(Color color)
     {
-        _view.SetFeedBackBarColor(color);
+        if (color == _defaultColor)
+        {
+            _view.SetFeedBackBarColor(color);
+        }
+        else
+        {
+            var alphaAdjustedHitColor = new Color(color.r, color.g, color.b, 150);
+            _view.SetFeedBackBarColor(alphaAdjustedHitColor);
+        }
+        
         _isFeedBackBarColorOrigin = color == _defaultColor;
     }
     
