@@ -262,6 +262,7 @@ public class GameManager : MonoBehaviour
     public void LoadLobby()
     {
         ChangeState(GameState.Lobby);
+        AudioManager.Bgm(SfxId.LobbyBgm);   // SFX 가이드 1.0: 로그인/로딩/로비 공용 BGM
         StartCoroutine(LoadSceneCoroutine("_Lobby")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
     }
 

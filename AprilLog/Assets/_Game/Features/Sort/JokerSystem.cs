@@ -102,6 +102,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
         if (IsActive || _patternLibrary == null || _patternLibrary.patterns.Count == 0) return;
 
+        AudioManager.Play(SfxId.JokerClick);   // SFX 가이드 14: 조커 사용(쿨타임/미보유 거부는 무음)
         _currentCount--;
         UpdateJokerUI();
 
