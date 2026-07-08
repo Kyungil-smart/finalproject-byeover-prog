@@ -218,6 +218,9 @@ public class TutorialInGameDirector : MonoBehaviour
     private readonly List<MonsterAI> _step0Monsters = new List<MonsterAI>(3);
     private int _step0KillCount;
     private bool _step0PuzzlePhase;
+
+    // 3정렬 마지막 공격의 처치를 기다리는 상한(초). 처치 신호 누락 시 소프트락 방지.
+    private const float Step1KillWaitTimeoutSeconds = 2f;
     private GameObject _bossWavePopup;
     private bool _bossWavePopupResolved;
 
@@ -682,7 +685,17 @@ public class TutorialInGameDirector : MonoBehaviour
         {
             _step0ComboLessonPlayed = true;
 
-            // 공격 직후 즉시 일시정지 + 콤보 카운트 UI만 남기고 딤 → 100027~29 → 딤 해제 + 재개
+            // 3정렬의 마지막 공격이 실제로 몬스터에 적중·처치될 때까지 기다린다.
+            // 정렬 완료 이벤트로 단계는 넘어왔지만 투사체는 아직 날아가는 중이라, 여기서 바로 멈추면
+            // 공격 이펙트와 사망 연출이 화면에 얼어붙는다. 처치 신호가 안 와도 소프트락을 막기 위해 상한 시간까지만 대기.
+            float waited = 0f;
+            while (_step0KillCount < _step0Monsters.Count && waited < Step1KillWaitTimeoutSeconds)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // 공격 적중 직후 일시정지 + 콤보 카운트 UI만 남기고 딤 → 100027~29 → 딤 해제 + 재개
             float prev = Time.timeScale;
             Time.timeScale = 0f;
             HighlightComboCountUI();
