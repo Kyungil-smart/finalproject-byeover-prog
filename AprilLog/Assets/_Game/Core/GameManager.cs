@@ -828,7 +828,11 @@ public class GameManager : MonoBehaviour
     {
         var data = CloudData ?? UserCloudData.CreateDefault();
         EnsureCloudIdentity(data);
-        
+
+        // 판이 정산으로 끝났으므로 인챈트 리세마라 방지 스냅샷을 비운다(다음 판은 새 뽑기).
+        // 포기/강제종료 경로는 정산을 안 타므로 스냅샷이 남아 재진입 시 같은 카드가 복원된다 - 그게 방지 목적.
+        ClearEnchantDrawSnapshots(data);
+
         AddCurrency(Mathf.Max(0, rewardGold), Mathf.Max(0, rewardParchment));
         AddDiamond(Mathf.Max(0, rewardDiamond));
 
@@ -850,6 +854,44 @@ public class GameManager : MonoBehaviour
 
         SyncToCloud(data);
         RaiseCurrencyChanged();   // 단계②: 전투 보상이 View(로비 등)에 전파되도록 단일 이벤트 발행
+    }
+
+    // ---------- 인챈트 리세마라 방지 스냅샷 ----------
+    // 인챈트 팝업의 카드 구성을 '뜬 순간'과 '리롤한 순간'에 저장해, 강제종료 후 재진입해도
+    // 같은 뽑기 순번에서 같은 카드가 복원되게 한다. 소거는 정산(SaveChapterResult)에서만.
+
+    /// <summary>해당 뽑기 순번의 저장된 스냅샷. 없으면 null.</summary>
+    public EnchantDrawSnapshot GetEnchantDrawSnapshot(int drawIndex)
+    {
+        var draws = CloudData?.pendingEnchantDraws;
+        if (draws == null) return null;
+
+        for (int i = 0; i < draws.Count; i++)
+            if (draws[i] != null && draws[i].drawIndex == drawIndex) return draws[i];
+        return null;
+    }
+
+    /// <summary>스냅샷 저장(같은 drawIndex는 교체) + 즉시 영속. 카드가 화면에 보이기 전에 호출해야
+    /// '표시 후 저장 전 강제종료' 틈으로 리롤이 성립하지 않는다.</summary>
+    public void SaveEnchantDrawSnapshot(EnchantDrawSnapshot snapshot)
+    {
+        if (snapshot == null) return;
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+
+        if (data.pendingEnchantDraws == null) data.pendingEnchantDraws = new List<EnchantDrawSnapshot>();
+        for (int i = data.pendingEnchantDraws.Count - 1; i >= 0; i--)
+            if (data.pendingEnchantDraws[i] == null || data.pendingEnchantDraws[i].drawIndex == snapshot.drawIndex)
+                data.pendingEnchantDraws.RemoveAt(i);
+
+        data.pendingEnchantDraws.Add(snapshot);
+        SyncToCloud(data);
+    }
+
+    private static void ClearEnchantDrawSnapshots(UserCloudData data)
+    {
+        if (data?.pendingEnchantDraws == null || data.pendingEnchantDraws.Count == 0) return;
+        data.pendingEnchantDraws.Clear();
     }
 
     // ---------- 시나리오 저장/조회 ----------

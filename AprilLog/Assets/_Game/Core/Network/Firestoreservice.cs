@@ -399,6 +399,7 @@ public class FirestoreService : MonoBehaviour
             { "inventory", CreateItemDictionaries(userData.inventory) },
             { "staminaData", CreateStaminaDictionaries(userData.staminaData) },
             { "myArtifacts", CreateArtifactDictionaries(userData.myArtifacts) },
+            { "pendingEnchantDraws", CreateEnchantDrawDictionaries(userData.pendingEnchantDraws) },
             { "language", userData.language },
             { "sfxVolume", userData.sfxVolume },
             { "bgmVolume", userData.bgmVolume },
@@ -471,6 +472,29 @@ public class FirestoreService : MonoBehaviour
         }
 
         return staminaDictionaries;
+    }
+
+    // 인챈트 리세마라 방지 스냅샷을 Dictionary 목록으로 변환한다.
+    private List<Dictionary<string, object>> CreateEnchantDrawDictionaries(List<EnchantDrawSnapshot> draws)
+    {
+        var drawDictionaries = new List<Dictionary<string, object>>();
+        if (draws == null) return drawDictionaries;
+
+        foreach (var draw in draws)
+        {
+            if (draw == null) continue;
+            drawDictionaries.Add(new Dictionary<string, object>
+            {
+                { "drawIndex", draw.drawIndex },
+                { "rerollRemaining", draw.rerollRemaining },
+                { "cardTypes", draw.cardTypes ?? new List<int>() },
+                { "cardGroupIds", draw.cardGroupIds ?? new List<int>() },
+                { "cardNameIds", draw.cardNameIds ?? new List<int>() },
+                { "cardRerollUsed", draw.cardRerollUsed ?? new List<int>() }
+            });
+        }
+
+        return drawDictionaries;
     }
 
     // 아티팩트 보유 목록을 Dictionary 목록으로 변환한다. (IsAscended는 AscensionCount 계산 프로퍼티라 저장하지 않는다)
@@ -610,6 +634,9 @@ public class FirestoreService : MonoBehaviour
         if (snapshot.TryGetValue("myArtifacts", out object myArtifacts))
             data.myArtifacts = ConvertArtifacts(myArtifacts);
 
+        if (snapshot.TryGetValue("pendingEnchantDraws", out object pendingEnchantDraws))
+            data.pendingEnchantDraws = ConvertEnchantDraws(pendingEnchantDraws);
+
         // 계정 생성일 복원. 없으면 CreateDefault의 현재시각이 남아 저장 때마다 생성일이 전진한다.
         if (snapshot.TryGetValue("createdAt", out string createdAt))
             data.createdAt = createdAt;
@@ -715,6 +742,32 @@ public class FirestoreService : MonoBehaviour
         }
 
         return artifacts;
+    }
+
+    // Firestore Dictionary 목록을 EnchantDrawSnapshot 목록으로 복원한다.
+    private List<EnchantDrawSnapshot> ConvertEnchantDraws(object drawObjects)
+    {
+        var draws = new List<EnchantDrawSnapshot>();
+        var enumerableDraws = drawObjects as IEnumerable;
+        if (enumerableDraws == null) return draws;
+
+        foreach (var drawObject in enumerableDraws)
+        {
+            var drawDictionary = drawObject as IDictionary<string, object>;
+            if (drawDictionary == null) continue;
+
+            draws.Add(new EnchantDrawSnapshot
+            {
+                drawIndex = GetIntValue(drawDictionary, "drawIndex"),
+                rerollRemaining = GetIntValue(drawDictionary, "rerollRemaining"),
+                cardTypes = ConvertIntList(drawDictionary.TryGetValue("cardTypes", out var types) ? types : null),
+                cardGroupIds = ConvertIntList(drawDictionary.TryGetValue("cardGroupIds", out var groups) ? groups : null),
+                cardNameIds = ConvertIntList(drawDictionary.TryGetValue("cardNameIds", out var names) ? names : null),
+                cardRerollUsed = ConvertIntList(drawDictionary.TryGetValue("cardRerollUsed", out var used) ? used : null)
+            });
+        }
+
+        return draws;
     }
 
     // Firestore Dictionary에서 string 값을 안전하게 읽는다.

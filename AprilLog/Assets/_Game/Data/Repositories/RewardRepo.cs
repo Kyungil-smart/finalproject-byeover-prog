@@ -165,14 +165,13 @@ public void GetFirstStageRewards(int stageId, out List<RewardRecipe> rewardList)
         var list = GetData(_battleRewardLookup, targetId, nameof(_battleRewardLookup));
         var results = new List<string>();
 
-        if (list.Count > 0)
-        {
-            foreach (var data in list)
-            {
-                results.Add(data.RewardTrigger);
-            }
-        }
+        if (list == null || list.Count == 0) return results;
         
+        foreach (var data in list)
+        {
+            results.Add(data.RewardTrigger);
+        }
+
         return results;
     }
     

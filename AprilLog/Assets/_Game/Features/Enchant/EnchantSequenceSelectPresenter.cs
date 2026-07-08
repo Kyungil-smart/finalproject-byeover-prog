@@ -108,7 +108,14 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         // 현재 몇 번째 뽑기인지에 따라 스킬/스탯 차례 계산
         int sequenceIndex = _model.TotalDrawCount % _sequenceConfig.DrawSequence.Count;
         _currentTurnType = _sequenceConfig.DrawSequence[sequenceIndex];
-        
+
+        // 리세마라 방지: 이 뽑기 순번의 스냅샷이 있으면(강제종료 후 재진입) 그때 본 카드를 그대로 복원한다.
+        if (TryRestoreFromSnapshot(_model.TotalDrawCount))
+        {
+            DisplayChoicesToView();
+            return;
+        }
+
         GenerateChoicesByTurnType(pickCount);
 
         if (!ValidateChoices(_currentChoices, _currentTurnType, "일반 선택"))
@@ -118,6 +125,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         }
 
         ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : pickCount);
+        SaveSnapshot(_model.TotalDrawCount);   // 카드가 화면에 보이기 전에 저장해야 표시-저장 틈의 강제종료 리롤이 안 통한다
         DisplayChoicesToView();
     }
 
@@ -202,6 +210,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         
         GenerateChoicesByTurnType(_pickCount);
         ResetCardRerollState(_currentChoices != null ? _currentChoices.Count : _pickCount);
+        SaveSnapshot(_model.TotalDrawCount);   // 리롤 결과도 스냅샷 갱신(남은 리롤 수 포함)
         DisplayChoicesToView();
     }
 
@@ -239,8 +248,91 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         _currentChoices[index] = newChoice;
         MarkCardRerollUsed(index);
         _seenEnchantIds.Add(newChoice.Name_ID);
-            
+
+        SaveSnapshot(_model.TotalDrawCount);   // 개별 리롤 결과도 스냅샷 갱신
         DisplayChoicesToView();
+    }
+
+    // ---------- 리세마라 방지 스냅샷 ----------
+    // 팝업이 뜬 순간/리롤한 순간의 카드 구성을 계정(CloudData)에 저장해, 강제종료 후 재진입해도
+    // 같은 뽑기 순번(TotalDrawCount)에서 같은 카드가 복원되게 한다. 소거는 판 정산에서만(GameManager).
+    // 테스트 씬(무한 리롤)과 GameManager 없는 단독 씬에서는 끈다.
+    private bool SnapshotEnabled => !_unlimitedReroll && GameManager.Instance != null;
+
+    private bool TryRestoreFromSnapshot(int drawIndex)
+    {
+        if (!SnapshotEnabled) return false;
+
+        EnchantDrawSnapshot snap = GameManager.Instance.GetEnchantDrawSnapshot(drawIndex);
+        if (snap == null || snap.cardNameIds == null || snap.cardNameIds.Count == 0) return false;
+        if (snap.cardTypes == null || snap.cardTypes.Count != snap.cardNameIds.Count) return false;
+        if (snap.cardGroupIds == null || snap.cardGroupIds.Count != snap.cardNameIds.Count) return false;
+
+        var restored = new List<EnchantCandidate>(snap.cardNameIds.Count);
+        for (int i = 0; i < snap.cardNameIds.Count; i++)
+        {
+            EnchantCandidate candidate = RebuildCandidate((EnchantType)snap.cardTypes[i], snap.cardGroupIds[i], snap.cardNameIds[i]);
+            // 하나라도 재조립 불가(만렙/보유상태 변화로 무효)거나 현재 차례 타입과 다르면 스냅샷을 버리고 새로 뽑는다.
+            if (candidate == null || candidate.Type != _currentTurnType) return false;
+            restored.Add(candidate);
+        }
+
+        _currentChoices = restored;
+        _pickCount = restored.Count;
+        _rerollRemaining = _unlimitedReroll ? 0 : Mathf.Clamp(snap.rerollRemaining, 0, _baseRerollCount);
+
+        ResetCardRerollState(restored.Count);
+        if (snap.cardRerollUsed != null)
+            for (int i = 0; i < restored.Count && i < snap.cardRerollUsed.Count; i++)
+                if (snap.cardRerollUsed[i] != 0) MarkCardRerollUsed(i);
+
+        foreach (var choice in restored) _seenEnchantIds.Add(choice.Name_ID);
+        return true;
+    }
+
+    // 저장된 (타입, 그룹, 이름)으로 셀렉터와 같은 규칙의 후보를 다시 조립한다.
+    // 현재 보유 상태 기준 다음 레벨 데이터가 없으면(만렙/체인 소실) null.
+    private EnchantCandidate RebuildCandidate(EnchantType type, int groupId, int nameId)
+    {
+        if (type == EnchantType.Skill)
+        {
+            var chain = _repo.GetSkillChainByName(groupId, nameId);
+            var nextData = chain?.GetNextLevelData(_model.GetSkillLevel(nameId));
+            if (nextData == null) return null;
+
+            return new EnchantCandidate
+            {
+                Type = EnchantType.Skill, Name_ID = nameId, Specific_ID = nextData.Skill_ID,
+                Level = nextData.Level, SkillData = nextData
+            };
+        }
+
+        var statChain = _repo.GetStatChainByName(groupId, nameId);
+        var nextStat = statChain?.GetNextLevelData(_model.GetStatLevel(nameId));
+        if (nextStat == null) return null;
+
+        return new EnchantCandidate
+        {
+            Type = EnchantType.Stat, Name_ID = nameId, Specific_ID = nextStat.StatEnchant_ID,
+            Level = nextStat.StatLevel, StatData = nextStat
+        };
+    }
+
+    private void SaveSnapshot(int drawIndex)
+    {
+        if (!SnapshotEnabled || _isTutorialFixedChoices || _currentChoices == null) return;
+
+        var snap = new EnchantDrawSnapshot { drawIndex = drawIndex, rerollRemaining = _rerollRemaining };
+        for (int i = 0; i < _currentChoices.Count; i++)
+        {
+            var candidate = _currentChoices[i];
+            snap.cardTypes.Add((int)candidate.Type);
+            snap.cardGroupIds.Add(candidate.Type == EnchantType.Skill ? candidate.SkillData.SkillGroup_ID : candidate.StatData.StatGroup_ID);
+            snap.cardNameIds.Add(candidate.Name_ID);
+            snap.cardRerollUsed.Add(IsCardRerollUsed(i) ? 1 : 0);
+        }
+
+        GameManager.Instance.SaveEnchantDrawSnapshot(snap);
     }
 
     // ---------- 보조 함수 ----------
