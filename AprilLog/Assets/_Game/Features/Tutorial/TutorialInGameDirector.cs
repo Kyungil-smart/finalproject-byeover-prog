@@ -773,6 +773,7 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         _step14BossScenarioPlayed = true;
         PauseStep14Scenario();
+        GrantTutorialJokerForBoss();
         HighlightJokerTable();
         yield return PlayWorldDialogue(_step14BossScenarioId, _step14BossScenarioId);
         ClearEnchantDim();
@@ -790,6 +791,15 @@ public class TutorialInGameDirector : MonoBehaviour
 
         TutorialDimMask dim = ResolveEnchantDimMask();
         if (dim != null) dim.ShowWithHole(target);
+    }
+
+    // 조커 시스템 변경으로 튜토리얼 시작 시엔 조커가 지급되지 않는다.
+    // 보스 단계에서 조커를 실제로 쓰도록 유도하는 시점에, 보유분이 없으면 1개 지급한다.
+    private void GrantTutorialJokerForBoss()
+    {
+        JokerSystem joker = FindFirstObjectByType<JokerSystem>();
+        if (joker != null && joker.GetJokerCount() <= 0)
+            joker.AcquireJokerItem();
     }
 
     private void StartStep14JokerProtection()
