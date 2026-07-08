@@ -3,6 +3,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 번역 데이터 연결
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인챈트 교체 완료 확인 팝업에서 확인한 뒤 창이 닫히도록 교체 흐름 분리
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,6 +21,7 @@ public class EnchantChangePresenter
 
     // 대기 중인(방금 뽑아서 얻으려고 하는) 인챈트 데이터
     private EnchantCandidate _pendingEnchant; 
+    private EnchantDisplayData _pendingEnchantDisplayData;
 
     public EnchantChangePresenter(IEnchantChangeView view, EnchantModel model, EnchantUIModel uiModel, ScreenNavigator navigator)
     {
@@ -31,12 +35,14 @@ public class EnchantChangePresenter
         // View의 클릭 이벤트 구독
         _view.OnDiscardConfirmed += HandleChange;
         _view.OnCancelClicked += HandleCancel;
+        _view.OnChangeCompleteConfirmed += HandleChangeCompleteConfirmed;
     }
 
     public void Dispose()
     {
         _view.OnDiscardConfirmed -= HandleChange;
         _view.OnCancelClicked -= HandleCancel;
+        _view.OnChangeCompleteConfirmed -= HandleChangeCompleteConfirmed;
     }
     
     
@@ -92,6 +98,7 @@ public class EnchantChangePresenter
             };
         }
         
+        _pendingEnchantDisplayData = newData;
         _view.SetNewEnchantInfo(newData);
         
         if (_listPresenter == null)
@@ -118,6 +125,8 @@ public class EnchantChangePresenter
     // ---------- 유저 클릭 처리 ----------
     private void HandleChange(int discardNameId)
     {
+        EnchantDisplayData _discardData = FindOwnedEnchantDisplayData(discardNameId);
+
         switch (_pendingEnchant.Type)
         {
             case EnchantType.Skill:
@@ -130,11 +139,41 @@ public class EnchantChangePresenter
                 break;
         }
         
-        _navigator.OnCloseButtonClick(); 
+        _view.ShowChangeCompletePopup(_discardData, _pendingEnchantDisplayData);
     }
 
     private void HandleCancel()
     {
         _navigator.OnCloseButtonClick();
+    }
+
+    private void HandleChangeCompleteConfirmed()
+    {
+        _navigator.OnCloseButtonClick();
+    }
+
+    private EnchantDisplayData FindOwnedEnchantDisplayData(int _discardNameId)
+    {
+        List<EnchantDisplayData> _ownedList = _pendingEnchant.Type == EnchantType.Skill
+            ? _uiModel.OwnedSkillList
+            : _uiModel.OwnedStatList;
+
+        if (_ownedList == null)
+        {
+            return null;
+        }
+
+        for (int _index = 0; _index < _ownedList.Count; _index++)
+        {
+            EnchantDisplayData _ownedData = _ownedList[_index];
+            if (_ownedData == null || _ownedData.EnchantId != _discardNameId)
+            {
+                continue;
+            }
+
+            return _ownedData;
+        }
+
+        return null;
     }
 }
