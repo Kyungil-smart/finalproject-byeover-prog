@@ -59,7 +59,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
             am.OnInventoryUpdated += RefreshJokerCount;
             am.OnEquipmentChanged += RefreshJokerCount;
 
-            Invoke("RefreshJokerCount", 0.5f);
+            RefreshJokerCount();
         }
 
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
