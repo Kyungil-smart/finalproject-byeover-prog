@@ -23,6 +23,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
 {
     // ---------- 이벤트 ----------
     public event Action<int, int> OnHPChanged;
+    public event Action OnHit;
     public event Action OnPlayerDeath;
 
     // ---------- 데이터 ----------
@@ -76,6 +77,9 @@ public class PlayerModel : MonoBehaviour, IDamageable
 
         CurrentHP = Mathf.Max(0, CurrentHP - amount);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
+        
+        if(CurrentHP > 0)
+            HitFeedBack();
 
         if (CurrentHP <= 0)
             OnPlayerDeath?.Invoke();
@@ -83,6 +87,11 @@ public class PlayerModel : MonoBehaviour, IDamageable
 
     // IDamageable 오버로드 — 플레이어 피해는 인챈트별 기록 대상 아님(몬스터→플레이어). skillId 무시하고 기존 처리.
     public void TakeDamage(int amount, int skillId) => TakeDamage(amount);
+
+    public void HitFeedBack()
+    {
+        OnHit?.Invoke();
+    }
 
     // ---------- 회복 ----------
     public void Heal(int amount)

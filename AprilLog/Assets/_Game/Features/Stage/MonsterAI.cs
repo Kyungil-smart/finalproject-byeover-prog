@@ -36,6 +36,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     /// 뒤의 bool = true면 보스 몬스터
     /// </summary>
     public event Action<MonsterAI, bool, bool> OnDeath;
+    public event Action OnHit;
     public event Action<int, int> OnHPChanged;
     public event Action<MonsterAI, int> OnRewardContained;
 
@@ -46,6 +47,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     [Tooltip("애니메이터 지정")] 
     [SerializeField] private Animator _animator;
+
+    [Tooltip("피격 시 스턴 시간 설정")] 
+    [SerializeField] private float _onHitStunTime = 0.1f;
     
     // ---------- IDamageable ----------
     public int CurrentHP { get; private set; }
@@ -352,6 +356,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
         CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
+        
+        if (CurrentHP > 0 && finalDamage > 0)
+            HitFeedBack();
 
         if (CurrentHP <= 0)
             Die();
@@ -387,7 +394,13 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _knockbackVel = Vector2.zero; _knockbackEndTime = 0f;
         _stunEndTime = 0f;
     }
-    
+
+    public void HitFeedBack()
+    {
+        ApplyStun(_onHitStunTime);
+        OnHit?.Invoke();
+    }
+
     // ---------- Stat Scaling ----------
     private int CalculateScaledStat(int baseStat, string growthType, float growthValue, int accumulateCount)
     {
