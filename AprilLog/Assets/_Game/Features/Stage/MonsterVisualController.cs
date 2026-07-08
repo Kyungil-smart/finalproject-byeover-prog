@@ -118,7 +118,7 @@ public class MonsterVisualController : MonoBehaviour
         SetCCEffect(ccType, duration);
     }
 
-    private void HandleOnDeath(MonsterAI monsterAI, bool isKamikaze, bool isBoss)
+    private void HandleOnDeath(MonsterAI monsterAI, bool isKamikaze, bool isBoss, bool isElite)
     {
         ResetVisuals();
     }
