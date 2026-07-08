@@ -387,6 +387,10 @@ public class ShopGachaPresenter : MonoBehaviour
             return result;
         }
 
+        // SFX 가이드 아웃게임 3: 뽑기 진행음. 10연차는 포탈 루프를 추가 재생(모든 뽑기 경로가 이 함수를 지난다).
+        AudioManager.Play(SfxId.ArtifactGachaDraw);
+        if (count >= 10) AudioManager.Play(SfxId.ArtifactGachaTen);
+
         // 천장(레전더리 확정) : 마지막 레전더리 이후 카운트가 PityCount 에 도달하면 그 개봉에서 확정.
         // 레전더리(자연/확정)가 나오면 카운트 0으로 리셋(기획서 6-2-1). 누적/마일리지 카운트와는 별개.
         // usePity=false(광고 무료뽑기)면 천장 적용 안 함 — 순수 확률 추첨만(카운트도 건드리지 않음).

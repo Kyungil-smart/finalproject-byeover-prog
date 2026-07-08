@@ -51,6 +51,7 @@ public class HousingBookshelfReplayBinder : MonoBehaviour
     // 하우징 복귀 정보를 저장하고 다시보기 팝업 표시
     private void OpenReplayStoryPopup()
     {
+        AudioManager.Play(SfxId.HousingBookshelf);   // SFX 가이드 하우징 4: 책장 터치
         ResolveMissingReferences();
 
         if (_replayStoryPopup == null)

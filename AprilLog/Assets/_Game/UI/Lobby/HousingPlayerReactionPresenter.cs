@@ -22,6 +22,8 @@ public class HousingPlayerReactionPresenter
         _resetTimer = TouchCountResetSeconds;
         _isShowing = true;
 
+        AudioManager.Play(SfxId.HousingText);   // SFX 가이드 하우징 2: 에이프릴 대사 출력
+
         return GetReactionMessage(_touchCount);
     }
 

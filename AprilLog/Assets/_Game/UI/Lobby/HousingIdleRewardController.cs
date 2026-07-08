@@ -219,16 +219,18 @@ public class HousingIdleRewardController : MonoBehaviour
     {
         HousingIdleRewardState _state = _claimResult.State;
 
-        if (GameManager.Instance != null)
-        {
-            return GameManager.Instance.ClaimHousingIdleReward(
+        bool _granted = GameManager.Instance != null
+            ? GameManager.Instance.ClaimHousingIdleReward(
                 _state.GoldReward,
                 _state.ParchmentReward,
                 _state.DiamondReward,
-                _claimResult.ClaimedAtUtcText);
-        }
+                _claimResult.ClaimedAtUtcText)
+            : GrantLocalCurrency(_state);
 
-        return GrantLocalCurrency(_state);
+        if (_granted)
+            AudioManager.Play(SfxId.HousingCurrencyMaker);   // SFX 가이드 하우징 7: 재화 생산기 수령
+
+        return _granted;
     }
 
     private bool GrantLocalCurrency(HousingIdleRewardState _state)

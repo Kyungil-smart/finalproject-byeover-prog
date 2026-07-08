@@ -112,6 +112,10 @@ public class AudioManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);   // _Boot→_Lobby→_InGame 씬 전환에도 오디오 유지
 
+        // 공용 버튼 클릭음(SFX 가이드 아웃게임 7): 버튼마다 일일이 달지 않도록 씬 로드 때 일괄 바인딩한다.
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoadedBindButtons;
+        HandleSceneLoadedBindButtons(default, default);   // 이미 로드된 현재 씬(Boot 등)도 1회 바인딩
+
         _bgmSource = EnsureAudioSource(_bgmSource, nameof(_bgmSource));
         _sfxSource = EnsureAudioSource(_sfxSource, nameof(_sfxSource));
 
@@ -123,6 +127,27 @@ public class AudioManager : MonoBehaviour
         if (_sfxSource != null)
             _sfxSource.volume = PlayerPrefs.GetFloat("SFXVolume", 1f);
     }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoadedBindButtons;
+    }
+
+    // 씬에 배치된 모든 버튼(비활성 팝업 포함)에 클릭음을 바인딩한다. 마커 컴포넌트로 중복 바인딩을 막는다.
+    // 런타임에 Instantiate되는 동적 버튼은 여기서 못 잡으므로, 동적 UI는 생성부에서 직접 Play(SfxId.ButtonClick)를 달 것.
+    private void HandleSceneLoadedBindButtons(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        foreach (var button in FindObjectsByType<UnityEngine.UI.Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (button.GetComponent<ButtonClickSfxMarker>() != null) continue;
+            button.gameObject.AddComponent<ButtonClickSfxMarker>();
+            button.onClick.AddListener(() => Play(SfxId.ButtonClick));
+        }
+    }
+
+    /// <summary>버튼 클릭음이 이미 바인딩됐음을 표시하는 마커. 로직 없음.</summary>
+    public class ButtonClickSfxMarker : MonoBehaviour { }
 
     public void PlayBGM(AudioClip clip)
     {

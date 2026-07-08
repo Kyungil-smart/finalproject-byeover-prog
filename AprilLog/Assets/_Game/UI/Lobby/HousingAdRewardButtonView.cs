@@ -40,6 +40,7 @@ public class HousingAdRewardButtonView : MonoBehaviour, IPointerClickHandler
             return;
         }
 
+        AudioManager.Play(SfxId.HousingCoffee);   // SFX 가이드 하우징 6: 커피머신(광고 보기) 터치
         OnClicked?.Invoke();
     }
 
