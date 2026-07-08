@@ -489,7 +489,8 @@ public class InGameBootstrap : MonoBehaviour
         var loop = FindFirstObjectByType<StageLoopManager>();
         int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
         int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
-        int stageId = DataManager.Instance.StageRepo.GetStageId(chapterId, completedStageCount);
+        int _rewardStageOrder = ResolveRewardStageOrder(isVictory, completedStageCount);
+        int stageId = DataManager.Instance.StageRepo.GetStageId(chapterId, _rewardStageOrder);
         
         var firstChapterList = _rewardManager.AddChangeChapterReward(chapterId, isVictory);
         _rewardManager.AddChangeStageReward(stageId, 
@@ -567,7 +568,7 @@ public class InGameBootstrap : MonoBehaviour
             _settlementRewardGranted = true;
         }
 
-        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment);
+        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment, diamond);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
         // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.
@@ -587,6 +588,17 @@ public class InGameBootstrap : MonoBehaviour
         var sortInput = FindFirstObjectByType<SortInputHandler>();
         if (sortInput != null)
             sortInput.enabled = false;
+    }
+
+    // 추가: 조규민 - 패배 정산은 완료한 스테이지가 아니라 현재 플레이한 스테이지 보상을 기준으로 계산한다.
+    private static int ResolveRewardStageOrder(bool _isVictory, int _completedStageCount)
+    {
+        if (_isVictory)
+        {
+            return Mathf.Max(1, _completedStageCount);
+        }
+
+        return Mathf.Max(1, _completedStageCount + 1);
     }
 
     // 실제 웨이브로 진행하므로 에디터 테스트용 더미 스포너를 끈다.
