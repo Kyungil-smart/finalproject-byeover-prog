@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 // 작성자 : 홍정옥
 // 설명   : 아티팩트 마스터 데이터를 슬롯 리스트로 생성하고 정렬을 적용한다.
@@ -217,6 +218,24 @@ public class ArtifactListBinder : MonoBehaviour
 
     // 외부에서 인벤토리 반영을 강제로 다시 호출한다(예: 조각 돌파처럼 OnInventoryUpdated 가 발행되지 않는 경우).
     public void RefreshInventory() => ApplyInventory();
+
+    // 지정한 Gear_ID 슬롯의 RectTransform 을 반환한다(없으면 null). 튜토리얼 손가락/딤 대상 지목용.
+    public RectTransform GetSlotRect(int gearId)
+    {
+        for (int i = 0; i < _slots.Count; i++)
+        {
+            if (_slots[i] != null && _slots[i].GearId == gearId)
+                return _slots[i].transform as RectTransform;
+        }
+        return null;
+    }
+
+    // 리스트를 맨 위로 스크롤한다.
+    public void ScrollToTop()
+    {
+        ScrollRect scroll = _content != null ? _content.GetComponentInParent<ScrollRect>() : null;
+        if (scroll != null) scroll.verticalNormalizedPosition = 1f;
+    }
 
     // 인벤토리 매니저가 없을 때의 수동 보유 목록 연동(선택) : 보유 중인 Gear_ID 목록으로 딤만 갱신한다.
     public void SetOwnedGearIds(IEnumerable<int> ownedGearIds)

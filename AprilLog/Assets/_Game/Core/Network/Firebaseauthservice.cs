@@ -2,7 +2,7 @@
 // 설명   : Firebase 인증 서비스 -- 구글 로그인(Google Sign-In) + 게스트 로그인
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름, 기존 Editor Email/Password 계정 로그인 전용 흐름, 기존 익명 세션 재사용 방어 추가, Google 로그인 실패 유형 전달 누락 보정
+// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름, 기존 Editor Email/Password 계정 로그인 전용 흐름, 기존 익명 세션 재사용 방어 추가, Google 로그인 실패 유형 전달 누락 보정, 자동 로그인 후 로그아웃 시 GoogleSignIn 미설정 인스턴스 생성 방지
 
 #if FIREBASE_ENABLED
 using Firebase;
@@ -77,6 +77,8 @@ public class FirebaseAuthService : MonoBehaviour
 #if FIREBASE_ENABLED
     private FirebaseAuth _auth;
     private string _resolvedWebClientId;
+    private string _configuredGoogleWebClientId;
+    private bool _hasGoogleSignInInstance;
 #endif
 
     public IEnumerator InitializeFirebase()
@@ -562,13 +564,16 @@ public class FirebaseAuthService : MonoBehaviour
     public void SignOut()
     {
 #if FIREBASE_ENABLED
-        try
+        if (_hasGoogleSignInInstance)
         {
-            GoogleSignIn.DefaultInstance.SignOut();
-        }
-        catch (Exception exception)
-        {
-            Debug.LogWarning("[Auth] Google Sign-In 로그아웃 정리 실패: " + exception.Message);
+            try
+            {
+                GoogleSignIn.DefaultInstance.SignOut();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("[Auth] Google Sign-In 로그아웃 정리 실패: " + exception.Message);
+            }
         }
 
         _auth?.SignOut();
@@ -682,6 +687,18 @@ public class FirebaseAuthService : MonoBehaviour
     {
         _resolvedWebClientId = ResolveWebClientId();
         Debug.Log("[Auth][GoogleSignIn] ConfigureGoogleSignIn WebClientId=" + MaskWebClientId(_resolvedWebClientId));
+
+        if (_hasGoogleSignInInstance)
+        {
+            if (!string.Equals(_configuredGoogleWebClientId, _resolvedWebClientId, StringComparison.Ordinal))
+            {
+                Debug.LogWarning("[Auth][GoogleSignIn] 이미 생성된 GoogleSignIn 인스턴스가 있어 기존 WebClientId를 유지합니다. Existing=" + MaskWebClientId(_configuredGoogleWebClientId) + ", Requested=" + MaskWebClientId(_resolvedWebClientId));
+            }
+
+            GoogleSignIn.DefaultInstance.EnableDebugLogging(Debug.isDebugBuild);
+            return;
+        }
+
         GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
             ForceTokenRefresh = true,
@@ -692,6 +709,8 @@ public class FirebaseAuthService : MonoBehaviour
         };
 
         GoogleSignIn.DefaultInstance.EnableDebugLogging(Debug.isDebugBuild);
+        _configuredGoogleWebClientId = _resolvedWebClientId;
+        _hasGoogleSignInInstance = true;
     }
 
     private string ResolveWebClientId()

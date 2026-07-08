@@ -154,6 +154,9 @@ public class TutorialInGameDirector : MonoBehaviour
     [SerializeField] private int _step14EntryScenarioStartId = 100075;
     [SerializeField] private int _step14EntryScenarioEndId = 100078;
     [SerializeField] private int _step14BossScenarioId = 100079;
+    [Tooltip("보스 클리어 후 마무리 대사 시작/끝 ID")]
+    [SerializeField] private int _step14ClearScenarioStartId = 100080;
+    [SerializeField] private int _step14ClearScenarioEndId = 100094;
     [Tooltip("100079 이후 조커 사용을 기다리는 동안 몬스터를 다시 멈추는 주기")]
     [SerializeField] private float _step14JokerProtectionRefreshInterval = 0.1f;
     [Tooltip("조커 사용 유도 중 몬스터에게 반복 적용할 짧은 스턴 시간")]
@@ -211,6 +214,10 @@ public class TutorialInGameDirector : MonoBehaviour
     private Coroutine _step14Routine;
     private Coroutine _step14BossScenarioRoutine;
     private Coroutine _step14JokerProtectionRoutine;
+    private Coroutine _step14ClearRoutine;
+    private bool _step14ClearHandled;
+    private StageLoopManager _stageLoop;
+    private bool _chapterEndSubscribed;
 
     private Coroutine _step0Routine;
     private Coroutine _step1Routine;
@@ -218,6 +225,9 @@ public class TutorialInGameDirector : MonoBehaviour
     private readonly List<MonsterAI> _step0Monsters = new List<MonsterAI>(3);
     private int _step0KillCount;
     private bool _step0PuzzlePhase;
+
+    // 3정렬 마지막 공격의 처치를 기다리는 상한(초). 처치 신호 누락 시 소프트락 방지.
+    private const float Step1KillWaitTimeoutSeconds = 2f;
     private GameObject _bossWavePopup;
     private bool _bossWavePopupResolved;
 
@@ -246,6 +256,7 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (_stageLoop != null) _stageLoop.OnChapterEnd -= HandleTutorialChapterCleared;
         if (_spawner != null) _spawner.OnMonsterDied -= HandleStep0MonsterDied;
         if (_step0Routine != null)
         {
@@ -299,6 +310,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (!_active) return;
 
         TrySubscribeGrowthLevelUp();
+        TrySubscribeChapterEnd();
 
         TutorialManager tm = TutorialManager.Instance;
         TutorialStep step = tm != null ? tm.CurrentStep : null;
@@ -682,7 +694,17 @@ public class TutorialInGameDirector : MonoBehaviour
         {
             _step0ComboLessonPlayed = true;
 
-            // 공격 직후 즉시 일시정지 + 콤보 카운트 UI만 남기고 딤 → 100027~29 → 딤 해제 + 재개
+            // 3정렬의 마지막 공격이 실제로 몬스터에 적중·처치될 때까지 기다린다.
+            // 정렬 완료 이벤트로 단계는 넘어왔지만 투사체는 아직 날아가는 중이라, 여기서 바로 멈추면
+            // 공격 이펙트와 사망 연출이 화면에 얼어붙는다. 처치 신호가 안 와도 소프트락을 막기 위해 상한 시간까지만 대기.
+            float waited = 0f;
+            while (_step0KillCount < _step0Monsters.Count && waited < Step1KillWaitTimeoutSeconds)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // 공격 적중 직후 일시정지 + 콤보 카운트 UI만 남기고 딤 → 100027~29 → 딤 해제 + 재개
             float prev = Time.timeScale;
             Time.timeScale = 0f;
             HighlightComboCountUI();
@@ -760,11 +782,73 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         _step14BossScenarioPlayed = true;
         PauseStep14Scenario();
+        GrantTutorialJokerForBoss();
         HighlightJokerTable();
         yield return PlayWorldDialogue(_step14BossScenarioId, _step14BossScenarioId);
         ClearEnchantDim();
         ResumeStep14ScenarioPause();
         _step14BossScenarioRoutine = null;
+    }
+
+    private void TrySubscribeChapterEnd()
+    {
+        if (_chapterEndSubscribed) return;
+        if (_stageLoop == null) _stageLoop = FindFirstObjectByType<StageLoopManager>();
+        if (_stageLoop == null) return;
+
+        _stageLoop.OnChapterEnd -= HandleTutorialChapterCleared;
+        _stageLoop.OnChapterEnd += HandleTutorialChapterCleared;
+        _chapterEndSubscribed = true;
+    }
+
+    // 보스 클리어(step14 승리) 시: 정산 팝업 대신 마무리 대사를 재생하고 다음(챕터엔드 스토리/로비)으로 넘긴다.
+    private void HandleTutorialChapterCleared(bool isVictory)
+    {
+        if (!isVictory || _step14ClearHandled) return;
+        if (!IsTutorialChapterRun() || !_step14BossScenarioPlayed) return;
+
+        _step14ClearHandled = true;
+        if (_step14ClearRoutine == null)
+            _step14ClearRoutine = StartCoroutine(RunStep14ClearSequence());
+    }
+
+    private IEnumerator RunStep14ClearSequence()
+    {
+        // 정산 팝업이 뜨는 프레임을 지난 뒤 닫아, OnChapterEnd 구독 순서와 무관하게 확실히 숨긴다.
+        yield return null;
+        CloseSettlementPopup();
+
+        // 마무리 대사를 멈춘 상태에서 재생(다른 step14 시나리오와 동일한 일시정지 패턴).
+        PauseStep14Scenario();
+        CloseSettlementPopup();
+        yield return PlayWorldDialogue(_step14ClearScenarioStartId, _step14ClearScenarioEndId);
+        ResumeStep14ScenarioPause();
+
+        GoToPostTutorialScene();
+        _step14ClearRoutine = null;
+    }
+
+    private void CloseSettlementPopup()
+    {
+        ResultPopup popup = FindFirstObjectByType<ResultPopup>(FindObjectsInactive.Include);
+        if (popup != null) popup.Close();
+    }
+
+    // 마무리 대사 뒤 이동: 초회 챕터엔드 스토리가 있으면 그 스토리로, 없으면 로비로.
+    // (InGameNextSceneLoader의 클리어 후 이동 규칙과 동일하게 맞춘다.)
+    private void GoToPostTutorialScene()
+    {
+        if (GameManager.Instance == null) return;
+
+        int chapterId = GameManager.Instance.SelectedChapterId;
+        StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
+        StoryTriggerData trigger = repo != null ? repo.GetTriggerDataByChapterID(chapterId, "ChapterEnd") : null;
+        int groupId = trigger != null ? trigger.Story_ID : -1;
+
+        if (groupId != -1 && GameManager.Instance.IsFirstReadScenario(groupId))
+            GameManager.Instance.LoadScenarioByGroupId(groupId);
+        else
+            GameManager.Instance.LoadLobby();
     }
 
     private void HighlightJokerTable()
@@ -777,6 +861,15 @@ public class TutorialInGameDirector : MonoBehaviour
 
         TutorialDimMask dim = ResolveEnchantDimMask();
         if (dim != null) dim.ShowWithHole(target);
+    }
+
+    // 조커 시스템 변경으로 튜토리얼 시작 시엔 조커가 지급되지 않는다.
+    // 보스 단계에서 조커를 실제로 쓰도록 유도하는 시점에, 보유분이 없으면 1개 지급한다.
+    private void GrantTutorialJokerForBoss()
+    {
+        JokerSystem joker = FindFirstObjectByType<JokerSystem>();
+        if (joker != null && joker.GetJokerCount() <= 0)
+            joker.AcquireJokerItem();
     }
 
     private void StartStep14JokerProtection()
@@ -1080,14 +1173,18 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         if (!_temporaryCombinationRecipeShown) return;
 
-        CombinationView view = ResolveCombinationView();
-        if (view != null) view.ClearRecipe(0);
-
-        RectTransform slot = ResolveCombinationSlot();
-        if (slot != null) slot.gameObject.SetActive(false);
-
+        // 임시 조합식 아이콘 조회에 쓴 FusionData를 먼저 제거해 아래 SetRecipe가 빈 아이콘으로 복원되게 한다.
         if (_temporaryFusionDataAdded && _enchantCombinationModel != null && _enchantCombinationModel.FusionData != null)
             _enchantCombinationModel.FusionData.Remove(TutorialCombinationSkillNameId);
+
+        // 첫 슬롯을 비활성화하지 않고 빈 상태로 되돌린다.
+        // 비활성화하면 조합 외 인챈트를 획득할 때 슬롯이 다시 켜지지 않아 첫 칸이 사라진다.
+        CombinationView view = ResolveCombinationView();
+        if (view != null)
+        {
+            view.ClearRecipe(0);
+            view.SetRecipe(0, TutorialCombinationSkillNameId, null);
+        }
 
         _temporaryCombinationRecipeShown = false;
         _temporaryFusionDataAdded = false;
