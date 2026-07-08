@@ -126,9 +126,11 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
         if (_model.IsTableMatched(toTable))
         {
-            StartCoroutine(ProcessMatch(toTable));
+            StartCoroutine(ProcessMatch(toTable));   // 매칭이면 드롭음 대신 sort 성공음이 나간다(SFX 가이드 16: SORT 성공 시 드롭음 출력 X)
             return;
         }
+
+        AudioManager.Play(SfxId.UnitDrop);   // SFX 가이드 16: 유닛 드롭(일반 이동)
 
         // 이동으로 빈 테이블(3슬롯 모두 공백)이 생기면 대기열로 채워 빈 공간을 없앤다 (기획 2)
         FillEmptyTablesFromQueue();

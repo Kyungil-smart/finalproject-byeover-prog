@@ -55,6 +55,34 @@ MonoBehaviour:
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 1500003
+  - Stage_ID: 980102
+    WaveOrder: 1
+    WaveDuration: 60
+    WaveEndType: TimeOver
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 2
+    SpawnAmount: 1
+    MonsterWavePool_ID: 1000011
+    NormalChance: 1
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500002
+  - Stage_ID: 980102
+    WaveOrder: 2
+    WaveDuration: 20
+    WaveEndType: TimeOverOrBossKill
+    WaveEndAction: DespawnRemaining
+    SpawnInterval: 2
+    SpawnAmount: 1
+    MonsterWavePool_ID: 0
+    NormalChance: 0
+    AgileChance: 0
+    TankChance: 0
+    RangedChance: 0
+    InfestedChance: 0
+    SpecialWave_ID: 1500003
   - Stage_ID: 10101
     WaveOrder: 1
     WaveDuration: 20

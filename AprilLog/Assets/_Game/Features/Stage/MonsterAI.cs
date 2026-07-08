@@ -357,6 +357,12 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
         RunStats.AddDamage(finalDamage, skillId); // 정산용: 총 데미지 + 스킬(인챈트)별 최고뎀 누적
 
+        // 원소 피격음(SFX 가이드 인게임 2~6): skillId=StandardID(1xx~5xx)의 백의 자리가 원소. 기본공격(0)은 대상 아님.
+        // SfxId.HitFire~HitIce가 원소 번호 순서라 산술 변환 가능. 다발 피격 스팸은 라이브러리 minInterval이 걸러준다.
+        int element = skillId / 100;
+        if (element >= 1 && element <= 5)
+            AudioManager.Play((SfxId)((int)SfxId.HitFire + element - 1));
+
         CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
 

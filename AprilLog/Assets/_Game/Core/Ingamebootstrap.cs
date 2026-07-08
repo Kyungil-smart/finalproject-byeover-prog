@@ -258,6 +258,8 @@ public class InGameBootstrap : MonoBehaviour
                 _rewardManager.LoadRewardData(saveData.accumulatedRewards);
         }
 
+        AudioManager.Bgm(SfxId.Chapter1Bgm);   // SFX 가이드 인게임 1.0: 챕터 진입 BGM (챕터별 곡이 늘면 chapterId로 분기)
+
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }
 
@@ -441,6 +443,9 @@ public class InGameBootstrap : MonoBehaviour
             Debug.LogWarning("[InGameBootstrap] SettlementView를 찾지 못해 정산 팝업을 띄우지 못했습니다.");
             return;
         }
+
+        // SFX 가이드 인게임 11/12: 정산 화면 노출 시 클리어/게임오버 효과음
+        AudioManager.Play(isVictory ? SfxId.GameClear : SfxId.GameOver);
 
         int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
         int maxDamage = RunStats.HighestDamage;
