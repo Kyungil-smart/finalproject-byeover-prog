@@ -327,6 +327,16 @@ public class SkillSystem : MonoBehaviour
     {
         if (data == null) return;
 
+        // 강공 효과음(SFX 가이드 인게임 17~21): 원소별 대표기(메테오/파도/허리케인/뇌격/얼음결정) 발동 시점.
+        switch (data.StandardID)
+        {
+            case 105: AudioManager.Play(SfxId.StrongFire); break;
+            case 204: AudioManager.Play(SfxId.StrongWater); break;
+            case 304: AudioManager.Play(SfxId.StrongWind); break;
+            case 405: AudioManager.Play(SfxId.StrongLightning); break;
+            case 504: AudioManager.Play(SfxId.StrongIce); break;
+        }
+
         // 소환 스킬(화염 정령 등)은 투사체 대신 소환 경로로 분기.
         if (_summonConfigs.TryGetValue(data.SkillID, out var summonCfg))
         {

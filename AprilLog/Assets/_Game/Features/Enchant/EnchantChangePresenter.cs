@@ -138,6 +138,8 @@ public class EnchantChangePresenter
                 _model.AcquireStat(_pendingEnchant.Name_ID, _pendingEnchant.StatData.StatGroup_ID);
                 break;
         }
+
+        AudioManager.Play(SfxId.EnchantChange);   // SFX 가이드 10: 보유 인챈트 교체
         
         _view.ShowChangeCompletePopup(_discardData, _pendingEnchantDisplayData);
     }

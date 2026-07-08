@@ -119,6 +119,7 @@ public class CombatSystem : MonoBehaviour
             // 파이어브레스 발동이 무음 소실되는 것을 방지.
             if (_skillSystem.FireBasicAttack(AttackType.Auto))
             {
+                AudioManager.Play(SfxId.AutoAttackShot);
                 _autoAttackCount++;
                 var autoSkills = _skillSystem.GetTriggeredAutoAttackSkills(_autoAttackCount);
                 for (int i = 0; i < autoSkills.Count; i++)
@@ -135,6 +136,7 @@ public class CombatSystem : MonoBehaviour
     private void HandleSortCompleted(UnitType type)
     {
         Debug.Log($"[전투진단] 정렬 완성 수신: type={type} → 공격 발동 시도");
+        AudioManager.Play(SfxId.SortSuccess);
 
         ResolveSpellRepository();
         ResolveSystemReferences();

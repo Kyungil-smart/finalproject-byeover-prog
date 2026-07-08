@@ -11,6 +11,68 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource _bgmSource;
     [SerializeField] private AudioSource _sfxSource;
 
+    // ---------- SfxId 기반 재생 (SFX 가이드 매핑) ----------
+    // 호출부는 파일명 대신 SfxId만 쓴다. 클립/중복재생/간격 정책은 Resources/SoundLibrary.asset 이 단일 소스.
+    private SoundLibrary _library;
+    private readonly System.Collections.Generic.Dictionary<SfxId, float> _blockedUntil = new System.Collections.Generic.Dictionary<SfxId, float>();
+    private SfxId _currentBgmId;
+
+    /// <summary>훅에서 쓰는 짧은 진입점. 씬에 AudioManager가 없어도 자동 생성되어 동작한다(미배선 사고 방지).</summary>
+    public static void Play(SfxId id) => Ensure().PlaySfx(id);
+    public static void Bgm(SfxId id) => Ensure().PlayBgm(id);
+
+    public static AudioManager Ensure()
+    {
+        if (Instance != null) return Instance;
+
+        var found = FindFirstObjectByType<AudioManager>();
+        if (found != null) return found;
+
+        var go = new GameObject("AudioManager");
+        return go.AddComponent<AudioManager>();   // Awake가 Instance/DontDestroyOnLoad/소스 생성을 처리
+    }
+
+    private SoundLibrary Library
+    {
+        get
+        {
+            if (_library == null)
+            {
+                _library = Resources.Load<SoundLibrary>("SoundLibrary");
+                if (_library == null)
+                    Debug.LogWarning("[AudioManager] Resources/SoundLibrary.asset 을 찾지 못했습니다. SfxId 재생이 비활성화됩니다.");
+            }
+            return _library;
+        }
+    }
+
+    public void PlayBgm(SfxId id)
+    {
+        var entry = Library != null ? Library.Get(id) : null;
+        if (entry == null || entry.clip == null) return;
+        if (_currentBgmId == id && _bgmSource != null && _bgmSource.isPlaying) return;
+
+        _currentBgmId = id;
+        PlayBGM(entry.clip);
+    }
+
+    public void PlaySfx(SfxId id)
+    {
+        var entry = Library != null ? Library.Get(id) : null;
+        if (entry == null || entry.clip == null || _sfxSource == null) return;
+
+        // 중복재생 금지(가이드 X)면 클립 길이만큼, minInterval이 있으면 그 간격만큼 재요청을 무시한다.
+        // 정산 팝업(timeScale=0) 중에도 UI 사운드는 나가야 하므로 unscaled 시간 기준.
+        float now = Time.unscaledTime;
+        if (_blockedUntil.TryGetValue(id, out float until) && now < until) return;
+
+        float block = entry.allowOverlap ? 0f : entry.clip.length;
+        if (entry.minInterval > block) block = entry.minInterval;
+        if (block > 0f) _blockedUntil[id] = now + block;
+
+        _sfxSource.PlayOneShot(entry.clip, Mathf.Clamp01(entry.volume));
+    }
+
     /// <summary>전체 볼륨 (AudioListener)</summary>
     public float MasterVolume
     {
