@@ -267,6 +267,13 @@ public class LoginPresenter
         // 추가: Google 로그인 시도에서만 지정된 Google 안내 문구를 사용한다.
         if (_model.IsGoogleLoginRequested)
         {
+            if (failureType == AuthLoginFailureType.Configuration && !string.IsNullOrWhiteSpace(error))
+            {
+                _view.ShowPopup(error);
+                _model.SetGoogleLoginRequested(false);
+                return;
+            }
+
             _view.ShowPopup(LoginMessageProvider.GetGoogleFailureMessage(failureType));
             _model.SetGoogleLoginRequested(false);
             return;
