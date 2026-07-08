@@ -37,6 +37,12 @@ public class UserCloudData
     public List<int> firstClearRewardedChapters = new ();
     public List<int> firstReadScenarios = new();
 
+    // ---------- 인챈트 리세마라 방지 스냅샷 ----------
+    // 인챈트 팝업이 뜬 순간(그리고 리롤한 순간)의 카드 구성을 저장한다. 강제종료 후 재진입해도
+    // 같은 뽑기 순번(drawIndex)에서 같은 카드가 복원되어 껐다 켜기 리롤이 무의미해진다.
+    // 수명: 판 정산(승/패) 때만 비운다. 포기/강제종료로는 비우지 않는다(그게 방지 목적).
+    public List<EnchantDrawSnapshot> pendingEnchantDraws = new ();
+
     // ---------- 최초 진입 상태 (조규민 4차: 최초 스토리/튜토리얼 노출 제어 + 기존 계정 마이그레이션) ----------
     // 참조 코드(GameManager/FirestoreService)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
     public bool _hasInitialFlowState;   // 이 스키마 필드를 가진 계정인지. false=업데이트 이전 계정 → 1회 마이그레이션 대상.
@@ -125,6 +131,19 @@ public class UserCloudData
             createdAt = DateTime.UtcNow.ToString("o")
         };
     }
+}
+
+/// <summary>인챈트 팝업 1회분의 카드 구성 스냅샷(리세마라 방지). 카드들은 병렬 리스트로 저장한다.
+/// 복원 시 (type, groupId, nameId)로 체인을 재조회해 후보를 다시 조립하므로 수치 데이터는 저장하지 않는다.</summary>
+[Serializable]
+public class EnchantDrawSnapshot
+{
+    public int drawIndex;                     // EnchantModel.TotalDrawCount 기준 몇 번째 팝업인지
+    public int rerollRemaining;               // 남은 새로고침 횟수(같이 저장 안 하면 재시작으로 리롤 횟수가 리셋된다)
+    public List<int> cardTypes = new ();      // EnchantType (0=Skill, 1=Stat)
+    public List<int> cardGroupIds = new ();   // SkillGroup_ID / StatGroup_ID
+    public List<int> cardNameIds = new ();    // Name_ID / Stat_Name_ID
+    public List<int> cardRerollUsed = new (); // 카드별 개별 리롤 사용 여부(0/1)
 }
 
 [Serializable]
