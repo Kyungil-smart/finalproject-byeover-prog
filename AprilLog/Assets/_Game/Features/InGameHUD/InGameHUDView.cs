@@ -27,6 +27,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     [SerializeField] private StageLoopManager _loopManager;
     [SerializeField] private StageBootstrapper _stageBootstrapper;
     [SerializeField] private InGameGrowthSystem _growthSystem;
+    [SerializeField] private StateFeedBackColorSO _feedBackColor;
 
     [Header("UI")]
     [SerializeField] private Slider _hpSlider;
@@ -39,6 +40,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     [SerializeField] private TMP_Text _curChapterViwerText;
     [SerializeField] private TMP_Text _curStageViwerText;
     [SerializeField] private TMP_Text _waveStateText;
+    [SerializeField] private Image _feedbackBar;
     
     // ---------- Private ----------
     private InGameHUDPresenter _presenter;
@@ -92,6 +94,9 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         // 늦게라도 찾아서 구독되면 더 이상 폴링하지 않는다.
         if (!_boundToStageBootstrapper)
             TryBindStageBootstrapper();
+        
+        // 피드백 바의 깜빡임을 표현하기 위해 시간 주입이 필요하다. 차후 플레이어가 상태이상에 걸린다면 이 통로를 통해 피드백 바를 다른 색으로도 변경 가능
+        if(_presenter != null) _presenter.Update(Time.deltaTime);
     }
 
     // StageBootstrapper를 찾아 OnStageInitComplete를 구독한다.
@@ -145,7 +150,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
 
         _presenter?.Dispose();
         _stageModel = stageModel;
-        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem, _loopManager, _stageModel);
+        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem, _loopManager, _stageModel, _feedBackColor);
         return true;
     }
 
@@ -234,4 +239,9 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     }
 
     public void ShowLevelUpEffect() { /* DOTween 연출 넣을 자리 */ }
+
+    public void SetFeedBackBarColor(Color color)
+    {
+        _feedbackBar.color = color;
+    }
 }

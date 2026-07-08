@@ -144,3 +144,12 @@ public enum LocalizingType
     Housing,
     Chapter
 }
+
+public enum CrowdControlType
+{
+    None,
+    Knockback,
+    Root,
+    Stun,
+    Slow
+}
