@@ -39,10 +39,10 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     private float _totalInGameTime = 0f;
     private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정  
     private bool _isLobby = false;
+    private bool _isRestoredFromSave = false;
 
     private void Update()
     {
-        // 로비가 아닐 때만 시간 증가
         if (!_isLobby)
         {
             _totalInGameTime += Time.deltaTime;
@@ -53,6 +53,8 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     {
         if (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null)
         {
+            if (_isRestoredFromSave) return;
+
             var am = GameStateManager.Instance.ArtifactManager;
             am.OnInventoryUpdated += RefreshJokerCount;
             am.OnEquipmentChanged += RefreshJokerCount;
@@ -300,6 +302,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     // 세이브된 보유량을 바탕으로 시스템 복구
     public void RestoreFromSave(int savedJokerCount, float savedRemainingCooldown)
     {
+        _isRestoredFromSave = true;
         _currentCount = savedJokerCount;
         UpdateJokerUI();
 
