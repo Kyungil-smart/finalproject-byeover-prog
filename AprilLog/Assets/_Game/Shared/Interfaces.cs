@@ -27,7 +27,6 @@ public interface IDamageable
     
     // 플레이어와 몬스터의 피격 연출을 위함
     event Action OnHit;
-    void HitFeedBack();
 }
 
 /// <summary>

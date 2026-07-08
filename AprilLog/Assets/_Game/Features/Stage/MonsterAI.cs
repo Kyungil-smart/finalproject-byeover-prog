@@ -36,7 +36,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     /// 뒤의 bool = true면 보스 몬스터
     /// </summary>
     public event Action<MonsterAI, bool, bool> OnDeath;
-    public event Action OnHit;
+    public event Action OnHit; // 피격 피드백 연출용
+    public event Action<CrowdControlType, float> OnCrowdControl; // 상태이상 피드백 연출용
+    public event Action OnAttack; // 공격 애니메이션 연출용
     public event Action<int, int> OnHPChanged;
     public event Action<MonsterAI, int> OnRewardContained;
 
@@ -45,11 +47,8 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     [Tooltip("방어선 Y좌표. 이 아래로 내려가면 공격 상태")]
     [SerializeField] private float _defenseLineY = -3f;
 
-    [Tooltip("애니메이터 지정")] 
-    [SerializeField] private Animator _animator;
-
     [Tooltip("피격 시 스턴 시간 설정")] 
-    [SerializeField] private float _onHitStunTime = 0.1f;
+    [SerializeField] private float _onHitRootTime = 0.1f;
     
     // ---------- IDamageable ----------
     public int CurrentHP { get; private set; }
@@ -73,6 +72,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // ---------- 상태 ----------
     private enum State { Moving, Attacking, Dead }
     private enum MoveType{ Straight, Zigzag }
+    
     private State _state;
     
     private float _attackTimer;
@@ -85,6 +85,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private Vector2 _knockbackVel = Vector2.zero;   // 넉백 중 월드 속도(units/s)
     private float _knockbackEndTime = 0f;
     private float _stunEndTime = 0f;                // 스턴(번개 벼락): 이동+공격 완전 정지
+    private float _rootEndTime = 0f;                // 루트(속박) : 이동 정지 - 피격시 경직에 사용하는 것과 동일 양식
+
+    public float OnHitRootTime => _onHitRootTime;
 
     /// <summary>이 몬스터가 보스인지 (번개 벼락의 엘리트/보스 우선 타겟용). Elite도 현재 isBoss=true로 스폰됨.</summary>
     public bool IsBoss => _isBoss;
@@ -94,7 +97,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     
     // 전투 보상
     private int _rewardTriggerId;
-
+    
     // ---------- 초기화 ----------
     public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false)
     {
@@ -199,6 +202,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_state == State.Dead) return;
         _slowFactor = Mathf.Clamp01(factor);
         _slowEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Slow, _slowEndTime);
     }
 
     /// <summary>displacement(월드)만큼 duration초에 걸쳐 밀어낸다. (바람 돌풍 넉백)</summary>
@@ -207,6 +211,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_state == State.Dead || duration <= 0f) return;
         _knockbackVel = displacement / duration;
         _knockbackEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Knockback, _knockbackEndTime);
     }
 
     /// <summary>duration초 동안 이동+공격 완전 정지. (번개 벼락 Lv3 스턴)</summary>
@@ -214,18 +219,26 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     {
         if (_state == State.Dead || duration <= 0f) return;
         _stunEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Stun, _stunEndTime);
+    }
+
+    public void ApplyRoot(float duration)
+    {
+        if (_state == State.Dead || duration <= 0f) return;
+        _rootEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Root, _rootEndTime);
+    }
+
+    private void ApplyHitRoot()
+    {
+        if (_state == State.Dead) return;
+        _rootEndTime = Time.time + _onHitRootTime;
+        OnHit?.Invoke();
     }
 
     // ---------- FSM ----------
     private void Update()
     {
-        // 스턴(번개 벼락) 중이면 이동·공격 모두 정지
-        if (Time.time < _stunEndTime)
-        {
-            if (_animator != null) _animator.SetBool("Move", false);
-            return;
-        }
-
         switch (_state)
         {
             case State.Moving:
@@ -235,16 +248,16 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
                 UpdateAttacking();
                 break;
         }
-        
-        // 애니메이션 제어
-        if (_animator != null)
-        {
-            _animator.SetBool("Move", _state == State.Moving);
-        }
     }
 
     private void UpdateMoving()
     {
+        // 속박(공격 시 경직 등) 중이면 이동 정지
+        if (Time.time < _rootEndTime) return;
+        
+        // 스턴(번개 벼락) 중이면 이동·공격 모두 정지
+        if (Time.time < _stunEndTime) return;
+        
         // 넉백(돌풍) 중이면 이동 패턴 무시하고 넉백 속도로 밀린다. 끝나면 일반 이동 복귀.
         if (Time.time < _knockbackEndTime)
         {
@@ -256,6 +269,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
         // 슬로우(허리케인): 지속시간 내면 이동 dt에 배율, 만료되면 1로 복귀.
         float slow = (Time.time < _slowEndTime) ? _slowFactor : 1f;
+        
         Vector2 newPos = _movement.CalculateNextPosition(
             transform.position, Time.deltaTime * slow, _moveBounds);
         transform.position = newPos;
@@ -269,6 +283,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     private void UpdateAttacking()
     {
+        // 스턴(번개 벼락) 중이면 이동·공격 모두 정지
+        if (Time.time < _stunEndTime) return;
+        
         _attackTimer += Time.deltaTime;
         if (_attackTimer >= _attackInterval)
         {
@@ -280,9 +297,6 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // ---------- 공격 지원 ----------
     private void AttackSupport()
     {
-        if (_animator != null)
-            _animator.SetTrigger("Attack");
-
         switch (_attackType)
         {
             case AttackType.Melee:
@@ -295,6 +309,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
                 KamikazeAttack(_attack);
                 break;
         }
+        OnAttack?.Invoke();
     }
     
     private void MeleeAttack(int damage)
@@ -363,6 +378,11 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (CurrentHP <= 0)
             Die();
     }
+    
+    private void HitFeedBack()
+    {
+        ApplyHitRoot();
+    }
 
     private void Die()
     {
@@ -393,12 +413,6 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _slowFactor = 1f; _slowEndTime = 0f;
         _knockbackVel = Vector2.zero; _knockbackEndTime = 0f;
         _stunEndTime = 0f;
-    }
-
-    public void HitFeedBack()
-    {
-        ApplyStun(_onHitStunTime);
-        OnHit?.Invoke();
     }
 
     // ---------- Stat Scaling ----------
