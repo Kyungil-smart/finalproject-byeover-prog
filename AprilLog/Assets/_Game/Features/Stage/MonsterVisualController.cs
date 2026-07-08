@@ -108,9 +108,9 @@ public class MonsterVisualController : MonoBehaviour
         PlayAttackAnim();
     }
 
-    private void HandleOnHit()
+    private void HandleOnHit(float duration)
     {
-        SetHitEffect();
+        SetHitEffect(duration);
     }
 
     private void HandleOnCrowdControl(CrowdControlType ccType, float duration)
@@ -131,11 +131,11 @@ public class MonsterVisualController : MonoBehaviour
         _animator.SetTrigger("att"); 
     }
 
-    private void SetHitEffect()
+    private void SetHitEffect(float duration)
     {
         if (_renderers == null || _renderers.Length == 0) return;
 
-        _onHitRootTime = Time.time + _ai.OnHitRootTime;
+        _onHitRootTime = Time.time + duration;
     }
 
     private void SetCCEffect(CrowdControlType ccType, float duration)
@@ -150,7 +150,6 @@ public class MonsterVisualController : MonoBehaviour
         if (Time.time < _onHitRootTime)
         {
             ApplyEffectColor(_feedBackColor.GetOnHitColor());
-            _isOriginColor = false;
             return;
         }
         
@@ -164,7 +163,6 @@ public class MonsterVisualController : MonoBehaviour
                 if (_feedBackColor.TryGetEffectColor(ccType, out Color ccColor))
                 {
                     ApplyEffectColor(ccColor);
-                    _isOriginColor = false;
                     return; // 색을 적용했으므로 하위 CC 무시하고 종료
                 }
             }
@@ -179,7 +177,6 @@ public class MonsterVisualController : MonoBehaviour
     private void ResetVisuals()
     {
         ApplyEffectColor(Color.white);
-        _isOriginColor = true;
     }
     
     private void ApplyEffectColor(Color color)
@@ -192,5 +189,7 @@ public class MonsterVisualController : MonoBehaviour
         {
             data.SetPropertyBlock(_mpb);
         }
+
+        _isOriginColor = color == Color.white;
     }
 }

@@ -23,10 +23,13 @@ public class PlayerModel : MonoBehaviour, IDamageable
 {
     // ---------- 이벤트 ----------
     public event Action<int, int> OnHPChanged;
-    public event Action OnHit;
+    public event Action<float> OnHit;
     public event Action OnPlayerDeath;
 
     // ---------- 데이터 ----------
+    [Tooltip("피격 시 HP바 테두리가 번쩍이는 시간 설정")] 
+    [SerializeField] private float _onHitRootTime = 0.1f;
+    
     public int CurrentHP { get; private set; }
     public int MaxHP { get; private set; }
     public int Attack { get; private set; }
@@ -90,7 +93,7 @@ public class PlayerModel : MonoBehaviour, IDamageable
 
     private void HitFeedBack()
     {
-        OnHit?.Invoke();
+        OnHit?.Invoke(_onHitRootTime);
     }
 
     // ---------- 회복 ----------

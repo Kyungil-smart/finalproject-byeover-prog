@@ -39,7 +39,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     /// 뒤의 bool = true면 보스 몬스터
     /// </summary>
     public event Action<MonsterAI, bool, bool, bool> OnDeath; // 엘리트 몬스터 확인 인자 추가 (최동훈)
-    public event Action OnHit; // 피격 피드백 연출용
+    public event Action<float> OnHit; // 피격 피드백 연출용
     public event Action<CrowdControlType, float> OnCrowdControl; // 상태이상 피드백 연출용
     public event Action OnAttack; // 공격 애니메이션 연출용
     public event Action<int, int> OnHPChanged;
@@ -90,9 +90,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private Vector2 _knockbackVel = Vector2.zero;   // 넉백 중 월드 속도(units/s)
     private float _knockbackEndTime = 0f;
     private float _stunEndTime = 0f;                // 스턴(번개 벼락): 이동+공격 완전 정지
-    private float _rootEndTime = 0f;                // 루트(속박) : 이동 정지 - 피격시 경직에 사용하는 것과 동일 양식
-
-    public float OnHitRootTime => _onHitRootTime;
+    private float _rootEndTime = 0f;                // 루트(속박) : 이동 정지 - 피격시 경직에 사용
 
     /// <summary>이 몬스터가 보스인지 (번개 벼락의 엘리트/보스 우선 타겟용). Elite도 현재 isBoss=true로 스폰됨.</summary>
     public bool IsBoss => _isBoss;
@@ -240,7 +238,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     {
         if (_state == State.Dead) return;
         _rootEndTime = Time.time + _onHitRootTime;
-        OnHit?.Invoke();
+        OnHit?.Invoke(_onHitRootTime);
     }
 
     // ---------- FSM ----------

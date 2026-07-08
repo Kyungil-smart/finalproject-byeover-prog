@@ -26,7 +26,7 @@ public interface IDamageable
     event Action<int, int> OnHPChanged;     // current, max
     
     // 플레이어와 몬스터의 피격 연출을 위함
-    event Action OnHit;
+    event Action<float> OnHit;
 }
 
 /// <summary>
