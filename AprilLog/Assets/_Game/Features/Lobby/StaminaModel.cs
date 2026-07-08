@@ -118,6 +118,10 @@ public class StaminaModel : MonoBehaviour
 
     public bool Spend(int amount)
     {
+        // 튜토리얼 진행 중에는 행동력을 차감하지 않는다(무조건 진행). 소모 성공으로 처리해 흐름은 그대로 이어간다.
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+            return true;
+
         if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
         {
             var slot = DataManager.Instance.ResourceRepo.GetStaminaSlot(StaminaId);
