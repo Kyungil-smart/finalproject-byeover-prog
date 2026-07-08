@@ -23,6 +23,9 @@ using static PixelConverter;
 // 수정자 : 김영찬
 // 수정 내용 : 기획에서 거리/속도에 대한 값을 픽셀 기준으로 하여, 변환함
 
+// 수정자 : 최동훈
+// 수정 내용 : 엘리트 인자 추가
+
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
 /// 이동 방식은 IMovementPattern으로 교체 가능.
@@ -35,7 +38,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     /// 앞의 bool = true면 자폭한 몬스터<br/>
     /// 뒤의 bool = true면 보스 몬스터
     /// </summary>
-    public event Action<MonsterAI, bool, bool> OnDeath;
+    public event Action<MonsterAI, bool, bool, bool> OnDeath; // 엘리트 몬스터 확인 인자 추가 (최동훈)
     public event Action<int, int> OnHPChanged;
     public event Action<MonsterAI, int> OnRewardContained;
 
@@ -72,8 +75,10 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private State _state;
     
     private float _attackTimer;
-    private Rect _moveBounds;
+    private Rect _moveBounds; 
     private bool _isBoss;
+    private bool _isElite; // 엘리트 변수 추가 (최동훈)
+
 
     // ---------- CC 상태 (바람: 허리케인=슬로우 / 돌풍=넉백) ----------
     private float _slowFactor = 1f;                 // 1=정상, <1=이동 감속 배율
@@ -84,6 +89,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     /// <summary>이 몬스터가 보스인지 (번개 벼락의 엘리트/보스 우선 타겟용). Elite도 현재 isBoss=true로 스폰됨.</summary>
     public bool IsBoss => _isBoss;
+    public bool IsElite => _isElite; // 엘리트 추가
 
     // 플레이어 참조 (공격할 때 TakeDamage 호출용)
     private PlayerModel _playerModel;
@@ -92,7 +98,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private int _rewardTriggerId;
 
     // ---------- 초기화 ----------
-    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false)
+    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false, bool isElite = false) // 엘리트 인자 추가 (최동훈)
     {
         MonsterID = monsterId;
         MaxHP = stats != null ? stats.MaxHP : 1;
@@ -107,8 +113,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _range = monsterStats != null ? PixelsToUnits(monsterStats.Range) : 1;
         Exp = monsterStats != null ? monsterStats.EXP : 0;
         _zigzagAmplitude = monsterStats != null ? monsterStats.ZigzagAmplitude : -1;
-        
+                
         _isBoss = isBoss;
+        _isElite = isElite; // 엘리트 추가 (최동훈)
 
         // 방벽 정지선: DefenseLine(방벽) 오브젝트의 Y를 단일 진실 소스로 사용한다.
         // 플레이어도 같은 DefenseLine에 정렬되므로 정지선과 플레이어 위치가 항상 일치한다.
@@ -315,7 +322,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_playerModel != null)
             _playerModel.TakeDamage(damage);
         _state = State.Dead;
-        OnDeath?.Invoke(this, true, _isBoss);
+        OnDeath?.Invoke(this, true, _isBoss, _isElite); // 엘리트 인자 추가 (최동훈)
     }
 
     private void AttackTypeSelect(float range)
@@ -362,7 +369,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _state = State.Dead;
         if(_rewardTriggerId != 0)
             OnRewardContained?.Invoke(this ,_rewardTriggerId);
-        OnDeath?.Invoke(this, false, _isBoss);
+        OnDeath?.Invoke(this, false, _isBoss, _isElite); // 엘리트 인자 추가 (최동훈)
     }
 
     // ---------- IPoolable ----------

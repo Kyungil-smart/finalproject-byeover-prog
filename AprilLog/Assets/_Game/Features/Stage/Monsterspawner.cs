@@ -12,6 +12,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 
 // 수정자 : 정승우
@@ -23,6 +24,9 @@ using UnityEngine;
 // 수정자 : 김영찬
 // 몬스터 및 웨이브 관련 DB에 맞춰 소환 로직 최신화 및 책임 분산
 
+// 수정자 : 최동훈
+// 수정내용 : 엘리트 몬스터 추가
+
 /// <summary>
 /// StageSpawnRule 기반으로 몬스터를 스폰한다.
 /// 웨이브가 올라갈수록 GrowthType에 따라 스폰량이 증가하고 간격이 짧아진다.
@@ -33,6 +37,7 @@ public class MonsterSpawner : MonoBehaviour
     public event Action<MonsterAI, bool> OnMonsterDied;
     public event Action IsBossDeath;
     public event Action RequestRewardManager;
+    public event Action OnEliteDeath; // 엘리트 사망 이벤트 추가(최동훈)
 
     // ---------- SerializeField ----------
     [Header("고정 스폰 포인트")]
@@ -107,10 +112,12 @@ public class MonsterSpawner : MonoBehaviour
         {
             var cmd = queue.Dequeue();
             Vector3 spawnPos = PickSpawnPosition(cmd.Type);
+
+            // bool isBoss = cmd.Type == StageModel.SpawnType.Elite || cmd.Type == StageModel.SpawnType.Boss; 에서 아래로 변경(최동훈)
+            bool isBoss = cmd.Type == StageModel.SpawnType.Boss;
+            bool isElite = cmd.Type == StageModel.SpawnType.Elite;            
             
-            bool isBoss = cmd.Type == StageModel.SpawnType.Elite || cmd.Type == StageModel.SpawnType.Boss;
-            
-            var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss);
+            var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss, isElite); //엘리트 인자 추가
             Debug.Log($"Monster ID : {cmd.CharacterId} 소환됨");
 
             if (ai != null && cmd.ScalingData != null)
@@ -157,7 +164,7 @@ public class MonsterSpawner : MonoBehaviour
         return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
     }
 
-    private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss)
+    private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss, bool isElite) //엘리트 인자 추가 (최동훈)
     {
         var characterRepo = DataManager.Instance.CharacterRepo;
         var stats = characterRepo.GetCommonStatus(characterId);
@@ -180,7 +187,7 @@ public class MonsterSpawner : MonoBehaviour
 
         if (ai != null)
         {
-            ai.Initialize(stats, monsterStats, characterId, isBoss);
+            ai.Initialize(stats, monsterStats, characterId, isBoss, isElite); //엘리트 인자 추가 (최동훈)
             ai.SetPlayerModel(ResolvePlayerModel());
             ai.OnDeath += HandleMonsterDeath;
             ai.OnRewardContained += HandlePrizeReward;
@@ -277,7 +284,7 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // ---------- 몬스터 사망 ----------
-    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss)
+    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss, bool isElite) // 엘리트 인자 추가 (최동훈)
     {
         monster.OnDeath -= HandleMonsterDeath;
         monster.OnRewardContained -= HandlePrizeReward;
@@ -289,6 +296,11 @@ public class MonsterSpawner : MonoBehaviour
         if(isBoss)
         {
             IsBossDeath?.Invoke();
+        }
+
+        if (isElite) // 엘리트 사망 이벤트 호출 (최동훈)
+        {
+            OnEliteDeath?.Invoke();
         }
 
         // 스폰 때와 동일한 키 해석을 써야 풀이 어긋나지 않는다.
