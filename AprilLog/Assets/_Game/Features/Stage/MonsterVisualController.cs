@@ -127,7 +127,11 @@ public class MonsterVisualController : MonoBehaviour
     private void PlayAttackAnim()
     {
         if (_animator == null) return;
-        _animator.SetFloat("AttackSpeed", _calculatedAttackSpeed);
+        
+        // TODO: [공격 속도 제어] 기획팀에서 공격 배속 시스템(인스펙터 제어)을 요구하면 아래 주석을 해제할 것.
+        // 현재는 Animator의 기본 Speed 값(10 등)을 최우선으로 따르도록 임시 비활성화됨.
+        // _animator.SetFloat("AttackSpeed", _calculatedAttackSpeed);
+        
         _animator.SetTrigger("att"); 
     }
 
