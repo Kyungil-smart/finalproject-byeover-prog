@@ -3,6 +3,7 @@
 
 // 수정자 : 조규민
 // 수정 내용 : 이어하기 복원 중 EnchantModel 재초기화 시 조합 인챈트 이벤트가 중복 구독되지 않도록 수정
+// 수정 내용 : 로비 복귀 후 이어하기 복원 시 조합 인챈트 아이콘 표시 데이터가 다시 채워지도록 보유 스킬 기준 재구성 경로 추가
 
 using System;
 using System.Collections.Generic;
@@ -41,6 +42,63 @@ public class EnchantCombinationModel : MonoBehaviour
         _model.OnSkillAcquired += HandleSkillAcquired;
         _model.OnSkillLevelUp += HandleSkillLevelUp;
         _model.OnSkillRemoved += HandleSkillRemoved;
+    }
+  
+    public void RebuildFromOwnedSkills()
+    {
+        if (_fusionData == null)
+        {
+            _fusionData = new Dictionary<int, FusionEnchantData>();
+        }
+        else
+        {
+            _fusionData.Clear();
+        }
+
+        if (_model == null)
+        {
+            _model = GetComponent<EnchantModel>();
+        }
+
+        if (_repo == null && DataManager.Instance != null)
+        {
+            _repo = DataManager.Instance.SpellRepo;
+        }
+
+        if (_model == null || _repo == null)
+        {
+            OnCombinationChanged?.Invoke();
+            return;
+        }
+
+        foreach (var _pair in _model.OwnedSkills)
+        {
+            AcquiredSkillData _ownedSkill = _pair.Value;
+            if (_ownedSkill == null)
+            {
+                continue;
+            }
+
+            if (_ownedSkill.GroupID != EnchantModel.GROUP_COMBINATION_SKILL)
+            {
+                continue;
+            }
+
+            SkillTableData _skillData = _ownedSkill.Data;
+            if (_skillData == null && TryGetCombinationData(_pair.Key, _ownedSkill.Level, out SkillTableData _restoredData))
+            {
+                _skillData = _restoredData;
+            }
+
+            if (_skillData == null)
+            {
+                continue;
+            }
+
+            SetCombinationData(_pair.Key, _skillData);
+        }
+
+        OnCombinationChanged?.Invoke();
     }
 
     public void Discard()

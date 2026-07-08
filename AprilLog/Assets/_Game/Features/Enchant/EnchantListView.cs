@@ -14,6 +14,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// 수정 내용 : 로비 복귀 후 이어하기에서 인챈트 획득 플로우 없이 보유 인챈트 팝업을 열어도 Presenter가 초기화되도록 보강
 public class EnchantListView : MonoBehaviour, IEnchantListView
 {
     [Header("UI Elements")]
@@ -99,6 +100,11 @@ public class EnchantListView : MonoBehaviour, IEnchantListView
 
     private void OnEnable()
     {
+        if (!_isInitialized)
+        {
+            Init();
+        }
+
         ToggleOptionButtonSet();
         HideEmptyEnchantListState();
         OnSkillSelectButtonClick();
