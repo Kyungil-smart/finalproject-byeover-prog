@@ -153,3 +153,23 @@ public enum CrowdControlType
     Stun,
     Slow
 }
+
+public enum ElementalType
+{
+    None,
+    Fire,
+    Ice,
+    Water,
+    Wind,
+    Lightning
+}
+
+public enum EnchantType { Skill, Stat }
+
+public enum EnchantGroupType
+{
+    None,
+    Normal,
+    Combination,
+    Combo,
+}

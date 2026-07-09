@@ -40,7 +40,7 @@ public class FireSkillVfxLibrary : ScriptableObject
     public float iceCurtainScale = 1f;
     [Tooltip("글레이셜 피어스 502(투사체) — Eff_Water_Epic_HarshJudgmentSkill_07")]
     public GameObject harshJudgmentVfx;
-    public float harshJudgmentScale = 2f;
+    public float harshJudgmentScale = 0.5f;
     [Tooltip("글레이셜 피어스 진행방향 회전 보정(도). 뒤집히면 180")]
     public float harshJudgmentRotationTrimDeg = 0f;
     [Tooltip("빙결 지대 503 / 절대영도 505 — FX_Snow_Freeze")]
@@ -109,7 +109,7 @@ public class FireSkillVfxLibrary : ScriptableObject
     [Tooltip("정령 스케일 — 몬스터팩 비주얼은 100PPU 대형이라 크게 축소해야 한다 (몬스터 0.005 대비 정령은 1/4 크기)")]
     public float spiritScale = 0.00125f;
     [Tooltip("정령 비주얼 위치 보정(월드 단위). 팩 프리팹은 몸체가 원점 위쪽에 떠 있어 아래로 내려 소환 위치에 맞춘다 (스케일에 비례해 조정)")]
-    public Vector2 spiritOffset = new Vector2(0f, -0.5f);
+    public Vector2 spiritOffset = new Vector2(0f, -0.6f);
 
     [Header("추후 연결 — 정령 투사체")]
     public GameObject spiritAttack;         // Uzi_red (용도 확인 중)

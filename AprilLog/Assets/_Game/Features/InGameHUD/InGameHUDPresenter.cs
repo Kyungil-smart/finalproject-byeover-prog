@@ -128,8 +128,16 @@ public class InGameHUDPresenter
     private void HandleTimer(float remainTime) => _view.UpdateStageTimer(remainTime);
     private void HandleWaveState(StageModel.WaveState state) => _view.UpdateWaveStateText(state);
     private void HandleSpecialWaveEntered(StageModel.SpawnType type) => _view.UpdateSpecialWavePopup(type);
-    private void HandleStageProgress(int stageId) => _view.UpdateStageProgress(stageId);
     private void HandleOnHit(float duration) => SetOnHit(duration);
+
+    private void HandleStageProgress(int stageId)
+    {
+        int chapterId = stageId / 100;
+        int stageOrder = stageId % 100;
+        int chapterOrder = DataManager.Instance.StageRepo.GetIndexByChapterId(chapterId) + 1;
+        
+        _view.UpdateStageProgress(chapterOrder, stageOrder);
+    }
     
     // ---------- 보조 함수 ----------
     public void Update(float deltaTime)

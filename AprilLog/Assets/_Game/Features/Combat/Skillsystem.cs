@@ -659,8 +659,8 @@ public class SkillSystem : MonoBehaviour
         var lib = WaterVfx;
         float baseY = _firePoint != null ? _firePoint.position.y : 0f;
         Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
-        float speed = PxToWorld(125f);     // 나미 R식: 천천히 전진하며 적을 밀기 (QA 피드백으로 250→125로 감속)
-        const float duration = 4.0f;       // 속도 절반이라 같은 거리 도달하도록 지속 2.0→4.0초로 보정
+        float speed = PxToWorld(62.5f);    // 나미 R식: 천천히 전진하며 적을 밀기 (QA 피드백으로 250→125→62.5 두 차례 감속)
+        const float duration = 8.0f;       // 속도 절반마다 같은 거리에 도달하도록 지속을 2배로 보정 (2.0→4.0→8.0초)
 
         GameObject vfx = null;
         if (lib != null && lib.waveVfx != null)
@@ -675,7 +675,7 @@ public class SkillSystem : MonoBehaviour
         }
         else SpawnHazardFlash(cur, sizeWorld, new Color(0.4f, 0.7f, 1f, 0.35f));
 
-        const float tickGap = 0.4f;   // 속도 절반(125px/s)에 맞춰 0.2→0.4초: 4초 동안 총 틱 수(데미지/넉백)는 기존 2초·0.2초와 동일하게 유지
+        const float tickGap = 0.8f;   // 감속에 맞춰 0.2→0.4→0.8초: 지속 8초 동안 총 틱 수(데미지/넉백)를 최초 2초·0.2초와 동일하게 유지
         float tickT = tickGap, elapsed = 0f;
         DealHazardDamage(data, cur, sizeWorld);
         while (elapsed < duration)

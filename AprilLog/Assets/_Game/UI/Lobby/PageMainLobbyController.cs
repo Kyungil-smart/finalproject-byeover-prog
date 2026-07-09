@@ -76,9 +76,17 @@ public class PageMainLobbyController : MonoBehaviour
 
     private void Start()
     {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
         _data.InitChapters();
         _isInitialized = true;
         ShowChapter(0, instant: true);
+    }
+
+    private void OnDestroy()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
     }
 
     // ------------------------------------------------------------------
