@@ -204,10 +204,8 @@ public class StageLoopManager : MonoBehaviour
         return DataManager.Instance.StageRepo.GetStageId(_chapterId, stageOrder);
     }
 
-    public float GetStageProgress()
+    public void GetStageProgress()
     {
-        var chapter = DataManager.Instance.StageRepo.GetChapter(_chapterId);
-        if (chapter == null || chapter.StageCount == 0) return 0f;
-        return (float)_currentStageIndex / chapter.StageCount;
+        if(_chapterId != 0) OnStageChanged?.Invoke(GetStageId());
     }
 }

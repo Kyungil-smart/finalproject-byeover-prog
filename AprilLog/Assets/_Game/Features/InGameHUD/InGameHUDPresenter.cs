@@ -7,6 +7,7 @@
 // 수정자 : 김영찬
 // 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class InGameHUDPresenter
@@ -74,6 +75,9 @@ public class InGameHUDPresenter
 
         if (_growthSystem != null)
             _growthSystem.EmitCurrentState();
+        
+        if (_loopManager != null)
+            _loopManager.GetStageProgress();
         
         ResetEffectColor();
     }
@@ -145,7 +149,6 @@ public class InGameHUDPresenter
         Tick(deltaTime);
         PlayEffect();
     }
-    
     
     private void Tick(float deltaTime)
     {
