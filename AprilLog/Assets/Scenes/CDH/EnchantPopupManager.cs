@@ -6,6 +6,8 @@ public class EnchantPopupManager : MonoBehaviour
     [SerializeField] private EliteRewardEffect _rewardEffect;
     [SerializeField] private UnitVisualController _normalUnit;
     [SerializeField] private EnchantSelectView _view;
+    [SerializeField] private EnchantChangeView _changeView;
+
     private int _remainingPopups = 0;
 
     private void Awake()
@@ -33,6 +35,7 @@ public class EnchantPopupManager : MonoBehaviour
 
         Debug.Log($"[EnchantPopup] 확률 결과: {rand:F2} (0~0.1: 10%, 0.1~0.4: 30%, 0.4~1.0: 60%) | 생성된 팝업 횟수: {_remainingPopups}");
 
+
         if (_rewardEffect != null)
         {
             _rewardEffect.SetEnchantCount(_remainingPopups);
@@ -50,16 +53,43 @@ public class EnchantPopupManager : MonoBehaviour
 
     private void HandleChoiceSelected(int index)
     {
+        StartCoroutine(ShowNextPopupRoutine());
+    }
+    private System.Collections.IEnumerator ShowNextPopupRoutine()
+    {
         _view.Hide();
+        yield return null;
+
         ShowNextPopup();
+    }
+
+    public bool IsChangePopupActive()
+    {
+        return _changeView != null && _changeView.gameObject.activeSelf;
     }
 
     public void ShowNextPopup()
     {
+        if (IsChangePopupActive()) return;
+
         if (_remainingPopups > 0)
         {
             _remainingPopups--;
             _rewardSystem.OpenEnchantPopup();
         }
+    }
+
+    public void OnChangeCompleted()
+    {
+        if (_changeView != null)
+            _changeView.gameObject.SetActive(false);
+
+        StartCoroutine(DelayShowNextPopup());
+    }
+
+    private System.Collections.IEnumerator DelayShowNextPopup()
+    {
+        yield return null;
+        ShowNextPopup();
     }
 }
