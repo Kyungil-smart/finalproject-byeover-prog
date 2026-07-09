@@ -19,11 +19,11 @@ public class EnchantChangeInfoTableUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _levelText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
 
-    public void SetInfo(EnchantDisplayData _newData)
+    public void SetInfo(EnchantDisplayData newData)
     {
         ResolveMissingReferences();
 
-        if (_newData == null)
+        if (newData == null)
         {
             ClearInfo();
             return;
@@ -32,25 +32,25 @@ public class EnchantChangeInfoTableUI : MonoBehaviour
         if(_nameText != null)
         {
             SetTextVisible(_nameText, true);
-            _nameText.text = _newData.Name;
+            _nameText.text = EnchantColorMapper.SetColorHexCodeText(newData.Name, newData.ElementalType);
         }
         
         if(_typeText != null)
         {
             SetTextVisible(_typeText, true);
-            _typeText.text = _newData.TypeLabel;
+            _typeText.text = EnchantGroupIDToEnchantGroupTypeMapper.GetLabelText(newData.TypeLabel);
         }
 
         if (_levelText != null)
         {
             SetTextVisible(_levelText, true);
-            _levelText.SetText("Lv.{0}", Mathf.Max(1, _newData.Level));
+            _levelText.SetText("Lv.{0}", Mathf.Max(1, newData.Level));
         }
         
         if(_descriptionText != null)
         {
             SetTextVisible(_descriptionText, true);
-            _descriptionText.text = _newData.Description;
+            _descriptionText.text = newData.Description;
         }
         
         if (_skillImage != null)
@@ -62,7 +62,7 @@ public class EnchantChangeInfoTableUI : MonoBehaviour
 
             _skillImage.enabled = true;
             // 추가: 조규민 - 교체 확인 정보 테이블에도 선택 카드와 같은 인챈트 아이콘을 표시한다.
-            EnchantIconLoader.ApplyIcon(_skillImage, _newData.ImageKey);
+            EnchantIconLoader.ApplyIcon(_skillImage, newData.ImageKey);
         }
     }
 

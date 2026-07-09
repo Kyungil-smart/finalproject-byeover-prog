@@ -88,11 +88,11 @@ public class EnchantCardUI : MonoBehaviour
 
         // 인챈트 타입 라벨 반영 (Presenter가 stat-type 기반으로 채움)
         if (_typeText != null)
-            _typeText.text = data.TypeLabel;
+            _typeText.text = EnchantGroupIDToEnchantGroupTypeMapper.GetLabelText(data.TypeLabel);
         
         // 인챈트 이름 반영 (예: "공격력 증가", "체인 라이트닝" 등)
         if (_nameText != null) 
-            _nameText.text = data.Name;
+            _nameText.text = EnchantColorMapper.SetColorHexCodeText(data.Name, data.ElementalType);
         
         // 인챈트 상세 설명 반영
         if (_descriptionText != null)
