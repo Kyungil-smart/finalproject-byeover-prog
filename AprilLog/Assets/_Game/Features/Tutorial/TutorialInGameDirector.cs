@@ -125,7 +125,7 @@ public class TutorialInGameDirector : MonoBehaviour
     [Tooltip("몬스터가 멈춰서 등장하는 위치(월드). 좌->우 3개")]
     [SerializeField] private Vector2[] _step0MonsterSpawnPositions =
     {
-        new Vector2(-2f, 3f), new Vector2(0f, 3f), new Vector2(2f, 3f)
+        new Vector2(-3f, 3f), new Vector2(0f, 3f), new Vector2(3f, 3f)
     };
     [Tooltip("강조 연출 후 몬스터가 내려와 다시 멈추는 목표 Y(월드)")]
     [SerializeField] private float _step0MonsterStopY = 1.5f;
@@ -221,6 +221,8 @@ public class TutorialInGameDirector : MonoBehaviour
     private StageLoopManager _stageLoop;
     private bool _chapterEndSubscribed;
 
+    private GameObject _pauseButton;
+
     private Coroutine _step0Routine;
     private Coroutine _step1Routine;
     private bool _step0ComboLessonPlayed;
@@ -249,6 +251,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (!_active) return;
 
         ResolveSystems();
+        HidePauseButton();
         if (_spawner != null) _spawner.OnMonsterDied += HandleStep0MonsterDied;
         if (_inputHandler != null) _inputHandler.OnDragStarted += HandleDragStarted;
         TrySubscribeGrowthLevelUp();
@@ -291,6 +294,7 @@ public class TutorialInGameDirector : MonoBehaviour
             _step14JokerProtectionRoutine = null;
         }
         _step0PuzzlePhase = false;
+        RestorePauseButton();
         ClearEnchantDim();
         ClearTemporaryCombinationRecipe();
         SetFirstEnchantPopupVisible(true);
@@ -914,6 +918,18 @@ public class TutorialInGameDirector : MonoBehaviour
             if (monster != null)
                 monster.ApplyStun(duration);
         }
+    }
+
+    // 튜토리얼 중에는 정지 버튼을 숨겨 전투 일시정지/인챈트 목록 진입을 막는다.
+    private void HidePauseButton()
+    {
+        if (_pauseButton == null) _pauseButton = GameObject.Find("PauseButton");
+        if (_pauseButton != null) _pauseButton.SetActive(false);
+    }
+
+    private void RestorePauseButton()
+    {
+        if (_pauseButton != null) _pauseButton.SetActive(true);
     }
 
     private void HoldStageForTutorialGuide()

@@ -20,6 +20,10 @@ public class TutorialSkipController : MonoBehaviour
     [SerializeField] private Button _confirmButton;    // 예
     [SerializeField] private Button _cancelButton;     // 아니오
 
+    [Header("튜토리얼 중 숨길 상단 버튼")]
+    [Tooltip("튜토리얼 진행 중에는 스킵/자동/로그 버튼을 숨겨 대사를 건너뛰지 못하게 한다.")]
+    [SerializeField] private GameObject[] _hideDuringTutorial;   // Button_Skip / Button_AutoPlay / Button_Log
+
     private bool _isSkipping;
 
     private void Awake()
@@ -36,6 +40,13 @@ public class TutorialSkipController : MonoBehaviour
         // 튜토리얼 진행 중일 때만 스킵 버튼 노출.
         bool running = TutorialManager.Instance != null && TutorialManager.Instance.IsRunning;
         if (_skipTutoButton != null) _skipTutoButton.gameObject.SetActive(running);
+
+        // 튜토리얼 중에는 일반 상단 버튼(스킵/자동/로그)을 숨긴다.
+        if (_hideDuringTutorial != null)
+        {
+            foreach (GameObject go in _hideDuringTutorial)
+                if (go != null) go.SetActive(!running);
+        }
     }
 
     private void OnDestroy()
