@@ -61,6 +61,8 @@ public class PageMainLobbyController : MonoBehaviour
         }
         
         if (GameManager.Instance != null) GameManager.Instance.OnCloudDataReady += HandleCloudDataReady;
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
         _data.InitChapters();
         ShowChapter(0, instant: true);
     }
@@ -68,6 +70,8 @@ public class PageMainLobbyController : MonoBehaviour
     private void OnDisable()
     {
         if(GameManager.Instance != null) GameManager.Instance.OnCloudDataReady -= HandleCloudDataReady;
+        if(LocalizationManager.Instance != null) 
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
     }
 
     private void Start()
@@ -220,5 +224,11 @@ public class PageMainLobbyController : MonoBehaviour
     private void HandleCloudDataReady()
     {
         RefreshButtons();
+    }
+    
+    private void HandleLanguageChanged()
+    {
+        _data.LanguageChanged();
+        ShowChapter(_currentIndex, true);
     }
 }

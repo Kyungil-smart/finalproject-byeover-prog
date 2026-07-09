@@ -749,15 +749,44 @@ public class ChapterDataSO : ScriptableObject
             chapters.Add(
                 new ChapterEntry
                 {
-                    chapterName = _localizationManager != null? 
+                    chapterName = _localizationManager != null ? 
                         _localizationManager.Get(masterData.Name, LocalizingType.Chapter) : null,
-                    description = _localizationManager != null?
+                    description = _localizationManager != null ?
                         _localizationManager.Get(masterData.Explanation, LocalizingType.Chapter): null,
                     image = Resources.Load<Sprite>(path + imageIndex)
                 });
         }
         
         _isInitialized = true;
+    }
+
+    public void LanguageChanged()
+    {
+        if(!_isInitialized || chapters == null || ChapterCount == 0)
+        {
+            InitChapters();
+            return;
+        }
+        
+        var indexData = _repo.GetStepIndexToChapterIdMappingData();
+        if(indexData == null || indexData.Count == 0)
+        {
+            Debug.LogWarning("[PageMainLobbyController] 챕터 정보를 불러오지 못했습니다.");
+            return;
+        }
+        
+        for (int i = 0; i < indexData.Count; i++)
+        {
+            var masterData = _repo.GetChapter(indexData[i]);
+            string imageIndex = (indexData[i] / 100).ToString();
+
+            if (chapters[i] == null) continue;
+            
+            chapters[i].chapterName = _localizationManager != null ? 
+                _localizationManager.Get(masterData.Name, LocalizingType.Chapter) : null;
+            chapters[i].description = _localizationManager != null ? 
+                _localizationManager.Get(masterData.Explanation, LocalizingType.Chapter) : null;
+        }
     }
     
     /// <summary>인덱스(0-based)로 챕터 데이터를 반환합니다.</summary>
