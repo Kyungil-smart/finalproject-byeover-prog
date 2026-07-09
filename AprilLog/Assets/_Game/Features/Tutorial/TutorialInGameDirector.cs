@@ -125,7 +125,7 @@ public class TutorialInGameDirector : MonoBehaviour
     [Tooltip("몬스터가 멈춰서 등장하는 위치(월드). 좌->우 3개")]
     [SerializeField] private Vector2[] _step0MonsterSpawnPositions =
     {
-        new Vector2(-2f, 3f), new Vector2(0f, 3f), new Vector2(2f, 3f)
+        new Vector2(-3f, 3f), new Vector2(0f, 3f), new Vector2(3f, 3f)
     };
     [Tooltip("강조 연출 후 몬스터가 내려와 다시 멈추는 목표 Y(월드)")]
     [SerializeField] private float _step0MonsterStopY = 1.5f;
@@ -216,8 +216,12 @@ public class TutorialInGameDirector : MonoBehaviour
     private Coroutine _step14JokerProtectionRoutine;
     private Coroutine _step14ClearRoutine;
     private bool _step14ClearHandled;
+    private bool _suppressSettlementPopup;
+    private ResultPopup _resultPopup;
     private StageLoopManager _stageLoop;
     private bool _chapterEndSubscribed;
+
+    private GameObject _pauseButton;
 
     private Coroutine _step0Routine;
     private Coroutine _step1Routine;
@@ -247,6 +251,7 @@ public class TutorialInGameDirector : MonoBehaviour
         if (!_active) return;
 
         ResolveSystems();
+        HidePauseButton();
         if (_spawner != null) _spawner.OnMonsterDied += HandleStep0MonsterDied;
         if (_inputHandler != null) _inputHandler.OnDragStarted += HandleDragStarted;
         TrySubscribeGrowthLevelUp();
@@ -289,6 +294,7 @@ public class TutorialInGameDirector : MonoBehaviour
             _step14JokerProtectionRoutine = null;
         }
         _step0PuzzlePhase = false;
+        RestorePauseButton();
         ClearEnchantDim();
         ClearTemporaryCombinationRecipe();
         SetFirstEnchantPopupVisible(true);
@@ -324,6 +330,9 @@ public class TutorialInGameDirector : MonoBehaviour
     private void LateUpdate()
     {
         if (!_active) return;
+
+        // 보스 클리어 후 정산 팝업이 떠도 렌더 전에 매 프레임 닫아 화면에 보이지 않게 한다.
+        if (_suppressSettlementPopup) CloseSettlementPopup();
 
         if (!_bossWavePopupResolved) ResolveBossWavePopup();
         if (_bossWavePopup == null) return;
@@ -808,19 +817,18 @@ public class TutorialInGameDirector : MonoBehaviour
         if (!IsTutorialChapterRun() || !_step14BossScenarioPlayed) return;
 
         _step14ClearHandled = true;
+        // 이 프레임부터 LateUpdate가 정산 팝업을 계속 닫으므로 한 프레임도 노출되지 않는다.
+        _suppressSettlementPopup = true;
+        CloseSettlementPopup();
+
         if (_step14ClearRoutine == null)
             _step14ClearRoutine = StartCoroutine(RunStep14ClearSequence());
     }
 
     private IEnumerator RunStep14ClearSequence()
     {
-        // 정산 팝업이 뜨는 프레임을 지난 뒤 닫아, OnChapterEnd 구독 순서와 무관하게 확실히 숨긴다.
-        yield return null;
-        CloseSettlementPopup();
-
         // 마무리 대사를 멈춘 상태에서 재생(다른 step14 시나리오와 동일한 일시정지 패턴).
         PauseStep14Scenario();
-        CloseSettlementPopup();
         yield return PlayWorldDialogue(_step14ClearScenarioStartId, _step14ClearScenarioEndId);
         ResumeStep14ScenarioPause();
 
@@ -830,8 +838,9 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private void CloseSettlementPopup()
     {
-        ResultPopup popup = FindFirstObjectByType<ResultPopup>(FindObjectsInactive.Include);
-        if (popup != null) popup.Close();
+        if (_resultPopup == null)
+            _resultPopup = FindFirstObjectByType<ResultPopup>(FindObjectsInactive.Include);
+        if (_resultPopup != null) _resultPopup.Close();
     }
 
     // 마무리 대사 뒤 이동: 초회 챕터엔드 스토리가 있으면 그 스토리로, 없으면 로비로.
@@ -909,6 +918,18 @@ public class TutorialInGameDirector : MonoBehaviour
             if (monster != null)
                 monster.ApplyStun(duration);
         }
+    }
+
+    // 튜토리얼 중에는 정지 버튼을 숨겨 전투 일시정지/인챈트 목록 진입을 막는다.
+    private void HidePauseButton()
+    {
+        if (_pauseButton == null) _pauseButton = GameObject.Find("PauseButton");
+        if (_pauseButton != null) _pauseButton.SetActive(false);
+    }
+
+    private void RestorePauseButton()
+    {
+        if (_pauseButton != null) _pauseButton.SetActive(true);
     }
 
     private void HoldStageForTutorialGuide()
