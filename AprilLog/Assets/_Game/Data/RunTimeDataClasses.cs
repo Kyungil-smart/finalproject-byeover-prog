@@ -203,8 +203,6 @@ public class UpgradeCostData
 
 #region 인첸트 시스템 지원
 
-public enum EnchantType { Skill, Stat }
-
 [Serializable]
 public class EnchantCandidate
 {
@@ -250,7 +248,8 @@ public class EnchantDisplayData
     public string Description;
     public int Level;
     public string ImageKey;
-    public string TypeLabel;   // 카드 타입 표시용 (Presenter가 stat-type 기반으로 채움)
+    public EnchantGroupType TypeLabel;   // 카드 타입 표시용 (Presenter가 stat-type 기반으로 채움)
+    public ElementalType ElementalType; // UI에서 이름을 나타낼때
 }
 
 [Serializable]
@@ -320,6 +319,87 @@ public class EnchantSequenceConfig
         EnchantType.Stat 
     };
 }
+
+public static class EnchantGroupIDToEnchantGroupTypeMapper
+{
+    private static readonly Dictionary<int, EnchantGroupType> _typeMap = new Dictionary<int, EnchantGroupType>
+    {
+        { EnchantModel.GROUP_NORMAL_SKILL, EnchantGroupType.Normal},
+        { EnchantModel.GROUP_COMBINATION_SKILL, EnchantGroupType.Combination},
+        { EnchantModel.GROUP_COMBO_SKILL, EnchantGroupType.Combo}
+    };
+
+    private static readonly Dictionary<EnchantGroupType, int> _localizingIdMap = new Dictionary<EnchantGroupType, int>
+    {
+        { EnchantGroupType.Normal, 12011 },
+        { EnchantGroupType.Combination, 12012 },
+        { EnchantGroupType.Combo, 12013 }
+    };
+    
+    public static EnchantGroupType GetEnchantGroupType(int enchantGroupId)
+    {
+        return _typeMap.GetValueOrDefault(enchantGroupId, EnchantGroupType.None);
+    }
+
+    private static int GetLocalizingId(EnchantGroupType enchantGroupType)
+    {
+        return _localizingIdMap.GetValueOrDefault(enchantGroupType, -1);
+    }
+
+    public static string GetLabelText(EnchantGroupType enchantGroupType)
+    {
+        if (LocalizationManager.Instance == null)
+        {
+            if(enchantGroupType == EnchantGroupType.None) return string.Empty;
+            
+            return enchantGroupType.ToString();
+        }
+        
+        var id = GetLocalizingId(enchantGroupType);
+        return id == -1 ? string.Empty : LocalizationManager.Instance.Get(id, LocalizingType.UI);
+    }
+}
+
+public static class TagToElementalMapper
+{
+    private static readonly Dictionary<int, ElementalType> _elementalMap = new()
+    {
+        { 2, ElementalType.Fire },
+        { 3, ElementalType.Water },
+        { 5, ElementalType.Wind },
+        { 7, ElementalType.Lightning },
+        { 9, ElementalType.Ice }
+    };
+        
+    public static ElementalType GetElemental(int tagId)
+    {
+        return _elementalMap.GetValueOrDefault(tagId, ElementalType.None);
+    }
+}
+
+public static class EnchantColorMapper
+{
+    private static readonly Dictionary<ElementalType, string> _colorMap = new()
+    {
+        { ElementalType.Fire, "#C80000" },
+        { ElementalType.Ice, "#00C8C8" },
+        { ElementalType.Water, "#005AAA" },
+        { ElementalType.Wind, "#00AA0E" },
+        { ElementalType.Lightning, "#8200AA" }
+    };
+
+    private static string GetHexCode(ElementalType type)
+    {
+        return _colorMap.GetValueOrDefault(type, string.Empty);
+    }
+    
+    public static string SetColorHexCodeText(string text ,ElementalType type)
+    {
+        var hexCode = GetHexCode(type);
+        return string.IsNullOrWhiteSpace(hexCode) ? text : $"<color={hexCode}>{text}</color>";
+    }
+}
+
 
 #endregion
 

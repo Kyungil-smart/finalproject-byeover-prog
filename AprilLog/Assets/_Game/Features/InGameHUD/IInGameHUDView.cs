@@ -18,7 +18,7 @@ public interface IInGameHUDView
     void UpdateLevelText(int current);
     void UpdateCombo(int count);
     void UpdateStageTimer(float remainingTime);
-    void UpdateStageProgress(int stageId);
+    void UpdateStageProgress(int chapterOrder, int stageOrder);
     void UpdateWaveStateText(StageModel.WaveState waveState);
     void UpdateSpecialWavePopup(StageModel.SpawnType spawnType);
     void ShowLevelUpEffect();

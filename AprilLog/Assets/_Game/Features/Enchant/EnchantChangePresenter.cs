@@ -17,7 +17,7 @@ public class EnchantChangePresenter
     private readonly EnchantUIModel _uiModel;
     private readonly ScreenNavigator _navigator;
     private EnchantListPresenter _listPresenter;
-    private LocalizationManager _localizationManager;
+    private readonly LocalizationManager _localizationManager;
 
     // 대기 중인(방금 뽑아서 얻으려고 하는) 인챈트 데이터
     private EnchantCandidate _pendingEnchant; 
@@ -61,6 +61,12 @@ public class EnchantChangePresenter
     {
         // 새로 얻을 인챈트 세팅
         EnchantDisplayData newData;
+        var enchantGroupType = EnchantGroupIDToEnchantGroupTypeMapper.GetEnchantGroupType(
+            _pendingEnchant.Type == EnchantType.Skill ?
+                _pendingEnchant.SkillData.SkillGroup_ID : _pendingEnchant.StatData.StatGroup_ID);
+        var elementalType = TagToElementalMapper.GetElemental(
+            _pendingEnchant.Type == EnchantType.Skill ? 
+                _pendingEnchant.SkillData.Tag_ID_1 : _pendingEnchant.StatData.Target_2);
         
         if(_localizationManager == null)
         {
@@ -69,7 +75,7 @@ public class EnchantChangePresenter
             {
                 EnchantId = _pendingEnchant.Specific_ID,
                 Level = _pendingEnchant.Level,
-                TypeLabel = _pendingEnchant.Type == EnchantType.Skill ? "스킬" : "스탯",
+                TypeLabel = enchantGroupType,
                 // 번역 데이터가 없음으로 ID를 출력함
                 Name = $"Name ID: {_pendingEnchant.Name_ID}",
                 Description = _pendingEnchant.Type == EnchantType.Skill
@@ -78,7 +84,8 @@ public class EnchantChangePresenter
                 // ToDo : 차후 이미지 컬럼 변경 가능성 있으며, 이미지 불러오는 방법 결정 되면 수정해야됨
                 ImageKey = _pendingEnchant.Type == EnchantType.Skill
                     ? $"{_pendingEnchant.SkillData.SkillIcon_ID}"
-                    : $"{_pendingEnchant.StatData.Image_ID}"
+                    : $"{_pendingEnchant.StatData.Image_ID}",
+                ElementalType = elementalType
             };
         }
         else
@@ -87,14 +94,15 @@ public class EnchantChangePresenter
             {
                 EnchantId = _pendingEnchant.Specific_ID,
                 Level = _pendingEnchant.Level,
-                TypeLabel = _pendingEnchant.Type == EnchantType.Skill ? "스킬" : "스탯",
+                TypeLabel = enchantGroupType,
                 Name = _localizationManager.Get(_pendingEnchant.Name_ID, LocalizingType.Enchant),
                 Description = _pendingEnchant.Type == EnchantType.Skill ? 
                     _localizationManager.Get(_pendingEnchant.SkillData.Skill_Descrip, LocalizingType.Enchant, _pendingEnchant.SkillData.RequiredValue_1) : 
                     _localizationManager.Get(_pendingEnchant.StatData.StatDescrip, LocalizingType.Enchant),
                 // ToDo : 차후 이미지 컬럼 변경 가능성 있으며, 이미지 불러오는 방법 결정 되면 수정해야됨
                 ImageKey = _pendingEnchant.Type == EnchantType.Skill ? 
-                    $"{_pendingEnchant.SkillData.SkillIcon_ID}" : $"{_pendingEnchant.StatData.Image_ID}" 
+                    $"{_pendingEnchant.SkillData.SkillIcon_ID}" : $"{_pendingEnchant.StatData.Image_ID}",
+                ElementalType = elementalType
             };
         }
         

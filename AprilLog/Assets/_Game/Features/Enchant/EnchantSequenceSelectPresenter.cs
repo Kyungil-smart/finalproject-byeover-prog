@@ -356,6 +356,11 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
         for (int i = 0; i < _currentChoices.Count; i++)
         {
             var candidate = _currentChoices[i];
+            var enchantGroupType = EnchantGroupIDToEnchantGroupTypeMapper.GetEnchantGroupType(
+                candidate.Type == EnchantType.Skill ?
+                    candidate.SkillData.SkillGroup_ID : candidate.StatData.StatGroup_ID);
+            var elementalType = TagToElementalMapper.GetElemental(candidate.Type == EnchantType.Skill ?
+                    candidate.SkillData.Tag_ID_1 : candidate.StatData.Target_2);
             
             if (_localizationManager == null)
             {
@@ -365,7 +370,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                     EnchantId = candidate.Specific_ID,
                     Level = candidate.Level,
                     // 카드 상단에 스킬/스탯 텍스트 표시
-                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                    TypeLabel = enchantGroupType, 
                 
                     // 번역 데이터가 없음으로 ID를 출력함
                     Name = $"NameID: {candidate.Name_ID}", 
@@ -375,7 +380,8 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                     // 추가: 조규민 - 분리형 선택 흐름에서도 인챈트 아이콘 키를 카드 UI로 전달한다.
                     ImageKey = candidate.Type == EnchantType.Skill ? 
                         $"{candidate.SkillData.SkillIcon_ID}" : 
-                        $"{candidate.StatData.Image_ID}"
+                        $"{candidate.StatData.Image_ID}",
+                    ElementalType = elementalType
                 };
             }
             else
@@ -385,7 +391,7 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                     EnchantId = candidate.Specific_ID,
                     Level = candidate.Level,
                     // 카드 상단에 스킬/스탯 텍스트 표시
-                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                    TypeLabel = enchantGroupType, 
                     Name = _localizationManager.Get(candidate.Name_ID, LocalizingType.Enchant), 
                     Description = candidate.Type == EnchantType.Skill ? 
                         _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant, candidate.SkillData.RequiredValue_1) : 
@@ -393,7 +399,8 @@ public class EnchantSequenceSelectPresenter : IEnchantSelectPresenter
                     // 추가: 조규민 - 분리형 선택 흐름에서도 인챈트 아이콘 키를 카드 UI로 전달한다.
                     ImageKey = candidate.Type == EnchantType.Skill ? 
                         $"{candidate.SkillData.SkillIcon_ID}" : 
-                        $"{candidate.StatData.Image_ID}"
+                        $"{candidate.StatData.Image_ID}", 
+                    ElementalType = elementalType
                 };
             }
         }
