@@ -19,6 +19,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// 추가: 조규민 - Result 보상 표시 대상에 다이아를 포함한다.
 public readonly struct ResultEnchantEntry
 {
     public readonly int _skillId;
@@ -71,6 +72,7 @@ public class ResultPopup : MonoBehaviour
     [Header("Compensation")]
     [SerializeField] private TMP_Text _coinText;
     [SerializeField] private TMP_Text _parchmentText;
+    [SerializeField] private TMP_Text _diamondText;
 
     // ---------- Button : 다시하기 / 다음 챕터 / 로비 ----------
     [Header("Button")]
@@ -97,10 +99,17 @@ public class ResultPopup : MonoBehaviour
                      long enchantDamage1, long enchantDamage2, long enchantDamage3,
                      long coin, long parchment)
     {
+        Show(isClear, maxCombo, maxDamage, enchantDamage1, enchantDamage2, enchantDamage3, coin, parchment, 0);
+    }
+
+    public void Show(bool isClear, int maxCombo, long maxDamage,
+                     long enchantDamage1, long enchantDamage2, long enchantDamage3,
+                     long coin, long parchment, long _diamond)
+    {
         SetResult(isClear);
         SetRecord(maxCombo, maxDamage);
         SetEnchants(enchantDamage1, enchantDamage2, enchantDamage3);
-        SetRewards(coin, parchment);
+        SetRewards(coin, parchment, _diamond);
 
         // 클리어가 아니면(오버) 다음 챕터 버튼 비활성화
         if (_nextChapterButton != null)
@@ -113,10 +122,17 @@ public class ResultPopup : MonoBehaviour
                      ResultEnchantEntry[] topEnchantEntries,
                      long coin, long parchment)
     {
+        Show(isClear, maxCombo, maxDamage, topEnchantEntries, coin, parchment, 0);
+    }
+
+    public void Show(bool isClear, int maxCombo, long maxDamage,
+                     ResultEnchantEntry[] topEnchantEntries,
+                     long coin, long parchment, long _diamond)
+    {
         SetResult(isClear);
         SetRecord(maxCombo, maxDamage);
         SetEnchants(topEnchantEntries);
-        SetRewards(coin, parchment);
+        SetRewards(coin, parchment, _diamond);
 
         if (_nextChapterButton != null)
             _nextChapterButton.interactable = isClear;
@@ -153,8 +169,14 @@ public class ResultPopup : MonoBehaviour
 
     public void SetRewards(long coin, long parchment)
     {
+        SetRewards(coin, parchment, 0);
+    }
+
+    public void SetRewards(long coin, long parchment, long _diamond)
+    {
         if (_coinText != null)      _coinText.text      = FormatK(coin);
         if (_parchmentText != null) _parchmentText.text = FormatK(parchment);
+        if (_diamondText != null)   _diamondText.text   = FormatK(_diamond);
     }
 
     public void Open()
