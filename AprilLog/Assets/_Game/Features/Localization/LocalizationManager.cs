@@ -153,9 +153,15 @@ public class LocalizationManager : MonoBehaviour
         // 나중에 언어 추가할 때 여기에 case 추가하면 됨
         switch (_currentLang)
         {
-            case "ko": return entry.KR;
-            case "en": return entry.EN;
-            default:   return entry.EN;
+            case "ko": 
+                Debug.Log($"[Localization] 한글 출력 확인 : {localizingType}, {id} => {entry.KR}");
+                return entry.KR;
+            case "en": 
+                Debug.Log($"[Localization] 영어 출력 확인 : {localizingType}, {id} => {entry.EN}");
+                return entry.EN;
+            default:   
+                Debug.Log($"[Localization] 영어 출력 확인 : {localizingType}, {id} => {entry.EN}");
+                return entry.EN;
         }
     }
 
@@ -170,7 +176,10 @@ public class LocalizationManager : MonoBehaviour
 
         try
         {
-            return string.Format(template, args);
+            var result = string.Format(template, args);
+            string argsString = string.Join(", ", args);
+            Debug.Log($"[Localization] 포맷 파라미터 출력 확인 : {argsString} => {result}");
+            return result;
         }
         catch (FormatException)
         {
