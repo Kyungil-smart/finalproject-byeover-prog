@@ -583,7 +583,12 @@ public class SkillSystem : MonoBehaviour
                 else if (TryGetWaterVfx(data, out GameObject wvfx2, out float wscale2))
                 {
                     // 물 하자드(탄환세례 202·급류 203): center에 VFX 1회 소환·재생.
-                    var wv2 = SpawnVfx(wvfx2, center, wscale2, 52);
+                    // 탄환세례(202)만 물대포 연출 — 판정은 center(타겟 존) 그대로 두고,
+                    // VFX는 플레이어 머리 위(발사점 + 오프셋)에서 뿜는다. (QA: 몬스터 위치에서 발동돼 어색)
+                    Vector2 waterVfxPos = center;
+                    if (data.StandardID == 202 && _firePoint != null && WaterVfx != null)
+                        waterVfxPos = (Vector2)_firePoint.position + new Vector2(0f, WaterVfx.bulletShowerHeadOffsetY);
+                    var wv2 = SpawnVfx(wvfx2, waterVfxPos, wscale2, 52);
                     if (wv2 != null)
                     {
                         if (WaterVfx != null) ApplyParticleRotation(wv2, data.StandardID == 203 ? WaterVfx.torrentRotationDeg : WaterVfx.bulletShowerRotationDeg);
@@ -1498,8 +1503,15 @@ public class SkillSystem : MonoBehaviour
                 float mirror = (side < 0f) ? 1f : -1f; // 좌우 정령이 서로 마주 보도록 미러
                 visual.transform.localScale = new Vector3(lib.spiritScale * mirror, lib.spiritScale, 1f);
 
-                foreach (var r in visual.GetComponentsInChildren<Renderer>(true))
-                    r.sortingOrder = 60;
+                // 파츠 조립형(꼬리/몸/얼굴이 각각 SpriteRenderer)이라 sortingOrder를 한 값으로
+                // 밀면 파츠 앞뒤가 깨져 뒷모습처럼 보인다. 프리팹의 상대 순서를 보존한 채 전체만 끌어올린다.
+                var renderers = visual.GetComponentsInChildren<Renderer>(true);
+                int minOrder = int.MaxValue;
+                foreach (var r in renderers)
+                    if (r.sortingOrder < minOrder) minOrder = r.sortingOrder;
+                if (minOrder == int.MaxValue) minOrder = 0;
+                foreach (var r in renderers)
+                    r.sortingOrder += 60 - minOrder;
             }
             else
             {
