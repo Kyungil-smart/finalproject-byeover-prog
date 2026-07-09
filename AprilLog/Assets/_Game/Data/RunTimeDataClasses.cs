@@ -740,7 +740,7 @@ public class ChapterDataSO : ScriptableObject
             Debug.LogWarning("[PageMainLobbyController] 챕터 정보를 불러오지 못했습니다.");
             return;
         }
-
+        
         for (int i = 0; i < indexData.Count; i++)
         {
             var masterData = _repo.GetChapter(indexData[i]);
@@ -749,12 +749,10 @@ public class ChapterDataSO : ScriptableObject
             chapters.Add(
                 new ChapterEntry
                 {
-                    chapterName = _localizationManager == null? 
-                        _localizationManager.Get(masterData.Name, LocalizingType.UI) : null,
-                    chapterLabel = _localizationManager == null?
-                        _localizationManager.Get(masterData.Explanation, LocalizingType.UI): null,
-                    description = _localizationManager == null?
-                        _localizationManager.Get(masterData.Explanation, LocalizingType.UI): null,
+                    chapterName = _localizationManager != null? 
+                        _localizationManager.Get(masterData.Name, LocalizingType.Chapter) : null,
+                    description = _localizationManager != null?
+                        _localizationManager.Get(masterData.Explanation, LocalizingType.Chapter): null,
                     image = Resources.Load<Sprite>(path + imageIndex)
                 });
         }
