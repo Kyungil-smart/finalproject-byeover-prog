@@ -1480,6 +1480,7 @@ public class SkillSystem : MonoBehaviour
             if (_activeSpirits[i] != null) Destroy(_activeSpirits[i].gameObject);
         _activeSpirits.Clear();
 
+        var lib = Vfx;
         int count = Mathf.Max(1, data.PelletCount); // 정령 수 (테이블 ActiveCount=2)
         for (int i = 0; i < count; i++)
         {
@@ -1488,12 +1489,27 @@ public class SkillSystem : MonoBehaviour
 
             var go = new GameObject("FireSpirit");
             go.transform.position = pos;
-            go.transform.localScale = Vector3.one * 0.35f;
 
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = SpriteFactory.Square();
-            sr.color = new Color(1f, 0.45f, 0.1f); // 주황 (화염 정령 플레이스홀더)
-            sr.sortingOrder = 60;
+            if (lib != null && lib.spiritBody != null)
+            {
+                // 정령 본체 (MonsterPack/Summon/100152). 팩 비주얼은 100PPU 대형이라 라이브러리 스케일로 축소.
+                var visual = Instantiate(lib.spiritBody, go.transform);
+                visual.transform.localPosition = lib.spiritOffset;
+                float mirror = (side < 0f) ? 1f : -1f; // 좌우 정령이 서로 마주 보도록 미러
+                visual.transform.localScale = new Vector3(lib.spiritScale * mirror, lib.spiritScale, 1f);
+
+                foreach (var r in visual.GetComponentsInChildren<Renderer>(true))
+                    r.sortingOrder = 60;
+            }
+            else
+            {
+                // 프리팹 미배선 폴백: 주황 사각형 플레이스홀더
+                go.transform.localScale = Vector3.one * 0.35f;
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.Square();
+                sr.color = new Color(1f, 0.45f, 0.1f);
+                sr.sortingOrder = 60;
+            }
 
             var spirit = go.AddComponent<FireSpirit>();
             spirit.Init(this, cfg.castSkill, cfg.lifetime, cfg.castInterval);

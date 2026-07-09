@@ -335,7 +335,9 @@ public class StageModel
             _isSpecialWaveTriggered = false;
             _isSpecialWaveFinished = false;
             _specialWaveActiveTimer = 0f;
-            _isBossKilled = false;
+            // _isBossKilled는 여기서 리셋하지 않는다(스테이지 단위 유지 - StageModel이 스테이지마다 새로 생성됨).
+            // 보스 스폰 웨이브(TimeOver)와 보스킬 판정 웨이브(TimeOverOrBossKill)가 분리된 구성에서
+            // 판정 웨이브 진입 시 리셋하면 이전 웨이브에서 잡은 보스 킬이 지워져 시간 종료로만 승리하던 버그.
 
             // 웨이브 상태 변경 및 전파
             _state = WaveState.WaveRunning;

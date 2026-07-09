@@ -265,6 +265,12 @@ public class InGameBootstrap : MonoBehaviour
 
     private int ResolveStartChapterId(bool isResume, InGameSaveData saveData)
     {
+        // _Test 씬 밸런스 콘솔의 스테이지 선택이 최우선 (테스트 씬 밖에서는 항상 0)
+        if (BalanceTestConsole.PendingStageId > 0)
+        {
+            return BalanceTestConsole.PendingStageId / 100;
+        }
+
         if (isResume && saveData != null)
         {
             return Mathf.Max(1, saveData.chapterId);
@@ -304,6 +310,12 @@ public class InGameBootstrap : MonoBehaviour
 
     private int ResolveStartStageIndex(bool isResume, InGameSaveData saveData)
     {
+        // _Test 씬 밸런스 콘솔의 스테이지 선택이 최우선 (테스트 씬 밖에서는 항상 0)
+        if (BalanceTestConsole.PendingStageId > 0)
+        {
+            return Mathf.Max(0, BalanceTestConsole.PendingStageId % 100 - 1);
+        }
+
         if (isResume && saveData != null)
         {
             return Mathf.Max(0, saveData.clearedStage);
@@ -839,6 +851,12 @@ public class InGameBootstrap : MonoBehaviour
     // 클라우드 데이터에서 캐릭터 레벨 가져오기 (홍정옥)
     private int GetCharacterLevel()
     {
+        // _Test 씬 밸런스 콘솔의 성장 레벨 시뮬레이션 (테스트 씬 밖에서는 항상 0)
+        if (BalanceTestConsole.OverrideCharacterLevel > 0)
+        {
+            return BalanceTestConsole.OverrideCharacterLevel;
+        }
+
         if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
         {
             Debug.LogWarning("[InGameBootstrap] 클라우드 데이터를 찾을 수 없음. 아웃 게임 레벨 1");

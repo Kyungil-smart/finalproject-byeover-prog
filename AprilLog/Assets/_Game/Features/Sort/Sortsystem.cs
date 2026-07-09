@@ -404,7 +404,10 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         _model.ResetBoard();                          // 4-2-3 퍼즐 유닛 전체 삭제
         FillEmptyTablesFromQueue();                   // 4-2-4 대기 테이블에서 채우기
 
-        Time.timeScale = 1f;                          // 4-2-5 인게임 진행 재개
+        // 4-2-5 인게임 진행 재개 - 단, 그 사이 정지형 팝업(인챈트 선택/교체 등)이 열렸다면 정지를 유지한다.
+        // (Realtime 대기 1.5초는 timeScale=0에도 흘러서, 무조건 1f를 대입하면 팝업 뒤로 전투가 재개되던 버그.
+        //  팝업 쪽 정지는 팝업이 닫힐 때 ScreenNavigator.CloseMenu가 풀어준다.)
+        Time.timeScale = ScreenNavigator.IsMenuOpen ? 0f : 1f;
         _isProcessing = false;
     }
 

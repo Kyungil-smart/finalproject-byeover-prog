@@ -119,6 +119,11 @@ public class AudioManager : MonoBehaviour
         _bgmSource = EnsureAudioSource(_bgmSource, nameof(_bgmSource));
         _sfxSource = EnsureAudioSource(_sfxSource, nameof(_sfxSource));
 
+        // 자동 생성/미배선 경로에서 EnsureAudioSource의 GetComponent 폴백이 BGM용으로 만든 소스를
+        // SFX에도 재사용해 두 채널이 한 AudioSource로 합쳐진다(BGM·SFX 볼륨이 같이 조절되던 원인). 반드시 분리.
+        if (_sfxSource == _bgmSource)
+            _sfxSource = gameObject.AddComponent<AudioSource>();
+
         AudioListener.volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
 
         if (_bgmSource != null)
