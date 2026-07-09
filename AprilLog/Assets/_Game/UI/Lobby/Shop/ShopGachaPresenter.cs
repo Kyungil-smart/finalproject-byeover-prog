@@ -97,10 +97,11 @@ public class ShopGachaPresenter : MonoBehaviour
 
     private const int TenDrawCount = 10;
 
-    // 지금 열려 있는 결과창이 '어느 가챠'로 열렸는지 고정. 재추첨 버튼(1회 더/10회 더)은 전역 _gachaId 가
-    // 아니라 이 값을 써야, 결과창이 떠 있는 동안 다른 상자를 건드려 _gachaId 가 바뀌어도 원래 상자로 다시 뽑는다.
-    // (한 결과창 안에 1회 더/10회 더 버튼이 같이 있으므로 팝업별이 아니라 '열린 팝업' 하나로 관리한다.)
-    private int _openPopupGachaId;
+    // 박스마다 ShopGachaPresenter 인스턴스가 따로이고 결과창(POPUP)만 공유한다.
+    // 재추첨 버튼은 한 인스턴스에만 연결돼 있으므로, '결과창을 실제로 연 프리젠터'로 재추첨을 넘겨야
+    // 그 박스의 재화/데이터/뷰로 정확히 다시 뽑는다. static 이라 인스턴스 간에 공유된다.
+    private static ShopGachaPresenter _popupOwner;
+    private static int _openPopupGachaId;
 
     private void Awake()
     {
@@ -333,11 +334,14 @@ public class ShopGachaPresenter : MonoBehaviour
             resultPopup.SetActive(true);
     }
 
-    // 결과창이 열린 시점의 가챠 ID 를 기억한다(재추첨 대상 고정용). 어떤 결과창이든 마지막에 연 상자로 고정.
+    // 결과창을 실제로 연 프리젠터/가챠를 기억한다(재추첨 라우팅용). 어떤 결과창이든 마지막에 연 프리젠터로 고정.
     private void RememberPopupGacha(GameObject resultPopup)
     {
         if (resultPopup == _singleResultPopup || resultPopup == _tenResultPopup)
+        {
+            _popupOwner = this;
             _openPopupGachaId = _gachaId;
+        }
     }
 
     // 재추첨 버튼 비용 텍스트를 현재 활성 가챠(_gachaId)의 1회/10회 비용으로 갱신한다.
@@ -528,18 +532,17 @@ public class ShopGachaPresenter : MonoBehaviour
     // (결과창이 떠 있는 동안 다른 상자를 눌러 _gachaId 가 바뀌어도 엉뚱한 상자/재화로 나가지 않게 한다.)
     public void OnClickRedrawSingle()
     {
-        // 지금 열린 결과창이 어떤 상자로 열렸는지 기록돼 있으면 그 상자로 되돌린다.
-        // 기록이 없으면(0) 현재 활성 상자를 그대로 쓴다 — 0을 넘겨 '미설정 가챠'가 되는 것을 막는다.
-        Debug.Log($"[가챠진단] 재추첨(1회) 진입: openPin={_openPopupGachaId} 현재gachaId={_gachaId}");
-        if (_openPopupGachaId > 0) SetActiveGacha(_openPopupGachaId);
+        Debug.Log($"[가챠진단] 재추첨(1회) 진입: this=gachaId{_gachaId} owner={(_popupOwner != null ? _popupOwner._gachaId.ToString() : "null")} openPin={_openPopupGachaId}");
+        // 결과창을 실제로 연 프리젠터가 있으면 그쪽으로 넘긴다(공유 결과창 + 박스별 프리젠터 구조 대응).
+        if (_popupOwner != null && _popupOwner != this) { _popupOwner.OnClickRedrawSingle(); return; }
         TryDraw(1, _singleResultPopup, _singleSlots, _singleDecomposeView);
     }
 
     // 결과창 안의 '10회 더' 버튼 OnClick 에 연결
     public void OnClickRedrawTen()
     {
-        Debug.Log($"[가챠진단] 재추첨(10회) 진입: openPin={_openPopupGachaId} 현재gachaId={_gachaId}");
-        if (_openPopupGachaId > 0) SetActiveGacha(_openPopupGachaId);
+        Debug.Log($"[가챠진단] 재추첨(10회) 진입: this=gachaId{_gachaId} owner={(_popupOwner != null ? _popupOwner._gachaId.ToString() : "null")} openPin={_openPopupGachaId}");
+        if (_popupOwner != null && _popupOwner != this) { _popupOwner.OnClickRedrawTen(); return; }
         TryDraw(TenDrawCount, _tenResultPopup, _tenSlots, _tenDecomposeView);
     }
 
