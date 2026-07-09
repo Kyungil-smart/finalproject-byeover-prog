@@ -150,6 +150,7 @@ MonoBehaviour:
   _fingerGuide: {fileID: 6093553577111563030}
   _lobbyGate: {fileID: 1057777570451791370}
   _highlightTargets: []
+  _stageStartMainTabTarget: {fileID: 0}
   _showDebugLog: 1
 --- !u!114 &6203006129089180291
 MonoBehaviour:
@@ -215,9 +216,9 @@ MonoBehaviour:
   _step0ComboScenarioEndId: 100029
   _step0MonsterIds: 931300009413000095130000
   _step0MonsterSpawnPositions:
-  - {x: -2, y: 3}
+  - {x: -1, y: 3}
   - {x: 0, y: 3}
-  - {x: 2, y: 3}
+  - {x: 1, y: 3}
   _step0MonsterStopY: 1.5
   _step0MonsterDescendDuration: 0.6
   _step0MonsterEmphasisScale: 1.5
@@ -233,6 +234,13 @@ MonoBehaviour:
   _step3RushBatchAmount: 6
   _step3RushSpawnInterval: 0.35
   _step3ForcedDefeatDelay: 12
+  _step14EntryScenarioStartId: 100075
+  _step14EntryScenarioEndId: 100078
+  _step14BossScenarioId: 100079
+  _step14ClearScenarioStartId: 100080
+  _step14ClearScenarioEndId: 100094
+  _step14JokerProtectionRefreshInterval: 0.1
+  _step14JokerProtectionStunDuration: 0.25
   _talkPresenter: {fileID: 2919050666667887572}
   _aprilSpeakerName: "\uC5D0\uC774\uD504\uB9B4"
   _growth: {fileID: 0}

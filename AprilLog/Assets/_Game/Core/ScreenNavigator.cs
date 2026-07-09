@@ -213,14 +213,20 @@ public class ScreenNavigator : MonoBehaviour
     }
     
     // ---------- 게임 일시 정지 / 해제 ----------
+    /// <summary>정지형 팝업(인챈트 선택/교체·정산 등)이 열려 있는지. 다른 시스템(데드락 연출 등)이
+    /// timeScale을 복구할 때 팝업 정지를 짓밟지 않도록 이 값을 확인해야 한다.</summary>
+    public static bool IsMenuOpen { get; private set; }
+
     private void OpenMenu()
     {
         AudioManager.Play(SfxId.PopupOpen);   // SFX 가이드 아웃게임 8: 모든 팝업 등장(공용 단일 지점)
+        IsMenuOpen = true;
         Time.timeScale = 0f;
     }
 
     private void CloseMenu()
     {
+        IsMenuOpen = false;
         Time.timeScale = 1f;
     }
 
