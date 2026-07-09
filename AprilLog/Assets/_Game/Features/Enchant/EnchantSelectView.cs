@@ -64,8 +64,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [SerializeField] private Button _skipButton;
     [Tooltip("현재 스킬/스탯 인첸트 선택 종류를 표시하는 제목")]
     [SerializeField] private TMP_Text _headerText;
-    [SerializeField] private string _skillSelectionHeader = "스킬 인첸트 선택";
-    [SerializeField] private string _statSelectionHeader = "스탯 인첸트 선택";
+    [SerializeField] private string _tempSelectionHeader = "인첸트 선택";
 
     [Header("리롤 오버레이")]
     [Tooltip("비워두면 EnchantSelectCanvas 아래에 Viewport Mask 영향을 받지 않는 오버레이를 자동 생성합니다.")]
@@ -81,6 +80,8 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
     private IEnchantSelectPresenter _selectPresenter;
     private EnchantChangePresenter _changePresenter;
+    
+    private LocalizationManager _localizationManager;
     
     private bool _isInitialized;
     
@@ -139,6 +140,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             _isInitialized = true;
         }
 
+        _localizationManager ??= LocalizationManager.Instance;
         EnsureRerollOverlay();
         SubscribeScrollPosition();
         
@@ -157,6 +159,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public void Hide() => _navigator.OnCloseButtonClick();
 
     // 추가: 조규민 - Presenter가 전달한 선택 종류에 맞춰 인첸트 선택 제목을 갱신한다.
+    // 수정 : 김영찬 - 번역 데이터 상. 헤더 섹션은 1종류만 존재 함으로 통합한다.
     public void SetSelectionType(EnchantType type)
     {
         if (_headerText == null)
@@ -172,20 +175,9 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             return;
         }
 
-        switch (type)
-        {
-            case EnchantType.Skill:
-                _headerText.text = _skillSelectionHeader;
-                return;
-
-            case EnchantType.Stat:
-                _headerText.text = _statSelectionHeader;
-                return;
-
-            default:
-                Debug.LogError($"[EnchantSelectView] 지원하지 않는 인첸트 선택 타입입니다. type={type}", this);
-                return;
-        }
+        _headerText.text = _localizationManager != null
+            ? _localizationManager.Get(12010, LocalizingType.UI)
+            : _tempSelectionHeader;
     }
 
 #if UNITY_EDITOR

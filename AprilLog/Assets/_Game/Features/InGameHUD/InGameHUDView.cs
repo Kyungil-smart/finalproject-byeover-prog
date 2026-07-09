@@ -45,6 +45,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     // ---------- Private ----------
     private InGameHUDPresenter _presenter;
     private StageModel _stageModel;
+    private LocalizationManager _localizationManager;
     private bool _hasWarnedMissingCoreReferences;
     
     // ---------- 이벤트 ----------
@@ -52,26 +53,22 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     public event Action<StageModel.SpawnType> OnSpecialWaveActive;
     
     // ---------- Const Text ----------
-    private const string CHAPTER_KOR_TEXT = "챕터";
-    private const string STAGE_KOR_TEXT = "스테이지";
-    private const string CHAPTER_ENG_TEXT = "Chapter";
-    private const string STAGE_ENG_TEXT = "Stage";
+    private const string CHAPTER_TEMP_TEXT = "Ch.";
+    private const string STAGE_TEMP_TEXT = "Stage.";
     
-    private const string REMAIN_TIME_KOR_TEXT = "남은 시간";
-    private const string REMAIN_TIME_ENG_TEXT = "Remain Time";
-    private const string TRANSITION_TIME_KOR_TEXT = "다음 웨이브 대기";
-    private const string TRANSITION_TIME_ENG_TEXT = "Transition Time";
+    private const string REMAIN_TIME_TEMP_TEXT = "남은 시간";
+    private const string TRANSITION_TIME_TEMP_TEXT = "다음 웨이브 대기";
 
     private const string COMBO_TEXT = "COMBO";
     
-    private const string LEVEL_KOR_TEXT = "레벨";
-    private const string LEVEL_ENG_TEXT = "Level";
+    private const string LEVEL_TEMP_TEXT = "Level";
 
     private bool _boundToStageBootstrapper;
 
     // ---------- 생명주기 ----------
     private void OnEnable()
     {
+        _localizationManager ??= LocalizationManager.Instance;
         TryBindStageBootstrapper();
     }
 
@@ -164,7 +161,9 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     public void UpdateHPText(int current, int max)
     {
         if(_hpText != null)
-            _hpText.text = $"{current.ToString("N0")} / {max.ToString("N0")}";
+            _hpText.text = _localizationManager != null ?
+                _localizationManager.Get(12003, LocalizingType.UI, current.ToString("N0"), max.ToString("N0")) : 
+                $"{current.ToString("N0")} / {max.ToString("N0")}";
     }
 
     public void UpdateEXP(float ratio)
@@ -176,13 +175,16 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     public void UpdateEXPText(int current, int max)
     {
         if(_expText != null)
-            _expText.text = $"{current.ToString("N0")} / {max.ToString("N0")}";
+            _expText.text = _localizationManager != null ?
+                _localizationManager.Get(12009, LocalizingType.UI, current.ToString("N0"), max.ToString("N0")) : 
+                $"{current.ToString("N0")} / {max.ToString("N0")}";
     }
 
     public void UpdateLevelText(int current)
     {
-        if(_levelText != null)
-            _levelText.text = $"{LEVEL_KOR_TEXT} {current}";
+        if (_levelText != null)
+            _levelText.text = _localizationManager != null ? 
+                _localizationManager.Get(12008, LocalizingType.UI) : $"{LEVEL_TEMP_TEXT} {current}";
     }
 
     public void UpdateCombo(int count)
@@ -201,19 +203,23 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         if (_stageProgressTimer != null)
         {
             float displayTime = Mathf.Max(0f, remainingTime);
-            _stageProgressTimer.text = displayTime.ToString("F2");
+            _stageProgressTimer.text = _localizationManager != null
+                ? _localizationManager.Get(12002, LocalizingType.UI, displayTime.ToString("F2"))
+                : displayTime.ToString("F2") + "s";
         }
     }
 
     public void UpdateWaveStateText(StageModel.WaveState waveState)
     {
+        if(_waveStateText.text == null) return;
+        
         if (waveState == StageModel.WaveState.WaveRunning)
         {
-            _waveStateText.text = REMAIN_TIME_KOR_TEXT;
+            _waveStateText.text = REMAIN_TIME_TEMP_TEXT;
         }
         else if (waveState == StageModel.WaveState.WaveTransition)
         {
-            _waveStateText.text = TRANSITION_TIME_KOR_TEXT;
+            _waveStateText.text = TRANSITION_TIME_TEMP_TEXT;
         }
     }
 
@@ -222,20 +228,21 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         OnSpecialWaveActive?.Invoke(spawnType);
     }
 
-    public void UpdateStageProgress(int stageId)
+    public void UpdateStageProgress(int chapterOrder, int stageOrder)
     {
-        if (_curChapterViwerText != null && _curStageViwerText != null)
+        if(_curChapterViwerText != null)
         {
-            int chapterIndex = stageId / 100;
-            int stageIndex = stageId % 100;
-            _curChapterViwerText.text = $"{chapterIndex} {CHAPTER_KOR_TEXT}";
-            _curStageViwerText.text = $"{stageIndex} {STAGE_KOR_TEXT}";
+            _curChapterViwerText.text = _localizationManager != null
+                ? _localizationManager.Get(12000, LocalizingType.UI, chapterOrder)
+                : $"{CHAPTER_TEMP_TEXT} {chapterOrder}";
         }
-    }
-
-    public void Translation()
-    {
-        // ToDO : 차후 번역 나오면 작성
+        
+        if(_curStageViwerText != null)
+        {
+            _curStageViwerText.text = _localizationManager != null
+                ? _localizationManager.Get(12001, LocalizingType.UI, stageOrder)
+                : $"{STAGE_TEMP_TEXT} {stageOrder}";
+        }
     }
 
     public void ShowLevelUpEffect() { /* DOTween 연출 넣을 자리 */ }
