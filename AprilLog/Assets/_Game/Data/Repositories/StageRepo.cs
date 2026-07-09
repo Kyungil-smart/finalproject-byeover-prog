@@ -47,6 +47,9 @@ public class StageRepo : MonoBehaviour
     private Dictionary<int, int> _stepIndexToChapterIdMapping;
     private Dictionary<int, int> _stepIndexToStageIdMapping;
     
+    // 오류 코드 출력 방지를 위한 튜토리얼 챕터 ID 저장
+    private HashSet<int> _tutorialChapterIds = new HashSet<int> { 9901, 9801 };
+    
     private bool _isInitialized;
 
     public void Initialize()
@@ -314,6 +317,12 @@ public class StageRepo : MonoBehaviour
 
     public int GetIndexByChapterId(int chapterId)
     {
+        if (_tutorialChapterIds.Contains(chapterId))
+        {
+            Debug.Log("[StageRepo] 튜토리얼 Chapter ID입력. -1 반환");
+            return -1;
+        }
+        
         if(_chapterStepMapping.TryGetValue(chapterId, out int index))
         {
             return index;
