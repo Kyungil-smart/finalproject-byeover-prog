@@ -197,6 +197,7 @@ public class TutorialInGameDirector : MonoBehaviour
     private bool _isStep3RushActive;
     private bool _isStep3DefeatHandled;
     private bool _isStep3ScenarioPaused;
+    private bool _step3RushWarningPlayed;
     private bool _step14EntryScenarioPlayed;
     private bool _step14BossScenarioPlayed;
     private bool _isStep14ScenarioPaused;
@@ -1382,6 +1383,7 @@ public class TutorialInGameDirector : MonoBehaviour
         _isStep3Running = true;
         _isStep3RushActive = false;
         _isStep3DefeatHandled = false;
+        _step3RushWarningPlayed = false;
         SubscribePlayerDeath();
 
         yield return new WaitForSeconds(_step3RushWarningDelay);
@@ -1390,6 +1392,7 @@ public class TutorialInGameDirector : MonoBehaviour
 
         PauseStep3Scenario();
         yield return PlayWorldDialogue(_step3RushWarningScenarioStartId, _step3RushWarningScenarioEndId);
+        _step3RushWarningPlayed = true;
         ResumeStep3ScenarioPause();
 
         StartStep3Rush();
@@ -1489,6 +1492,12 @@ public class TutorialInGameDirector : MonoBehaviour
         if (_spawner != null) _spawner.StopSpawning();
 
         PauseStep3Scenario();
+        // 러시 시작 전(연습 중 조기 사망)에 죽으면 범람 경고 대사가 아직 안 나왔으므로 먼저 재생한다.
+        if (!_step3RushWarningPlayed)
+        {
+            yield return PlayWorldDialogue(_step3RushWarningScenarioStartId, _step3RushWarningScenarioEndId);
+            _step3RushWarningPlayed = true;
+        }
         yield return PlayWorldDialogue(_step3DefeatScenarioStartId, _step3DefeatScenarioEndId);
         ResumeStep3ScenarioPause();
 

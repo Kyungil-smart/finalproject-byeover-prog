@@ -44,15 +44,22 @@ public class TutorialDimMask : MonoBehaviour
         UpdateHoles();
     }
 
-    /// <summary>구멍 없이 화면 전체를 딤한다(대상 강조 없는 단계).</summary>
+    /// <summary>구멍 없이 화면 전체를 딤한다(대상 강조 없는 단계). 대상 추적을 끊는다.</summary>
     public void ShowFull()
     {
-        gameObject.SetActive(true);
         _currentTargets = null;
+        CoverFull();
+    }
+
+    // 대상 추적은 유지한 채 화면 전체를 덮는다.
+    // (대상이 아직 화면 밖 = 레이아웃/스크롤 로딩 중일 때 사용. 다음 프레임 LateUpdate에서 대상이
+    //  화면에 들어오면 구멍을 다시 뚫는다. ShowFull처럼 _currentTargets를 지우면 영구히 전체 딤에 갇힌다.)
+    private void CoverFull()
+    {
+        gameObject.SetActive(true);
         Rect full = _rt.rect;
-        int n = 0;
-        SetPanel(n++, full.xMin, full.yMin, full.xMax, full.yMax);
-        DisableFrom(n);
+        SetPanel(0, full.xMin, full.yMin, full.xMax, full.yMax);
+        DisableFrom(1);
     }
 
     /// <summary>딤을 끈다.</summary>
@@ -88,7 +95,8 @@ public class TutorialDimMask : MonoBehaviour
             float yMin = Mathf.Max(r.yMin, full.yMin), yMax = Mathf.Min(r.yMax, full.yMax);
             if (xMax > xMin && yMax > yMin) holes.Add(Rect.MinMaxRect(xMin, yMin, xMax, yMax));
         }
-        if (holes.Count == 0) { ShowFull(); return; }
+        // 대상이 화면 밖이라 구멍이 없으면 전체를 덮되, 추적은 유지해 대상이 화면에 들어오면 다시 뚫는다.
+        if (holes.Count == 0) { CoverFull(); return; }
 
         // Y 경계마다 가로 밴드로 자르고, 각 밴드에서 구멍의 X 구간을 피해 덮는다.
         var ys = new List<float> { full.yMin, full.yMax };
@@ -159,9 +167,12 @@ public class TutorialDimMask : MonoBehaviour
     }
 
     // 대상 RectTransform 을 이 딤 컨테이너의 로컬 Rect로 변환
-    private bool TryGetLocalRect(RectTransform target, Camera cam, out Rect rect)
+    // dimCam: 딤(_rt) 캔버스 기준 카메라. 대상은 딤과 다른 렌더모드/카메라의 캔버스일 수 있어
+    // 스크린 좌표는 대상 자신의 캔버스 카메라로 구한다(안 그러면 변환 실패로 구멍이 안 뚫린다).
+    private bool TryGetLocalRect(RectTransform target, Camera dimCam, out Rect rect)
     {
         rect = default;
+        Camera targetCam = GetCameraFor(target);
         var corners = new Vector3[4];
         target.GetWorldCorners(corners);    // 0:좌하 1:좌상 2:우상 3:우하
 
@@ -169,14 +180,24 @@ public class TutorialDimMask : MonoBehaviour
         var max = new Vector2(float.MinValue, float.MinValue);
         for (int i = 0; i < 4; i++)
         {
-            Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, corners[i]);
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, screen, cam, out Vector2 local))
+            Vector2 screen = RectTransformUtility.WorldToScreenPoint(targetCam, corners[i]);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_rt, screen, dimCam, out Vector2 local))
                 return false;
             min = Vector2.Min(min, local);
             max = Vector2.Max(max, local);
         }
         rect = new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
         return true;
+    }
+
+    // 대상을 실제로 렌더하는 캔버스의 카메라(Overlay면 null). WorldToScreenPoint에 사용.
+    private static Camera GetCameraFor(RectTransform target)
+    {
+        Canvas canvas = target != null ? target.GetComponentInParent<Canvas>() : null;
+        if (canvas == null) return null;
+        Canvas root = canvas.rootCanvas;
+        if (root.renderMode == RenderMode.ScreenSpaceOverlay) return null;
+        return root.worldCamera != null ? root.worldCamera : Camera.main;
     }
 
 #if UNITY_EDITOR

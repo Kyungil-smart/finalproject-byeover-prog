@@ -437,6 +437,11 @@ public class TutorialLobbyDirector : MonoBehaviour
     {
         switch (stepId)
         {
+            case 4:
+                // 도서관 입장(로비 도착) 직후 성장 도입 대사. 성장 버튼 안내 전에 재생.
+                startId = 100048;
+                endId = 100053;
+                return true;
             case 6:
                 startId = 100054;
                 endId = 100058;
