@@ -117,8 +117,8 @@ public class MonsterSpawner : MonoBehaviour
             bool isBoss = cmd.Type == StageModel.SpawnType.Boss;
             bool isElite = cmd.Type == StageModel.SpawnType.Elite;            
             
+            // 소환 개별 로그 금지: 러시 웨이브에서 초당 다수 스폰과 겹쳐 릴리스에서도 프레임 부담이 된다.
             var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss, isElite); //엘리트 인자 추가
-            Debug.Log($"Monster ID : {cmd.CharacterId} 소환됨");
 
             if (ai != null && cmd.ScalingData != null)
             {

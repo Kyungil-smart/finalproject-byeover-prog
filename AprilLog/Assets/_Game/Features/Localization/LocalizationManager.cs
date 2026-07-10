@@ -151,17 +151,13 @@ public class LocalizationManager : MonoBehaviour
         
         // 현재 언어에 맞는 텍스트 반환
         // 나중에 언어 추가할 때 여기에 case 추가하면 됨
+        // 성공 경로 로그 금지: UI 목록 하나 열 때마다 조회 수십 회가 발생해(호출부 50여 곳)
+        // 릴리스에서도 문자열 할당 + 로그 비용이 그대로 쌓인다.
         switch (_currentLang)
         {
-            case "ko": 
-                Debug.Log($"[Localization] 한글 출력 확인 : {localizingType}, {id} => {entry.KR}");
-                return entry.KR;
-            case "en": 
-                Debug.Log($"[Localization] 영어 출력 확인 : {localizingType}, {id} => {entry.EN}");
-                return entry.EN;
-            default:   
-                Debug.Log($"[Localization] 영어 출력 확인 : {localizingType}, {id} => {entry.EN}");
-                return entry.EN;
+            case "ko": return entry.KR;
+            case "en": return entry.EN;
+            default:   return entry.EN;
         }
     }
 
@@ -176,10 +172,7 @@ public class LocalizationManager : MonoBehaviour
 
         try
         {
-            var result = string.Format(template, args);
-            string argsString = string.Join(", ", args);
-            Debug.Log($"[Localization] 포맷 파라미터 출력 확인 : {argsString} => {result}");
-            return result;
+            return string.Format(template, args);
         }
         catch (FormatException)
         {

@@ -1319,7 +1319,12 @@ public class SkillSystem : MonoBehaviour
         foreach (var r in go.GetComponentsInChildren<ParticleSystemRenderer>(true))
             r.sortingOrder = sortingOrder;
 
-        _activeSkillVfx.Add(go);   // 추적: 전투 종료 시 ClearActiveSkillVfx에서 일괄 정리
+        // 추적: 전투 종료 시 ClearActiveSkillVfx에서 일괄 정리.
+        // 개별 VFX는 타임드 Destroy로 사라져도 리스트에서 안 빠지므로, 커지면 파괴된 항목을 압축해
+        // 긴 챕터에서 리스트가 무한정 자라는 것을 막는다.
+        if (_activeSkillVfx.Count >= 64)
+            _activeSkillVfx.RemoveAll(v => v == null);
+        _activeSkillVfx.Add(go);
         return go;
     }
 
@@ -1619,10 +1624,11 @@ public class SkillSystem : MonoBehaviour
     {
         // 화염 작렬(StandardID 102)만 0.25초 간격, 그 외 다발 스킬은 기본(0.08초) 유지.
         float interval = data.StandardID == 102 ? FlameBurstShotInterval : BurstShotInterval;
+        var wait = new WaitForSeconds(interval);   // 발사마다 재할당하지 않고 버스트당 1회만
         for (int i = 0; i < shots; i++)
         {
             FireOneProjectile(data, type);
-            yield return new WaitForSeconds(interval);
+            yield return wait;
         }
     }
 

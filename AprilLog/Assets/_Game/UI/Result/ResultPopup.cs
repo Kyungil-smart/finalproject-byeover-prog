@@ -189,15 +189,16 @@ public class ResultPopup : MonoBehaviour
         if (_navigator != null) _navigator.HideSettlement();
     }
     
+    // 씬을 떠나는 버튼들은 Close()를 부르지 않는다. Close가 일시정지를 풀면 씬 전환 연출(약 2초) 동안
+    // 후면 전투가 재개되어 이동/공격 소리가 난다. 팝업과 정지를 유지한 채 전환하고,
+    // timeScale 복구는 ScreenNavigator의 씬 로드 리셋이 맡는다.
     private void Retry()
     {
-        Close();
         OnRetryClicked?.Invoke();
     }
 
     private void NextChapter()
     {
-        Close();
         OnNextChapterClicked?.Invoke();
     }
 

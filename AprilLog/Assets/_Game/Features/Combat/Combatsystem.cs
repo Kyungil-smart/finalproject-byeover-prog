@@ -135,7 +135,6 @@ public class CombatSystem : MonoBehaviour
  
     private void HandleSortCompleted(UnitType type)
     {
-        Debug.Log($"[전투진단] 정렬 완성 수신: type={type} → 공격 발동 시도");
         AudioManager.Play(SfxId.SortSuccess);
 
         ResolveSpellRepository();

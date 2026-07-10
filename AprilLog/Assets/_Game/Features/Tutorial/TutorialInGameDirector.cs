@@ -262,6 +262,10 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private void OnDestroy()
     {
+        // static 플래그가 true로 남으면 이후 일반 판에서 정지형 팝업 뒤로 퍼즐 입력이 통과한다.
+        // (가이드 정지 상태에서 로비 이탈/포기 시 Resume 쌍이 호출되지 않는 경로 대비)
+        AllowsPausedSortInput = false;
+
         if (_stageLoop != null) _stageLoop.OnChapterEnd -= HandleTutorialChapterCleared;
         if (_spawner != null) _spawner.OnMonsterDied -= HandleStep0MonsterDied;
         if (_step0Routine != null)

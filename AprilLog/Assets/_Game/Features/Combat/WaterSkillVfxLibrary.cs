@@ -20,8 +20,8 @@ public class WaterSkillVfxLibrary : ScriptableObject
     public GameObject bulletShowerVfx;
     public float bulletShowerScale = 1f;
     public float bulletShowerRotationDeg = 0f;
-    [Tooltip("물대포 연출: VFX를 플레이어 발사점에서 이만큼 위(머리 쯤)에서 뿜는다(월드 단위). 판정 위치는 그대로 타겟 존")]
-    public float bulletShowerHeadOffsetY = 0.6f;
+    [Tooltip("물대포 연출: VFX를 발사점에서 이만큼 위에서 뿜는다(월드 단위). 실측: 발사점=에이프릴 몸 센터(y -0.14), 비주얼 신장 1.45유닛, 정수리 +0.53 — 0.25면 얼굴/머리 높이")]
+    public float bulletShowerHeadOffsetY = 0.25f;
 
     [Header("급류 (StandardID 203) — 폭포 띠(전체 폭)")]
     public GameObject torrentVfx;

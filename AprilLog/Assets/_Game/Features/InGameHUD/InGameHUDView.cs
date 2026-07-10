@@ -219,13 +219,20 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         }
     }
 
+    private float _lastShownTimer = float.MinValue;
+
     public void UpdateStageTimer(float remainingTime)
     {
-        if (_stageProgressTimer != null)
-        {
-            float displayTime = Mathf.Max(0f, remainingTime);
-            _stageProgressTimer.text = displayTime.ToString("F2") + "s";
-        }
+        if (_stageProgressTimer == null) return;
+
+        // 매 프레임 호출되지만 표시는 0.1초 단위로 변할 때만 갱신한다.
+        // (ToString+연결은 프레임당 문자열 할당 2회 + TMP 메시 재생성이라 전투 내내 부담)
+        float displayTime = Mathf.Max(0f, remainingTime);
+        float quantized = Mathf.Floor(displayTime * 10f) * 0.1f;
+        if (Mathf.Approximately(quantized, _lastShownTimer)) return;
+
+        _lastShownTimer = quantized;
+        _stageProgressTimer.SetText("{0:1}s", quantized);
     }
 
     public void UpdateWaveStateText(StageModel.WaveState waveState)

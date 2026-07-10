@@ -101,7 +101,10 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     
     // 전투 보상
     private int _rewardTriggerId;
-    
+
+    // 방벽 정지선 캐시 (스폰마다 GameObject.Find 방지, 파괴 시 자동 재탐색)
+    private static Transform s_defenseLine;
+
     // ---------- 초기화 ----------
     public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false, bool isElite = false) // 엘리트 인자 추가 (최동훈)
     {
@@ -136,9 +139,15 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         // 방벽 정지선: DefenseLine(방벽) 오브젝트의 Y를 단일 진실 소스로 사용한다.
         // 플레이어도 같은 DefenseLine에 정렬되므로 정지선과 플레이어 위치가 항상 일치한다.
         // (오브젝트가 없으면 serialized 기본값 _defenseLineY 유지)
-        var defenseLine = GameObject.Find("DefenseLine");
-        if (defenseLine != null)
-            _defenseLineY = defenseLine.transform.position.y;
+        // GameObject.Find는 씬 전체 선형 탐색이라 스폰마다 부르지 않고 static으로 캐시한다.
+        // (씬 전환으로 파괴되면 유니티 null 비교에 걸려 다음 스폰 때 재탐색된다)
+        if (s_defenseLine == null)
+        {
+            var defenseLine = GameObject.Find("DefenseLine");
+            s_defenseLine = defenseLine != null ? defenseLine.transform : null;
+        }
+        if (s_defenseLine != null)
+            _defenseLineY = s_defenseLine.position.y;
 
         _state = State.Moving;
         _attackTimer = 0f;

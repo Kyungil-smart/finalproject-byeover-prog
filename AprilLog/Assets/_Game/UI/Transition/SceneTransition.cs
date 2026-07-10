@@ -132,55 +132,69 @@ public class SceneTransition : MonoBehaviour
     private IEnumerator PlayAndLoad(string sceneName)
     {
         _isPlaying = true;
-        float startTime = Time.unscaledTime;
 
-        _canvas.gameObject.SetActive(true);
-
-        // ── 페이드 아웃 ── 오른쪽에서 왼쪽으로 흰 화면이 닦으며 현재 화면을 덮는다.
-        yield return WipeOut(_fadeOutDuration);
-        SetFullCoverAlpha(1f); // 흰 화면 전체 불투명 고정. 로딩 내내 유지되어 이전(로그인) 씬이 절대 노출되지 않는다.
-
-        // ── 로딩 캔버스 ── 불투명 흰 화면 '위'에서 부드럽게 나타난다.
-        var op = SceneManager.LoadSceneAsync(sceneName);
-        op.allowSceneActivation = false;
-        ShowLoadingCanvas(true);
-        SetLoadingCanvasAlpha(0f);
-        StartNowLoadingText();
-        SetBarFill(0f);
-        yield return FadeLoadingCanvas(0f, 1f, _loadingBlendDuration);
-
-        float loadStart = Time.unscaledTime;
-        while (op.progress < 0.9f)
+        // 도중에 예외가 나도 finally에서 오버레이/플래그를 반드시 복구한다.
+        // 복구가 없으면 _isPlaying이 true로 고착되어 이후 모든 씬 전환 요청이 조용히 무시된다(앱 재시작 전까지 먹통).
+        try
         {
-            SetBarFill(op.progress / 0.9f);
-            yield return null;
+            float startTime = Time.unscaledTime;
+
+            _canvas.gameObject.SetActive(true);
+
+            // ── 페이드 아웃 ── 오른쪽에서 왼쪽으로 흰 화면이 닦으며 현재 화면을 덮는다.
+            yield return WipeOut(_fadeOutDuration);
+            SetFullCoverAlpha(1f); // 흰 화면 전체 불투명 고정. 로딩 내내 유지되어 이전(로그인) 씬이 절대 노출되지 않는다.
+
+            // ── 로딩 캔버스 ── 불투명 흰 화면 '위'에서 부드럽게 나타난다.
+            var op = SceneManager.LoadSceneAsync(sceneName);
+            if (op == null)
+            {
+                // 빌드 세팅 미등록/오타 씬 이름. 여기서 접근을 계속하면 NRE로 전환 시스템 전체가 잠긴다.
+                Debug.LogError($"[SceneTransition] 씬 '{sceneName}'을 로드할 수 없습니다(빌드 세팅 등록/이름 확인). 전환을 중단합니다.");
+                yield break;
+            }
+            op.allowSceneActivation = false;
+            ShowLoadingCanvas(true);
+            SetLoadingCanvasAlpha(0f);
+            StartNowLoadingText();
+            SetBarFill(0f);
+            yield return FadeLoadingCanvas(0f, 1f, _loadingBlendDuration);
+
+            float loadStart = Time.unscaledTime;
+            while (op.progress < 0.9f)
+            {
+                SetBarFill(op.progress / 0.9f);
+                yield return null;
+            }
+            while (Time.unscaledTime - loadStart < _minLoadingTime)
+                yield return null;
+            SetBarFill(1f);
+            yield return WaitForNowLoadingDotCycleEnd();
+
+            // 전체 최소 시간(2.1초) 확보 - 페이드인 전에 남은 시간 대기
+            float remaining = _minTotalDuration - (Time.unscaledTime - startTime) - _fadeInDuration;
+            if (remaining > 0f)
+                yield return new WaitForSecondsRealtime(remaining);
+
+            // 새 씬 활성화 (로딩 캔버스 + 불투명 흰 화면이 가리고 있음)
+            op.allowSceneActivation = true;
+            while (!op.isDone)
+                yield return null;
+
+            // 로딩 캔버스를 걷어내면 그 아래 불투명 흰 화면이 새 씬을 덮고 있다.
+            yield return FadeLoadingCanvas(1f, 0f, _loadingBlendDuration);
+            StopNowLoadingText();
+            ShowLoadingCanvas(false);
+            SetFullCoverAlpha(1f);
+
+            // ── 페이드 인 ── 오른쪽에서 왼쪽으로 흰 화면이 걷히며 새 화면을 드러낸다.
+            yield return WipeIn(_fadeInDuration);
         }
-        while (Time.unscaledTime - loadStart < _minLoadingTime)
-            yield return null;
-        SetBarFill(1f);
-        yield return WaitForNowLoadingDotCycleEnd();
-
-        // 전체 최소 시간(2.1초) 확보 - 페이드인 전에 남은 시간 대기
-        float remaining = _minTotalDuration - (Time.unscaledTime - startTime) - _fadeInDuration;
-        if (remaining > 0f)
-            yield return new WaitForSecondsRealtime(remaining);
-
-        // 새 씬 활성화 (로딩 캔버스 + 불투명 흰 화면이 가리고 있음)
-        op.allowSceneActivation = true;
-        while (!op.isDone)
-            yield return null;
-
-        // 로딩 캔버스를 걷어내면 그 아래 불투명 흰 화면이 새 씬을 덮고 있다.
-        yield return FadeLoadingCanvas(1f, 0f, _loadingBlendDuration);
-        StopNowLoadingText();
-        ShowLoadingCanvas(false);
-        SetFullCoverAlpha(1f);
-
-        // ── 페이드 인 ── 오른쪽에서 왼쪽으로 흰 화면이 걷히며 새 화면을 드러낸다.
-        yield return WipeIn(_fadeInDuration);
-
-        SetIdle();
-        _isPlaying = false;
+        finally
+        {
+            SetIdle();
+            _isPlaying = false;
+        }
     }
 
     private IEnumerator WipeOut(float duration)

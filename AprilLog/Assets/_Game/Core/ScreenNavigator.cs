@@ -240,6 +240,20 @@ public class ScreenNavigator : MonoBehaviour
         Time.timeScale = 1f;
     }
 
+    // 씬 전환 완료 시 일시정지 상태 복구. 정산 재시도/다음, 로비 이동처럼 정지 상태 그대로
+    // 씬을 떠나는 경로가 있어(전환 중 후면 전투 소리 방지), 새 씬이 뜨는 시점에 전역 리셋한다.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void InstallSceneLoadReset()
+    {
+        SceneManager.sceneLoaded += (scene, mode) =>
+        {
+            if (mode != LoadSceneMode.Single) return;
+            IsMenuOpen = false;
+            IsEffectPlaying = false;   // 연출 도중 씬 이탈 시 static 고착 방지 (엘리트 보상 연출 등)
+            Time.timeScale = 1f;
+        };
+    }
+
     private bool IsAnyPopupActive()
     {
         return (_enchantSelectPopup.activeSelf ||
@@ -284,7 +298,8 @@ public class ScreenNavigator : MonoBehaviour
         if (_isLoadingLobby) return;
 
         _isLoadingLobby = true;
-        CloseMenu();
+        // CloseMenu(일시정지 해제)를 부르지 않는다. 씬 전환 연출(약 2초) 동안 후면 전투가 재개되어
+        // 이동/공격 소리가 나는 문제 방지. timeScale 복구는 아래 씬 로드 리셋이 맡는다.
         HideToLobby();
         HideOption();
 

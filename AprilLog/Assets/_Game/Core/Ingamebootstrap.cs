@@ -415,14 +415,18 @@ public class InGameBootstrap : MonoBehaviour
         if (sceneLoader == null)
         {
             var go = new GameObject("InGameNextSceneLoader");
-            go.AddComponent<InGameNextSceneLoader>();
             sceneLoader = go.AddComponent<InGameNextSceneLoader>();
             sceneLoader.SetLoopManager(loop);
         }
 
         // 챕터당 고유 BG가 있음 - 기획 요청 사항
+        // 없으면 배경만 생략하고 진행한다. 여기서 NRE가 나면 아래 StartChapter까지 도달하지 못해
+        // 몬스터가 안 나오는 빈 인게임(소프트락)이 된다.
         var bgController = FindAnyObjectByType<InGameBackgroundImageController>();
-        bgController.SetBackground(chapterId);
+        if (bgController != null)
+            bgController.SetBackground(chapterId);
+        else
+            Debug.LogWarning("[InGameBootstrap] InGameBackgroundImageController가 씬에 없어 배경 설정을 건너뜁니다.");
         
         // 챕터 종료(승/패) → 정산 팝업
         loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지

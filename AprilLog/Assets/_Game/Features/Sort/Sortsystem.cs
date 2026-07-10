@@ -401,6 +401,17 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     {
         if (_isDeadlockRecoveryPending) return;
 
+        // 안내 팝업(구독자)이 없으면 timeScale=0 + 처리 플래그가 풀 방법 없이 고착된다.
+        // 그 경우 팝업 없이 즉시 복구를 실행해 게임이 멈추지 않게 한다.
+        if (OnDeadlockDetected == null)
+        {
+            Debug.LogWarning("[SortSystem] 데드락 안내 팝업 구독자가 없어 즉시 보드를 재생성합니다.");
+            _isProcessing = true;
+            _isDeadlockRecoveryPending = true;
+            RecoverFromDeadlock();
+            return;
+        }
+
         _isProcessing = true;
         _isDeadlockRecoveryPending = true;
 
