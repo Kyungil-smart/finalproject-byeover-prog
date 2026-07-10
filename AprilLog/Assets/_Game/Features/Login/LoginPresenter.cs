@@ -11,6 +11,7 @@ public class LoginPresenter
 {
     private readonly ILoginView _view;
     private readonly LoginModel _model;
+    private const int TermsPolicyLanguageId = 11000;
 
     // View/Model을 연결하고 GameManager 인증 이벤트를 구독한다.
     public LoginPresenter(ILoginView view, LoginModel model)
@@ -213,10 +214,17 @@ public class LoginPresenter
         RefreshView();
     }
 
-    // 약관 상세 팝업은 현재 안내 메시지로 표시한다.
+    // 약관보기 입력 시 현재 언어의 약관 전문을 표시한다.
     private void HandleTermsPopupClicked()
     {
-        _view.ShowPopup("게스트 로그인 이용을 위해 개인정보 처리 및 서비스 이용 약관 동의가 필요합니다.");
+        if (LocalizationManager.Instance == null)
+        {
+            _view.ShowTermsPolicyContent(string.Empty);
+            return;
+        }
+
+        string termsPolicyContent = LocalizationManager.Instance.Get(TermsPolicyLanguageId, LocalizingType.UI);
+        _view.ShowTermsPolicyContent(termsPolicyContent);
     }
 
     // 팝업 닫기 이벤트를 View 표시 함수로 위임한다.

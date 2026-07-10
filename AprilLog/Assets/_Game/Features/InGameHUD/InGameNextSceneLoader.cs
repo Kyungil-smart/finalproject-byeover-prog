@@ -85,10 +85,9 @@ public class InGameNextSceneLoader : MonoBehaviour
         return;
     }
 
-    _resultPopup.DisableButtonForScenarioPlay(
-        IsRemainFirstReadScenario(
-            GameManager.Instance.SelectedChapterId,
-            out _nextGroupId));
+    int currentChapterId = _stageLoopManager != null ? _stageLoopManager.CurrentChapterId : GameManager.Instance.SelectedChapterId;
+
+    _resultPopup.DisableButtonForScenarioPlay(IsRemainFirstReadScenario(currentChapterId, out _nextGroupId));
 }
 
     private void HandleGoToLobby()

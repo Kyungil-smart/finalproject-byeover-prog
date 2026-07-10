@@ -37,6 +37,9 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     [SerializeField] private TMP_Text _termsTitleText;
     [SerializeField] private TMP_Text _termsToggleLabelText;
     [SerializeField] private TMP_Text _termsConfirmButtonLabelText;
+    [SerializeField] private TMP_Text _termsPopupButtonLabelText;
+    [SerializeField] private ScrollRect _termsPolicyScrollRect;
+    [SerializeField] private TMP_Text _termsPolicyContentText;
     [SerializeField] private TMP_Text _guestLoginButtonLabelText;
 
     [Header("표시")]
@@ -56,6 +59,8 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     private LoginModel _model;
     private RectTransform _passwordInputRectTransform;
     private bool _isLocalizationSubscribed;
+    private bool _isTermsPolicyContentVisible;
+    private const int TermsPolicyLanguageId = 11000;
 
     // View 생성 시 Model과 버튼 이벤트를 준비
     private void Awake()
@@ -65,6 +70,7 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         if (_guestLoginButton != null || _googleLoginButton != null || _termsToggle != null || _popupPanel != null)
         {
             EnsureExistingAccountLoginButton();
+            EnsureTermsPolicyView();
             BindButtons();
             ValidateRequiredReferences();
             PrepareInputFields();
@@ -112,9 +118,11 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         _termsTitleText ??= FindChildComponentByName<TMP_Text>(_termsAgreementPanel?.transform, "TermsTitleText");
         _termsToggleLabelText ??= FindChildComponentByName<TMP_Text>(_termsToggle?.transform, "Label");
         _termsConfirmButtonLabelText ??= FindChildComponentByName<TMP_Text>(_termsConfirmButton?.transform, "Label");
+        _termsPopupButtonLabelText ??= FindChildComponentByName<TMP_Text>(_termsPopupButton?.transform, "Label");
         _guestLoginButtonLabelText ??= FindChildComponentByName<TMP_Text>(_guestLoginButton?.transform, "Label");
         _termsToggleLabelText ??= _termsToggle?.GetComponentInChildren<TMP_Text>(true);
         _termsConfirmButtonLabelText ??= _termsConfirmButton?.GetComponentInChildren<TMP_Text>(true);
+        _termsPopupButtonLabelText ??= _termsPopupButton?.GetComponentInChildren<TMP_Text>(true);
         _guestLoginButtonLabelText ??= _guestLoginButton?.GetComponentInChildren<TMP_Text>(true);
     }
 
@@ -150,10 +158,16 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
             return;
         }
 
-        SetLocalizedText(_termsTitleText, _localization.Get(11000, LocalizingType.UI));
+        SetLocalizedText(_termsTitleText, "개인정보 처리방침");
         SetLocalizedText(_termsToggleLabelText, _localization.Get(11001, LocalizingType.UI));
         SetLocalizedText(_termsConfirmButtonLabelText, _localization.Get(11002, LocalizingType.UI));
+        SetLocalizedText(_termsPopupButtonLabelText, "약관보기");
         SetLocalizedText(_guestLoginButtonLabelText, _localization.Get(11003, LocalizingType.UI));
+
+        if (_isTermsPolicyContentVisible)
+        {
+            SetLocalizedText(_termsPolicyContentText, _localization.Get(TermsPolicyLanguageId, LocalizingType.UI));
+        }
     }
 
     private static void SetLocalizedText(TMP_Text _target, string _value)
@@ -162,6 +176,289 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         {
             _target.SetText(_value);
         }
+    }
+
+    private void EnsureTermsPolicyView()
+    {
+        if (_termsAgreementPanel == null)
+        {
+            return;
+        }
+
+        Transform _termsBoxTransform = ResolveTermsBoxTransform();
+        _termsPopupButton ??= FindChildComponentByName<Button>(_termsBoxTransform, "TermsPopupButton");
+        _termsPolicyScrollRect ??= FindChildComponentByName<ScrollRect>(_termsBoxTransform, "TermsPolicyScrollView");
+        _termsPolicyContentText ??= FindChildComponentByName<TMP_Text>(_termsBoxTransform, "TermsPolicyContentText");
+
+        if (_termsPopupButton != null)
+        {
+            _termsPopupButton.gameObject.SetActive(false);
+        }
+
+        if (_termsPolicyScrollRect == null || _termsPolicyContentText == null)
+        {
+            CreateTermsPolicyScrollView(_termsBoxTransform);
+        }
+
+        ArrangeTermsAgreementPanel();
+        SetTermsPolicyContentVisible(true);
+    }
+
+    private Transform ResolveTermsBoxTransform()
+    {
+        if (_termsConfirmButton != null)
+        {
+            return _termsConfirmButton.transform.parent;
+        }
+
+        if (_termsToggle != null)
+        {
+            return _termsToggle.transform.parent;
+        }
+
+        return _termsAgreementPanel.transform;
+    }
+
+    private Button CreateTermsPopupButton(Transform _parent)
+    {
+        GameObject _buttonObject = new GameObject("TermsPopupButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        _buttonObject.transform.SetParent(_parent, false);
+
+        RectTransform _buttonRectTransform = _buttonObject.GetComponent<RectTransform>();
+        _buttonRectTransform.anchorMin = new Vector2(0.5f, 0.58f);
+        _buttonRectTransform.anchorMax = new Vector2(0.5f, 0.58f);
+        _buttonRectTransform.anchoredPosition = Vector2.zero;
+        _buttonRectTransform.sizeDelta = new Vector2(360f, 72f);
+
+        Image _buttonImage = _buttonObject.GetComponent<Image>();
+        _buttonImage.color = new Color(1f, 1f, 1f, 0.01f);
+        _buttonImage.raycastTarget = true;
+
+        Button _button = _buttonObject.GetComponent<Button>();
+        _button.targetGraphic = _buttonImage;
+
+        GameObject _labelObject = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        _labelObject.transform.SetParent(_buttonObject.transform, false);
+
+        RectTransform _labelRectTransform = _labelObject.GetComponent<RectTransform>();
+        _labelRectTransform.anchorMin = Vector2.zero;
+        _labelRectTransform.anchorMax = Vector2.one;
+        _labelRectTransform.offsetMin = Vector2.zero;
+        _labelRectTransform.offsetMax = Vector2.zero;
+
+        _termsPopupButtonLabelText = _labelObject.GetComponent<TMP_Text>();
+        _termsPopupButtonLabelText.SetText("약관보기");
+        _termsPopupButtonLabelText.fontSize = 42f;
+        _termsPopupButtonLabelText.alignment = TextAlignmentOptions.Center;
+        _termsPopupButtonLabelText.color = new Color(0.06f, 0.16f, 0.32f, 1f);
+        _termsPopupButtonLabelText.raycastTarget = false;
+
+        return _button;
+    }
+
+    private void CreateTermsPolicyScrollView(Transform _parent)
+    {
+        GameObject _scrollObject = new GameObject("TermsPolicyScrollView", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(ScrollRect));
+        _scrollObject.transform.SetParent(_parent, false);
+
+        RectTransform _scrollRectTransform = _scrollObject.GetComponent<RectTransform>();
+        _scrollRectTransform.anchorMin = new Vector2(0.5f, 0.52f);
+        _scrollRectTransform.anchorMax = new Vector2(0.5f, 0.52f);
+        _scrollRectTransform.anchoredPosition = new Vector2(0f, 41f);
+        _scrollRectTransform.sizeDelta = new Vector2(980f, 500f);
+
+        Image _scrollImage = _scrollObject.GetComponent<Image>();
+        _scrollImage.color = new Color(0.97f, 0.91f, 0.8f, 0.94f);
+
+        GameObject _viewportObject = new GameObject("Viewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Mask));
+        _viewportObject.transform.SetParent(_scrollObject.transform, false);
+
+        RectTransform _viewportRectTransform = _viewportObject.GetComponent<RectTransform>();
+        _viewportRectTransform.anchorMin = Vector2.zero;
+        _viewportRectTransform.anchorMax = Vector2.one;
+        _viewportRectTransform.offsetMin = new Vector2(28f, 28f);
+        _viewportRectTransform.offsetMax = new Vector2(-28f, -28f);
+
+        Image _viewportImage = _viewportObject.GetComponent<Image>();
+        _viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+
+        Mask _viewportMask = _viewportObject.GetComponent<Mask>();
+        _viewportMask.showMaskGraphic = false;
+
+        GameObject _contentObject = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        _contentObject.transform.SetParent(_viewportObject.transform, false);
+
+        RectTransform _contentRectTransform = _contentObject.GetComponent<RectTransform>();
+        _contentRectTransform.anchorMin = new Vector2(0f, 1f);
+        _contentRectTransform.anchorMax = new Vector2(1f, 1f);
+        _contentRectTransform.pivot = new Vector2(0.5f, 1f);
+        _contentRectTransform.offsetMin = Vector2.zero;
+        _contentRectTransform.offsetMax = Vector2.zero;
+
+        VerticalLayoutGroup _layoutGroup = _contentObject.GetComponent<VerticalLayoutGroup>();
+        _layoutGroup.childAlignment = TextAnchor.UpperCenter;
+        _layoutGroup.childControlWidth = true;
+        _layoutGroup.childControlHeight = true;
+        _layoutGroup.childForceExpandWidth = true;
+        _layoutGroup.childForceExpandHeight = false;
+        _layoutGroup.spacing = 28f;
+        _layoutGroup.padding = new RectOffset(18, 18, 18, 18);
+
+        ContentSizeFitter _contentSizeFitter = _contentObject.GetComponent<ContentSizeFitter>();
+        _contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        _contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        _termsPolicyScrollRect = _scrollObject.GetComponent<ScrollRect>();
+        _termsPolicyScrollRect.viewport = _viewportRectTransform;
+        _termsPolicyScrollRect.content = _contentRectTransform;
+        _termsPolicyScrollRect.horizontal = false;
+        _termsPolicyScrollRect.vertical = true;
+        _termsPolicyScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        _termsPolicyScrollRect.scrollSensitivity = 48f;
+
+        GameObject _contentTextObject = new GameObject("TermsPolicyContentText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI), typeof(LayoutElement));
+        _contentTextObject.transform.SetParent(_contentObject.transform, false);
+
+        LayoutElement _contentLayoutElement = _contentTextObject.GetComponent<LayoutElement>();
+        _contentLayoutElement.minHeight = 1800f;
+        _contentLayoutElement.flexibleWidth = 1f;
+
+        _termsPolicyContentText = _contentTextObject.GetComponent<TMP_Text>();
+        _termsPolicyContentText.SetText(string.Empty);
+        _termsPolicyContentText.fontSize = 28f;
+        _termsPolicyContentText.alignment = TextAlignmentOptions.TopLeft;
+        _termsPolicyContentText.color = Color.black;
+        _termsPolicyContentText.textWrappingMode = TextWrappingModes.Normal;
+        _termsPolicyContentText.raycastTarget = false;
+    }
+
+    private void ArrangeTermsAgreementPanel()
+    {
+        ArrangeTermsTitle();
+        ArrangeTermsPolicyScrollView();
+        ArrangeTermsBottomControls();
+    }
+
+    private void ArrangeTermsTitle()
+    {
+        if (_termsTitleText == null)
+        {
+            return;
+        }
+
+        RectTransform _titleRectTransform = _termsTitleText.GetComponent<RectTransform>();
+        if (_titleRectTransform != null)
+        {
+            _titleRectTransform.anchorMin = new Vector2(0.5f, 0.84f);
+            _titleRectTransform.anchorMax = new Vector2(0.5f, 0.84f);
+            _titleRectTransform.anchoredPosition = new Vector2(0f, 71f);
+            _titleRectTransform.sizeDelta = new Vector2(980f, 96f);
+        }
+
+        _termsTitleText.fontSize = 56f;
+        _termsTitleText.alignment = TextAlignmentOptions.Center;
+    }
+
+    private void ArrangeTermsPolicyScrollView()
+    {
+        if (_termsPolicyScrollRect == null)
+        {
+            return;
+        }
+
+        RectTransform _scrollRectTransform = _termsPolicyScrollRect.GetComponent<RectTransform>();
+        if (_scrollRectTransform == null)
+        {
+            return;
+        }
+
+        _scrollRectTransform.anchorMin = new Vector2(0.5f, 0.53f);
+        _scrollRectTransform.anchorMax = new Vector2(0.5f, 0.53f);
+        _scrollRectTransform.anchoredPosition = new Vector2(0f, 41f);
+        _scrollRectTransform.sizeDelta = new Vector2(980f, 500f);
+    }
+
+    private void ArrangeTermsBottomControls()
+    {
+        ArrangeBottomControl(_termsToggle?.GetComponent<RectTransform>(), new Vector2(0.5f, 0.25f), new Vector2(0f, -25f), new Vector2(940f, 96f));
+        ArrangeBottomControl(_termsConfirmButton?.GetComponent<RectTransform>(), new Vector2(0.5f, 0.12f), new Vector2(0f, -35f), new Vector2(333.3333f, 114.6667f));
+    }
+
+    private void ArrangeBottomControl(RectTransform _rectTransform, Vector2 _anchor, Vector2 _position, Vector2 _size)
+    {
+        if (_rectTransform == null)
+        {
+            return;
+        }
+
+        Transform _termsBoxTransform = ResolveTermsBoxTransform();
+        if (_rectTransform.parent != _termsBoxTransform)
+        {
+            _rectTransform.SetParent(_termsBoxTransform, false);
+        }
+
+        _rectTransform.anchorMin = _anchor;
+        _rectTransform.anchorMax = _anchor;
+        _rectTransform.anchoredPosition = _position;
+        _rectTransform.sizeDelta = _size;
+    }
+
+    private void MoveTermsControlsToPolicyContent()
+    {
+        if (_termsPolicyScrollRect == null || _termsPolicyScrollRect.content == null)
+        {
+            return;
+        }
+
+        MoveControlToPolicyContent(_termsToggle?.transform, 106f);
+        MoveControlToPolicyContent(_termsConfirmButton?.transform, 116f);
+    }
+
+    private void MoveControlToPolicyContent(Transform _controlTransform, float _preferredHeight)
+    {
+        if (_controlTransform == null || _termsPolicyScrollRect.content == null)
+        {
+            return;
+        }
+
+        _controlTransform.SetParent(_termsPolicyScrollRect.content, false);
+
+        LayoutElement _layoutElement = _controlTransform.GetComponent<LayoutElement>();
+        _layoutElement ??= _controlTransform.gameObject.AddComponent<LayoutElement>();
+        _layoutElement.minHeight = _preferredHeight;
+        _layoutElement.preferredHeight = _preferredHeight;
+        _layoutElement.flexibleWidth = 1f;
+    }
+
+    private void SetTermsPolicyContentVisible(bool _isVisible)
+    {
+        _isTermsPolicyContentVisible = _isVisible;
+
+        if (_termsPolicyScrollRect != null)
+        {
+            _termsPolicyScrollRect.gameObject.SetActive(_isVisible);
+        }
+
+        if (_termsToggle != null)
+        {
+            _termsToggle.gameObject.SetActive(_isVisible);
+        }
+
+        if (_termsConfirmButton != null)
+        {
+            _termsConfirmButton.gameObject.SetActive(_isVisible);
+        }
+    }
+
+    private void ApplyTermsPolicyContentFromLocalization()
+    {
+        if (LocalizationManager.Instance == null)
+        {
+            SetLocalizedText(_termsPolicyContentText, "약관 정보를 불러올 수 없습니다.");
+            return;
+        }
+
+        SetLocalizedText(_termsPolicyContentText, LocalizationManager.Instance.Get(TermsPolicyLanguageId, LocalizingType.UI));
     }
 
     private static T FindChildComponentByName<T>(Transform _root, string _objectName) where T : Component
@@ -507,8 +804,19 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     // 약관 동의 모달을 표시
     public void ShowTermsAgreementPanel()
     {
+        EnsureTermsPolicyView();
+        ApplyTermsPolicyContentFromLocalization();
+
         if (_termsAgreementPanel != null)
             _termsAgreementPanel.SetActive(true);
+
+        SetTermsPolicyContentVisible(true);
+        Canvas.ForceUpdateCanvases();
+
+        if (_termsPolicyScrollRect != null)
+        {
+            _termsPolicyScrollRect.verticalNormalizedPosition = 1f;
+        }
     }
 
     // 약관 동의 모달을 숨긴다.
@@ -516,6 +824,29 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     {
         if (_termsAgreementPanel != null)
             _termsAgreementPanel.SetActive(false);
+    }
+
+    public void ShowTermsPolicyContent(string content)
+    {
+        EnsureTermsPolicyView();
+
+        if (_termsAgreementPanel != null)
+        {
+            _termsAgreementPanel.SetActive(true);
+        }
+
+        if (_termsPolicyContentText != null)
+        {
+            _termsPolicyContentText.SetText(string.IsNullOrEmpty(content) ? "약관 정보를 불러올 수 없습니다." : content);
+        }
+
+        SetTermsPolicyContentVisible(true);
+        Canvas.ForceUpdateCanvases();
+
+        if (_termsPolicyScrollRect != null)
+        {
+            _termsPolicyScrollRect.verticalNormalizedPosition = 1f;
+        }
     }
 
     // 약관 동의 체크 상태에 따라 확인 버튼 입력 가능 여부를 제어

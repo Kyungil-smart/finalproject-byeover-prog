@@ -38,6 +38,10 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     [Tooltip("Icon_Next를 말풍선 오른쪽 아래에서 얼마나 안쪽으로 둘지(px).")]
     [SerializeField] private Vector2 _nextIconInset = new Vector2(48f, 36f);
 
+    [Header("화면 가장자리 보정")]
+    [Tooltip("말풍선을 화면 안전 영역 가장자리에서 최소 이만큼 떨어뜨려 잘림을 막는다(px).")]
+    [SerializeField] private float _screenEdgePadding = 24f;
+
     private Transform _anchor;
     private Camera _camera;
     private Coroutine _typing;
@@ -49,6 +53,8 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
     private Vector2 _fixedViewportPosition;
     private Vector2 _fixedScreenOffset;
     private GameObject _advanceTouchArea;
+    private readonly Vector3[] _worldCorners = new Vector3[4];
+    private float _designWidth = -1f;   // 인스펙터에 설정된 원본 말풍선 폭. 화면이 넓으면 이 값으로 복원한다.
 
     public bool IsTyping => _isTyping;
 
@@ -190,6 +196,7 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
                 Screen.width * _fixedViewportPosition.x + _fixedScreenOffset.x,
                 Screen.height * _fixedViewportPosition.y + _fixedScreenOffset.y,
                 0f);
+            ClampWithinSafeArea();
             return;
         }
 
@@ -199,6 +206,56 @@ public class InGameTalkBubble : MonoBehaviour, IPointerClickHandler
         Vector3 screen = _camera.WorldToScreenPoint(world);
         // Screen Space - Overlay 캔버스에서는 RectTransform.position이 화면 픽셀 좌표.
         _root.position = screen + (Vector3)_screenOffset;
+        ClampWithinSafeArea();
+    }
+
+    // 캐릭터가 화면 가장자리에 있으면 말풍선이 밖으로 잘리므로, 실제 크기(코너)를 재서
+    // 안전 영역 안으로 위치를 밀어 넣는다. 기종별 화면 크기/비율/노치 차이를 흡수한다.
+    private void ClampWithinSafeArea()
+    {
+        if (_root == null) return;
+
+        if (_designWidth < 0f) _designWidth = _root.sizeDelta.x;
+
+        Rect area = Screen.safeArea;
+        float maxWidthPixels = area.width - _screenEdgePadding * 2f;
+
+        // 말풍선 폭이 화면(안전 영역)보다 넓으면 위치만 밀어도 반대쪽이 잘린다.
+        // 실제 픽셀 폭 대비 안전 영역 폭 비율로 sizeDelta를 줄이고, 여유가 생기면 원본 폭으로 되돌린다.
+        _root.GetWorldCorners(_worldCorners); // Overlay 캔버스: 월드 좌표 = 화면 픽셀
+        float pixelWidth = _worldCorners[2].x - _worldCorners[0].x;
+        if (pixelWidth > 0f && _root.sizeDelta.x > 0f)
+        {
+            float pixelsPerUnit = pixelWidth / _root.sizeDelta.x;
+            float maxWidthUnits = maxWidthPixels / pixelsPerUnit;
+            float targetWidth = Mathf.Min(_designWidth, maxWidthUnits);
+            if (!Mathf.Approximately(_root.sizeDelta.x, targetWidth))
+            {
+                _root.sizeDelta = new Vector2(targetWidth, _root.sizeDelta.y);
+                _root.GetWorldCorners(_worldCorners);
+            }
+        }
+
+        float minX = _worldCorners[0].x;
+        float minY = _worldCorners[0].y;
+        float maxX = _worldCorners[2].x;
+        float maxY = _worldCorners[2].y;
+
+        float left = area.xMin + _screenEdgePadding;
+        float right = area.xMax - _screenEdgePadding;
+        float bottom = area.yMin + _screenEdgePadding;
+        float top = area.yMax - _screenEdgePadding;
+
+        float dx = 0f;
+        if (minX < left) dx = left - minX;
+        else if (maxX > right) dx = right - maxX;
+
+        float dy = 0f;
+        if (minY < bottom) dy = bottom - minY;
+        else if (maxY > top) dy = top - maxY;
+
+        if (dx != 0f || dy != 0f)
+            _root.position += new Vector3(dx, dy, 0f);
     }
 
     // 텍스트가 다 나온 뒤 화살표를 위아래로 왕복. 일시정지 중에도 움직이게 unscaled.
