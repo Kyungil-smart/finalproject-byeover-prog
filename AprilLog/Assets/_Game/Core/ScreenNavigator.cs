@@ -221,7 +221,9 @@ public class ScreenNavigator : MonoBehaviour
     /// <summary>정지형 팝업(인챈트 선택/교체·정산 등)이 열려 있는지. 다른 시스템(데드락 연출 등)이
     /// timeScale을 복구할 때 팝업 정지를 짓밟지 않도록 이 값을 확인해야 한다.</summary>
     public static bool IsMenuOpen { get; private set; }
-    public static bool IsEffectPlaying { get; set; }
+    public static bool IsEffectPlaying { get; set; } // 엘리트 보상 timeSacle이 겹치지 않기 위해 추가
+    public static bool IsLevelUpActive { get; set; } = false; // 레벨업 타이밍을 전달하기 위해 추가
+
 
     private void OpenMenu()
     {

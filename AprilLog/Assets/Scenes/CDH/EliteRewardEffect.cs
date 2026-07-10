@@ -72,7 +72,6 @@ public class EliteRewardEffect : MonoBehaviour
                 if (jokerSystem != null)
                 {
                     jokerSystem.RestoreJokerImages();
-                    Debug.Log("[Reward] ��Ŀ ���� �Ϸ�");
                 }
 
                 if (!ScreenNavigator.IsMenuOpen && !ScreenNavigator.IsEffectPlaying)

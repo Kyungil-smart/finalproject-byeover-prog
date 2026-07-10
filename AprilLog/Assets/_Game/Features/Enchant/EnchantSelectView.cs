@@ -162,6 +162,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     private void OnDisable()
     {
         CloseNoSelectConfirmPopup();
+        ScreenNavigator.IsLevelUpActive = false;
     }
 
     private void OnDestroy()

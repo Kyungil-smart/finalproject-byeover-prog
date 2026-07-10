@@ -38,7 +38,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     /// 앞의 bool = true면 자폭한 몬스터<br/>
     /// 뒤의 bool = true면 보스 몬스터
     /// </summary>
-    public event Action<MonsterAI, bool, bool, bool> OnDeath; // 엘리트 몬스터 확인 인자 추가 (최동훈)
+    public event Action<MonsterAI, bool, bool, bool> OnDeath;
     public event Action<float> OnHit; // 피격 피드백 연출용
     public event Action<CrowdControlType, float> OnCrowdControl; // 상태이상 피드백 연출용
     public event Action OnAttack; // 공격 애니메이션 연출용
@@ -81,7 +81,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private float _attackTimer;
     private Rect _moveBounds; 
     private bool _isBoss;
-    private bool _isElite; // 엘리트 변수 추가 (최동훈)
+    private bool _isElite;
 
 
     // ---------- CC 상태 (바람: 허리케인=슬로우 / 돌풍=넉백) ----------
@@ -106,7 +106,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private static Transform s_defenseLine;
 
     // ---------- 초기화 ----------
-    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false, bool isElite = false) // 엘리트 인자 추가 (최동훈)
+    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false, bool isElite = false)
     {
         MonsterID = monsterId;
         MaxHP = stats != null ? stats.MaxHP : 1;
@@ -123,7 +123,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _zigzagAmplitude = monsterStats != null ? monsterStats.ZigzagAmplitude : -1;
                 
         _isBoss = isBoss;
-        _isElite = isElite; // 엘리트 추가 (최동훈)
+        _isElite = isElite;
 
         // _Test 씬 밸런스 콘솔의 몬스터 배율. 테스트 씬 밖에서는 항상 1이라 본편에 영향 없음.
         if (BalanceTestConsole.MonsterHpMul != 1f)
@@ -359,7 +359,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_playerModel != null)
             _playerModel.TakeDamage(damage);
         _state = State.Dead;
-        OnDeath?.Invoke(this, true, _isBoss, _isElite); // 엘리트 인자 추가 (최동훈)
+        OnDeath?.Invoke(this, true, _isBoss, _isElite);
     }
 
     private void AttackTypeSelect(float range)
@@ -420,7 +420,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _state = State.Dead;
         if(_rewardTriggerId != 0)
             OnRewardContained?.Invoke(this ,_rewardTriggerId);
-        OnDeath?.Invoke(this, false, _isBoss, _isElite); // 엘리트 인자 추가 (최동훈)
+        OnDeath?.Invoke(this, false, _isBoss, _isElite);
     }
 
     // ---------- IPoolable ----------

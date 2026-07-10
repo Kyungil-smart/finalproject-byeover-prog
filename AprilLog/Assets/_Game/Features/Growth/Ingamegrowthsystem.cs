@@ -142,10 +142,18 @@ public class InGameGrowthSystem : MonoBehaviour
             if (_playerModel != null)
                 _playerModel.Heal(Mathf.RoundToInt(_playerModel.MaxHP * levelData.HPRecovery));
             OnLevelUp?.Invoke(CurrentLevel);
- 
-            if (_navigator != null)
-                _navigator.ShowEnchantSelection();
- 
+
+            if (ScreenNavigator.IsEffectPlaying)
+            {
+                ScreenNavigator.IsLevelUpActive = true;
+            }
+
+            else
+            {
+                ScreenNavigator.IsLevelUpActive = true;
+                _navigator?.ShowEnchantSelection();
+            }
+
             levelData = _configRepo.GetInLevel(CurrentLevel);
             if (levelData == null) break;
             required = levelData.RequiredEXP;
