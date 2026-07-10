@@ -11,6 +11,7 @@
 // 수정 내용 : StageBootstrapper 초기화 전에도 HP/EXP HUD Presenter가 먼저 연결될 수 있도록 초기화 조건 완화
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -42,28 +43,44 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     [SerializeField] private TMP_Text _waveStateText;
     [SerializeField] private Image _feedbackBar;
     
+    // ---------- Dictionary ----------
+    private readonly Dictionary<string, Dictionary<string, string>> _translationDictionary = new Dictionary<string, Dictionary<string, string>>
+    {
+        { "ko", new Dictionary<string, string>
+        {
+            {"_currentChapterLabelText", "Ch."},
+            {"_currentStageLabelText", "Stage."},
+            {"_currentLevelLabelText", "Lv."}
+        }},
+        { "en", new Dictionary<string, string>
+        {
+            {"_currentChapterLabelText", "Ch."},
+            {"_currentStageLabelText", "Stage."},
+            {"_currentLevelLabelText", "Lv."}
+        }}
+    };
+    
     // ---------- Private ----------
     private InGameHUDPresenter _presenter;
     private StageModel _stageModel;
     private LocalizationManager _localizationManager;
     private bool _hasWarnedMissingCoreReferences;
+
+    private string _currentChapterLabelText;
+    private string _currentStageLabelText;
+    private string _currentLevelLabelText;
+    
+    private bool _boundToStageBootstrapper;
     
     // ---------- 이벤트 ----------
     public event Action OnComboTimerActive;
     public event Action<StageModel.SpawnType> OnSpecialWaveActive;
     
     // ---------- Const Text ----------
-    private const string CHAPTER_TEMP_TEXT = "Ch.";
-    private const string STAGE_TEMP_TEXT = "Stage.";
-    
     private const string REMAIN_TIME_TEMP_TEXT = "남은 시간";
     private const string TRANSITION_TIME_TEMP_TEXT = "다음 웨이브 대기";
 
     private const string COMBO_TEXT = "COMBO";
-    
-    private const string LEVEL_TEMP_TEXT = "Level";
-
-    private bool _boundToStageBootstrapper;
 
     // ---------- 생명주기 ----------
     private void OnEnable()
@@ -79,6 +96,13 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
             _stageBootstrapper.OnStageInitComplete -= Init;
             _boundToStageBootstrapper = false;
         }
+    }
+
+    private void Start()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += Translation;
+        Translation();
     }
 
     private void Update()
@@ -115,6 +139,8 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     private void OnDestroy()
     {
         _presenter?.Dispose();
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= Translation;
     }
 
     // ---------- 초기화 ----------
@@ -161,9 +187,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     public void UpdateHPText(int current, int max)
     {
         if(_hpText != null)
-            _hpText.text = _localizationManager != null ?
-                _localizationManager.Get(12003, LocalizingType.UI, current.ToString("N0"), max.ToString("N0")) : 
-                $"{current.ToString("N0")} / {max.ToString("N0")}";
+            _hpText.text = $"{current.ToString("N0")} / {max.ToString("N0")}";
     }
 
     public void UpdateEXP(float ratio)
@@ -175,16 +199,13 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     public void UpdateEXPText(int current, int max)
     {
         if(_expText != null)
-            _expText.text = _localizationManager != null ?
-                _localizationManager.Get(12009, LocalizingType.UI, current.ToString("N0"), max.ToString("N0")) : 
-                $"{current.ToString("N0")} / {max.ToString("N0")}";
+            _expText.text = $"{current.ToString("N0")} / {max.ToString("N0")}";
     }
 
     public void UpdateLevelText(int current)
     {
         if (_levelText != null)
-            _levelText.text = _localizationManager != null ? 
-                _localizationManager.Get(12008, LocalizingType.UI) : $"{LEVEL_TEMP_TEXT} {current}";
+            _levelText.text = $"{_currentLevelLabelText} {current}";
     }
 
     public void UpdateCombo(int count)
@@ -203,9 +224,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         if (_stageProgressTimer != null)
         {
             float displayTime = Mathf.Max(0f, remainingTime);
-            _stageProgressTimer.text = _localizationManager != null
-                ? _localizationManager.Get(12002, LocalizingType.UI, displayTime.ToString("F2"))
-                : displayTime.ToString("F2") + "s";
+            _stageProgressTimer.text = displayTime.ToString("F2") + "s";
         }
     }
 
@@ -234,18 +253,46 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         {
             _curChapterViwerText.text = _localizationManager != null
                 ? _localizationManager.Get(12000, LocalizingType.UI, chapterOrder)
-                : $"{CHAPTER_TEMP_TEXT} {chapterOrder}";
+                : $"{_currentChapterLabelText} {chapterOrder}";
         }
         
         if(_curStageViwerText != null)
         {
             _curStageViwerText.text = _localizationManager != null
                 ? _localizationManager.Get(12001, LocalizingType.UI, stageOrder)
-                : $"{STAGE_TEMP_TEXT} {stageOrder}";
+                : $"{_currentStageLabelText} {stageOrder}";
         }
     }
 
     public void ShowLevelUpEffect() { /* DOTween 연출 넣을 자리 */ }
+
+    private void Translation()
+    {
+        if (LocalizationManager.Instance == null)
+        {
+            if(!_translationDictionary.TryGetValue("ko", out var tempData)) 
+                return;
+            
+            _currentChapterLabelText = tempData.TryGetValue(nameof(_currentChapterLabelText), out var chapterLabel)
+                ? chapterLabel : string.Empty;
+            _currentStageLabelText = tempData.TryGetValue(nameof(_currentStageLabelText), out var stageLabel)
+                ? stageLabel : string.Empty;
+            _currentLevelLabelText = tempData.TryGetValue(nameof(_currentLevelLabelText), out var levelLabel)
+                ? levelLabel : string.Empty;
+        }
+        else
+        {
+            if(!_translationDictionary.TryGetValue(LocalizationManager.Instance.CurrentLanguage, out var tempData)) 
+                return;
+            
+            _currentChapterLabelText = tempData.TryGetValue(nameof(_currentChapterLabelText), out var chapterLabel)
+                ? chapterLabel : string.Empty;
+            _currentStageLabelText = tempData.TryGetValue(nameof(_currentStageLabelText), out var stageLabel)
+                ? stageLabel : string.Empty;
+            _currentLevelLabelText = tempData.TryGetValue(nameof(_currentLevelLabelText), out var levelLabel)
+                ? levelLabel : string.Empty;
+        }
+    }
 
     public void SetFeedBackBarColor(Color color)
     {

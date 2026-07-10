@@ -6,6 +6,9 @@
 // 수정 내용 : 인챈트 교체 팝업의 기존 인챈트 선택 정보 초기화, 선택 강조, 교체 버튼 활성 상태 제어
 // 수정 내용 : 교체 완료/취소 확인 팝업을 Inspector 배치 UI로 제어
 
+// 수정자 : 최동훈
+// 수정 내용 : 인챈트 교체 완료 버튼이 엘리트 보상을 강제 종료하는 현상을 방지
+
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -40,7 +43,8 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
 
     [Header("참조")] 
     [SerializeField] private EnchantListView _listView;
-    
+    [SerializeField] private EnchantPopupManager _manager;
+
     private int _selectedDiscardNameId = -1;
     private EnchantDisplayData _selectedDiscardData;
     private EnchantDisplayData _newEnchantData;
@@ -271,7 +275,13 @@ public class EnchantChangeView : MonoBehaviour, IEnchantChangeView
     private void HandleChangeCompleteConfirmed()
     {
         HideChangeCompletePopup();
-        OnChangeCompleteConfirmed?.Invoke();
+
+        if (_manager != null)
+        {
+            _manager.OnChangeCompleted();
+        }
+
+        OnChangeCompleteConfirmed?.Invoke();              
     }
 
     private void HandleCancelConfirmed()

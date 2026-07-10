@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -65,6 +66,12 @@ public class ShopGachaPresenter : MonoBehaviour
     [Tooltip("POPUP_TenGacha 의 자동 분해 보상 표시(RewardPreviewSlot 2개). 선택.")]
     [SerializeField] private GachaDecomposeRewardView _tenDecomposeView;
 
+    [Header("재추첨 버튼 비용 텍스트")]
+    [Tooltip("'1회 더' 재추첨 버튼의 비용 텍스트(Text_Button_ReGacha) 들. 현재 상자의 1회 비용을 자동 표시. 여러 팝업에 있으면 전부 연결.")]
+    [SerializeField] private TMP_Text[] _singleDrawCostTexts;
+    [Tooltip("'10회 더' 재추첨 버튼의 비용 텍스트(Text_Button_ReGacha) 들. 현재 상자의 10회 비용을 자동 표시. 여러 팝업에 있으면 전부 연결.")]
+    [SerializeField] private TMP_Text[] _tenDrawCostTexts;
+
     [Header("재화 부족 팝업")]
     [SerializeField] private GameObject _insufficientPopup;
 
@@ -89,6 +96,12 @@ public class ShopGachaPresenter : MonoBehaviour
     [SerializeField] private GachaProgressView _progressView;
 
     private const int TenDrawCount = 10;
+
+    // 박스마다 ShopGachaPresenter 인스턴스가 따로이고 결과창(POPUP)만 공유한다.
+    // 재추첨 버튼은 한 인스턴스에만 연결돼 있으므로, '결과창을 실제로 연 프리젠터'로 재추첨을 넘겨야
+    // 그 박스의 재화/데이터/뷰로 정확히 다시 뽑는다. static 이라 인스턴스 간에 공유된다.
+    private static ShopGachaPresenter _popupOwner;
+    private static int _openPopupGachaId;
 
     private void Awake()
     {
@@ -118,6 +131,7 @@ public class ShopGachaPresenter : MonoBehaviour
     {
         _gachaId = gachaId;
         RefreshCostIcon();   // 활성 가챠가 바뀌면 소모 재화 아이콘도 그 가챠에 맞춰 갱신
+        RefreshRedrawCostTexts();   // 재추첨 버튼 비용도 그 가챠에 맞춰 갱신
         if (_pityInfoView != null) _pityInfoView.Refresh(_gachaId);
         if (_progressView != null) _progressView.Refresh(_gachaId);
     }
@@ -137,6 +151,32 @@ public class ShopGachaPresenter : MonoBehaviour
     {
         GachaCostConfig cfg = GetCostConfig(_gachaId);
         return cfg != null ? cfg.currency : _costCurrency;
+    }
+
+    // [진단] 현재 활성 가챠 재화의 표시 잔액(CurrencyModel→GameManager/CloudData 기준).
+    private int CurrentBalance()
+    {
+        if (_currencyModel == null) return -1;
+        switch (CurrentCurrency())
+        {
+            case CostCurrency.Gold:      return _currencyModel.Gold;
+            case CostCurrency.Parchment: return _currencyModel.Parchment;
+            case CostCurrency.Diamond:   return _currencyModel.Diamond;
+            default:                     return _currencyModel.Gold;
+        }
+    }
+
+    // [진단] 현재 활성 가챠 재화의 원장(ResourceRepo) 잔액. 실제 UseItem 이 차감하는 소스.
+    private int CurrentLedgerBalance()
+    {
+        if (GameManager.Instance == null) return -1;
+        switch (CurrentCurrency())
+        {
+            case CostCurrency.Gold:      return GameManager.Instance.GetResourceCount(70001);
+            case CostCurrency.Parchment: return GameManager.Instance.GetResourceCount(70002);
+            case CostCurrency.Diamond:   return GameManager.Instance.GetResourceCount(70003);
+            default:                     return GameManager.Instance.GetResourceCount(70001);
+        }
     }
 
     // 현재 활성 가챠의 소모 재화 아이콘을 모든 아이콘 표시 대상에 반영.
@@ -246,8 +286,13 @@ public class ShopGachaPresenter : MonoBehaviour
         }
 
         // 재화 체크 & 차감
+        // [진단] 재추첨 재화부족 이슈 추적용. 원장(repo)/표시(CloudData) desync 여부를 판별한다.
+        Debug.Log($"[가챠진단] gachaId={_gachaId} openPin={_openPopupGachaId} currency={CurrentCurrency()} cost={cost} 보유(표시)={CurrentBalance()} " +
+                  $"repo원장={CurrentLedgerBalance()}");
         if (!TrySpend(cost))
         {
+            Debug.LogWarning($"[가챠진단] 차감 실패 → 재화부족 처리. currency={CurrentCurrency()} cost={cost} " +
+                             $"보유(표시)={CurrentBalance()} repo원장={CurrentLedgerBalance()}");
             ShowInsufficient();
             return;
         }
@@ -280,8 +325,39 @@ public class ShopGachaPresenter : MonoBehaviour
         if (_progressView != null)
             _progressView.Refresh(_gachaId);
 
+        // 이 결과창이 어떤 가챠로 열렸는지 고정 → 재추첨은 이 상자로만 나간다.
+        RememberPopupGacha(resultPopup);
+        // 재추첨 버튼 비용 텍스트를 이 상자의 실제 비용으로 갱신(공유 팝업이라 상자마다 값이 다르다).
+        RefreshRedrawCostTexts();
+
         if (resultPopup != null)
             resultPopup.SetActive(true);
+    }
+
+    // 결과창을 실제로 연 프리젠터/가챠를 기억한다(재추첨 라우팅용). 어떤 결과창이든 마지막에 연 프리젠터로 고정.
+    private void RememberPopupGacha(GameObject resultPopup)
+    {
+        if (resultPopup == _singleResultPopup || resultPopup == _tenResultPopup)
+        {
+            _popupOwner = this;
+            _openPopupGachaId = _gachaId;
+        }
+    }
+
+    // 재추첨 버튼 비용 텍스트를 현재 활성 가챠(_gachaId)의 1회/10회 비용으로 갱신한다.
+    // 공유 팝업이라 상자마다 값이 달라서, 상자가 바뀌거나 팝업이 열릴 때마다 데이터에서 다시 계산해 덮어쓴다.
+    private void RefreshRedrawCostTexts()
+    {
+        SetCostTexts(_singleDrawCostTexts, GetCost(1));
+        SetCostTexts(_tenDrawCostTexts, GetCost(TenDrawCount));
+    }
+
+    private static void SetCostTexts(TMP_Text[] targets, int cost)
+    {
+        if (targets == null) return;
+        string body = cost.ToString("N0");
+        for (int i = 0; i < targets.Length; i++)
+            if (targets[i] != null) targets[i].text = body;
     }
 
     // 튜토리얼 가챠 단계(GachaButton 강조)인지
@@ -451,11 +527,24 @@ public class ShopGachaPresenter : MonoBehaviour
         return filtered[Random.Range(0, filtered.Count)].Gear_ID;
     }
 
-    // 결과창 안의 '1회 더' 버튼 OnClick 에 연결 (같은 박스 재추첨)
-    public void OnClickRedrawSingle() => TryDraw(1, _singleResultPopup, _singleSlots, _singleDecomposeView);
+    // 결과창 안의 '1회 더' 버튼 OnClick 에 연결 (결과창이 열린 그 상자로만 재추첨)
+    // 재추첨은 전역 _gachaId 가 아니라 결과창이 고정해 둔 가챠로 다시 활성화한 뒤 뽑는다.
+    // (결과창이 떠 있는 동안 다른 상자를 눌러 _gachaId 가 바뀌어도 엉뚱한 상자/재화로 나가지 않게 한다.)
+    public void OnClickRedrawSingle()
+    {
+        Debug.Log($"[가챠진단] 재추첨(1회) 진입: this=gachaId{_gachaId} owner={(_popupOwner != null ? _popupOwner._gachaId.ToString() : "null")} openPin={_openPopupGachaId}");
+        // 결과창을 실제로 연 프리젠터가 있으면 그쪽으로 넘긴다(공유 결과창 + 박스별 프리젠터 구조 대응).
+        if (_popupOwner != null && _popupOwner != this) { _popupOwner.OnClickRedrawSingle(); return; }
+        TryDraw(1, _singleResultPopup, _singleSlots, _singleDecomposeView);
+    }
 
     // 결과창 안의 '10회 더' 버튼 OnClick 에 연결
-    public void OnClickRedrawTen() => TryDraw(TenDrawCount, _tenResultPopup, _tenSlots, _tenDecomposeView);
+    public void OnClickRedrawTen()
+    {
+        Debug.Log($"[가챠진단] 재추첨(10회) 진입: this=gachaId{_gachaId} owner={(_popupOwner != null ? _popupOwner._gachaId.ToString() : "null")} openPin={_openPopupGachaId}");
+        if (_popupOwner != null && _popupOwner != this) { _popupOwner.OnClickRedrawTen(); return; }
+        TryDraw(TenDrawCount, _tenResultPopup, _tenSlots, _tenDecomposeView);
+    }
 
     // 뽑기 비용은 전부 데이터에서 가져온다.
     //  1순위 : PaidGachaBox(가챠ID + 뽑기횟수) — 횟수별 비용/할인이 데이터에 정의된 경우.
