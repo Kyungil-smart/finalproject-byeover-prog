@@ -63,14 +63,16 @@ public class TutorialFingerGuide : MonoBehaviour
     private void UpdateBasePos()
     {
         if (_parentRt == null) return;
-        Camera cam = GetEventCamera();
+        Camera parentCam = GetEventCamera();
+        // 대상은 손가락과 다른 렌더모드/카메라의 캔버스일 수 있어 스크린 좌표는 대상 자신의 캔버스 카메라로 구한다.
+        Camera targetCam = GetCameraFor(_target);
 
         // 대상 중심을 부모 로컬좌표로 변환
         var corners = new Vector3[4];
         _target.GetWorldCorners(corners);              // 0:좌하 2:우상
         Vector3 worldCenter = (corners[0] + corners[2]) * 0.5f;
-        Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, worldCenter);
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_parentRt, screen, cam, out Vector2 local))
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(targetCam, worldCenter);
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_parentRt, screen, parentCam, out Vector2 local))
             return;
 
         // 피벗 기준 좌표 → 좌하단(0,0) 기준으로 변환 후 오프셋 적용
@@ -83,5 +85,15 @@ public class TutorialFingerGuide : MonoBehaviour
         if (_canvas == null) return null;
         Canvas root = _canvas.rootCanvas;
         return root.renderMode == RenderMode.ScreenSpaceOverlay ? null : root.worldCamera;
+    }
+
+    // 대상을 실제로 렌더하는 캔버스의 카메라(Overlay면 null). WorldToScreenPoint에 사용.
+    private static Camera GetCameraFor(RectTransform target)
+    {
+        Canvas canvas = target != null ? target.GetComponentInParent<Canvas>() : null;
+        if (canvas == null) return null;
+        Canvas root = canvas.rootCanvas;
+        if (root.renderMode == RenderMode.ScreenSpaceOverlay) return null;
+        return root.worldCamera != null ? root.worldCamera : Camera.main;
     }
 }
