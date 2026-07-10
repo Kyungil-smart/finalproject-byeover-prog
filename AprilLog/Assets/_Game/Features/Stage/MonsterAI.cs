@@ -359,7 +359,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_playerModel != null)
             _playerModel.TakeDamage(damage);
         _state = State.Dead;
-        OnDeath?.Invoke(this, true, _isBoss, _isElite);
+        OnDeath?.Invoke(this, true, _isBoss, true);
     }
 
     private void AttackTypeSelect(float range)
@@ -420,7 +420,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _state = State.Dead;
         if(_rewardTriggerId != 0)
             OnRewardContained?.Invoke(this ,_rewardTriggerId);
-        OnDeath?.Invoke(this, false, _isBoss, _isElite);
+        OnDeath?.Invoke(this, false, _isBoss, true);
     }
 
     // ---------- IPoolable ----------
