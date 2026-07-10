@@ -110,6 +110,13 @@ public class MonsterVisualController : MonoBehaviour
 
     private void HandleOnHit(float duration)
     {
+        // 튜토리얼 스탭 0단계 최초 몬스터 등장 시 HP를 조절 하는 구간에서는 이 함수가 작동되서는 안된다.
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
+        {
+            var stepData = TutorialManager.Instance.CurrentStep;
+            if (stepData != null && stepData.stepId == 0) return;
+        }
+        
         SetHitEffect(duration);
     }
 
