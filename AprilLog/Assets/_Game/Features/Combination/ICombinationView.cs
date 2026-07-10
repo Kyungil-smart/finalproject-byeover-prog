@@ -10,4 +10,5 @@ public interface ICombinationView
     void MarkIngredientFulfilled(int slotIdx, int ingredientIdx);
     void PlayActivationEffect(int slotIdx);
     void ClearRecipe(int slotIdx);
+    void ClearRegisteredRecipe(int slotIdx);
 }
