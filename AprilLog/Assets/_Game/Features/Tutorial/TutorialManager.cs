@@ -32,12 +32,10 @@ public class TutorialManager : MonoBehaviour
     private const string IN_GAME_SCENE_NAME = "_InGame";
     private const string IN_GAME_OVERLAY_RESOURCE = "Tutorial/TutorialInGameOverlay";
     private const string LOBBY_SCENE_NAME = "_Lobby";
-    private const string LOBBY_OVERLAY_RESOURCE = "Tutorial/--- Tutorial ---";
 
     private int _currentIndex = -1;     // -1 = 진행 중 아님
     private ITutorialView _view;        // 현재 씬의 오버레이(있을 때만)
     private GameObject _spawnedInGameOverlay;
-    private GameObject _spawnedLobbyOverlay;
 
     public bool IsCompleted => GameManager.Instance != null
         ? GameManager.Instance.IsTutorialCompleted()
@@ -158,20 +156,14 @@ public class TutorialManager : MonoBehaviour
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         // 씬별 튜토리얼 오버레이를 진행 중일 때만 스폰한다. 이전 씬 오버레이는 씬 언로드로 이미 파괴됐으니 참조만 정리.
+        // 로비 오버레이(--- Tutorial ---)는 _Lobby 씬에 프리팹 인스턴스로 직접 배치되어 있어 여기서 스폰하지 않는다.
         if (scene.name == IN_GAME_SCENE_NAME)
         {
-            _spawnedLobbyOverlay = null;
             TrySpawnOverlay(IN_GAME_OVERLAY_RESOURCE, ref _spawnedInGameOverlay);
-        }
-        else if (scene.name == LOBBY_SCENE_NAME)
-        {
-            _spawnedInGameOverlay = null;
-            TrySpawnOverlay(LOBBY_OVERLAY_RESOURCE, ref _spawnedLobbyOverlay);
         }
         else
         {
             _spawnedInGameOverlay = null;
-            _spawnedLobbyOverlay = null;
         }
     }
 
