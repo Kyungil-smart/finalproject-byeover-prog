@@ -27,23 +27,29 @@ public class InGameRewardManager : MonoBehaviour
         }
     }
 
-    public void AddChangeStageReward(int stageId, 
-        out Dictionary<int, List<ItemSaveEntry>> firstList ,out List<ItemSaveEntry> repeatList)
+    public void AddChangeStageReward(int stageId, int clearedStageId, 
+        out Dictionary<int, List<ItemSaveEntry>> firstList, out List<ItemSaveEntry> repeatList)
     {
-        firstList = new();
-        repeatList = new();
-        
         _repo ??= DataManager.Instance.RewardRepo;
         if (_repo == null)
         {
-            Debug.LogError("Reward Repo is null");
+            firstList = new();
+            repeatList = new();
             return;
         }
         
-        _repo.GetFirstStageRewards(stageId, out var listF);
+        if (clearedStageId > 0)
+        {
+            _repo.GetFirstStageRewards(clearedStageId, out var listF);
+            firstList = RewardCalculator.GetAmountFirstStage(listF); 
+        }
+        else
+        {
+            firstList = new(); 
+        }
+        
         _repo.GetRepeatStageRewards(stageId, out var listR);
-        firstList = RewardCalculator.GetAmountFirstStage(listF);
-        repeatList = RewardCalculator.GetAmountRepeatStage(listR);
+        repeatList = RewardCalculator.GetAmountRepeatStage(listR); 
     }
 
     public Dictionary<int, List<ItemSaveEntry>> AddChangeChapterReward(int chapterId, bool isVictory)

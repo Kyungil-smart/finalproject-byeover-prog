@@ -71,12 +71,12 @@ public class RewardRepo : MonoBehaviour
             
             if (!_chapterStepMapping.TryGetValue(data.StartId, out int startChapterStep))
             {
-                Debug.LogWarning($"[RewardRepo] 시작 챕터 ID {data.StartId}가 맵핑에 존재하지 않습니다.");
+                Debug.LogWarning($"[RewardRepo] 시작 챕터 ID {chapterId}가 맵핑에 존재하지 않습니다.");
                 continue;
             }
 
             int step = currentChapterStep - startChapterStep;
-            rewardList.Add(new RewardRecipe { TargetId = data.StartId, RewardId = data.DataId, currentStep = step });
+            rewardList.Add(new RewardRecipe { TargetId = chapterId, RewardId = data.DataId, currentStep = step });
         }
     }
 }
@@ -104,7 +104,7 @@ public void GetFirstStageRewards(int stageId, out List<RewardRecipe> rewardList)
             }
 
             int step = currentStageStep - startStageStep;
-            rewardList.Add(new RewardRecipe { TargetId = data.StartId, RewardId = data.DataId, currentStep = step });
+            rewardList.Add(new RewardRecipe { TargetId = stageId, RewardId = data.DataId, currentStep = step });
         }
     }
 }

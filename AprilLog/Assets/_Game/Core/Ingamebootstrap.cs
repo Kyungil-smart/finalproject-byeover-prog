@@ -508,8 +508,11 @@ public class InGameBootstrap : MonoBehaviour
         int _rewardStageOrder = ResolveRewardStageOrder(isVictory, completedStageCount);
         int stageId = DataManager.Instance.StageRepo.GetStageId(chapterId, _rewardStageOrder);
         
+        int clearedStageId = completedStageCount > 0 ? DataManager.Instance.StageRepo.GetStageId(chapterId, completedStageCount) : -1;
+
         var firstChapterList = _rewardManager.AddChangeChapterReward(chapterId, isVictory);
-        _rewardManager.AddChangeStageReward(stageId, 
+        
+        _rewardManager.AddChangeStageReward(stageId, clearedStageId, 
             out var firstStageList, out var repeatList);
 
         if (repeatList != null && repeatList.Count > 0)
