@@ -30,6 +30,7 @@ public interface ILoginView
     // 로그인 화면 위에 표시되는 약관 동의 모달 상태를 제어
     void ShowTermsAgreementPanel();
     void HideTermsAgreementPanel();
+    void ShowTermsPolicyContent(string content);
     void SetTermsConfirmButtonInteractable(bool isInteractable);
 
     // Firebase 인증 진행 중 로딩 표시와 입력 잠금을 제어
