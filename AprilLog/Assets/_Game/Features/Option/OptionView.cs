@@ -67,6 +67,8 @@ public class OptionView : MonoBehaviour, IOptionView
     // ---------- Unity ----------
     private void OnEnable()
     {
+        ResolveLocalization();
+
         if (!_isInitialized)
         {
             _isInitialized = true;
@@ -102,6 +104,9 @@ public class OptionView : MonoBehaviour, IOptionView
             Debug.LogWarning("[OptionView] SFX slider가 연결되지 않았습니다.", this);
 
         // 언어
+        EnsureButtonCanvasRaycaster(_korButton);
+        EnsureButtonCanvasRaycaster(_engButton);
+
         if (_korButton != null)
             _korButton.onClick.AddListener(() => OnKoreanSelected?.Invoke());
         else
@@ -187,8 +192,16 @@ public class OptionView : MonoBehaviour, IOptionView
 
     private void RefreshLanguageIndicator()
     {
+        ResolveLocalization();
+
         if (_localization != null)
             SetLanguageIndicator(_localization.CurrentLanguage);
+    }
+
+    private void ResolveLocalization()
+    {
+        if (_localization == null)
+            _localization = LocalizationManager.Instance;
     }
 
     private void OpenConfirmDeletePanel()
@@ -216,5 +229,16 @@ public class OptionView : MonoBehaviour, IOptionView
         var image = button.GetComponent<Image>();
         if (image != null)
             image.color = color;
+    }
+
+    private static void EnsureButtonCanvasRaycaster(Button button)
+    {
+        if (button == null) return;
+
+        Canvas canvas = button.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+
+        if (canvas.GetComponent<GraphicRaycaster>() == null)
+            canvas.gameObject.AddComponent<GraphicRaycaster>();
     }
 }
