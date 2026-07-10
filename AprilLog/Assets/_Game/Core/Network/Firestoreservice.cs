@@ -122,7 +122,28 @@ public class FirestoreService : MonoBehaviour
 
         if (task.Result.Exists)
         {
-            var data = ConvertSnapshotToUserCloudData(task.Result);
+            // 문서 필드 타입 불일치 같은 파싱 예외가 이 코루틴을 죽이면 OnDataLoaded가 안 불려
+            // 부팅 대기가 영구 정지된다. 예외 시 로컬 백업/기본값으로 복구하고 로드를 반드시 완료시킨다.
+            UserCloudData data = null;
+            bool converted = false;
+            try
+            {
+                data = ConvertSnapshotToUserCloudData(task.Result);
+                converted = true;
+            }
+            catch (Exception exception)
+            {
+                OnError?.Invoke(GetExceptionMessage(exception, "클라우드 데이터 변환 실패"));
+            }
+
+            if (!converted)
+            {
+                data = LoadLocalBackup() ?? UserCloudData.CreateDefault();
+                data.uid = _uid;
+                OnDataLoaded?.Invoke(data);
+                yield break;
+            }
+
             MergeLocalInitialFlowState(data);
             SaveLocalBackup(data);
             OnDataLoaded?.Invoke(data);
@@ -638,8 +659,12 @@ public class FirestoreService : MonoBehaviour
             data.pendingEnchantDraws = ConvertEnchantDraws(pendingEnchantDraws);
 
         // 계정 생성일 복원. 없으면 CreateDefault의 현재시각이 남아 저장 때마다 생성일이 전진한다.
-        if (snapshot.TryGetValue("createdAt", out string createdAt))
-            data.createdAt = createdAt;
+        // createdAt은 프로필 생성 경로에서 ServerTimestamp(Timestamp 타입)로 저장되므로 string으로 직접 읽으면
+        // 변환 예외가 난다. object로 받아 Timestamp면 ISO 문자열로 바꾼다.
+        if (snapshot.TryGetValue("createdAt", out object createdAtRaw))
+            data.createdAt = createdAtRaw is Timestamp createdAtStamp
+                ? createdAtStamp.ToDateTime().ToUniversalTime().ToString("o")
+                : createdAtRaw as string;
 
         return data;
     }
