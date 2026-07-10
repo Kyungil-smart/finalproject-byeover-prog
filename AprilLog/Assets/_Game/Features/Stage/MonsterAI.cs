@@ -122,6 +122,17 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _isBoss = isBoss;
         _isElite = isElite; // 엘리트 추가 (최동훈)
 
+        // _Test 씬 밸런스 콘솔의 몬스터 배율. 테스트 씬 밖에서는 항상 1이라 본편에 영향 없음.
+        if (BalanceTestConsole.MonsterHpMul != 1f)
+        {
+            MaxHP = Mathf.Max(1, Mathf.RoundToInt(MaxHP * BalanceTestConsole.MonsterHpMul));
+            CurrentHP = MaxHP;
+        }
+        if (BalanceTestConsole.MonsterAtkMul != 1f)
+        {
+            _attack = Mathf.Max(1, Mathf.RoundToInt(_attack * BalanceTestConsole.MonsterAtkMul));
+        }
+
         // 방벽 정지선: DefenseLine(방벽) 오브젝트의 Y를 단일 진실 소스로 사용한다.
         // 플레이어도 같은 DefenseLine에 정렬되므로 정지선과 플레이어 위치가 항상 일치한다.
         // (오브젝트가 없으면 serialized 기본값 _defenseLineY 유지)

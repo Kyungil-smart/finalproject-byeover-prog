@@ -24,6 +24,10 @@ public class BalanceTestConsole : MonoBehaviour
     /// <summary>아웃게임 성장 레벨 오버라이드. InGameBootstrap.GetCharacterLevel이 최우선으로 읽는다. 0 = 계정 레벨 그대로.</summary>
     public static int OverrideCharacterLevel { get; private set; }
 
+    /// <summary>몬스터 체력/공격력 배율. MonsterAI.Initialize가 스폰 시 읽는다. 새로 스폰되는 몬스터부터 적용. 1 = 원본.</summary>
+    public static float MonsterHpMul { get; private set; } = 1f;
+    public static float MonsterAtkMul { get; private set; } = 1f;
+
     // ---------- 자동 설치 ----------
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Install()
@@ -46,6 +50,8 @@ public class BalanceTestConsole : MonoBehaviour
             // 테스트 씬 밖으로 나가면 오버라이드를 비워 일반 플레이 오염을 막는다.
             PendingStageId = 0;
             OverrideCharacterLevel = 0;
+            MonsterHpMul = 1f;
+            MonsterAtkMul = 1f;
             return;
         }
 
@@ -75,7 +81,7 @@ public class BalanceTestConsole : MonoBehaviour
 
         EnsureStyles();
 
-        if (GUI.Button(new Rect(vw - 96f, 8f, 88f, 44f), _open ? "닫기" : "TEST", _button))
+        if (GUI.Button(new Rect((vw - 88f) * 0.5f, 8f, 88f, 44f), _open ? "닫기" : "TEST", _button))
             _open = !_open;
 
         if (!_open) return;
@@ -111,7 +117,8 @@ public class BalanceTestConsole : MonoBehaviour
 
         if (_player != null)
             GUILayout.Label($"공격력 {_player.Attack} / HP {_player.CurrentHP}/{_player.MaxHP} / 공속간격 {_player.AttackSpeed:F2}s", _label);
-        GUILayout.Label($"배속 x{_speed:F1}   성장레벨 {(OverrideCharacterLevel > 0 ? OverrideCharacterLevel.ToString() : "계정값")}", _label);
+        GUILayout.Label($"배속 x{_speed:F1}   성장레벨 {(OverrideCharacterLevel > 0 ? OverrideCharacterLevel.ToString() : "계정값")}" +
+                        $"   몬스터HP x{MonsterHpMul:0.##}   몬스터공격 x{MonsterAtkMul:0.##}", _label);
     }
 
     private void DrawLevelSimulation()
@@ -238,6 +245,35 @@ public class BalanceTestConsole : MonoBehaviour
         // AttackSpeed는 공격 간격(초): 빠르게 = 간격 감소
         if (GUILayout.Button("느리게 +0.1s", _button)) _player.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, 0.1f, true);
         if (GUILayout.Button("빠르게 -0.1s", _button)) _player.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, 0.1f, false);
+        GUILayout.EndHorizontal();
+
+        DrawMonsterMultipliers();
+    }
+
+    private static readonly float[] MonsterMulSteps = { 0.5f, 1f, 1.5f, 2f, 3f };
+
+    private void DrawMonsterMultipliers()
+    {
+        GUILayout.Label("몬스터 배율 (새로 스폰되는 몬스터부터 적용)", _header);
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("체력", _label, GUILayout.Width(56f));
+        foreach (float mul in MonsterMulSteps)
+        {
+            bool selected = Mathf.Approximately(MonsterHpMul, mul);
+            if (GUILayout.Toggle(selected, $"x{mul:0.##}", _button) && !selected)
+                MonsterHpMul = mul;
+        }
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("공격", _label, GUILayout.Width(56f));
+        foreach (float mul in MonsterMulSteps)
+        {
+            bool selected = Mathf.Approximately(MonsterAtkMul, mul);
+            if (GUILayout.Toggle(selected, $"x{mul:0.##}", _button) && !selected)
+                MonsterAtkMul = mul;
+        }
         GUILayout.EndHorizontal();
     }
 

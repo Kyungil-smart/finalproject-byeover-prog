@@ -728,8 +728,9 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(2012, waterBomb);
         skillSystem.RegisterHazardSkill(2013, waterBomb);
 
-        // 탄환 세례 2021~23 (조합): 최단거리 광역 장판 600×700, 1/1/2히트(PelletCount) + 넉백 + 10% 슬로우. Water_Splash_B VFX.
-        var bulletShower = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 600, heightPx = 700, pulseInterval = 0.15f, flashColor = waterFlash };
+        // 탄환 세례 2021~23 (조합): 물대포 — 에이프릴 머리 위에서 일직선(세로 컬럼 600×700)으로 발사, 1/1/2히트(PelletCount) + 넉백 + 10% 슬로우.
+        // 하이드로펌프(205)와 같은 플레이어 기준 컬럼 판정. VFX(Water_Splash_B)도 발사점 위에서 뿜는다.
+        var bulletShower = new HazardConfig { placement = HazardPlacement.PlayerColumn, widthPx = 600, heightPx = 700, pulseInterval = 0.15f, flashColor = waterFlash };
         skillSystem.RegisterHazardSkill(2021, bulletShower);
         skillSystem.RegisterHazardSkill(2022, bulletShower);
         skillSystem.RegisterHazardSkill(2023, bulletShower);

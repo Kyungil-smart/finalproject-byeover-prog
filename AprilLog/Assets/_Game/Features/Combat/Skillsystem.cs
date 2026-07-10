@@ -583,8 +583,8 @@ public class SkillSystem : MonoBehaviour
                 else if (TryGetWaterVfx(data, out GameObject wvfx2, out float wscale2))
                 {
                     // 물 하자드(탄환세례 202·급류 203): center에 VFX 1회 소환·재생.
-                    // 탄환세례(202)만 물대포 연출 — 판정은 center(타겟 존) 그대로 두고,
-                    // VFX는 플레이어 머리 위(발사점 + 오프셋)에서 뿜는다. (QA: 몬스터 위치에서 발동돼 어색)
+                    // 탄환세례(202)는 물대포 — 판정은 PlayerColumn(플레이어 위 세로 컬럼, 부트스트랩 설정)이고,
+                    // VFX는 플레이어 머리 위(발사점 + 오프셋)에서 위로 뿜는다.
                     Vector2 waterVfxPos = center;
                     if (data.StandardID == 202 && _firePoint != null && WaterVfx != null)
                         waterVfxPos = (Vector2)_firePoint.position + new Vector2(0f, WaterVfx.bulletShowerHeadOffsetY);
