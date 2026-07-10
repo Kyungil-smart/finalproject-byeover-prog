@@ -76,6 +76,9 @@ public class InGameNextSceneLoader : MonoBehaviour
     if (!isCleared || GameManager.Instance == null)
         return;
 
+    if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
+        return;
+    
     if (_resultPopup == null)
     {
         Debug.LogError("[InGameNextSceneLoader] ResultPopup이 연결되지 않았습니다.", this);
