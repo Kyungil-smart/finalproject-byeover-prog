@@ -6,6 +6,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 스킬 DB에 기반하여 조합식 등록하는 함수 추가
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인챈트 교체로 제거된 스킬 인챈트가 자동공격/콤보/조합 발동 목록에 남지 않도록 제거 이벤트 처리 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -60,6 +63,7 @@ public class SkillEnchantSystem : MonoBehaviour
         if (_enchantModel == null) return;
         _enchantModel.OnSkillAcquired += HandleChanged;
         _enchantModel.OnSkillLevelUp += HandleChanged;
+        _enchantModel.OnSkillRemoved += HandleRemoved;
     }
 
     private void Unsubscribe()
@@ -67,6 +71,7 @@ public class SkillEnchantSystem : MonoBehaviour
         if (_enchantModel == null) return;
         _enchantModel.OnSkillAcquired -= HandleChanged;
         _enchantModel.OnSkillLevelUp -= HandleChanged;
+        _enchantModel.OnSkillRemoved -= HandleRemoved;
     }
 
     private void OnDestroy() => Unsubscribe();
@@ -74,6 +79,11 @@ public class SkillEnchantSystem : MonoBehaviour
     private void HandleChanged(int enchantId, int level)
     {
         Apply(enchantId, level);
+    }
+
+    private void HandleRemoved(int enchantId)
+    {
+        Remove(enchantId);
     }
 
     /// <summary>
@@ -270,6 +280,29 @@ public class SkillEnchantSystem : MonoBehaviour
     }
     
     // DB기반 스킬 획득 처리 시 사용
+    private void Remove(int enchantId)
+    {
+        int legacyEnchantId = ResolveLegacyEnchantId(enchantId);
+
+        var repo = Legacy_DataManager.Instance != null ? Legacy_DataManager.Instance.CharacterRepo : null;
+        var master = repo != null ? repo.GetEnchantMaster(legacyEnchantId) : null;
+        if (master == null || master.LinkedSkillID <= 0)
+        {
+            return;
+        }
+
+        int baseId = master.LinkedSkillID;
+        int standardId = baseId / 10;
+
+        _skillSystem?.UnregisterAutoAttackSkillByStandardId(standardId);
+        _skillSystem?.UnregisterComboSkillByStandardId(standardId);
+
+        _combinationModel?.UnregisterRecipe(enchantId);
+        _combinationModel?.UnregisterRecipe(baseId);
+
+        Debug.Log($"[SkillEnchantSystem] Removed enchant trigger. nameId={enchantId}, legacyId={legacyEnchantId}, standardId={standardId}");
+    }
+
     private void RegisterCombinationFromTable(SkillTableData skillData, int nameId, int currentSkillId)
     {
         if (skillData.SkillGroup_ID == EnchantModel.GROUP_COMBINATION_SKILL)

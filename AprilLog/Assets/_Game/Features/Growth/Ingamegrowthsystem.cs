@@ -13,6 +13,9 @@
 // 수정자 : 김영찬
 // 몬스터 사망 시 획득 Exp와 연결 완료
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 데드락 경험치 패널티 즉시 적용 제거 및 안내 팝업 예 선택 적용 분리
+
 using System;
 using UnityEngine;
  
@@ -85,9 +88,8 @@ public class InGameGrowthSystem : MonoBehaviour
         if (_spawner != null)
             _spawner.OnMonsterDied += HandleMonsterDied;
 
-        // 데드락 발생 시 EXP 10% 감소(기획 4-2-6) 연결
-        if (_sortSystem != null)
-            _sortSystem.OnDeadlockDetected += ApplyDeadlockPenalty;
+        // 데드락 패널티 수동 적용 전환
+        // 추가: 조규민 - 데드락 패널티 안내 팝업 예 선택 시 적용
     }
 
     private void OnDisable()
@@ -95,8 +97,7 @@ public class InGameGrowthSystem : MonoBehaviour
         if (_spawner != null)
             _spawner.OnMonsterDied -= HandleMonsterDied;
 
-        if (_sortSystem != null)
-            _sortSystem.OnDeadlockDetected -= ApplyDeadlockPenalty;
+        // 데드락 패널티 자동 구독 없음.
     }
  
     private void HandleMonsterDied(MonsterAI monster, bool isKamikaze = false)

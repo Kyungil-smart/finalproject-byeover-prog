@@ -76,6 +76,9 @@ public class InGameNextSceneLoader : MonoBehaviour
     if (!isCleared || GameManager.Instance == null)
         return;
 
+    if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
+        return;
+    
     if (_resultPopup == null)
     {
         Debug.LogError("[InGameNextSceneLoader] ResultPopup이 연결되지 않았습니다.", this);
@@ -162,9 +165,12 @@ public class InGameNextSceneLoader : MonoBehaviour
         var data = DataManager.Instance.StoryRepo.GetTriggerDataByChapterID(chapterId, SCENARIO_TRIGGER_CHAPTER_END);
         if(data == null) return false;
         
-        groupId = data.Story_ID;
-        if (groupId == -1) return false;
+        bool alreadyRead = GameManager.Instance.IsFirstReadScenario(data.Story_ID);
+
+        if (alreadyRead) return false;
         
-        return GameManager.Instance.IsFirstReadScenario(groupId);
+        groupId = data.Story_ID; 
+        return true;
+
     }
 }

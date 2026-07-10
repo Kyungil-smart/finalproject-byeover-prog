@@ -9,6 +9,9 @@
 // 수정내용 : 모든 플레이어 공격을 직선 탄 전용 경로로 발사하여 발사 시 객체 생성을 줄임.
 // 수정내용 : ProjectileController.Setup과 SetupStraight의 사용 기준을 호출부 주석으로 명확화.
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인챈트 교체 시 제거된 자동공격/콤보 스킬 등록을 해제할 수 있는 API 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -255,6 +258,19 @@ public class SkillSystem : MonoBehaviour
     }
 
     /// <summary>같은 스킬군(StandardID)의 기존 등록을 제거하고 새로 등록 (인챈트 레벨업 시 상위 레벨로 교체).</summary>
+    public void UnregisterAutoAttackSkillByStandardId(int standardId)
+    {
+        for (int i = _autoAttackSkills.Count - 1; i >= 0; i--)
+        {
+            if (_autoAttackSkills[i].data == null || _autoAttackSkills[i].data.StandardID != standardId)
+            {
+                continue;
+            }
+
+            _autoAttackSkills.RemoveAt(i);
+        }
+    }
+
     public void ReplaceComboSkill(int comboMultiple, Legacy_SkillData data)
     {
         if (data == null) return;
@@ -265,6 +281,19 @@ public class SkillSystem : MonoBehaviour
     }
 
     /// <summary>장판형 스킬 등록. 등록된 SkillID는 FireSkill에서 투사체 대신 장판으로 발동된다.</summary>
+    public void UnregisterComboSkillByStandardId(int standardId)
+    {
+        for (int i = _comboSkills.Count - 1; i >= 0; i--)
+        {
+            if (_comboSkills[i].data == null || _comboSkills[i].data.StandardID != standardId)
+            {
+                continue;
+            }
+
+            _comboSkills.RemoveAt(i);
+        }
+    }
+
     public void RegisterHazardSkill(int skillId, HazardConfig config)
     {
         _hazardConfigs[skillId] = config;
