@@ -10,6 +10,9 @@
 // 3차 수정자 : 김영찬
 // 수정 내용 : 씬 전환을 InGameNextSceneLoader.cs에서 일괄 담당하도록 함. 실제 로비 이동 부분을 이벤트 발송만 남김
 
+// 4차 수정자 : 최동훈
+// 수정 내용 : 연출 시스템과의 시간 충돌 방지를 위해 IsEffectPlaying 상태값 도입
+
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -25,10 +28,10 @@ public class ScreenNavigator : MonoBehaviour
     [Header("팝업 참조")]
     [Tooltip("인챈트 선택 팝업")]
     [SerializeField] private GameObject _enchantSelectPopup;
-    
+
     [Tooltip("인챈트 교체 팝업")]
     [SerializeField] private GameObject _enchantChangePopup;
-    
+
     [Tooltip("인첸트 리스트 팝업")]
     [SerializeField] private GameObject _enchantListPopup;
 
@@ -37,30 +40,30 @@ public class ScreenNavigator : MonoBehaviour
 
     [Tooltip("옵션 팝업")]
     [SerializeField] private GameObject _optionPopup;
-    
+
     [Tooltip("로비로 이동 팝업")]
     [SerializeField] private GameObject _toLobbyPopup;
-    
+
     [Tooltip("콤보 텍스트 팝업")]
     [SerializeField] private GameObject _comboTextPopup;
-    
+
     [Header("특수 웨이브 팝업 참조")]
     [SerializeField] private InGameHUDView _inGameHUDView;
     [SerializeField] private GameObject _rushWavePopup;
     [SerializeField] private GameObject _bossWavePopup;
-    
-    [Header("팝업 시간")] 
-    [SerializeField][Range(0,10f)] private float _comboPopupTime = 1.5f;
-    [SerializeField][Range(0,10f)] private float _specialWavePopupTime = 3f;
+
+    [Header("팝업 시간")]
+    [SerializeField][Range(0, 10f)] private float _comboPopupTime = 1.5f;
+    [SerializeField][Range(0, 10f)] private float _specialWavePopupTime = 3f;
 
     // ---------- private ----------
     private float _comboPopupTimer;
     private float _wavePopupTimer;
-    
+
     private bool _comboTimerActive;
     private bool _waveTimerActive;
     private bool _isLoadingLobby;
-    
+
     // ---------- Event ----------
     public event Action OnLobbyClicked;
 
@@ -76,7 +79,7 @@ public class ScreenNavigator : MonoBehaviour
         _inGameHUDView.OnComboTimerActive -= ShowComboTextPopup;
         _inGameHUDView.OnSpecialWaveActive -= ShowWavePopup;
     }
-    
+
     // ---------- 최초에 비활성화 하지만 혹시 모르니 Start에 다시 비활성화 시킴 ----------
     private void Start()
     {
@@ -90,16 +93,16 @@ public class ScreenNavigator : MonoBehaviour
         HideWavePopup();
         CloseMenu();
     }
-    
+
     // ---------- 시간 계산 ----------
     private void Update()
     {
         Tick(Time.deltaTime);
     }
-    
+
     private void Tick(float deltaTime)
     {
-        if(_comboTimerActive)
+        if (_comboTimerActive)
         {
             _comboPopupTimer += deltaTime;
 
@@ -108,7 +111,7 @@ public class ScreenNavigator : MonoBehaviour
                 HideComboTextPopup();
             }
         }
-        if(_waveTimerActive)
+        if (_waveTimerActive)
         {
             _wavePopupTimer += deltaTime;
 
@@ -118,17 +121,17 @@ public class ScreenNavigator : MonoBehaviour
             }
         }
     }
-    
+
     private void ResetComboPopupTimer()
     {
         _comboPopupTimer = 0;
     }
-    
+
     private void ResetWavePopupTimer()
     {
         _wavePopupTimer = 0;
     }
-    
+
     // ---------- 인챈트 선택 ----------
     public void ShowEnchantSelection()
     {
@@ -142,10 +145,11 @@ public class ScreenNavigator : MonoBehaviour
         if (_enchantSelectPopup != null)
             _enchantSelectPopup.SetActive(false);
     }
-    
+
     // ---------- 인챈트 교체 ----------
     public void ShowEnchantChange()
     {
+        OpenMenu();
         if (_enchantChangePopup != null)
             _enchantChangePopup.SetActive(true);
     }
@@ -154,8 +158,9 @@ public class ScreenNavigator : MonoBehaviour
     {
         if (_enchantChangePopup != null)
             _enchantChangePopup.SetActive(false);
+        CloseMenu();
     }
-    
+
     // ---------- 인챈트 목록 ----------
     public void ShowEnchantList()
     {
@@ -211,11 +216,12 @@ public class ScreenNavigator : MonoBehaviour
         if (_toLobbyPopup != null)
             _toLobbyPopup.SetActive(false);
     }
-    
+
     // ---------- 게임 일시 정지 / 해제 ----------
     /// <summary>정지형 팝업(인챈트 선택/교체·정산 등)이 열려 있는지. 다른 시스템(데드락 연출 등)이
     /// timeScale을 복구할 때 팝업 정지를 짓밟지 않도록 이 값을 확인해야 한다.</summary>
     public static bool IsMenuOpen { get; private set; }
+    public static bool IsEffectPlaying { get; set; }
 
     private void OpenMenu()
     {
@@ -226,8 +232,22 @@ public class ScreenNavigator : MonoBehaviour
 
     private void CloseMenu()
     {
+        if (IsEffectPlaying) return;
+
+        if (IsAnyPopupActive()) return;
+
         IsMenuOpen = false;
         Time.timeScale = 1f;
+    }
+
+    private bool IsAnyPopupActive()
+    {
+        return (_enchantSelectPopup.activeSelf ||
+                _enchantChangePopup.activeSelf ||
+                _enchantListPopup.activeSelf ||
+                _optionPopup.activeSelf ||
+                _settlementPopup.activeSelf ||
+                _toLobbyPopup.activeSelf);
     }
 
     // ---------- UI 버튼 연동 ----------
@@ -236,7 +256,7 @@ public class ScreenNavigator : MonoBehaviour
         OpenMenu();
         ShowEnchantList();
     }
-    
+
     public void OnCloseButtonClick()
     {
         HideEnchantSelection();
@@ -271,7 +291,7 @@ public class ScreenNavigator : MonoBehaviour
         Debug.Log("[ScreenNavigator] 로비로 이동");
         OnLobbyClicked?.Invoke();
     }
-    
+
     // ---------- 특수 웨이브 ----------
     private void ShowWavePopup(StageModel.SpawnType spawnType)
     {
@@ -284,9 +304,9 @@ public class ScreenNavigator : MonoBehaviour
         {
             popupObject = _bossWavePopup;
         }
-        
-        if(popupObject == null) return;
-        
+
+        if (popupObject == null) return;
+
         popupObject.SetActive(true);
         ResetWavePopupTimer();
         _waveTimerActive = true;
@@ -294,17 +314,17 @@ public class ScreenNavigator : MonoBehaviour
 
     private void HideWavePopup()
     {
-        if(_bossWavePopup != null && _bossWavePopup.activeInHierarchy)
+        if (_bossWavePopup != null && _bossWavePopup.activeInHierarchy)
             _bossWavePopup.SetActive(false);
-        if(_rushWavePopup != null  && _rushWavePopup.activeInHierarchy)
+        if (_rushWavePopup != null && _rushWavePopup.activeInHierarchy)
             _rushWavePopup.SetActive(false);
         _waveTimerActive = false;
     }
-    
+
     // ---------- 콤보 텍스트 ----------
     private void ShowComboTextPopup()
     {
-        if(_comboTextPopup != null)
+        if (_comboTextPopup != null)
             _comboTextPopup.SetActive(true);
         ResetComboPopupTimer();
         _comboTimerActive = true;
@@ -312,7 +332,7 @@ public class ScreenNavigator : MonoBehaviour
 
     private void HideComboTextPopup()
     {
-        if(_comboTextPopup != null)
+        if (_comboTextPopup != null)
             _comboTextPopup.SetActive(false);
         _comboTimerActive = false;
     }
