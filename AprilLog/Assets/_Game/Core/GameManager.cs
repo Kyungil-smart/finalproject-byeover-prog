@@ -1095,7 +1095,7 @@ public class GameManager : MonoBehaviour
 
     /// <summary>다중 비용 원자 차감 — 전부 검사한 뒤 전부 차감하고 영속/이벤트는 1회만 처리한다.
     /// 아티팩트 강화(골드+강화석)처럼 비용이 여러 개일 때 수동 롤백 없이 이걸 쓴다. 하나라도 부족하면 false(변경 없음).</summary>
-    public bool TrySpendResources(string reason, bool autoSave = true, params (int itemId, int amount)[] costs)
+    public bool TrySpendResources(string reason, params (int itemId, int amount)[] costs)
     {
         var repo = DataManager.Instance?.ResourceRepo;
         if (repo == null || costs == null) return false;
@@ -1131,7 +1131,7 @@ public class GameManager : MonoBehaviour
 
         Debug.Log($"[재화] 지출 ({reason}): {detail}");
         foreach (var cost in merged) RaiseItemChanged(cost.Key);
-        if(autoSave) SyncAndSaveResourceCloudData();
+        SyncAndSaveResourceCloudData();
         return true;
     }
     
