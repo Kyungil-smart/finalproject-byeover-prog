@@ -159,6 +159,16 @@ public class GameStartBridge : MonoBehaviour
             Debug.LogWarning("[GameStartBridge] 해당 챕터의 정보를 찾을수 없습니다. 스태미너 소모를 중단합니다.");
             return false;
         }
+
+        if (GameManager.Instance != null || GameManager.Instance.HasLocalSave())
+        {
+            var saveData = GameManager.Instance.LoadLocalSaveData();
+            if (saveData != null && saveData.chapterId == chapterId)
+            {
+                Debug.Log("[GameStartBridge] 저장된 진행사항 확인. 스태미너 소모 0");
+                return true;
+            }
+        }
         
         int cost = Mathf.Max(0, data.StaminaCost);
         if (cost == 0) return true;
