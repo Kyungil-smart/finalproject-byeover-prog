@@ -7,6 +7,9 @@
 // 수정자 : 김영찬 
 // 수정 내용 : 조합식 등록 이벤트를 받기 위한 함수 수정
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 조합 인챈트 교체 시 제거된 레시피 슬롯을 전체 초기화하도록 View API 추가
+
 using UnityEngine;
 
 /// <summary>
@@ -83,5 +86,11 @@ public class CombinationView : MonoBehaviour, ICombinationView
     {
         if (_recipeSlots == null || slotIdx >= _recipeSlots.Length) return;
         _recipeSlots[slotIdx].ClearProgress();
+    }
+
+    public void ClearRegisteredRecipe(int slotIdx)
+    {
+        if (_recipeSlots == null || slotIdx < 0 || slotIdx >= _recipeSlots.Length) return;
+        _recipeSlots[slotIdx].ClearSlot();
     }
 }
