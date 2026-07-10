@@ -21,8 +21,6 @@ public class EliteRewardEffect : MonoBehaviour
 
     public void PlayRewardEffect(Action onComplete)
     {
-        ScreenNavigator.IsEffectPlaying = true;
-        Time.timeScale = 0f;
         _container.SetActive(true);
 
         _EffectImageRect.localScale = Vector3.zero;
@@ -31,6 +29,8 @@ public class EliteRewardEffect : MonoBehaviour
         joker1.gameObject.SetActive(true);
         joker2.gameObject.SetActive(true);
         EnchantUnit.gameObject.SetActive(true);
+
+        Time.timeScale = 0f;
 
         Sequence seq = DOTween.Sequence().SetUpdate(true);
 
@@ -48,19 +48,13 @@ public class EliteRewardEffect : MonoBehaviour
         {
             EnchantUnit.PlayEnchantEffect(_enchantCount, () =>
             {
+                Time.timeScale = 1.0f;
                 _container.SetActive(false);
-
-                ScreenNavigator.IsEffectPlaying = false;
 
                 if (jokerSystem != null)
                 {
                     jokerSystem.RestoreJokerImages();
                     Debug.Log("[Reward] 조커 충전 완료");
-                }
-
-                if (!ScreenNavigator.IsMenuOpen && !ScreenNavigator.IsEffectPlaying)
-                {
-                    Time.timeScale = 1.0f;
                 }
 
                 onComplete?.Invoke();

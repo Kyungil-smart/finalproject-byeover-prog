@@ -10,9 +10,6 @@
 // 3차 수정자 : 김영찬
 // 수정 내용 : 씬 전환을 InGameNextSceneLoader.cs에서 일괄 담당하도록 함. 실제 로비 이동 부분을 이벤트 발송만 남김
 
-// 4차 수정자 : 최동훈
-// 수정 내용 : 연출 시스템과의 시간 충돌 방지를 위해 IsEffectPlaying 상태값 도입
-
 using System;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -149,7 +146,6 @@ public class ScreenNavigator : MonoBehaviour
     // ---------- 인챈트 교체 ----------
     public void ShowEnchantChange()
     {
-        OpenMenu();
         if (_enchantChangePopup != null)
             _enchantChangePopup.SetActive(true);
     }
@@ -158,7 +154,6 @@ public class ScreenNavigator : MonoBehaviour
     {
         if (_enchantChangePopup != null)
             _enchantChangePopup.SetActive(false);
-        CloseMenu();
     }
     
     // ---------- 인챈트 목록 ----------
@@ -221,7 +216,6 @@ public class ScreenNavigator : MonoBehaviour
     /// <summary>정지형 팝업(인챈트 선택/교체·정산 등)이 열려 있는지. 다른 시스템(데드락 연출 등)이
     /// timeScale을 복구할 때 팝업 정지를 짓밟지 않도록 이 값을 확인해야 한다.</summary>
     public static bool IsMenuOpen { get; private set; }
-    public static bool IsEffectPlaying { get; set; }
 
     private void OpenMenu()
     {
@@ -232,22 +226,8 @@ public class ScreenNavigator : MonoBehaviour
 
     private void CloseMenu()
     {
-        if (IsEffectPlaying) return;
-
-        if (IsAnyPopupActive()) return;
-
         IsMenuOpen = false;
         Time.timeScale = 1f;
-    }
-
-    private bool IsAnyPopupActive()
-    {
-        return (_enchantSelectPopup.activeSelf ||
-                _enchantChangePopup.activeSelf ||
-                _enchantListPopup.activeSelf ||
-                _optionPopup.activeSelf ||
-                _settlementPopup.activeSelf ||
-                _toLobbyPopup.activeSelf);
     }
 
     // ---------- UI 버튼 연동 ----------
