@@ -144,6 +144,7 @@ public class GameStartBridge : MonoBehaviour
         if (GameManager.Instance == null)
         {
             StartCoroutine(LoadSceneCoroutine(STORY_SCENE_NAME));
+            return;
         }
 
         GameManager.Instance.LoadScenarioByGroupId(groupId);

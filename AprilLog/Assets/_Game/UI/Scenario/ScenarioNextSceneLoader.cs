@@ -68,6 +68,10 @@ public class ScenarioNextSceneLoader : MonoBehaviour
 
     private void PlayContinue(int groupId)
     {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SelectedScenarioGroupId = groupId;
+        }
         _driver.Play(groupId);
     }
 
