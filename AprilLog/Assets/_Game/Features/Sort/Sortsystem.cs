@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 로드 기능 추가 및 현재 진행 중 시드 세이브
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 데드락 자동 패널티/퍼즐 재생성 제거 및 안내 팝업 선택 결과 기반 복구 분리
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -37,6 +40,7 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
     // ---------- Private ----------
     private bool _isProcessing;
+    private bool _isDeadlockRecoveryPending;
     private System.Random _rng;
     // FillEmptyTablesFromQueue() 안에 if (!_isAutoFillEnabled) return;이랑 후에 삭제
     private bool _isAutoFillEnabled = true;
@@ -387,8 +391,43 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     // ---------- 데드락 ----------
     private void CheckDeadlock()
     {
+        if (_isDeadlockRecoveryPending) return;
+        if (_deadlockDetector == null || _model == null) return;
         if (_deadlockDetector.IsDeadlock(_model))
-            StartCoroutine(HandleDeadlock());
+            RequestDeadlockRecovery();
+    }
+
+    private void RequestDeadlockRecovery()
+    {
+        if (_isDeadlockRecoveryPending) return;
+
+        _isProcessing = true;
+        _isDeadlockRecoveryPending = true;
+
+        Time.timeScale = 0f;
+        OnDeadlockDetected?.Invoke();
+    }
+
+    // 추가: 조규민 - 안내 팝업 예 선택 시 경험치 패널티 후 퍼즐 재생성
+    public void RecoverFromDeadlock()
+    {
+        if (!_isDeadlockRecoveryPending) return;
+
+        _model.ResetBoard();
+        FillEmptyTablesFromQueue();
+
+        _isDeadlockRecoveryPending = false;
+        Time.timeScale = ScreenNavigator.IsMenuOpen ? 0f : 1f;
+        _isProcessing = false;
+    }
+
+    public void CancelDeadlockRecovery()
+    {
+        if (!_isDeadlockRecoveryPending) return;
+
+        _isDeadlockRecoveryPending = false;
+        Time.timeScale = ScreenNavigator.IsMenuOpen ? 0f : 1f;
+        _isProcessing = false;
     }
 
     private IEnumerator HandleDeadlock()
