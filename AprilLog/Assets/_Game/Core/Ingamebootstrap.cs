@@ -25,6 +25,9 @@
 // 8차 수정자 : 김영찬
 // 데이터 로드 개선
 
+// 9차 수정자 : 조규민
+// 수정 내용 : 정산 UI가 실제 지급된 초회/반복 재화 보상 내역을 슬롯 단위로 표시하도록 보상 표시 목록 생성 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -492,14 +495,30 @@ public class InGameBootstrap : MonoBehaviour
         int gold = 0;
         int parchment = 0;
         int diamond = 0;
+        Dictionary<int, long> _firstRewardAmounts = CreateCurrencyRewardMap();
+        Dictionary<int, long> _repeatRewardAmounts = CreateCurrencyRewardMap();
         
         var battleRewards = _rewardManager != null ?
             _rewardManager.GetAndClearAccumulatedRewards() : null;
         if (battleRewards != null && battleRewards.Count > 0)
         {
-            if(battleRewards.TryGetValue(goldId, out var battleGold)) gold += battleGold;
-            if(battleRewards.TryGetValue(parchmentId, out var battleParchment)) parchment += battleParchment;
-            if(battleRewards.TryGetValue(diamondId, out var battleDiamond)) diamond += battleDiamond;
+            if(battleRewards.TryGetValue(goldId, out var battleGold))
+            {
+                gold += battleGold;
+                AddCurrencyRewardAmount(_repeatRewardAmounts, goldId, battleGold);
+            }
+
+            if(battleRewards.TryGetValue(parchmentId, out var battleParchment))
+            {
+                parchment += battleParchment;
+                AddCurrencyRewardAmount(_repeatRewardAmounts, parchmentId, battleParchment);
+            }
+
+            if(battleRewards.TryGetValue(diamondId, out var battleDiamond))
+            {
+                diamond += battleDiamond;
+                AddCurrencyRewardAmount(_repeatRewardAmounts, diamondId, battleDiamond);
+            }
         }
 
         var loop = FindFirstObjectByType<StageLoopManager>();
@@ -523,12 +542,18 @@ public class InGameBootstrap : MonoBehaviour
                 {
                     case goldId:
                         gold += data.amount;
+                        AddCurrencyRewardAmount(_repeatRewardAmounts, goldId, data.amount);
                         break;
                     case parchmentId:
                         parchment += data.amount;
+                        AddCurrencyRewardAmount(_repeatRewardAmounts, parchmentId, data.amount);
                         break;
                     case diamondId:
                         diamond += data.amount;
+                        AddCurrencyRewardAmount(_repeatRewardAmounts, diamondId, data.amount);
+                        break;
+                    default:
+                        Debug.LogWarning($"[InGameBootstrap] 정산 UI는 재화 3종만 표시합니다. 반복 보상 아이템 ID {data.itemId}는 표시에서 제외됩니다.");
                         break;
                 }
             }
@@ -551,12 +576,18 @@ public class InGameBootstrap : MonoBehaviour
                     {
                         case goldId:
                             gold += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, goldId, data.amount);
                             break;
                         case parchmentId:
                             parchment += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, parchmentId, data.amount);
                             break;
                         case diamondId:
                             diamond += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, diamondId, data.amount);
+                            break;
+                        default:
+                            Debug.LogWarning($"[InGameBootstrap] 정산 UI는 재화 3종만 표시합니다. 챕터 초회 보상 아이템 ID {data.itemId}는 표시에서 제외됩니다.");
                             break;
                     }
                 }
@@ -573,12 +604,18 @@ public class InGameBootstrap : MonoBehaviour
                     {
                         case goldId:
                             gold += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, goldId, data.amount);
                             break;
                         case parchmentId:
                             parchment += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, parchmentId, data.amount);
                             break;
                         case diamondId:
                             diamond += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, diamondId, data.amount);
+                            break;
+                        default:
+                            Debug.LogWarning($"[InGameBootstrap] 정산 UI는 재화 3종만 표시합니다. 스테이지 초회 보상 아이템 ID {data.itemId}는 표시에서 제외됩니다.");
                             break;
                     }
                 }
@@ -587,7 +624,8 @@ public class InGameBootstrap : MonoBehaviour
             _settlementRewardGranted = true;
         }
 
-        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment, diamond);
+        List<ResultRewardEntry> _resultRewardEntries = CreateResultRewardEntries(_firstRewardAmounts, _repeatRewardAmounts);
+        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment, diamond, _resultRewardEntries);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
         // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.
@@ -621,6 +659,61 @@ public class InGameBootstrap : MonoBehaviour
     }
 
     // 실제 웨이브로 진행하므로 에디터 테스트용 더미 스포너를 끈다.
+    private static Dictionary<int, long> CreateCurrencyRewardMap()
+    {
+        return new Dictionary<int, long>
+        {
+            { 70001, 0 },
+            { 70002, 0 },
+            { 70003, 0 }
+        };
+    }
+
+    private static void AddCurrencyRewardAmount(Dictionary<int, long> _rewardAmounts, int _itemId, long _amount)
+    {
+        if (_amount <= 0 || _rewardAmounts == null || !_rewardAmounts.ContainsKey(_itemId))
+        {
+            return;
+        }
+
+        _rewardAmounts[_itemId] += _amount;
+    }
+
+    private static List<ResultRewardEntry> CreateResultRewardEntries(
+        Dictionary<int, long> _firstRewardAmounts,
+        Dictionary<int, long> _repeatRewardAmounts)
+    {
+        List<ResultRewardEntry> _entries = new List<ResultRewardEntry>(6);
+
+        AddResultRewardEntry(_entries, _firstRewardAmounts, 70001, "초회 보상");
+        AddResultRewardEntry(_entries, _firstRewardAmounts, 70002, "초회 보상");
+        AddResultRewardEntry(_entries, _firstRewardAmounts, 70003, "초회 보상");
+        AddResultRewardEntry(_entries, _repeatRewardAmounts, 70001, "반복 보상");
+        AddResultRewardEntry(_entries, _repeatRewardAmounts, 70002, "반복 보상");
+        AddResultRewardEntry(_entries, _repeatRewardAmounts, 70003, "반복 보상");
+
+        return _entries;
+    }
+
+    private static void AddResultRewardEntry(
+        List<ResultRewardEntry> _entries,
+        Dictionary<int, long> _rewardAmounts,
+        int _itemId,
+        string _label)
+    {
+        if (_entries == null || _rewardAmounts == null)
+        {
+            return;
+        }
+
+        if (!_rewardAmounts.TryGetValue(_itemId, out long _amount) || _amount <= 0)
+        {
+            return;
+        }
+
+        _entries.Add(new ResultRewardEntry(_itemId, _amount, _label));
+    }
+
     private void DisableDummyTester()
     {
 #if UNITY_EDITOR
