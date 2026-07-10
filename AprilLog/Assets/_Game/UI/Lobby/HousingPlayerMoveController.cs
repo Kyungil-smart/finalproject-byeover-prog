@@ -125,7 +125,8 @@ public class HousingPlayerMoveController : MonoBehaviour
             return;
         }
 
-        // SFX 가이드 하우징 3: 에이프릴 이동 발소리. 매 프레임 호출돼도 라이브러리 재생 간격(0.2초)이 걸음 리듬을 만든다.
+        // SFX 가이드 하우징 3: 에이프릴 이동 발소리. 매 프레임 호출돼도 걸음 리듬/볼륨은
+        // SoundLibrary(id 61)의 minInterval/volume이 결정한다 — 튜닝은 코드가 아니라 라이브러리에서.
         AudioManager.Play(SfxId.HousingFootstep);
 
         Vector3 _nextPosition = Vector3.MoveTowards(

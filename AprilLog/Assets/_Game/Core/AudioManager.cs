@@ -21,6 +21,10 @@ public class AudioManager : MonoBehaviour
     public static void Play(SfxId id) => Ensure().PlaySfx(id);
     public static void Bgm(SfxId id) => Ensure().PlayBgm(id);
 
+    /// <summary>SFX를 최대 maxSeconds까지만 재생한다. 클립이 스킬 이펙트보다 길어 이펙트 종료 후에도
+    /// 소리가 남을 때 이펙트 길이에 맞춰 끊는 용도(공유 소스의 PlayOneShot은 개별 정지가 불가능해 전용 소스로 재생).</summary>
+    public static void Play(SfxId id, float maxSeconds) => Ensure().PlaySfxCapped(id, maxSeconds);
+
     public static AudioManager Ensure()
     {
         if (Instance != null) return Instance;
@@ -71,6 +75,46 @@ public class AudioManager : MonoBehaviour
         if (block > 0f) _blockedUntil[id] = now + block;
 
         _sfxSource.PlayOneShot(entry.clip, Mathf.Clamp01(entry.volume));
+    }
+
+    private void PlaySfxCapped(SfxId id, float maxSeconds)
+    {
+        var entry = Library != null ? Library.Get(id) : null;
+        if (entry == null || entry.clip == null || maxSeconds <= 0f) return;
+
+        float now = Time.unscaledTime;
+        if (_blockedUntil.TryGetValue(id, out float until) && now < until) return;
+
+        float block = entry.allowOverlap ? 0f : Mathf.Min(entry.clip.length, maxSeconds);
+        if (entry.minInterval > block) block = entry.minInterval;
+        if (block > 0f) _blockedUntil[id] = now + block;
+
+        StartCoroutine(PlayCappedRoutine(entry.clip, Mathf.Clamp01(entry.volume), maxSeconds));
+    }
+
+    private System.Collections.IEnumerator PlayCappedRoutine(AudioClip clip, float volume, float maxSeconds)
+    {
+        // 전용 소스라 SFX 채널 볼륨을 직접 곱해준다 (PlayOneShot은 소스 볼륨이 자동 적용되지만 여기선 수동).
+        var go = new GameObject("SfxCapped");
+        go.transform.SetParent(transform, false);
+        var src = go.AddComponent<AudioSource>();
+        float baseVolume = volume * (_sfxSource != null ? _sfxSource.volume : 1f);
+        src.clip = clip;
+        src.volume = baseVolume;
+        src.Play();
+
+        float playTime = Mathf.Min(maxSeconds, clip.length);
+        const float fadeTime = 0.15f;   // 뚝 끊기는 클릭음 방지용 짧은 페이드아웃
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, playTime - fadeTime));
+
+        float t = 0f;
+        while (t < fadeTime && src != null)
+        {
+            t += Time.unscaledDeltaTime;
+            src.volume = baseVolume * Mathf.Clamp01(1f - t / fadeTime);
+            yield return null;
+        }
+        if (go != null) Destroy(go);
     }
 
     /// <summary>전체 볼륨 (AudioListener)</summary>

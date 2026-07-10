@@ -362,7 +362,11 @@ public class SkillSystem : MonoBehaviour
             case 105: AudioManager.Play(SfxId.StrongFire); break;
             case 204: AudioManager.Play(SfxId.StrongWater); break;
             case 304: AudioManager.Play(SfxId.StrongWind); break;
-            case 405: AudioManager.Play(SfxId.StrongLightning); break;
+            case 405:
+                // 뇌격 클립이 레이저 빔 지속시간보다 길어 이펙트 종료 후에도 소리가 남는다 → 빔 지속만큼만 재생.
+                AudioManager.Play(SfxId.StrongLightning,
+                    LightningVfx != null && LightningVfx.laserSustainSec > 0f ? LightningVfx.laserSustainSec : 2f);
+                break;
             case 504: AudioManager.Play(SfxId.StrongIce); break;
         }
 

@@ -49,9 +49,9 @@ public class FireSkillVfxLibrary : ScriptableObject
     [Tooltip("얼음 결정 504 — Eff_Water_Epic_IceStorm_08")]
     public GameObject iceStormVfx;
     public float iceStormScale = 1f;
-    [Tooltip("절대영도 505 — Eff_Water_Common_IceshowerSkill_01")]
+    [Tooltip("절대영도 505 — Eff_Water_Common_IceshowerSkill_01. 프리팹 scalingMode를 Hierarchy로 바꿔 이 레버가 실제로 먹는다")]
     public GameObject absoluteZeroVfx;
-    public float absoluteZeroScale = 1f;
+    public float absoluteZeroScale = 0.5f;
 
     [Tooltip("생성 구역(ellipse) 표시 후 낙하 시작까지 (예고 시간)")]
     public float meteorTelegraph = 0.5f;
