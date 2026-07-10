@@ -6130,6 +6130,7 @@ GameObject:
   m_Component:
   - component: {fileID: 341681047}
   - component: {fileID: 341681046}
+  - component: {fileID: 341681048}
   m_Layer: 0
   m_Name: InGameBootstrap
   m_TagString: Untagged
@@ -6166,6 +6167,21 @@ MonoBehaviour:
   _defaultChapterId: 101
   _tutorialChapterId: 9901
   _tutorialReentryChapterId: 9801
+--- !u!114 &341681048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 341681045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b30d2a25f2247a4d93ec6d0cd64b4d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeadlockRecoveryBinder
+  _popupView: {fileID: 1066564777}
+  _sortSystem: {fileID: 834509328}
+  _growthSystem: {fileID: 851095196}
 --- !u!4 &341681047
 Transform:
   m_ObjectHideFlags: 0
