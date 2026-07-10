@@ -900,7 +900,9 @@ public class GameManager : MonoBehaviour
     {
         var data = CloudData ?? UserCloudData.CreateDefault();
         EnsureCloudIdentity(data);
-
+        
+        CloudData.firstReadScenarios ??= new List<int>();
+        
         if (!IsFirstReadScenario(groupId))
         {
             CloudData.firstReadScenarios.Add(groupId);
@@ -911,7 +913,11 @@ public class GameManager : MonoBehaviour
 
     public bool IsFirstReadScenario(int groupId)
     {
-        if (CloudData != null) return CloudData.firstReadScenarios.Contains(groupId);
+        if (CloudData != null)
+        {
+            CloudData.firstReadScenarios ??= new List<int>();
+            return CloudData.firstReadScenarios.Contains(groupId);
+        }
         
         Debug.LogWarning("[GameManager] 클라우드 데이터를 찾을 수 없음");
         return false;
@@ -976,13 +982,15 @@ public class GameManager : MonoBehaviour
 
         foreach (var data in rewardList)
         {
-            AddResource(data.itemId, data.amount);
+            AddResource(data.itemId, data.amount, "최초 클리어 보상", false);
             
             debugLog.Append($"+ID({data.itemId}): {data.amount} ");
         }
         
         debugLog.Append(")");
         Debug.Log(debugLog.ToString());
+        
+        SyncAndSaveResourceCloudData();
         return true;
     }
 
@@ -1038,19 +1046,19 @@ public class GameManager : MonoBehaviour
         => OnItemChanged?.Invoke(itemId, GetResourceCount(itemId));
 
     // 기존의 파편화된 함수 호출과 하드코딩된 분기를 이 안으로 완전히 격리함
-    public void AddResource(int itemId, int amount, string reason = null)
+    public void AddResource(int itemId, int amount, string reason = null, bool autoSave = true)
     {
         if (itemId == GoldId)
         {
-            AddCurrency(amount, 0, reason ?? "보상");
+            AddCurrency(amount, 0, reason ?? "보상", autoSave);
         }
         else if (itemId == ParchmentId)
         {
-            AddCurrency(0, amount, reason ?? "보상");
+            AddCurrency(0, amount, reason ?? "보상", autoSave);
         }
         else if (itemId == DiamondId)
         {
-            AddDiamond(amount, reason);
+            AddDiamond(amount, reason, autoSave);
         }
         else
         {
@@ -1058,36 +1066,36 @@ public class GameManager : MonoBehaviour
             DataManager.Instance.ResourceRepo.AddItem(itemId, amount);
             Debug.Log($"[재화] +아이템 {itemId} x{amount} ({reason}) → 보유 {GetResourceCount(itemId)}");
             RaiseItemChanged(itemId);
-            SyncAndSaveResourceCloudData();
+            if(autoSave) SyncAndSaveResourceCloudData();
         }
     }
 
-    public bool UseResource(int itemId, int amount)
+    public bool UseResource(int itemId, int amount, bool autoSave = true)
     {
         if (itemId == GoldId)
         {
-            return TrySpendCurrency(amount, 0);
+            return TrySpendCurrency(amount, 0, autoSave);
         }
         if (itemId == ParchmentId)
         {
-            return TrySpendCurrency(0, amount);
+            return TrySpendCurrency(0, amount, autoSave);
         }
         if (itemId == DiamondId)
         {
-            return TrySpendDiamond(amount);
+            return TrySpendDiamond(amount, autoSave);
         }
 
         var result = DataManager.Instance.ResourceRepo.UseItem(itemId, amount);
         if(!result) return false;
 
         RaiseItemChanged(itemId);
-        SyncAndSaveResourceCloudData();
+        if(autoSave) SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>다중 비용 원자 차감 — 전부 검사한 뒤 전부 차감하고 영속/이벤트는 1회만 처리한다.
     /// 아티팩트 강화(골드+강화석)처럼 비용이 여러 개일 때 수동 롤백 없이 이걸 쓴다. 하나라도 부족하면 false(변경 없음).</summary>
-    public bool TrySpendResources(string reason, params (int itemId, int amount)[] costs)
+    public bool TrySpendResources(string reason, bool autoSave = true, params (int itemId, int amount)[] costs)
     {
         var repo = DataManager.Instance?.ResourceRepo;
         if (repo == null || costs == null) return false;
@@ -1123,7 +1131,7 @@ public class GameManager : MonoBehaviour
 
         Debug.Log($"[재화] 지출 ({reason}): {detail}");
         foreach (var cost in merged) RaiseItemChanged(cost.Key);
-        SyncAndSaveResourceCloudData();
+        if(autoSave) SyncAndSaveResourceCloudData();
         return true;
     }
     
@@ -1135,7 +1143,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>재화 가산 — 전투 보상/업적/로그인 보상 공통 진입점. reason은 로그·추적용.</summary>
-    public void AddCurrency(int gold, int parchment, string reason = null)
+    public void AddCurrency(int gold, int parchment, string reason = null, bool autoSave = true)
     {
         gold = Mathf.Max(0, gold);
         parchment = Mathf.Max(0, parchment);
@@ -1151,11 +1159,11 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {Gold} / 양피지 {Parchment}");
         if (gold > 0) RaiseItemChanged(GoldId);
         if (parchment > 0) RaiseItemChanged(ParchmentId);
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
 
     /// <summary>재화 차감 시도 — 상점/레벨업 등 소비 공통 진입점. 부족하면 false(변경 없음).</summary>
-    public bool TrySpendCurrency(int gold, int parchment)
+    public bool TrySpendCurrency(int gold, int parchment, bool autoSave = true)
     {
         if (!CanAffordCurrency(gold, parchment)) return false;
 
@@ -1180,12 +1188,12 @@ public class GameManager : MonoBehaviour
 
         if (gold > 0) RaiseItemChanged(GoldId);
         if (parchment > 0) RaiseItemChanged(ParchmentId);
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>재화를 지정 값으로 설정 — 하이드레이션/리셋·테스트용(가산 아님). 값 동일하면 무시.</summary>
-    public void SetCurrency(int gold, int parchment)
+    public void SetCurrency(int gold, int parchment, bool autoSave = true)
     {
         var repo = DataManager.Instance?.ResourceRepo;
         if (repo != null)
@@ -1193,7 +1201,7 @@ public class GameManager : MonoBehaviour
             repo.SetItemCount(GoldId, Mathf.Max(0, gold));
             repo.SetItemCount(ParchmentId, Mathf.Max(0, parchment));
         }
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
 
     // ===== 다이아 API (gold/parchment와 동일 패턴. 영속 원본 = CloudData.diamond) =====
@@ -1201,7 +1209,7 @@ public class GameManager : MonoBehaviour
         => CloudData != null && CloudData.diamond >= Mathf.Max(0, diamond);
 
     /// <summary>다이아 가산. reason은 로그·추적용.</summary>
-    public void AddDiamond(int diamond, string reason = null)
+    public void AddDiamond(int diamond, string reason = null, bool autoSave = true)
     {
         diamond = Mathf.Max(0, diamond);
         if (diamond == 0) return;
@@ -1209,11 +1217,11 @@ public class GameManager : MonoBehaviour
         DataManager.Instance?.ResourceRepo?.AddItem(DiamondId, diamond);
         Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {Diamond}");
         RaiseItemChanged(DiamondId);
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
 
     /// <summary>다이아 차감 시도. 부족하면 false(변경 없음).</summary>
-    public bool TrySpendDiamond(int diamond)
+    public bool TrySpendDiamond(int diamond, bool autoSave = true)
     {
         if (!CanAffordDiamond(diamond)) return false;
         
@@ -1229,15 +1237,15 @@ public class GameManager : MonoBehaviour
         }
 
         if (diamond > 0) RaiseItemChanged(DiamondId);
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>다이아를 지정 값으로 설정 — 하이드레이션/리셋·테스트용. 값 동일하면 무시.</summary>
-    public void SetDiamond(int diamond)
+    public void SetDiamond(int diamond, bool autoSave = true)
     {
         DataManager.Instance?.ResourceRepo?.SetItemCount(DiamondId, Mathf.Max(0, diamond));
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
     
     // ResourceRepo의 최신 상태를 CloudData로 복사 및 저장

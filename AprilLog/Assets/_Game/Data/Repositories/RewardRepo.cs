@@ -76,7 +76,7 @@ public class RewardRepo : MonoBehaviour
             }
 
             int step = currentChapterStep - startChapterStep;
-            rewardList.Add(new RewardRecipe { TargetId = chapterId, RewardId = data.DataId, currentStep = step });
+            rewardList.Add(new RewardRecipe { TargetId = data.StartId, RewardId = data.DataId, currentStep = step });
         }
     }
 }
@@ -104,7 +104,7 @@ public void GetFirstStageRewards(int stageId, out List<RewardRecipe> rewardList)
             }
 
             int step = currentStageStep - startStageStep;
-            rewardList.Add(new RewardRecipe { TargetId = stageId, RewardId = data.DataId, currentStep = step });
+            rewardList.Add(new RewardRecipe { TargetId = data.StartId, RewardId = data.DataId, currentStep = step });
         }
     }
 }

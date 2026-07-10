@@ -27,7 +27,7 @@ public static class RewardCalculator
             int rewardType = data.RewardType;
             int amount = data.BaseAmount;
 
-            for (int i = 0; i < list.currentStep; i++)
+            for (int i = 0; i <= list.currentStep; i++)
             {
                 int temp = _stageRepo.GetChapterIdByStep(list.TargetId, i);
                 if(!result.TryGetValue(temp, out List<ItemSaveEntry> items))
@@ -61,7 +61,7 @@ public static class RewardCalculator
             int rewardType = data.RewardType;
             int amount = data.BaseAmount;
 
-            for (int i = 0; i < list.currentStep; i++)
+            for (int i = 0; i <= list.currentStep; i++)
             {
                 int temp = _stageRepo.GetStageIdByStep(list.TargetId, i);
                 if(!result.TryGetValue(temp, out List<ItemSaveEntry> items))
