@@ -25,6 +25,9 @@
 // 수정 내용 : RerollBoundary 기반 우상단 리롤 횟수 표시 UI 의존성 제거
 //            인챈트 교체 팝업이 선택 직후 닫히지 않도록 카드 선택 후 View 직접 닫기 제거
 
+// 4차 수정자 : 조규민
+// 수정 내용 : 미선택 진행 버튼 클릭 시 확인 팝업을 거친 뒤에만 인챈트 선택을 건너뛰도록 변경
+
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -62,6 +65,11 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [Tooltip("Horizontal Layout Group이 붙은 Content")]
     [SerializeField] private Transform _choiceContainer;
     [SerializeField] private Button _skipButton;
+    [Tooltip("미선택 진행 버튼을 눌렀을 때 사용할 확인 팝업입니다. 비워두면 씬에서 자동으로 찾습니다.")]
+    [SerializeField] private InGameConfirmPopupView _noSelectConfirmPopupView;
+    [Tooltip("미선택 진행 확인 팝업에 표시할 문구입니다.")]
+    [TextArea]
+    [SerializeField] private string _noSelectConfirmMessage = "인챈트를 선택하지 않고 진행하시겠습니까?\n선택하지 않은 인챈트는 획득할 수 없습니다.";
     [Tooltip("현재 스킬/스탯 인첸트 선택 종류를 표시하는 제목")]
     [SerializeField] private TMP_Text _headerText;
     [SerializeField] private string _tempSelectionHeader = "인첸트 선택";
@@ -92,6 +100,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     private bool[] _currentCardRerollAvailable;
     private ScrollRect _choiceScrollRect;
     private bool _hasLoggedMissingHeader;
+    private bool _isNoSelectConfirmPopupBound;
 
     private void OnEnable()
     {
@@ -135,12 +144,14 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 );
             }
             
-            _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
+            _skipButton.onClick.AddListener(OpenNoSelectConfirmPopup);
             
             _isInitialized = true;
         }
 
         _localizationManager ??= LocalizationManager.Instance;
+        ResolveNoSelectConfirmPopupView();
+        CloseNoSelectConfirmPopup();
         EnsureRerollOverlay();
         SubscribeScrollPosition();
         
@@ -148,9 +159,21 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         _selectPresenter?.ShowSelection();
     }
 
+    private void OnDisable()
+    {
+        CloseNoSelectConfirmPopup();
+    }
+
     private void OnDestroy()
     {
         UnsubscribeScrollPosition();
+        UnbindNoSelectConfirmPopup();
+
+        if (_skipButton != null)
+        {
+            _skipButton.onClick.RemoveListener(OpenNoSelectConfirmPopup);
+        }
+
         _selectPresenter?.Dispose();
         _changePresenter?.Dispose();
     }
@@ -252,6 +275,79 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     // View 버튼에서 호출
     public void SelectChoice(int index) => OnChoiceSelected?.Invoke(index);
     public void ConfirmDelete(int index) => OnDeleteConfirmed?.Invoke(index);
+
+    private void OpenNoSelectConfirmPopup()
+    {
+        ResolveNoSelectConfirmPopupView();
+
+        if (_noSelectConfirmPopupView == null)
+        {
+            Debug.LogWarning("[EnchantSelectView] 미선택 진행 확인 팝업이 연결되지 않아 기존 미선택 진행 흐름을 실행합니다.", this);
+            OnSkipSelected?.Invoke();
+            return;
+        }
+
+        BindNoSelectConfirmPopup();
+        _noSelectConfirmPopupView.SetMessage(_noSelectConfirmMessage);
+        _noSelectConfirmPopupView.SetVisible(true);
+    }
+
+    private void HandleNoSelectConfirmYesClicked()
+    {
+        CloseNoSelectConfirmPopup();
+        OnSkipSelected?.Invoke();
+    }
+
+    private void HandleNoSelectConfirmCanceled()
+    {
+        CloseNoSelectConfirmPopup();
+    }
+
+    private void CloseNoSelectConfirmPopup()
+    {
+        if (_noSelectConfirmPopupView != null)
+        {
+            _noSelectConfirmPopupView.SetVisible(false);
+        }
+
+        UnbindNoSelectConfirmPopup();
+    }
+
+    private void ResolveNoSelectConfirmPopupView()
+    {
+        if (_noSelectConfirmPopupView != null)
+        {
+            return;
+        }
+
+        _noSelectConfirmPopupView = FindFirstObjectByType<InGameConfirmPopupView>(FindObjectsInactive.Include);
+    }
+
+    private void BindNoSelectConfirmPopup()
+    {
+        if (_noSelectConfirmPopupView == null || _isNoSelectConfirmPopupBound)
+        {
+            return;
+        }
+
+        _noSelectConfirmPopupView.OnYesClicked += HandleNoSelectConfirmYesClicked;
+        _noSelectConfirmPopupView.OnNoClicked += HandleNoSelectConfirmCanceled;
+        _noSelectConfirmPopupView.OnCloseClicked += HandleNoSelectConfirmCanceled;
+        _isNoSelectConfirmPopupBound = true;
+    }
+
+    private void UnbindNoSelectConfirmPopup()
+    {
+        if (_noSelectConfirmPopupView == null || !_isNoSelectConfirmPopupBound)
+        {
+            return;
+        }
+
+        _noSelectConfirmPopupView.OnYesClicked -= HandleNoSelectConfirmYesClicked;
+        _noSelectConfirmPopupView.OnNoClicked -= HandleNoSelectConfirmCanceled;
+        _noSelectConfirmPopupView.OnCloseClicked -= HandleNoSelectConfirmCanceled;
+        _isNoSelectConfirmPopupBound = false;
+    }
 
     /// <summary>새로고침(리롤) 버튼 상태 갱신. available=false면 버튼을 숨김(일반 씬). remaining=남은 횟수(0이면 비활성).</summary>
     public void SetRerollAvailable(bool available, int remaining)
