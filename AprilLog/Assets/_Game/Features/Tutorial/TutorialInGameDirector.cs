@@ -2,6 +2,8 @@
 // 인게임 튜토리얼 0챕터 시퀀스를 직접 구동한다
 // 튜토리얼 진행 중일 때만 동작한다.
 // 씬에 두면 Start에서 시스템을 자가 탐색하고, 현재 단계 시퀀스를 시작한다.
+// 1차 수정자 : 조규민
+// 수정 내용 : 튜토리얼 초반 방치 사망도 범람 패배 연출 후 로비 튜토리얼로 이어지도록 사망 처리 범위 확장
 
 using System;
 using System.Collections;
@@ -44,6 +46,18 @@ public class TutorialInGameDirector : MonoBehaviour
         return tm != null
             && tm.IsRunning
             && IsInGameStep(step)
+            && IsTutorialChapterRun();
+    }
+
+    public static bool ShouldHandleTutorialDefeat()
+    {
+        TutorialManager _tutorialManager = TutorialManager.Instance;
+        TutorialStep _step = _tutorialManager != null ? _tutorialManager.CurrentStep : null;
+        return _tutorialManager != null
+            && _tutorialManager.IsRunning
+            && IsInGameStep(_step)
+            && _step.stepId >= 0
+            && _step.stepId <= 3
             && IsTutorialChapterRun();
     }
 
@@ -253,6 +267,7 @@ public class TutorialInGameDirector : MonoBehaviour
 
         ResolveSystems();
         HidePauseButton();
+        SubscribePlayerDeath();
         if (_spawner != null) _spawner.OnMonsterDied += HandleStep0MonsterDied;
         if (_inputHandler != null) _inputHandler.OnDragStarted += HandleDragStarted;
         TrySubscribeGrowthLevelUp();
@@ -1480,9 +1495,7 @@ public class TutorialInGameDirector : MonoBehaviour
 
     private void HandlePlayerDeath()
     {
-        TutorialManager tm = TutorialManager.Instance;
-        TutorialStep step = tm != null ? tm.CurrentStep : null;
-        if (!_isStep3Running || _isStep3DefeatHandled || step == null || step.stepId != 3) return;
+        if (_isStep3DefeatHandled || !ShouldHandleTutorialDefeat()) return;
 
         StartCoroutine(HandleStep3Defeat());
     }
@@ -1491,9 +1504,16 @@ public class TutorialInGameDirector : MonoBehaviour
     {
         _isStep3DefeatHandled = true;
         _isStep3RushActive = false;
+        StopTutorialRoutinesForDefeat();
 
         if (_spawner == null) _spawner = FindFirstObjectByType<MonsterSpawner>();
         if (_spawner != null) _spawner.StopSpawning();
+
+        ResumeGameplayAfterGuide();
+        UnlockFirstEnchantSelection();
+        SetFirstEnchantPopupVisible(false);
+        ClearEnchantDim();
+        if (Time.timeScale <= 0f) Time.timeScale = 1f;
 
         PauseStep3Scenario();
         // 러시 시작 전(연습 중 조기 사망)에 죽으면 범람 경고 대사가 아직 안 나왔으므로 먼저 재생한다.
@@ -1505,15 +1525,61 @@ public class TutorialInGameDirector : MonoBehaviour
         yield return PlayWorldDialogue(_step3DefeatScenarioStartId, _step3DefeatScenarioEndId);
         ResumeStep3ScenarioPause();
 
-        TutorialManager tm = TutorialManager.Instance;
-        TutorialStep step = tm != null ? tm.CurrentStep : null;
-        if (tm != null && tm.IsRunning && step != null && step.stepId == 3)
-            tm.AdvanceStep();
+        AdvanceToLobbyTutorialStep();
 
         if (GameManager.Instance != null)
             GameManager.Instance.LoadLobby();
         else
             UnityEngine.SceneManagement.SceneManager.LoadScene("_Lobby");
+    }
+
+    private void StopTutorialRoutinesForDefeat()
+    {
+        if (_step0Routine != null)
+        {
+            StopCoroutine(_step0Routine);
+            _step0Routine = null;
+        }
+
+        if (_step1Routine != null)
+        {
+            StopCoroutine(_step1Routine);
+            _step1Routine = null;
+        }
+
+        if (_step3Routine != null)
+        {
+            StopCoroutine(_step3Routine);
+            _step3Routine = null;
+        }
+
+        if (_step3RushRoutine != null)
+        {
+            StopCoroutine(_step3RushRoutine);
+            _step3RushRoutine = null;
+        }
+
+        if (_step3ForceDefeatRoutine != null)
+        {
+            StopCoroutine(_step3ForceDefeatRoutine);
+            _step3ForceDefeatRoutine = null;
+        }
+    }
+
+    private static void AdvanceToLobbyTutorialStep()
+    {
+        TutorialManager _tutorialManager = TutorialManager.Instance;
+
+        while (_tutorialManager != null && _tutorialManager.IsRunning)
+        {
+            TutorialStep _step = _tutorialManager.CurrentStep;
+            if (_step == null) break;
+            if (_step.scene == TutorialScene.Lobby) return;
+
+            _tutorialManager.AdvanceStep();
+        }
+
+        Debug.LogError("[TutorialInGameDirector] 범람 패배 후 로비 튜토리얼 단계를 찾지 못했습니다.");
     }
 
     // 인게임 다이제틱 대화 버블로 라인들을 재생하고 종료까지 대기한다.

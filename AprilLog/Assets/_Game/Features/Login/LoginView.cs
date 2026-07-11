@@ -18,6 +18,7 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     public event Action<string, string> OnExistingAccountLoginClicked;
     public event Action<string, string> OnRegisterClicked;
     public event Action<bool> OnTermsAgreementChanged;
+    public event Action OnTermsReadCompleted;
     public event Action OnTermsConfirmed; // 약관 확인 버튼 입력을 Presenter로 전달
     public event Action OnTermsPopupClicked;
     public event Action OnPopupClosed;
@@ -42,6 +43,13 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     [SerializeField] private TMP_Text _termsPolicyContentText;
     [SerializeField] private TMP_Text _guestLoginButtonLabelText;
 
+    [Header("약관 이미지")]
+    [SerializeField] private Sprite _termsBoxSprite;
+    [SerializeField] private Sprite _termsPolicyScrollViewSprite;
+    [SerializeField] private Sprite _termsConfirmButtonSprite;
+    [SerializeField] private Sprite _termsCheckBoxSprite;
+    [SerializeField] private Sprite _termsCheckmarkSprite;
+
     [Header("표시")]
     [SerializeField] private GameObject _loadingIndicator;
     [SerializeField] private GameObject _registerPanel;
@@ -60,7 +68,14 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     private RectTransform _passwordInputRectTransform;
     private bool _isLocalizationSubscribed;
     private bool _isTermsPolicyContentVisible;
+    private bool _hasNotifiedTermsRead;
+    private bool _hasCachedTermsToggleLabelColor;
+    private bool _hasCachedTermsConfirmLabelColor;
+    private Color _termsToggleLabelColor;
+    private Color _termsConfirmLabelColor;
     private const int TermsPolicyLanguageId = 11000;
+    private const float TermsReadThreshold = 0.01f;
+    private const float DisabledLabelAlpha = 0.45f;
 
     // View 생성 시 Model과 버튼 이벤트를 준비
     private void Awake()
@@ -201,6 +216,7 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         }
 
         ArrangeTermsAgreementPanel();
+        ApplyTermsSprites();
         SetTermsPolicyContentVisible(true);
     }
 
@@ -264,10 +280,11 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         RectTransform _scrollRectTransform = _scrollObject.GetComponent<RectTransform>();
         _scrollRectTransform.anchorMin = new Vector2(0.5f, 0.52f);
         _scrollRectTransform.anchorMax = new Vector2(0.5f, 0.52f);
-        _scrollRectTransform.anchoredPosition = new Vector2(0f, 41f);
+        _scrollRectTransform.anchoredPosition = new Vector2(0f, 60f);
         _scrollRectTransform.sizeDelta = new Vector2(980f, 500f);
 
         Image _scrollImage = _scrollObject.GetComponent<Image>();
+        _scrollImage.sprite = _termsPolicyScrollViewSprite;
         _scrollImage.color = new Color(0.97f, 0.91f, 0.8f, 0.94f);
 
         GameObject _viewportObject = new GameObject("Viewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Mask));
@@ -374,14 +391,14 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 
         _scrollRectTransform.anchorMin = new Vector2(0.5f, 0.53f);
         _scrollRectTransform.anchorMax = new Vector2(0.5f, 0.53f);
-        _scrollRectTransform.anchoredPosition = new Vector2(0f, 41f);
+        _scrollRectTransform.anchoredPosition = new Vector2(0f, 60f);
         _scrollRectTransform.sizeDelta = new Vector2(980f, 500f);
     }
 
     private void ArrangeTermsBottomControls()
     {
-        ArrangeBottomControl(_termsToggle?.GetComponent<RectTransform>(), new Vector2(0.5f, 0.25f), new Vector2(0f, -25f), new Vector2(940f, 96f));
-        ArrangeBottomControl(_termsConfirmButton?.GetComponent<RectTransform>(), new Vector2(0.5f, 0.12f), new Vector2(0f, -35f), new Vector2(333.3333f, 114.6667f));
+        ArrangeBottomControl(_termsToggle?.GetComponent<RectTransform>(), new Vector2(0.5f, 0.25f), new Vector2(0f, 20f), new Vector2(940f, 96f));
+        ArrangeBottomControl(_termsConfirmButton?.GetComponent<RectTransform>(), new Vector2(0.5f, 0.12f), new Vector2(0f, 10f), new Vector2(333.3333f, 114.6667f));
     }
 
     private void ArrangeBottomControl(RectTransform _rectTransform, Vector2 _anchor, Vector2 _position, Vector2 _size)
@@ -450,6 +467,83 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         }
     }
 
+    private void ApplyTermsSprites()
+    {
+        Transform _termsBoxTransform = ResolveTermsBoxTransform();
+        ApplySprite(_termsBoxTransform?.GetComponent<Image>(), _termsBoxSprite, false);
+        ApplySprite(_termsPolicyScrollRect?.GetComponent<Image>(), _termsPolicyScrollViewSprite, false);
+        ApplySprite(_termsConfirmButton?.GetComponent<Image>(), _termsConfirmButtonSprite, false);
+
+        Image _checkBoxImage = FindChildComponentByName<Image>(_termsToggle?.transform, "CheckBox");
+        Image _checkmarkImage = FindChildComponentByName<Image>(_termsToggle?.transform, "Checkmark");
+        ApplySprite(_checkBoxImage, _termsCheckBoxSprite, false);
+        ApplySprite(_checkmarkImage, _termsCheckmarkSprite, true);
+
+        if (_termsToggle != null)
+        {
+            _termsToggle.targetGraphic = _checkBoxImage;
+            _termsToggle.graphic = _checkmarkImage;
+        }
+    }
+
+    private static void ApplySprite(Image _image, Sprite _sprite, bool _preserveAspect)
+    {
+        if (_image == null || _sprite == null)
+        {
+            return;
+        }
+
+        _image.sprite = _sprite;
+        _image.type = Image.Type.Simple;
+        _image.preserveAspect = _preserveAspect;
+    }
+
+    private void ResetTermsReadingState()
+    {
+        _hasNotifiedTermsRead = false;
+
+        if (_termsToggle != null)
+        {
+            _termsToggle.SetIsOnWithoutNotify(false);
+        }
+
+        SetTermsToggleInteractable(false);
+        SetTermsConfirmButtonInteractable(false);
+    }
+
+    private void NotifyTermsScrollChanged(Vector2 _normalizedPosition)
+    {
+        TryNotifyTermsReadCompleted();
+    }
+
+    private void TryNotifyTermsReadCompleted()
+    {
+        if (_hasNotifiedTermsRead || _termsPolicyScrollRect == null)
+        {
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        RectTransform _content = _termsPolicyScrollRect.content;
+        RectTransform _viewport = _termsPolicyScrollRect.viewport;
+
+        if (_content == null || _viewport == null)
+        {
+            return;
+        }
+
+        bool _doesNotRequireScrolling = _content.rect.height <= _viewport.rect.height + 0.5f;
+        bool _hasReachedBottom = _termsPolicyScrollRect.verticalNormalizedPosition <= TermsReadThreshold;
+
+        if (!_doesNotRequireScrolling && !_hasReachedBottom)
+        {
+            return;
+        }
+
+        _hasNotifiedTermsRead = true;
+        OnTermsReadCompleted?.Invoke();
+    }
+
     private void ApplyTermsPolicyContentFromLocalization()
     {
         if (LocalizationManager.Instance == null)
@@ -509,6 +603,9 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 
         if (_termsToggle != null)
             _termsToggle.onValueChanged.AddListener(NotifyTermsAgreementChanged);
+
+        if (_termsPolicyScrollRect != null)
+            _termsPolicyScrollRect.onValueChanged.AddListener(NotifyTermsScrollChanged);
 
         // 약관 모달 확인 버튼 클릭을 Presenter로 전달
         if (_termsConfirmButton != null)
@@ -578,6 +675,9 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 
         if (_termsToggle != null)
             _termsToggle.onValueChanged.RemoveListener(NotifyTermsAgreementChanged);
+
+        if (_termsPolicyScrollRect != null)
+            _termsPolicyScrollRect.onValueChanged.RemoveListener(NotifyTermsScrollChanged);
 
         // 약관 확인 버튼 리스너를 정리한다.
         if (_termsConfirmButton != null)
@@ -806,6 +906,7 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     {
         EnsureTermsPolicyView();
         ApplyTermsPolicyContentFromLocalization();
+        ResetTermsReadingState();
 
         if (_termsAgreementPanel != null)
             _termsAgreementPanel.SetActive(true);
@@ -817,6 +918,8 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         {
             _termsPolicyScrollRect.verticalNormalizedPosition = 1f;
         }
+
+        TryNotifyTermsReadCompleted();
     }
 
     // 약관 동의 모달을 숨긴다.
@@ -854,6 +957,52 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
     {
         if (_termsConfirmButton != null)
             _termsConfirmButton.interactable = isInteractable;
+    }
+
+    public void SetTermsToggleInteractable(bool isInteractable)
+    {
+        if (_termsToggle != null)
+        {
+            _termsToggle.interactable = isInteractable;
+        }
+
+        SetTermsLabelInteractable(
+            ref _termsToggleLabelText,
+            _termsToggle?.transform,
+            ref _termsToggleLabelColor,
+            ref _hasCachedTermsToggleLabelColor,
+            isInteractable);
+        SetTermsLabelInteractable(
+            ref _termsConfirmButtonLabelText,
+            _termsConfirmButton?.transform,
+            ref _termsConfirmLabelColor,
+            ref _hasCachedTermsConfirmLabelColor,
+            isInteractable);
+    }
+
+    private void SetTermsLabelInteractable(
+        ref TMP_Text _label,
+        Transform _root,
+        ref Color _activeColor,
+        ref bool _hasCachedColor,
+        bool _isInteractable)
+    {
+        _label ??= FindChildComponentByName<TMP_Text>(_root, "Label");
+
+        if (_label == null)
+        {
+            return;
+        }
+
+        if (!_hasCachedColor)
+        {
+            _activeColor = _label.color;
+            _hasCachedColor = true;
+        }
+
+        Color _labelColor = _activeColor;
+        _labelColor.a = _isInteractable ? _activeColor.a : _activeColor.a * DisabledLabelAlpha;
+        _label.color = _labelColor;
     }
 
     // 로그인 중 로딩 인디케이터를 표시하고 버튼 입력을 잠금

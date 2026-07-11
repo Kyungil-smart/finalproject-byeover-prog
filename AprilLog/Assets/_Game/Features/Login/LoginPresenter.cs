@@ -24,6 +24,7 @@ public class LoginPresenter
         _view.OnExistingAccountLoginClicked += HandleExistingAccountLoginClicked;
         _view.OnRegisterClicked += HandleRegisterClicked;
         _view.OnTermsAgreementChanged += HandleTermsAgreementChanged;
+        _view.OnTermsReadCompleted += HandleTermsReadCompleted;
         _view.OnTermsConfirmed += HandleTermsConfirmed; // 약관 확인 버튼 입력을 로그인 활성화 조건에 반영한다.
         _view.OnTermsPopupClicked += HandleTermsPopupClicked;
         _view.OnPopupClosed += HandlePopupClosed;
@@ -43,7 +44,7 @@ public class LoginPresenter
 
         // 로그인 화면 진입 시 약관 모달을 먼저 표시하고 확인 전 로그인 버튼을 막는다.
         _view.ShowTermsAgreementPanel();
-        _view.SetTermsConfirmButtonInteractable(false);
+        RefreshTermsAgreementControls();
         RefreshView();
     }
 
@@ -55,6 +56,7 @@ public class LoginPresenter
         _view.OnExistingAccountLoginClicked -= HandleExistingAccountLoginClicked;
         _view.OnRegisterClicked -= HandleRegisterClicked;
         _view.OnTermsAgreementChanged -= HandleTermsAgreementChanged;
+        _view.OnTermsReadCompleted -= HandleTermsReadCompleted;
         _view.OnTermsConfirmed -= HandleTermsConfirmed;
         _view.OnTermsPopupClicked -= HandleTermsPopupClicked;
         _view.OnPopupClosed -= HandlePopupClosed;
@@ -192,18 +194,38 @@ public class LoginPresenter
         GameManager.Instance.RegisterGoogleUser(playerId.Trim(), password);
     }
 
-    // 약관 동의 토글 변경 시 확인 버튼 상태를 즉시 갱신한다.
+    // 약관 전문을 끝까지 읽은 뒤에만 동의 토글 입력을 허용한다.
+    private void HandleTermsReadCompleted()
+    {
+        if (_model.HasReadTerms)
+        {
+            return;
+        }
+
+        _model.SetTermsRead(true);
+        _view.SetTermsToggleInteractable(true);
+        RefreshTermsAgreementControls();
+    }
+
+    // 약관 동의 토글 변경 시 완독 상태와 함께 확인 버튼 상태를 갱신한다.
     private void HandleTermsAgreementChanged(bool hasAcceptedTerms)
     {
+        if (!_model.HasReadTerms)
+        {
+            _model.SetTermsAgreement(false);
+            RefreshTermsAgreementControls();
+            return;
+        }
+
         _model.SetTermsAgreement(hasAcceptedTerms);
-        _view.SetTermsConfirmButtonInteractable(hasAcceptedTerms);
+        RefreshTermsAgreementControls();
         RefreshView();
     }
 
     // 약관 체크 후 확인을 눌러야 실제 로그인 버튼을 활성화한다.
     private void HandleTermsConfirmed()
     {
-        if (!_model.HasAcceptedTerms)
+        if (!_model.HasReadTerms || !_model.HasAcceptedTerms)
         {
             return;
         }
@@ -212,6 +234,12 @@ public class LoginPresenter
         _view.HideTermsAgreementPanel();
         ShowEditorGoogleLoginInputIfNeeded();
         RefreshView();
+    }
+
+    private void RefreshTermsAgreementControls()
+    {
+        _view.SetTermsToggleInteractable(_model.HasReadTerms);
+        _view.SetTermsConfirmButtonInteractable(_model.HasReadTerms && _model.HasAcceptedTerms);
     }
 
     // 약관보기 입력 시 현재 언어의 약관 전문을 표시한다.
