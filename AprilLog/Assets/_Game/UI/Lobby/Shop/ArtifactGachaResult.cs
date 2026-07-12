@@ -12,8 +12,10 @@ public class ArtifactGachaResult
 
     // ----- 누적(마일리지) 보상 -----
     public int MileageRewardCount;  // 이번 뽑기에서 새로 통과한 20회 구간 수 (= 팝업 출력 횟수)
-    public int MileageRewardItem;   // 누적 보상 1회의 아이템 ID (데이터)
-    public int MileageRewardAmount; // 누적 보상 1회의 수량 (데이터)
+    public int MileageRewardItem;   // 누적 보상 1회의 아이템 ID (데이터, 첫 번째 보상)
+    public int MileageRewardAmount; // 누적 보상 1회의 수량 (데이터, 첫 번째 보상)
+    public int MileageRewardItem2;   // 두 번째 보상 아이템 ID (없으면 0)
+    public int MileageRewardAmount2; // 두 번째 보상 수량 (없으면 0)
 
     public bool HasAutoDecompose =>
         RareDecomposed > 0 || EpicDecomposed > 0 || LegendaryDecomposed > 0;
@@ -37,5 +39,7 @@ public class ArtifactGachaResult
         // 마일리지 보상 종류/수량은 동일 박스 내에서 같으므로 마지막 값을 유지한다.
         if (other.MileageRewardItem != 0) MileageRewardItem = other.MileageRewardItem;
         if (other.MileageRewardAmount != 0) MileageRewardAmount = other.MileageRewardAmount;
+        if (other.MileageRewardItem2 != 0) MileageRewardItem2 = other.MileageRewardItem2;
+        if (other.MileageRewardAmount2 != 0) MileageRewardAmount2 = other.MileageRewardAmount2;
     }
 }
