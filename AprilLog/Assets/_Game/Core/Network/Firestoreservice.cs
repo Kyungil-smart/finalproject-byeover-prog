@@ -3,7 +3,7 @@
 // 2차 수정자 : 조규민
 // 수정 내용 : FirebaseFirestore 필드 복구, UID/DB 방어, 로컬 백업 실패 방어 추가
 // 3차 수정자 : 조규민
-// 수정 내용 : UserCloudData 직접 저장 대신 Firestore Dictionary 변환 저장으로 직렬화 오류 수정
+// 수정 내용 : UserCloudData 직접 저장 대신 Firestore Dictionary 변환 저장으로 직렬화 오류 수정, UID별 최신 아티팩트 체크포인트 복구 추가
 
 // 수정 내용 : 하우징 구매 보유 가구 ID를 Firestore 저장/로드에 포함
 
@@ -145,8 +145,13 @@ public class FirestoreService : MonoBehaviour
             }
 
             MergeLocalInitialFlowState(data);
+            bool _shouldResyncArtifacts = MergeLocalArtifactState(data);
             SaveLocalBackup(data);
             OnDataLoaded?.Invoke(data);
+            if (_shouldResyncArtifacts)
+            {
+                StartCoroutine(SaveCoroutine(data));
+            }
         }
         else
         {
@@ -420,6 +425,8 @@ public class FirestoreService : MonoBehaviour
             { "inventory", CreateItemDictionaries(userData.inventory) },
             { "staminaData", CreateStaminaDictionaries(userData.staminaData) },
             { "myArtifacts", CreateArtifactDictionaries(userData.myArtifacts) },
+            { "artifactRevision", userData.artifactRevision },
+            { "artifactUpdatedAt", userData.artifactUpdatedAt ?? string.Empty },
             { "pendingEnchantDraws", CreateEnchantDrawDictionaries(userData.pendingEnchantDraws) },
             { "language", userData.language },
             { "sfxVolume", userData.sfxVolume },
@@ -655,6 +662,12 @@ public class FirestoreService : MonoBehaviour
         if (snapshot.TryGetValue("myArtifacts", out object myArtifacts))
             data.myArtifacts = ConvertArtifacts(myArtifacts);
 
+        if (snapshot.TryGetValue("artifactRevision", out object artifactRevision))
+            data.artifactRevision = ConvertNumberToInt(artifactRevision);
+
+        if (snapshot.TryGetValue("artifactUpdatedAt", out string artifactUpdatedAt))
+            data.artifactUpdatedAt = artifactUpdatedAt;
+
         if (snapshot.TryGetValue("pendingEnchantDraws", out object pendingEnchantDraws))
             data.pendingEnchantDraws = ConvertEnchantDraws(pendingEnchantDraws);
 
@@ -875,6 +888,21 @@ public class FirestoreService : MonoBehaviour
         // 추가: 조규민 - 로컬 백업 실패가 로그인 흐름 전체를 중단하지 않도록 예외를 이벤트로 전달한다.
         try
         {
+            if (data == null)
+            {
+                OnError?.Invoke("로컬 백업에 저장할 유저 데이터가 없습니다.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_uid)
+                && !string.IsNullOrWhiteSpace(data.uid)
+                && !string.Equals(data.uid, _uid, StringComparison.Ordinal))
+            {
+                OnError?.Invoke("현재 인증 UID와 다른 유저 데이터의 로컬 백업을 차단했습니다.");
+                return;
+            }
+
+            PreserveNewerLocalArtifactState(data);
             File.WriteAllText(GetBackupPath(), JsonUtility.ToJson(data, true));
         }
         catch (Exception exception)
@@ -915,6 +943,73 @@ public class FirestoreService : MonoBehaviour
         // 로컬의 완료 방향 상태만 병합해 네트워크 저장 직전 강제 종료로 최초 콘텐츠가 반복되는 것을 막는다.
         cloudData._initialStoryStarted |= localData._initialStoryStarted;
         cloudData._tutorialCompleted |= localData._tutorialCompleted;
+    }
+
+    private void PreserveNewerLocalArtifactState(UserCloudData data)
+    {
+        UserCloudData _existingData = LoadLocalBackup();
+        if (_existingData == null
+            || !string.Equals(_existingData.uid, data.uid, StringComparison.Ordinal)
+            || _existingData.artifactRevision <= data.artifactRevision)
+        {
+            return;
+        }
+
+        data.myArtifacts = CloneArtifacts(_existingData.myArtifacts);
+        data.artifactRevision = _existingData.artifactRevision;
+        data.artifactUpdatedAt = _existingData.artifactUpdatedAt;
+    }
+
+    private bool MergeLocalArtifactState(UserCloudData cloudData)
+    {
+        if (cloudData == null || string.IsNullOrWhiteSpace(_uid))
+        {
+            return false;
+        }
+
+        UserCloudData _localData = LoadLocalBackup();
+        if (_localData == null || !string.Equals(_localData.uid, _uid, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(cloudData.uid)
+            && !string.Equals(cloudData.uid, _uid, StringComparison.Ordinal))
+        {
+            Debug.LogError("[FirestoreService] 인증 UID와 클라우드 문서 UID가 달라 로컬 아티팩트 병합을 차단했습니다.");
+            return false;
+        }
+
+        if (_localData.artifactRevision <= cloudData.artifactRevision)
+        {
+            return false;
+        }
+
+        cloudData.uid = _uid;
+        cloudData.myArtifacts = CloneArtifacts(_localData.myArtifacts);
+        cloudData.artifactRevision = _localData.artifactRevision;
+        cloudData.artifactUpdatedAt = _localData.artifactUpdatedAt;
+        Debug.Log($"[FirestoreService] 최신 로컬 아티팩트 체크포인트를 복구했습니다. Revision={cloudData.artifactRevision}");
+        return true;
+    }
+
+    private static List<ArtifactInstance> CloneArtifacts(List<ArtifactInstance> artifacts)
+    {
+        var _result = new List<ArtifactInstance>();
+        if (artifacts == null)
+        {
+            return _result;
+        }
+
+        foreach (ArtifactInstance _artifact in artifacts)
+        {
+            if (_artifact != null)
+            {
+                _result.Add(_artifact.Clone());
+            }
+        }
+
+        return _result;
     }
 
     public bool HasLocalBackup() => File.Exists(GetBackupPath());

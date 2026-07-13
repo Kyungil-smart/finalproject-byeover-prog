@@ -14,7 +14,7 @@ using System.Collections.Generic;
 // 수정 내용 : 재화 및 스태미너와 아티펙트 관련 데이터 저장 필드 추가
 //
 // 4차 수정자 : 조규민
-// 수정 내용 : 계정별 최초 스토리 시작과 튜토리얼 완료 상태 및 기존 계정 마이그레이션 상태 추가
+// 수정 내용 : 계정별 최초 스토리 시작과 튜토리얼 완료 상태, 기존 계정 마이그레이션 상태, 아티팩트 저장 리비전 추가
 
 [Serializable]
 public class UserCloudData
@@ -58,6 +58,8 @@ public class UserCloudData
     
     // ---------- 아티펙트 ----------
     public List<ArtifactInstance> myArtifacts = new ();
+    public int artifactRevision;
+    public string artifactUpdatedAt;
     
     // ---------- 하우징 ----------
     public string housingAutoCurrencyLastClaimAt;
@@ -115,6 +117,8 @@ public class UserCloudData
             
             // 아티펙트
             myArtifacts = new List<ArtifactInstance>(),
+            artifactRevision = 0,
+            artifactUpdatedAt = DateTime.UtcNow.ToString("o"),
             
             // 하우징
             housingAutoCurrencyLastClaimAt = DateTime.UtcNow.ToString("o"),

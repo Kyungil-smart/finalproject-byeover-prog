@@ -10,7 +10,7 @@
 // 수정 내용 : 세이브 개선
 //
 // 4차 수정자 : 조규민
-// 수정 내용 : 계정별 최초 진입 상태 마이그레이션과 최초 스토리 시작·튜토리얼 완료 저장 API 추가
+// 수정 내용 : 계정별 최초 진입 상태 마이그레이션, 최초 스토리 시작·튜토리얼 완료 저장 API, 인증 UID 기반 아티팩트 종료 체크포인트 추가
 
 using System;
 using System.Collections;
@@ -61,6 +61,8 @@ public class GameManager : MonoBehaviour
     public string UserUID => _authService != null ? _authService.UserUID : null;
     public bool IsLoggedIn => _authService != null && _authService.IsLoggedIn;
     public bool LastSignInWasGoogle => _authService != null && _authService.LastSignInWasGoogle;
+    public bool IsGuestSession => _authService != null && _authService.IsGuestSession;
+    public string CurrentAuthProvider => _authService != null ? _authService.CurrentProvider : "none";
     public bool RequiresEditorGoogleEmailPasswordInput => _authService != null && _authService.RequiresEditorGoogleEmailPasswordInput;
     public bool IsOfflineMode { get; private set; }
 
@@ -142,14 +144,27 @@ public class GameManager : MonoBehaviour
     // (기획 #300: 종료로 죽음/손해를 회피하는 세이브스컴 차단. 의도적 이어하기는 '로비로' 버튼으로만.)
     private void OnApplicationPause(bool isPaused)
     {
-        if (isPaused && _currentState == GameState.InGame)
+        if (!isPaused)
+        {
+            return;
+        }
+
+        CheckpointArtifactState();
+
+        if (_currentState == GameState.InGame)
+        {
             DeleteLocalSave();
+        }
     }
 
     private void OnApplicationQuit()
     {
+        CheckpointArtifactState();
+
         if (_currentState == GameState.InGame)
+        {
             DeleteLocalSave();
+        }
     }
 
     // ---------- 이벤트 핸들러 ----------
@@ -165,6 +180,8 @@ public class GameManager : MonoBehaviour
         // Firestore 서비스에 uid 전달
         if (_firestoreService != null)
             _firestoreService.Initialize(resolvedUid);
+
+        Debug.Log($"[GameManager] 인증 계정 확인: Provider={CurrentAuthProvider}, UID={MaskUid(resolvedUid)}");
 
         if (_authService != null && _authService.LastSignInWasGoogle)
         {
@@ -996,12 +1013,58 @@ public class GameManager : MonoBehaviour
 
     public void SaveArtifact(List<ArtifactInstance> myArtifacts)
     {
-        var data = CloudData ?? UserCloudData.CreateDefault();
-        EnsureCloudIdentity(data);
+        if (!IsLoggedIn || string.IsNullOrWhiteSpace(UserUID))
+        {
+            Debug.LogWarning("[GameManager] 로그인 UID가 없어 아티팩트 저장을 건너뜁니다.");
+            return;
+        }
 
-        data.myArtifacts = CloneArtifactList(myArtifacts);
+        var _data = CloudData ?? UserCloudData.CreateDefault();
+        if (!string.IsNullOrWhiteSpace(_data.uid)
+            && !string.Equals(_data.uid, UserUID, StringComparison.Ordinal))
+        {
+            Debug.LogError("[GameManager] 현재 인증 UID와 로드된 데이터 UID가 달라 아티팩트 저장을 차단했습니다.");
+            return;
+        }
 
-        SyncToCloud(data);
+        EnsureCloudIdentity(_data);
+
+        _data.myArtifacts = CloneArtifactList(myArtifacts);
+        _data.artifactRevision = _data.artifactRevision == int.MaxValue
+            ? int.MaxValue
+            : Mathf.Max(0, _data.artifactRevision) + 1;
+        _data.artifactUpdatedAt = DateTime.UtcNow.ToString("o");
+        CloudData = _data;
+
+        // 추가: 조규민 - 종료 직전 비동기 Firestore 저장이 끝나지 않아도 UID별 로컬 체크포인트는 즉시 남긴다.
+        _firestoreService?.SaveLocalBackup(_data);
+        SyncToCloud(_data);
+    }
+
+    private void CheckpointArtifactState()
+    {
+        if (!IsLoggedIn || string.IsNullOrWhiteSpace(UserUID))
+        {
+            return;
+        }
+
+        GameStateManager _stateManager = GameStateManager.Instance;
+        ArtifactManager _artifactManager = _stateManager != null ? _stateManager.ArtifactManager : null;
+        if (_artifactManager == null || !_artifactManager.HasLoadedData || _artifactManager.MyArtifacts == null)
+        {
+            return;
+        }
+
+        if (_artifactManager.MyArtifacts.Count == 0
+            && CloudData != null
+            && CloudData.myArtifacts != null
+            && CloudData.myArtifacts.Count > 0)
+        {
+            Debug.LogWarning("[GameManager] 런타임 아티팩트가 아직 비어 있어 종료 체크포인트 덮어쓰기를 건너뜁니다.");
+            return;
+        }
+
+        SaveArtifact(_artifactManager.MyArtifacts);
     }
 
     // 아티팩트 목록의 저장/로드 복사 경계. CloudData와 런타임(ArtifactManager.MyArtifacts)이 같은 인스턴스를
@@ -1472,10 +1535,21 @@ public class GameManager : MonoBehaviour
             data.uid = UserUID;
         }
 
-        if (string.IsNullOrWhiteSpace(data.provider))
+        if (!string.Equals(CurrentAuthProvider, "none", StringComparison.Ordinal))
         {
-            data.provider = LastSignInWasGoogle ? "google" : "guest";
+            data.provider = CurrentAuthProvider;
         }
+    }
+
+    private static string MaskUid(string uid)
+    {
+        if (string.IsNullOrWhiteSpace(uid))
+        {
+            return "none";
+        }
+
+        const int _visibleLength = 6;
+        return uid.Length <= _visibleLength ? uid : "***" + uid.Substring(uid.Length - _visibleLength);
     }
 
     private static List<int> CloneUnlockedStages(List<int> unlockedStages)

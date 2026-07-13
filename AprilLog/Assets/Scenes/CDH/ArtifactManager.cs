@@ -2,6 +2,9 @@
 // 수정 내용 : 실제 재화에 반영 하는 부분을 GameManager에서 담당 및 GameManager 비 활성화 시 테스트용 로컬 변수 활용 하도록 변경
 //           세이브 / 로드를 게임 매니저에서 일괄 담당하도록 수정
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 외부 아티팩트 수량 변경을 저장 이벤트가 보장되는 Manager API로 통합하고 로드 완료 상태를 노출
+
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -27,6 +30,7 @@ public class ArtifactManager : MonoBehaviour
     public event Action OnInventoryUpdated;
 
     public List<ArtifactInstance> MyArtifacts = new List<ArtifactInstance>();
+    public bool HasLoadedData { get; private set; }
 
     public void InitializeItems(int upgradeStone, int legendaryShard)
     {
@@ -54,6 +58,7 @@ public class ArtifactManager : MonoBehaviour
         if(GameManager.Instance != null && DataManager.Instance != null)
         {
             GameManager.Instance.ApplyCloudDataToArtifactManager(this);
+            HasLoadedData = true;
             Debug.Log("[로드 완료] 아티팩트 데이터를 불러왔습니다.");
         }
     }
@@ -141,6 +146,42 @@ public class ArtifactManager : MonoBehaviour
         }
 
         OnInventoryUpdated?.Invoke();
+    }
+
+    public bool TryAddArtifactCount(int uniqueId, int amount)
+    {
+        if (amount <= 0)
+        {
+            return false;
+        }
+
+        ArtifactInstance _artifact = MyArtifacts.Find(_item => _item != null && _item.UniqueId == uniqueId);
+        if (_artifact == null || _artifact.CurrentCount > int.MaxValue - amount)
+        {
+            return false;
+        }
+
+        _artifact.CurrentCount += amount;
+        OnInventoryUpdated?.Invoke();
+        return true;
+    }
+
+    public bool EnsureArtifactCount(int uniqueId, int minimumCount)
+    {
+        if (minimumCount <= 0)
+        {
+            return false;
+        }
+
+        ArtifactInstance _artifact = MyArtifacts.Find(_item => _item != null && _item.UniqueId == uniqueId);
+        if (_artifact == null || _artifact.CurrentCount >= minimumCount)
+        {
+            return false;
+        }
+
+        _artifact.CurrentCount = minimumCount;
+        OnInventoryUpdated?.Invoke();
+        return true;
     }
 
     private void CheckAndHandleExcess(ArtifactInstance item)
