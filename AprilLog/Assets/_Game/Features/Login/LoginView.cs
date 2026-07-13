@@ -65,6 +65,10 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
 
     private LoginPresenter _presenter;
     private LoginModel _model;
+    private TMP_Text _registerTitleText;
+    private TMP_Text _registerButtonLabelText;
+    private TMP_Text _existingAccountLoginButtonLabelText;
+    private TMP_Text _loadingIndicatorText;
     private RectTransform _passwordInputRectTransform;
     private bool _isLocalizationSubscribed;
     private bool _isTermsPolicyContentVisible;
@@ -135,6 +139,10 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         _termsConfirmButtonLabelText ??= FindChildComponentByName<TMP_Text>(_termsConfirmButton?.transform, "Label");
         _termsPopupButtonLabelText ??= FindChildComponentByName<TMP_Text>(_termsPopupButton?.transform, "Label");
         _guestLoginButtonLabelText ??= FindChildComponentByName<TMP_Text>(_guestLoginButton?.transform, "Label");
+        _registerTitleText ??= FindChildComponentByName<TMP_Text>(_registerPanel?.transform, "RegisterTitleText");
+        _registerButtonLabelText ??= _registerButton?.GetComponentInChildren<TMP_Text>(true);
+        _existingAccountLoginButtonLabelText ??= _existingAccountLoginButton?.GetComponentInChildren<TMP_Text>(true);
+        _loadingIndicatorText ??= _loadingIndicator?.GetComponent<TMP_Text>();
         _termsToggleLabelText ??= _termsToggle?.GetComponentInChildren<TMP_Text>(true);
         _termsConfirmButtonLabelText ??= _termsConfirmButton?.GetComponentInChildren<TMP_Text>(true);
         _termsPopupButtonLabelText ??= _termsPopupButton?.GetComponentInChildren<TMP_Text>(true);
@@ -173,11 +181,22 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
             return;
         }
 
-        SetLocalizedText(_termsTitleText, "개인정보 처리방침");
+        bool _isKorean = _localization.CurrentLanguage == "ko";
+
+        SetLocalizedText(_termsTitleText, _isKorean ? "개인정보 처리방침" : "Privacy Policy");
         SetLocalizedText(_termsToggleLabelText, _localization.Get(11001, LocalizingType.UI));
         SetLocalizedText(_termsConfirmButtonLabelText, _localization.Get(11002, LocalizingType.UI));
-        SetLocalizedText(_termsPopupButtonLabelText, "약관보기");
+        SetLocalizedText(_termsPopupButtonLabelText, _isKorean ? "약관보기" : "View Terms");
         SetLocalizedText(_guestLoginButtonLabelText, _localization.Get(11003, LocalizingType.UI));
+        SetLocalizedText(_registerTitleText, _isKorean ? "회원가입" : "Sign Up");
+        SetLocalizedText(_registerButtonLabelText, _isKorean ? "회원가입" : "Sign Up");
+        SetLocalizedText(_existingAccountLoginButtonLabelText, _isKorean ? "로그인" : "Log In");
+        SetLocalizedText(_loadingIndicatorText, _isKorean ? "로그인 중..." : "Logging in...");
+
+        if (_playerIdInputField != null)
+            SetLocalizedText(_playerIdInputField.placeholder as TMP_Text, _isKorean ? "아이디" : "ID");
+        if (_passwordInputField != null)
+            SetLocalizedText(_passwordInputField.placeholder as TMP_Text, _isKorean ? "비밀번호" : "Password");
 
         if (_isTermsPolicyContentVisible)
         {
@@ -646,7 +665,9 @@ public class LoginView : MonoBehaviour, ILoginView, IPointerClickHandler
         TMP_Text labelText = clonedButton.GetComponentInChildren<TMP_Text>(true);
         if (labelText != null)
         {
-            labelText.SetText("로그인");
+            _existingAccountLoginButtonLabelText = labelText;
+            bool isKorean = LocalizationManager.Instance == null || LocalizationManager.Instance.CurrentLanguage == "ko";
+            labelText.SetText(isKorean ? "로그인" : "Log In");
         }
 
         clonedButton.gameObject.SetActive(true);

@@ -89,7 +89,7 @@ public class LoginPresenter
 
         if (GameManager.Instance == null)
         {
-            _view.ShowPopup("게임 매니저가 준비되지 않았습니다.");
+            _view.ShowPopup(Localized("게임 매니저가 준비되지 않았습니다.", "Game Manager is not ready."));
             return;
         }
 
@@ -113,7 +113,7 @@ public class LoginPresenter
 
         if (GameManager.Instance == null)
         {
-            _view.ShowPopup("게임 매니저가 준비되지 않았습니다.");
+            _view.ShowPopup(Localized("게임 매니저가 준비되지 않았습니다.", "Game Manager is not ready."));
             return;
         }
 
@@ -147,7 +147,7 @@ public class LoginPresenter
 
         if (GameManager.Instance == null)
         {
-            _view.SetRegisterMessage("게임 매니저가 준비되지 않았습니다.");
+            _view.SetRegisterMessage(Localized("게임 매니저가 준비되지 않았습니다.", "Game Manager is not ready."));
             return;
         }
 
@@ -159,7 +159,7 @@ public class LoginPresenter
         }
 
         _model.SetGoogleLoginRequested(true);
-        _view.SetRegisterMessage("기존 계정으로 로그인 중입니다.");
+        _view.SetRegisterMessage(Localized("기존 계정으로 로그인 중입니다.", "Logging in with an existing account..."));
         GameManager.Instance.StartExistingEditorGoogleAccountSignIn(editorEmail, editorPassword);
     }
 
@@ -186,11 +186,11 @@ public class LoginPresenter
 
         if (GameManager.Instance == null)
         {
-            _view.SetRegisterMessage("게임 매니저가 준비되지 않았습니다.");
+            _view.SetRegisterMessage(Localized("게임 매니저가 준비되지 않았습니다.", "Game Manager is not ready."));
             return;
         }
 
-        _view.SetRegisterMessage("회원가입 처리 중입니다.");
+        _view.SetRegisterMessage(Localized("회원가입 처리 중입니다.", "Creating your account..."));
         GameManager.Instance.RegisterGoogleUser(playerId.Trim(), password);
     }
 
@@ -291,7 +291,10 @@ public class LoginPresenter
     {
         _model.SetSigningIn(false);
         RefreshView();
-        _view.ShowPopup(string.IsNullOrEmpty(error) ? "로그인에 실패했습니다. 다시 시도해 주세요." : error);
+        _view.ShowPopup(LocalizedError(
+            error,
+            "로그인에 실패했습니다. 다시 시도해 주세요.",
+            "Login failed. Please try again."));
     }
 
     // 인증 실패 유형을 사용자 안내 문구로 변환하고 로그인 상태 해제
@@ -305,7 +308,9 @@ public class LoginPresenter
         {
             if (failureType == AuthLoginFailureType.Configuration && !string.IsNullOrWhiteSpace(error))
             {
-                _view.ShowPopup(error);
+                _view.ShowPopup(IsEnglish()
+                    ? LoginMessageProvider.GetGoogleFailureMessage(failureType)
+                    : error);
                 _model.SetGoogleLoginRequested(false);
                 return;
             }
@@ -315,7 +320,10 @@ public class LoginPresenter
             return;
         }
 
-        _view.ShowPopup(string.IsNullOrEmpty(error) ? "로그인에 실패했습니다. 다시 시도해 주세요." : error);
+        _view.ShowPopup(LocalizedError(
+            error,
+            "로그인에 실패했습니다. 다시 시도해 주세요.",
+            "Login failed. Please try again."));
     }
 
     // Google 신규 사용자가 추가 프로필 등록을 해야 하는 상태를 표시한다.
@@ -324,7 +332,9 @@ public class LoginPresenter
         _model.SetSigningIn(false);
         RefreshView();
         _view.ShowRegisterPanel();
-        _view.SetRegisterMessage("아이디와 비밀번호를 입력해 회원가입을 완료해 주세요.");
+        _view.SetRegisterMessage(Localized(
+            "아이디와 비밀번호를 입력해 회원가입을 완료해 주세요.",
+            "Enter an ID and password to complete sign-up."));
     }
 
     // 회원가입 실패 메시지를 회원가입 패널에 표시한다.
@@ -333,7 +343,7 @@ public class LoginPresenter
         _model.SetSigningIn(false);
         RefreshView();
         _view.ShowRegisterPanel();
-        _view.SetRegisterMessage(string.IsNullOrEmpty(error) ? "회원가입에 실패했습니다." : error);
+        _view.SetRegisterMessage(LocalizedError(error, "회원가입에 실패했습니다.", "Sign-up failed."));
     }
 
     // 현재 모델 상태를 View에 반영한다.
@@ -358,7 +368,9 @@ public class LoginPresenter
         }
 
         _view.ShowRegisterPanel();
-        _view.SetRegisterMessage("Editor 테스트 계정 이메일과 비밀번호를 입력한 뒤 Google 로그인을 눌러 주세요.");
+        _view.SetRegisterMessage(Localized(
+            "Editor 테스트 계정 이메일과 비밀번호를 입력한 뒤 Google 로그인을 눌러 주세요.",
+            "Enter the Editor test account email and password, then select Google Sign-In."));
     }
 
     private void StartEditorGoogleLoginFromInput(string email, string password)
@@ -371,7 +383,7 @@ public class LoginPresenter
         }
 
         _model.SetGoogleLoginRequested(true);
-        _view.SetRegisterMessage("Editor 테스트 계정으로 로그인 중입니다.");
+        _view.SetRegisterMessage(Localized("Editor 테스트 계정으로 로그인 중입니다.", "Logging in with the Editor test account..."));
         GameManager.Instance.StartGoogleSignIn(email, password);
     }
 
@@ -380,22 +392,22 @@ public class LoginPresenter
     {
         if (string.IsNullOrWhiteSpace(playerId))
         {
-            return "아이디를 입력해 주세요.";
+            return Localized("아이디를 입력해 주세요.", "Please enter an ID.");
         }
 
         if (playerId.Trim().Length < 2 || playerId.Trim().Length > 20)
         {
-            return "아이디는 2~20자로 입력해 주세요.";
+            return Localized("아이디는 2~20자로 입력해 주세요.", "ID must be 2–20 characters long.");
         }
 
         if (string.IsNullOrWhiteSpace(password))
         {
-            return "비밀번호를 입력해 주세요.";
+            return Localized("비밀번호를 입력해 주세요.", "Please enter a password.");
         }
 
         if (password.Length < 4)
         {
-            return "테스트 비밀번호는 4자 이상 입력해 주세요.";
+            return Localized("테스트 비밀번호는 4자 이상 입력해 주세요.", "Test password must be at least 4 characters long.");
         }
 
         return null;
@@ -406,19 +418,35 @@ public class LoginPresenter
     {
         if (string.IsNullOrWhiteSpace(email))
         {
-            return "Editor 테스트 이메일을 입력해 주세요.";
+            return Localized("Editor 테스트 이메일을 입력해 주세요.", "Please enter the Editor test email.");
         }
 
         if (!email.Contains("@"))
         {
-            return "Editor 테스트 이메일 형식이 올바르지 않습니다.";
+            return Localized("Editor 테스트 이메일 형식이 올바르지 않습니다.", "Enter a valid Editor test email address.");
         }
 
         if (string.IsNullOrWhiteSpace(password))
         {
-            return "Editor 테스트 비밀번호를 입력해 주세요.";
+            return Localized("Editor 테스트 비밀번호를 입력해 주세요.", "Please enter the Editor test password.");
         }
 
         return null;
+    }
+
+    private static string Localized(string korean, string english)
+    {
+        return IsEnglish() ? english : korean;
+    }
+
+    private static string LocalizedError(string error, string koreanFallback, string englishFallback)
+    {
+        if (IsEnglish()) return englishFallback;
+        return string.IsNullOrEmpty(error) ? koreanFallback : error;
+    }
+
+    private static bool IsEnglish()
+    {
+        return LocalizationManager.Instance != null && LocalizationManager.Instance.CurrentLanguage == "en";
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // 작성자 : 홍정옥
@@ -49,11 +50,40 @@ public class ArtifactEquipController : MonoBehaviour
         if (_detailPopup != null) _detailPopup.OnEquipRequested -= HandleEquipRequested;
         if (_equipBinder != null) _equipBinder.OnSlotIndexClicked -= HandleReplaceSlotSelected;
         UnsubscribeInventoryUpdated();
+
+        if (_waitForManagerRoutine != null)
+        {
+            StopCoroutine(_waitForManagerRoutine);
+            _waitForManagerRoutine = null;
+        }
     }
+
+    private Coroutine _waitForManagerRoutine;
 
     private void Start()
     {
         if (_replaceHint != null) _replaceHint.SetActive(false);
+        SubscribeInventoryUpdated();
+        SyncFromData();
+
+        // 모바일에서는 아티팩트 데이터 로드가 슬롯 초기화보다 늦을 수 있다.
+        // 매니저가 로드를 마치면 장착 상태로 한 번 더 맞춰 빈 슬롯으로 굳는 것을 막는다.
+        if (!IsManagerReady())
+            _waitForManagerRoutine = StartCoroutine(SyncWhenManagerReady());
+    }
+
+    private bool IsManagerReady()
+    {
+        ArtifactManager mgr = Manager;
+        return mgr != null && mgr.HasLoadedData;
+    }
+
+    private IEnumerator SyncWhenManagerReady()
+    {
+        while (!IsManagerReady())
+            yield return null;
+
+        _waitForManagerRoutine = null;
         SubscribeInventoryUpdated();
         SyncFromData();
     }
@@ -68,6 +98,10 @@ public class ArtifactEquipController : MonoBehaviour
 
         mgr.OnInventoryUpdated += HandleInventoryUpdated;
         _inventoryEventSource = mgr;
+
+        // 로드 완료 이벤트가 구독 전에 지나갔더라도, 구독 시점에 이미 로드돼 있으면 현재 장착 상태로 맞춘다.
+        if (mgr.HasLoadedData)
+            SyncFromData();
     }
 
     private void UnsubscribeInventoryUpdated()

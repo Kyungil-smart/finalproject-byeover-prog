@@ -91,6 +91,7 @@ public class AdGachaController : MonoBehaviour
 
     private void OnEnable()
     {
+        SubscribeLocalization();
         if (_actionButton != null) _actionButton.onClick.AddListener(OnClickAction);
 
         if (_adService != null)
@@ -106,6 +107,9 @@ public class AdGachaController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= RefreshUI;
+
         if (_actionButton != null) _actionButton.onClick.RemoveListener(OnClickAction);
 
         if (_adService != null)
@@ -113,6 +117,13 @@ public class AdGachaController : MonoBehaviour
             _adService.OnAdLoaded -= HandleAdLoaded;
             _adService.OnAdLoadFailed -= HandleAdLoadFailed;
         }
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= RefreshUI;
+        LocalizationManager.Instance.OnLanguageChanged += RefreshUI;
     }
 
     private void Update()
@@ -278,7 +289,9 @@ public class AdGachaController : MonoBehaviour
         if (_actionButton != null)
             _actionButton.interactable = canWatch || canDraw;
         if (_actionLabel != null)
-            _actionLabel.text = phase == Phase.PendingFreeDraw ? _drawLabel : _watchLabel;
+            _actionLabel.text = phase == Phase.PendingFreeDraw
+                ? GetUiText(11088, _drawLabel, "Open x1")
+                : GetUiText(11107, _watchLabel, "Watch an Ad to Open");
 
         // 로딩/실패 인디케이터
         bool loading = phase == Phase.Available && _adService != null && !adReady;
@@ -296,13 +309,33 @@ public class AdGachaController : MonoBehaviour
         {
             case Phase.Cooldown:
                 TimeSpan t = RemainingCooldown();
-                return _cooldownPrefix + string.Format("{0:00} : {1:00} : {2:00}",
+                string time = string.Format("{0:00} : {1:00} : {2:00}",
                     (int)t.TotalHours, t.Minutes, t.Seconds);
+                string cooldown = GetUiText(11106, _cooldownPrefix + "{time}", "Time until next reward: {time}");
+                return cooldown.Replace("{time}", time);
             case Phase.PendingFreeDraw:
-                return _pendingMessage;
+                return GetUiText(11088, _pendingMessage, "Open Now!");
             default: // Available
-                return online ? _availableMessage : _offlineMessage;
+                return online
+                    ? GetUiText(11107, _availableMessage, "Watch an Ad to Open")
+                    : GetUiText(0, _offlineMessage, "You are offline.");
         }
+    }
+
+    private static string GetUiText(int id, string fallbackKr, string fallbackEn)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null)
+            return Application.systemLanguage == SystemLanguage.Korean ? fallbackKr : fallbackEn;
+
+        if (id > 0)
+        {
+            string localized = lm.Get(id, LocalizingType.UI);
+            if (!string.IsNullOrEmpty(localized) && !localized.StartsWith("["))
+                return localized;
+        }
+
+        return lm.CurrentLanguage == "ko" ? fallbackKr : fallbackEn;
     }
 
     // 메인 텍스트(Text_Button_Time) 갱신. 레거시 _statusText 가 있으면 함께 표시.

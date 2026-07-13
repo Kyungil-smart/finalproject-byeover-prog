@@ -32,7 +32,7 @@ public class ScenarioDataDriver : MonoBehaviour
     [SerializeField] private bool _playOnStart = false;
 
     [Header("언어")]
-    [Tooltip("켜면 영어(name_EN/Text_EN), 끄면 한국어. 추후 LocalizationManager 연동 예정")]
+    [Tooltip("LocalizationManager가 없을 때 사용할 언어. 켜면 영어, 끄면 한국어")]
     [SerializeField] private bool _useEnglish = false;
 
     [Header("스프라이트 경로 (Resources 하위, 끝에 / 포함)")]
@@ -154,8 +154,15 @@ public class ScenarioDataDriver : MonoBehaviour
     {
         Story_TalkData line = _lines[_index];
 
-        string speakerName = _useEnglish ? line.name_EN : line.name_KR;
-        string text        = _useEnglish ? line.Text_EN : line.Text_KR;
+        bool useEnglish = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "en"
+            : _useEnglish;
+        string speakerName = useEnglish && !string.IsNullOrWhiteSpace(line.name_EN)
+            ? line.name_EN
+            : line.name_KR;
+        string text = useEnglish && !string.IsNullOrWhiteSpace(line.Text_EN)
+            ? line.Text_EN
+            : line.Text_KR;
 
         // 초상화 슬롯 매핑(임시 규칙): portrait1=좌 / portrait2=중 / portrait3=우.
         //   data의 direction1/2/3(방향/배치) 의미는 기획 확정 후 반영. (현재 데이터 전부 0이라 미사용)
