@@ -84,6 +84,7 @@ public class HousingAdRewardController : MonoBehaviour
     // 광고 로드·보상·종료와 네트워크 상태 이벤트 등록
     private void SubscribeExternalEvents()
     {
+        UseReadyAdServiceIfAvailable();
         ResolveAdReferences();
 
         if (_adService != null)
@@ -147,6 +148,26 @@ public class HousingAdRewardController : MonoBehaviour
         if (_networkChecker == null)
         {
             _networkChecker = FindFirstObjectByType<NetworkChecker>(FindObjectsInactive.Include);
+        }
+    }
+
+    // 상점에서 미리 로드한 광고가 있으면 하우징 전용 광고를 다시 기다리지 않고 재사용한다.
+    private void UseReadyAdServiceIfAvailable()
+    {
+        RewardedAdService[] _services = FindObjectsByType<RewardedAdService>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < _services.Length; i++)
+        {
+            RewardedAdService _service = _services[i];
+            if (_service == null || !_service.IsAdReady)
+            {
+                continue;
+            }
+
+            _adService = _service;
+            return;
         }
     }
 

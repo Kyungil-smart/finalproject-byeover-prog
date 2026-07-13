@@ -59,6 +59,7 @@ public class ArtifactManager : MonoBehaviour
         {
             GameManager.Instance.ApplyCloudDataToArtifactManager(this);
             HasLoadedData = true;
+            OnInventoryUpdated?.Invoke(); // 로드 전에 그려진 장착 슬롯을 저장 데이터로 다시 동기화한다.
             Debug.Log("[로드 완료] 아티팩트 데이터를 불러왔습니다.");
         }
     }

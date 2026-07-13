@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using GoogleMobileAds.Api;
+using GoogleMobileAds.Common;
 
 // 작성자 : 홍정옥
 // 설명   : Google Mobile Ads 보상형 광고(RewardedAd) 래퍼
@@ -95,13 +96,16 @@ public class RewardedAdService : MonoBehaviour
 
         MobileAds.Initialize(_initializationStatus =>
         {
-            bool _isSucceeded = _initializationStatus != null;
-            _isSdkInitialized = _isSucceeded;
-            _isSdkInitializationStarted = false;
+            RunOnUnityMainThread(() =>
+            {
+                bool _isSucceeded = _initializationStatus != null;
+                _isSdkInitialized = _isSucceeded;
+                _isSdkInitializationStarted = false;
 
-            Action<bool> _callbacks = OnSdkInitializationCompleted;
-            OnSdkInitializationCompleted = null;
-            _callbacks?.Invoke(_isSucceeded);
+                Action<bool> _callbacks = OnSdkInitializationCompleted;
+                OnSdkInitializationCompleted = null;
+                _callbacks?.Invoke(_isSucceeded);
+            });
         });
     }
 
@@ -146,21 +150,24 @@ public class RewardedAdService : MonoBehaviour
         var request = new AdRequest();
         RewardedAd.Load(adUnitId, request, (RewardedAd ad, LoadAdError error) =>
         {
-            _isLoading = false;
-
-            if (error != null || ad == null)
+            RunOnUnityMainThread(() =>
             {
-                Debug.LogWarning($"[RewardedAdService] 광고 로드 실패: {error}", this);
-                OnAdLoadFailed?.Invoke();
-                ScheduleRetry(nameof(RetryLoad));
-                return;
-            }
+                _isLoading = false;
 
-            Debug.Log("[RewardedAdService] 광고 로드 완료");
-            CancelInvoke(nameof(RetryLoad));
-            _rewardedAd = ad;
-            RegisterAdEvents(ad);
-            OnAdLoaded?.Invoke();
+                if (error != null || ad == null)
+                {
+                    Debug.LogWarning($"[RewardedAdService] 광고 로드 실패: {error}", this);
+                    OnAdLoadFailed?.Invoke();
+                    ScheduleRetry(nameof(RetryLoad));
+                    return;
+                }
+
+                Debug.Log("[RewardedAdService] 광고 로드 완료");
+                CancelInvoke(nameof(RetryLoad));
+                _rewardedAd = ad;
+                RegisterAdEvents(ad);
+                OnAdLoaded?.Invoke();
+            });
         });
     }
 
@@ -229,14 +236,17 @@ public class RewardedAdService : MonoBehaviour
         {
             _rewardedAd.Show(_ =>
             {
-                // 보상 지급 조건 충족(광고를 끝까지 시청)
-                if (_rewardEarnedThisShow)
+                RunOnUnityMainThread(() =>
                 {
-                    return;
-                }
+                    // 보상 지급 조건 충족(광고를 끝까지 시청)
+                    if (_rewardEarnedThisShow)
+                    {
+                        return;
+                    }
 
-                _rewardEarnedThisShow = true;
-                _pendingReward?.Invoke();
+                    _rewardEarnedThisShow = true;
+                    _pendingReward?.Invoke();
+                });
             });
         }
         catch (Exception _exception)
@@ -264,31 +274,47 @@ public class RewardedAdService : MonoBehaviour
     {
         ad.OnAdFullScreenContentOpened += () =>
         {
-            _rewardEarnedThisShow = false;
+            RunOnUnityMainThread(() => _rewardEarnedThisShow = false);
         };
 
         ad.OnAdFullScreenContentClosed += () =>
         {
-            Action _closedCallback = _pendingClosed;
-            ReleaseShowingState();
-            ClearPending();
-            _closedCallback?.Invoke();
-            LoadAd(); // 다음 시청을 위해 미리 로드
+            RunOnUnityMainThread(() =>
+            {
+                Action _closedCallback = _pendingClosed;
+                ReleaseShowingState();
+                ClearPending();
+                _closedCallback?.Invoke();
+                LoadAd(); // 다음 시청을 위해 미리 로드
+            });
         };
 
         ad.OnAdFullScreenContentFailed += (AdError adError) =>
         {
-            Debug.LogWarning($"[RewardedAdService] 광고 표시 실패: {adError}", this);
-            Action _failedCallback = _pendingFailed;
-            bool _shouldNotifyFailure = !_rewardEarnedThisShow;
-            ReleaseShowingState();
+            RunOnUnityMainThread(() =>
+            {
+                Debug.LogWarning($"[RewardedAdService] 광고 표시 실패: {adError}", this);
+                Action _failedCallback = _pendingFailed;
+                bool _shouldNotifyFailure = !_rewardEarnedThisShow;
+                ReleaseShowingState();
 
-            if (_shouldNotifyFailure)
-                _failedCallback?.Invoke();
+                if (_shouldNotifyFailure)
+                    _failedCallback?.Invoke();
 
-            ClearPending();
-            LoadAd();
+                ClearPending();
+                LoadAd();
+            });
         };
+    }
+
+    private static void RunOnUnityMainThread(Action _callback)
+    {
+        if (_callback == null)
+        {
+            return;
+        }
+
+        MobileAdsEventExecutor.ExecuteInUpdate(_callback);
     }
 
     private void ReleaseShowingState()
