@@ -380,7 +380,7 @@ public class StageModel
         if (poolId < 0) return new SpawnCommand { CharacterId = -1 };
 
         int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
-        var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, poolId);
+        var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, rule.MonsterWavePool_ID);
 
         // 현재 스테이지와 시작 스테이지의 차이를 계산하여 누적 횟수 산출
         int accumulateCount = 0;
