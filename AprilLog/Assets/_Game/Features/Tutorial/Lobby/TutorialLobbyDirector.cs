@@ -6,6 +6,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 튜토리얼 돌파 재료 지급을 ArtifactManager 저장 이벤트 경로로 통합
+
 // 로비 아티팩트 튜토리얼(7-3-3)을 구동한다. 레벨5 강화→돌파→장착 흐름을 감지·연출한다.
 public class TutorialLobbyDirector : MonoBehaviour
 {
@@ -240,7 +243,7 @@ public class TutorialLobbyDirector : MonoBehaviour
         // 돌파는 같은 장비를 소모하는데, AddArtifact로 중복을 지급하면 소유 상한(MaxOwned-1)을
         // 넘겨 곧바로 자동 분해된다. 돌파에 필요한 여유분을 직접 확보한다.
         int required = ResolveAscensionCostAmount(seal);
-        seal.CurrentCount = Mathf.Max(seal.CurrentCount, required + 1);
+        _artifacts.EnsureArtifactCount(seal.UniqueId, required + 1);
 
         if (_detailPopup != null)
             _detailPopup.RefreshCurrentArtifact();
