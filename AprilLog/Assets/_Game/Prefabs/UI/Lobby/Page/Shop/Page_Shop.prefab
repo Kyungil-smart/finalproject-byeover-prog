@@ -2252,8 +2252,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GachaDecomposeRewardView
   _slots:
   - {fileID: 6337103166678457152}
-  _stoneIcon: {fileID: 0}
-  _shardIcon: {fileID: 0}
+  _stoneIcon: {fileID: 21300000, guid: a967fcca5ef205b48bd501b6bc97f0b3, type: 3}
+  _shardIcon: {fileID: 21300000, guid: 4f7248011296abf4b9068420f46c8f0d, type: 3}
 --- !u!1 &5583240951169363443
 GameObject:
   m_ObjectHideFlags: 0
@@ -2389,8 +2389,8 @@ MonoBehaviour:
   _slots:
   - {fileID: 4783933463436787560}
   - {fileID: 3157840761743087420}
-  _stoneIcon: {fileID: 0}
-  _shardIcon: {fileID: 0}
+  _stoneIcon: {fileID: 21300000, guid: a967fcca5ef205b48bd501b6bc97f0b3, type: 3}
+  _shardIcon: {fileID: 21300000, guid: 4f7248011296abf4b9068420f46c8f0d, type: 3}
 --- !u!1 &5714022565613389077
 GameObject:
   m_ObjectHideFlags: 0
@@ -2637,7 +2637,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArtifactGachaPopupQueue
   _rewardPopup: {fileID: 6567155817375912592}
-  _mileageIcon: {fileID: 0}
+  _itemIcons:
+  - itemId: 70001
+    icon: {fileID: 21300000, guid: 7e2684064094727418b1f99c42e2bf56, type: 3}
+  - itemId: 70004
+    icon: {fileID: 21300000, guid: a967fcca5ef205b48bd501b6bc97f0b3, type: 3}
+  - itemId: 70006
+    icon: {fileID: 21300000, guid: 56254bd9e69d4d349a357844fc4855df, type: 3}
+  - itemId: 70007
+    icon: {fileID: 21300000, guid: 56254bd9e69d4d349a357844fc4855df, type: 3}
+  - itemId: 70008
+    icon: {fileID: 21300000, guid: 56254bd9e69d4d349a357844fc4855df, type: 3}
+  _fallbackIcon: {fileID: 0}
   _mileageTitleFormat: "\uB204\uC801 \uBCF4\uC0C1 ({0}/{1})"
 --- !u!114 &6567155817375912592
 MonoBehaviour:
@@ -4767,6 +4778,22 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8689295808461114034}
     - target: {fileID: 242652413580677944, guid: 0999d0b3b48e08b43ae63f3bfc54dcd6, type: 3}
+      propertyPath: _singleDrawCostTexts.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 242652413580677944, guid: 0999d0b3b48e08b43ae63f3bfc54dcd6, type: 3}
+      propertyPath: '_singleDrawCostTexts.Array.data[0]'
+      value:
+      objectReference: {fileID: 675895647777487339}
+    - target: {fileID: 242652413580677944, guid: 0999d0b3b48e08b43ae63f3bfc54dcd6, type: 3}
+      propertyPath: _tenDrawCostTexts.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 242652413580677944, guid: 0999d0b3b48e08b43ae63f3bfc54dcd6, type: 3}
+      propertyPath: '_tenDrawCostTexts.Array.data[0]'
+      value:
+      objectReference: {fileID: 5640904927839740930}
+    - target: {fileID: 242652413580677944, guid: 0999d0b3b48e08b43ae63f3bfc54dcd6, type: 3}
       propertyPath: '_tenSlots.Array.data[0]'
       value: 
       objectReference: {fileID: 2022230574935195567}
@@ -5608,7 +5635,11 @@ PrefabInstance:
       objectReference: {fileID: 311347226659114137}
     - target: {fileID: 880318622473066334, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
       propertyPath: _postProcessor
-      value: 
+      value:
+      objectReference: {fileID: 5117347384849906618}
+    - target: {fileID: 4430142255384046502, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
+      propertyPath: _postProcessor
+      value:
       objectReference: {fileID: 5117347384849906618}
     - target: {fileID: 880318622473066334, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
       propertyPath: _tenResultPopup
@@ -5630,6 +5661,22 @@ PrefabInstance:
       propertyPath: _singleDecomposeView
       value: 
       objectReference: {fileID: 8689295808461114034}
+    - target: {fileID: 880318622473066334, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
+      propertyPath: _singleDrawCostTexts.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 880318622473066334, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
+      propertyPath: '_singleDrawCostTexts.Array.data[0]'
+      value:
+      objectReference: {fileID: 675895647777487339}
+    - target: {fileID: 880318622473066334, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
+      propertyPath: _tenDrawCostTexts.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 880318622473066334, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
+      propertyPath: '_tenDrawCostTexts.Array.data[0]'
+      value:
+      objectReference: {fileID: 5640904927839740930}
     - target: {fileID: 880318622473066334, guid: 06e94e99d95e8a94598b663c8bdc6902, type: 3}
       propertyPath: '_tenSlots.Array.data[0]'
       value: 

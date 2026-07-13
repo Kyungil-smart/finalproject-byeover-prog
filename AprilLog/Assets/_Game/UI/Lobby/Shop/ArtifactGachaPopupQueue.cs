@@ -9,12 +9,22 @@ using UnityEngine;
 // (자동 분해 결과는 별도 팝업이 아니라 결과 팝업의 RewardPreviewSlot 에 표시되므로 여기서 다루지 않는다.)
 public class ArtifactGachaPopupQueue : MonoBehaviour
 {
+    // 아이템 ID -> 아이콘 매핑(프로젝트에 아이템 아이콘 DB가 없어 인스펙터로 직접 연결).
+    [System.Serializable]
+    public struct ItemIcon
+    {
+        public int itemId;
+        public Sprite icon;
+    }
+
     [Header("누적 보상 팝업")]
     [SerializeField] private GachaRewardPopup _rewardPopup;
 
-    [Header("보상 아이콘 (선택)")]
-    [Tooltip("누적 보상 아이콘(아이콘 매핑 전 임시. 비우면 슬롯은 수량만)")]
-    [SerializeField] private Sprite _mileageIcon;
+    [Header("보상 아이콘")]
+    [Tooltip("누적 보상 아이템 아이콘 매핑(itemId → Sprite). 미매핑 아이템은 아래 기본 아이콘 사용")]
+    [SerializeField] private List<ItemIcon> _itemIcons = new List<ItemIcon>();
+    [Tooltip("매핑에 없는 아이템에 쓸 기본 아이콘(선택)")]
+    [SerializeField] private Sprite _fallbackIcon;
 
     [Header("문구")]
     [SerializeField] private string _mileageTitleFormat = "누적 보상 ({0}/{1})";
@@ -61,10 +71,11 @@ public class ArtifactGachaPopupQueue : MonoBehaviour
             {
                 int index = i + 1;
                 string title = string.Format(_mileageTitleFormat, index, total);
-                var entries = new List<GachaRewardPopup.Entry>
-                {
-                    new GachaRewardPopup.Entry(_mileageIcon, data.MileageRewardAmount),
-                };
+                var entries = new List<GachaRewardPopup.Entry>();
+                if (data.MileageRewardAmount > 0)
+                    entries.Add(new GachaRewardPopup.Entry(ResolveIcon(data.MileageRewardItem), data.MileageRewardAmount));
+                if (data.MileageRewardAmount2 > 0)
+                    entries.Add(new GachaRewardPopup.Entry(ResolveIcon(data.MileageRewardItem2), data.MileageRewardAmount2));
 
                 _queue.Enqueue(() => _rewardPopup.Open(title, entries, ShowNext));
             }
@@ -75,6 +86,17 @@ public class ArtifactGachaPopupQueue : MonoBehaviour
 
         _running = true;
         ShowNext();
+    }
+
+    // 보상 아이템 ID -> 아이콘. 매핑에 없으면 기본 아이콘으로 대체한다.
+    private Sprite ResolveIcon(int itemId)
+    {
+        for (int i = 0; i < _itemIcons.Count; i++)
+        {
+            if (_itemIcons[i].itemId == itemId)
+                return _itemIcons[i].icon;
+        }
+        return _fallbackIcon;
     }
 
     private void ShowNext()

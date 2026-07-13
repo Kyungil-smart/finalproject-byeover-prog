@@ -182,6 +182,8 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
 
         result.MileageRewardItem = reward.FirstRewardItem;
         result.MileageRewardAmount = reward.FirstRewardAmount;
+        result.MileageRewardItem2 = reward.SecondRewardAmount > 0 ? reward.SecondRewardItem : 0;
+        result.MileageRewardAmount2 = reward.SecondRewardAmount > 0 ? reward.SecondRewardAmount : 0;
 
         // 누적 보상 아이템(데이터의 FirstRewardItem)은 뽑기권/랜덤기어보상/재료 등 아이템 타입이라,
         // 현재 프로젝트엔 이를 지급할 공용 아이템/인벤토리 시스템이 없다. 지금은 결과 팝업에 '표시만' 한다.
