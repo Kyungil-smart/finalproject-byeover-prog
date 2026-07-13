@@ -43,6 +43,7 @@ public class CombatSystem : MonoBehaviour
     private ISortNotifier _sortNotifier;
     private float _autoAttackTimer;
     private int _autoAttackCount; // 누적 자동공격 횟수 (N회마다 일반 스킬 인챈트 발동용)
+    private float _playerAttackSpeed => _playerModel.AttackSpeed;
 
     private void Awake()
     {
@@ -110,7 +111,7 @@ public class CombatSystem : MonoBehaviour
         ExpireHasteIfDue();
 
         _autoAttackTimer += Time.deltaTime;
-        if (_autoAttackTimer >= _autoAttackInterval * _hasteIntervalMul) // 헤이스트 시 간격 단축
+        if (_autoAttackTimer >= _playerAttackSpeed * _hasteIntervalMul) // 헤이스트 시 간격 단축
         {
             _autoAttackTimer = 0f;
 

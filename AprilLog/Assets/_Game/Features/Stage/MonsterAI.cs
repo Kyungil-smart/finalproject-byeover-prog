@@ -387,13 +387,14 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_state == State.Dead) return;
 
         // Final_Damage = Base_Damage x { 1 - Effective_Armor / (100 + Effective_Armor) }
-        int penetration = 0; // Todo : 데모때는 관통 없음. CBT때 시트 수정 예정
+        int penetration = _playerModel.FlatPierce;
         // 유효 방어력 하한 0 (관통이 방어력보다 커도 데미지가 증폭되지 않도록, 기획 2-4-4)
         int effectiveArmor = Mathf.Max(0, _defense - penetration);
         int finalDamage = Mathf.FloorToInt(baseDamage * (1 - effectiveArmor / (float)(100 + effectiveArmor)));
 
         RunStats.AddDamage(finalDamage, skillId); // 정산용: 총 데미지 + 스킬(인챈트)별 최고뎀 누적
-
+        Debug.Log($"{MonsterID} : {finalDamage} 피해입음. 유효아머/기본 아머 : {effectiveArmor}/{_defense}");
+        
         // 원소 피격음(SFX 가이드 인게임 2~6): skillId=StandardID(1xx~5xx)의 백의 자리가 원소. 기본공격(0)은 대상 아님.
         // SfxId.HitFire~HitIce가 원소 번호 순서라 산술 변환 가능. 다발 피격 스팸은 라이브러리 minInterval이 걸러준다.
         int element = skillId / 100;
