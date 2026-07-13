@@ -12,6 +12,7 @@ public interface ILoginView
     event Action<string, string> OnExistingAccountLoginClicked;
     event Action<string, string> OnRegisterClicked;
     event Action<bool> OnTermsAgreementChanged;
+    event Action OnTermsReadCompleted;
     event Action OnTermsConfirmed; // 추가: 약관 모달 확인 버튼 입력을 Presenter로 전달
     event Action OnTermsPopupClicked;
     event Action OnPopupClosed;
@@ -31,6 +32,7 @@ public interface ILoginView
     void ShowTermsAgreementPanel();
     void HideTermsAgreementPanel();
     void ShowTermsPolicyContent(string content);
+    void SetTermsToggleInteractable(bool isInteractable);
     void SetTermsConfirmButtonInteractable(bool isInteractable);
 
     // Firebase 인증 진행 중 로딩 표시와 입력 잠금을 제어

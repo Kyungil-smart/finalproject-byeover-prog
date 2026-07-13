@@ -11,11 +11,16 @@ using UnityEngine.UI;
 
 // 1차 수정자 : 조규민
 // 수정 내용 : 다시보기 슬롯의 고정 문구와 데이터 표시 형식을 LocalizationManager ID 기반으로 갱신,
-// LocalizationManager 초기화 전에는 숫자 ID 대신 기본 문구를 표시
+// LocalizationManager 초기화 전에는 숫자 ID 대신 기본 문구를 표시,
+// 챕터/에피소드/잠금 상태 텍스트에 지정된 UI Language ID와 동적 자리표시자를 적용
 
 public class ReplayStorySlot : MonoBehaviour
 {
+    private const int _headerReplayTextId = 11015;
+    private const int _episodeTitleTextId = 11014;
     private const int _viewButtonTextId = 13025;
+    private const int _lockedStateTextId = 13026;
+    private const string _chapterPlaceholder = "{chaptername}";
     private const string _viewButtonFallbackKr = "다시보기";
     private const string _viewButtonFallbackEn = "Replay";
 
@@ -163,10 +168,57 @@ public class ReplayStorySlot : MonoBehaviour
         if (_currentData == null)
             return;
 
-        // 제목/안내문구는 데이터(팝업에서 로컬라이즈)로 그대로 표시한다.
-        SetText(textHeaderReplay, _currentData.ChapterTitle);
-        SetText(textEpisodeTitle, _currentData.EpisodeTitle);
+        SetText(textHeaderReplay, GetHeaderDisplayText(_currentData));
+        SetText(textEpisodeTitle, GetEpisodeDisplayText(_currentData));
         SetText(textState, GetStateDisplayText(_currentData));
+    }
+
+    private static string GetHeaderDisplayText(ReplayStoryData _data)
+    {
+        string _chapterValue = GetChapterDisplayValue(_data.ChapterTitle);
+
+        if (LocalizationManager.Instance == null)
+            return _data.ChapterTitle ?? string.Empty;
+
+        string _localizedText = LocalizationManager.Instance.Get(
+            _headerReplayTextId,
+            LocalizingType.UI,
+            _chapterValue);
+
+        return IsMissingLocalizationText(_localizedText, _headerReplayTextId)
+            ? _data.ChapterTitle ?? string.Empty
+            : _localizedText;
+    }
+
+    private static string GetChapterDisplayValue(string _chapterTitle)
+    {
+        if (string.IsNullOrWhiteSpace(_chapterTitle))
+            return string.Empty;
+
+        const string _chapterPrefix = "CHAPTER";
+        string _trimmedTitle = _chapterTitle.Trim();
+
+        if (!_trimmedTitle.StartsWith(_chapterPrefix, StringComparison.OrdinalIgnoreCase))
+            return _trimmedTitle;
+
+        string _chapterValue = _trimmedTitle.Substring(_chapterPrefix.Length).Trim(' ', '.', ':', '-');
+        return string.IsNullOrWhiteSpace(_chapterValue) ? _trimmedTitle : _chapterValue;
+    }
+
+    private static string GetEpisodeDisplayText(ReplayStoryData _data)
+    {
+        string _episodeTitle = _data.EpisodeTitle ?? string.Empty;
+
+        if (LocalizationManager.Instance == null)
+            return _episodeTitle;
+
+        string _template = LocalizationManager.Instance.Get(_episodeTitleTextId, LocalizingType.UI);
+        if (IsMissingLocalizationText(_template, _episodeTitleTextId))
+            return _episodeTitle;
+
+        return _template.Contains(_chapterPlaceholder)
+            ? _template.Replace(_chapterPlaceholder, _episodeTitle)
+            : _template;
     }
 
     // 해금 상태별 안내문구. 해금 완료면 비우고, 미해금이면 해금 조건을 보여준다.
@@ -175,7 +227,13 @@ public class ReplayStorySlot : MonoBehaviour
         if (data.State == ReplayStoryState.Cleared)
             return string.Empty;
 
-        return data.UnlockConditionText ?? string.Empty;
+        if (LocalizationManager.Instance == null)
+            return data.UnlockConditionText ?? string.Empty;
+
+        string _localizedText = LocalizationManager.Instance.Get(_lockedStateTextId, LocalizingType.UI);
+        return IsMissingLocalizationText(_localizedText, _lockedStateTextId)
+            ? data.UnlockConditionText ?? string.Empty
+            : _localizedText;
     }
 
     private static string GetLocalizedText(int _id, string _fallbackKr, string _fallbackEn)

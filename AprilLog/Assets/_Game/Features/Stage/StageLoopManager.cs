@@ -16,6 +16,9 @@
 // 수정자 : 김영찬
 // 수정내용 : 인게임 UI에 넘겨줄 정보 이벤트 연결
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 튜토리얼 초반 방치 사망을 일반 정산으로 처리하지 않고 전용 범람 패배 흐름에 위임
+
 using System;
 using UnityEngine;
 // 추가: 조규민 - 정산 저장에서 현재 챕터와 클리어 스테이지 수를 읽을 수 있도록 공개 속성 추가
@@ -177,21 +180,10 @@ public class StageLoopManager : MonoBehaviour
 
     private void HandlePlayerDeath()
     {
-        if (IsTutorialForcedDefeatStep())
+        if (TutorialInGameDirector.ShouldHandleTutorialDefeat())
             return;
 
         EndChapter(false);
-    }
-
-    private static bool IsTutorialForcedDefeatStep()
-    {
-        TutorialManager tutorialManager = TutorialManager.Instance;
-        TutorialStep step = tutorialManager != null ? tutorialManager.CurrentStep : null;
-        return tutorialManager != null
-            && tutorialManager.IsRunning
-            && step != null
-            && step.scene == TutorialScene.InGame
-            && step.stepId == 3;
     }
 
     // ---------- 유틸 ----------
