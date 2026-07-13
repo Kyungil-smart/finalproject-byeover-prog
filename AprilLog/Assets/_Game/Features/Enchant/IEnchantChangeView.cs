@@ -3,6 +3,7 @@
 
 // 1차 수정자 : 조규민
 // 수정 내용 : 인챈트 교체 완료 확인 팝업 흐름을 위한 View 이벤트와 표시 메서드 추가
+// 수정 내용 : 스탯 인챈트의 1, 3, 5번 슬롯 배치를 위해 보유 목록 표시 시 인챈트 종류를 전달하도록 확장
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ public interface IEnchantChangeView
     void SetNewEnchantInfo(EnchantDisplayData _newData);
 
     // 현재 보유 중인 인챈트 리스트(버릴 후보군)를 화면에 세팅
-    void SetOwnedEnchantList(List<EnchantDisplayData> _ownedList);
+    void SetOwnedEnchantList(List<EnchantDisplayData> _ownedList, EnchantType _enchantType);
 
     // 교체 완료 확인 팝업에 버릴 인챈트와 새 인챈트 정보를 표시
     void ShowChangeCompletePopup(EnchantDisplayData _discardData, EnchantDisplayData _newData);

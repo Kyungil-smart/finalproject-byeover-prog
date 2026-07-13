@@ -1,3 +1,6 @@
+// 1차 수정자 : 조규민
+// 수정 내용 : 저장된 동일 챕터 전투에 재진입할 때 ChapterStart 스토리 판정을 건너뛰고 진행도를 바로 복원하도록 수정
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -63,7 +66,8 @@ public class GameStartBridge : MonoBehaviour
             return;
         }
 
-        if (!ConsumeStamina(chapterId))
+        bool _hasResumeSave = HasResumeSaveForChapter(chapterId);
+        if (!ConsumeStamina(chapterId, _hasResumeSave))
         {
             Debug.Log($"[GameStartBridge] 스태미너가 소모되지 않았습니다. 이동을 취소합니다");
             return;
@@ -76,6 +80,14 @@ public class GameStartBridge : MonoBehaviour
         if (tutorialStageStart)
         {
             GameStart();
+            return;
+        }
+
+        // 추가: 조규민 - 이어하기는 신규 챕터 진입이 아니므로 초회 스토리 판정보다 우선해 저장 전투로 바로 이동한다.
+        if (_hasResumeSave)
+        {
+            Debug.Log($"[GameStartBridge] 챕터 {chapterId} 저장 전투 이어하기. ChapterStart 스토리를 건너뜁니다.");
+            GameStart(chapterId);
             return;
         }
 
@@ -150,24 +162,32 @@ public class GameStartBridge : MonoBehaviour
         GameManager.Instance.LoadScenarioByGroupId(groupId);
     }
 
-    private bool ConsumeStamina(int chapterId)
+    private bool HasResumeSaveForChapter(int _chapterId)
+    {
+        GameManager _gameManager = GameManager.Instance;
+        if (_gameManager == null || !_gameManager.HasLocalSave())
+        {
+            return false;
+        }
+
+        InGameSaveData _saveData = _gameManager.LoadLocalSaveData();
+        return _saveData != null && _saveData.chapterId == _chapterId;
+    }
+
+    private bool ConsumeStamina(int _chapterId, bool _hasResumeSave)
     {
         _stageRepo ??= DataManager.Instance.StageRepo;
-        var data = _stageRepo.GetChapter(chapterId);
+        var data = _stageRepo.GetChapter(_chapterId);
         if (data == null)
         {
             Debug.LogWarning("[GameStartBridge] 해당 챕터의 정보를 찾을수 없습니다. 스태미너 소모를 중단합니다.");
             return false;
         }
 
-        if (GameManager.Instance != null || GameManager.Instance.HasLocalSave())
+        if (_hasResumeSave)
         {
-            var saveData = GameManager.Instance.LoadLocalSaveData();
-            if (saveData != null && saveData.chapterId == chapterId)
-            {
-                Debug.Log("[GameStartBridge] 저장된 진행사항 확인. 스태미너 소모 0");
-                return true;
-            }
+            Debug.Log("[GameStartBridge] 저장된 진행사항 확인. 스태미너 소모 0");
+            return true;
         }
         
         int cost = Mathf.Max(0, data.StaminaCost);
