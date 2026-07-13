@@ -312,9 +312,10 @@ public class TutorialLobbyDirector : MonoBehaviour
     {
         if (_level5Handled) return;   // 레벨5 이후는 돌파/장착 흐름이 담당
 
-        // 팝업이 닫혀 버튼이 사라지면 다시 열릴 때 재강조하도록 초기화한다.
+        // 팝업이 닫혀 버튼이 사라지면 딤도 걷고, 다시 열릴 때 재강조하도록 초기화한다.
         if (_ascendButton == null || !_ascendButton.gameObject.activeInHierarchy)
         {
+            if (_levelUpGuideShown) HideGuide();
             _levelUpGuideShown = false;
             return;
         }
@@ -322,7 +323,8 @@ public class TutorialLobbyDirector : MonoBehaviour
         if (_levelUpGuideShown) return;
 
         ResolveGuideIfNeeded();
-        if (_dimMask != null) _dimMask.Hide();   // step12는 딤 없이 손가락만(noDim)
+        // 레벨업 버튼만 구멍으로 열고 나머지(장착 등)는 딤이 막아 튜토리얼 순서를 벗어난 클릭을 차단한다.
+        if (_dimMask != null) _dimMask.ShowWithHole(_ascendButton);
         if (_finger != null) _finger.PointAt(_ascendButton);
         _levelUpGuideShown = true;
     }
@@ -331,7 +333,8 @@ public class TutorialLobbyDirector : MonoBehaviour
     {
         ResolveGuideIfNeeded();
         SetAscendButtonState(true);
-        if (_dimMask != null) _dimMask.Hide();
+        // 돌파 단계도 돌파 버튼만 열고 장착 버튼은 막아 순서를 강제한다.
+        if (_dimMask != null) _dimMask.ShowWithHole(_ascendButton);
         if (_finger != null) _finger.PointAt(_ascendButton);
     }
 

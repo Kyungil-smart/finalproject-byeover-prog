@@ -220,11 +220,15 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_levelUpButtonLabel == null)
             _levelUpButtonLabel = ResolveLevelUpButtonLabel();
         if (_levelUpButtonLabel != null)
-            _levelUpButtonLabel.text = isLevelCapReached ? _ascendLabel : _levelUpLabel;
+            _levelUpButtonLabel.text = isLevelCapReached
+                ? LocalizedText(11071, _ascendLabel)     // 돌파
+                : LocalizedText(11069, _levelUpLabel);    // 레벨업
 
         // 장착 버튼 라벨 : 이미 장착된 아티팩트면 '해제', 아니면 '장착'.
         if (_equipButtonLabel != null)
-            _equipButtonLabel.text = (owned && inst.IsEquipped) ? _unequipLabel : _equipLabel;
+            _equipButtonLabel.text = (owned && inst.IsEquipped)
+                ? LocalizedText(13071, _unequipLabel)     // 해제
+                : LocalizedText(11068, _equipLabel);      // 장착
 
         RefreshPopupSlotViews(gearId, inst);
         PopulateLevelStats(gearId, inst);
@@ -344,7 +348,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         }
 
         if (_nameText != null) _nameText.text = ResolveName(master);
-        if (_gradeText != null) _gradeText.text = ArtifactGradeInfo.DisplayName(grade);
+        if (_gradeText != null) _gradeText.text = LocalizedGrade(grade);
         SetAttackValueText(_equipAttackText, master.AttackBaseAmount);
         SetAttackValueText(_ownedAttackText, ResolveOwnedAttack(master));
         if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
@@ -442,6 +446,28 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     // 특수능력 코드(Special) → 표시 이름. 데이터에 한글 이름이 없어 코드로 매핑한다.
     // (문구는 확정되면 수정)
+    // UI 라벨을 현지화 테이블에서 조회한다. 매니저 없음/미존재([id])면 인스펙터 기본 한글로 폴백.
+    private static string LocalizedText(int id, string fallback)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null) return fallback;
+        string s = lm.Get(id, LocalizingType.UI);
+        return string.IsNullOrEmpty(s) || s.StartsWith("[") ? fallback : s;
+    }
+
+    // 등급 표시명을 현지화한다(레어 11053 / 에픽 11054 / 레전더리 11055).
+    private static string LocalizedGrade(ArtifactGrade grade)
+    {
+        int id = grade switch
+        {
+            ArtifactGrade.Rare => 11053,
+            ArtifactGrade.Epic => 11054,
+            ArtifactGrade.Legendary => 11055,
+            _ => 0
+        };
+        return id != 0 ? LocalizedText(id, ArtifactGradeInfo.DisplayName(grade)) : ArtifactGradeInfo.DisplayName(grade);
+    }
+
     private string ResolveSpecialName(string code) => code switch
     {
         "ATKPercent"      => "공격력 증가",
@@ -518,19 +544,30 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         return inst != null && !inst.CanLevelUp() && !inst.CanAscend();
     }
 
+    // 기어 이름은 GearMasterData.GearName(번역 연결 ID)로 Gear 현지화 테이블에서 조회한다.
     private string ResolveName(GearMasterData gear)
     {
-        if (_localization != null)
-            return _localization.Get(_nameKeyPrefix + gear.Gear_ID);
+        if (gear == null) return string.Empty;
+
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm != null && gear.GearName != 0)
+        {
+            string name = lm.Get(gear.GearName, LocalizingType.Gear);
+            if (!string.IsNullOrEmpty(name) && !name.StartsWith("[")) return name;
+        }
         return $"{gear.GearGrade} #{gear.Gear_ID}";
     }
 
+    // 특수능력 설명은 GearMasterData.SpecialExplanation(번역 연결 ID)로 Gear 테이블에서 조회한다.
     private string ResolveSpecialDesc(GearMasterData gear)
     {
-        if (_localization != null)
+        if (gear == null) return "특수능력 정보 없음";
+
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm != null && gear.SpecialExplanation != 0)
         {
-            string desc = _localization.Get(_specialKeyPrefix + gear.Special_ID);
-            if (!string.IsNullOrEmpty(desc)) return desc;
+            string desc = lm.Get(gear.SpecialExplanation, LocalizingType.Gear);
+            if (!string.IsNullOrEmpty(desc) && !desc.StartsWith("[")) return desc;
         }
 
         GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;

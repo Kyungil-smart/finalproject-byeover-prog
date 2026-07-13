@@ -180,6 +180,10 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
     public void ForceStopJokerEffect()
     {
+        // 조커 미작동 중에는 아무것도 만지지 않는다. 보스 킬은 보스 스테이지마다 발생하므로,
+        // 가드 없이는 유휴 상태의 마스크 알파(아래 0.78 일괄 대입)까지 건드려 퍼즐이 어두워질 수 있다.
+        if (!IsActive) return;
+
         if (_activeJokerRoutine != null)
         {
             StopCoroutine(_activeJokerRoutine);

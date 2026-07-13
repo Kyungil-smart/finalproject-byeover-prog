@@ -43,7 +43,10 @@ public class CombatSystem : MonoBehaviour
     private ISortNotifier _sortNotifier;
     private float _autoAttackTimer;
     private int _autoAttackCount; // 누적 자동공격 횟수 (N회마다 일반 스킬 인챈트 발동용)
-    private float _playerAttackSpeed => _playerModel.AttackSpeed;
+    // 자동공격 간격 = 플레이어 공속 스탯(AttackSpeed, 초). 참조가 아직 없거나 스탯이 0 이하로 내려간
+    // 경우엔 인스펙터 기본 간격으로 폴백 -- 매 프레임 NRE/0간격 연사 방지.
+    private float _playerAttackSpeed =>
+        _playerModel != null && _playerModel.AttackSpeed > 0f ? _playerModel.AttackSpeed : _autoAttackInterval;
 
     private void Awake()
     {
