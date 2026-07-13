@@ -5,6 +5,7 @@
 
 // 2차 수정자 : 조규민
 // 수정 내용 : 인챈트 교체 완료 확인 팝업에서 확인한 뒤 창이 닫히도록 교체 흐름 분리
+// 수정 내용 : 스탯 인챈트가 교체 슬롯의 1, 3, 5번 위치를 사용하도록 인챈트 종류를 View에 전달
 
 using System;
 using System.Collections.Generic;
@@ -127,7 +128,8 @@ public class EnchantChangePresenter
                 break;
         }
 
-        _view.SetOwnedEnchantList(ownedList);
+        // 추가: 조규민 - 스탯 인챈트가 교체 슬롯의 1, 3, 5번 위치를 사용하도록 인챈트 종류를 View에 전달한다.
+        _view.SetOwnedEnchantList(ownedList, _pendingEnchant.Type);
     }
 
     // ---------- 유저 클릭 처리 ----------
