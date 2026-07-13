@@ -34,8 +34,21 @@ public class EliteRewardEffect : MonoBehaviour
                 Time.timeScale = 1f;
         }
     }
-
     public void PlayRewardEffect(Action onComplete)
+    {
+        StartCoroutine(WaitAndPlayReward(onComplete));
+    }
+    private System.Collections.IEnumerator WaitAndPlayReward(Action onComplete)
+    {
+        while (ScreenNavigator.IsLevelUpActive)
+        {
+            yield return null;
+        }
+
+        ExecuteRewardSequence(onComplete);
+    }
+
+    public void ExecuteRewardSequence(Action onComplete)
     {
         ScreenNavigator.IsEffectPlaying = true;
         Time.timeScale = 0f;
@@ -72,7 +85,12 @@ public class EliteRewardEffect : MonoBehaviour
                 if (jokerSystem != null)
                 {
                     jokerSystem.RestoreJokerImages();
-                    Debug.Log("[Reward] ��Ŀ ���� �Ϸ�");
+                }
+
+                if (ScreenNavigator.IsLevelUpActive)
+                {
+                    var navigator = FindFirstObjectByType<ScreenNavigator>();
+                    navigator?.ShowEnchantSelection();                  
                 }
 
                 if (!ScreenNavigator.IsMenuOpen && !ScreenNavigator.IsEffectPlaying)

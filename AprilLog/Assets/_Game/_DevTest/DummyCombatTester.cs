@@ -198,7 +198,7 @@ public class DummyCombatTester : MonoBehaviour
         _spawnerAliveList.Add(ai);
     }
 
-    private void HandleDummyMonsterDeath(MonsterAI monster, bool isKamikaze = false, bool isBoss = false, bool isElite = false) // 엘리트 인자 추가(최동훈)
+    private void HandleDummyMonsterDeath(MonsterAI monster, bool isKamikaze = false, bool isBoss = false, bool isElite = false)
     {
         monster.OnDeath -= HandleDummyMonsterDeath;
         _spawnerAliveList.Remove(monster);

@@ -9,6 +9,7 @@ public class EnchantPopupManager : MonoBehaviour
     [SerializeField] private EnchantChangeView _changeView;
 
     private int _remainingPopups = 0;
+    private bool _isEffectPlaying = false;
 
     private void Awake()
     {
@@ -28,6 +29,7 @@ public class EnchantPopupManager : MonoBehaviour
 
     public void StartRewardSequence()
     {
+        _isEffectPlaying = true;
         float rand = Random.value;
         if (rand < 0.1f) _remainingPopups = 3;
         else if (rand < 0.4f) _remainingPopups = 2;
@@ -36,17 +38,21 @@ public class EnchantPopupManager : MonoBehaviour
         Debug.Log($"[EnchantPopup] 확률 결과: {rand:F2} (0~0.1: 10%, 0.1~0.4: 30%, 0.4~1.0: 60%) | 생성된 팝업 횟수: {_remainingPopups}");
 
 
+
         if (_rewardEffect != null)
         {
             _rewardEffect.SetEnchantCount(_remainingPopups);
 
             _rewardEffect.PlayRewardEffect(() =>
             {
+                _isEffectPlaying = false;
                 ShowNextPopup();
             });
         }
+
         else
         {
+            _isEffectPlaying = false;
             ShowNextPopup();
         }
     }
@@ -70,7 +76,15 @@ public class EnchantPopupManager : MonoBehaviour
 
     public void ShowNextPopup()
     {
-        if (IsChangePopupActive()) return;
+        if (_isEffectPlaying)
+        {
+            return;
+        }
+
+        if (IsChangePopupActive())
+        {
+            return;
+        }
 
         if (_remainingPopups > 0)
         {

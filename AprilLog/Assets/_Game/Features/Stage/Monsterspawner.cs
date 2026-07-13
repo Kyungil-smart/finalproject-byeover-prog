@@ -37,7 +37,7 @@ public class MonsterSpawner : MonoBehaviour
     public event Action<MonsterAI, bool> OnMonsterDied;
     public event Action IsBossDeath;
     public event Action RequestRewardManager;
-    public event Action OnEliteDeath; // 엘리트 사망 이벤트 추가(최동훈)
+    public event Action OnEliteDeath;
 
     // ---------- SerializeField ----------
     [Header("고정 스폰 포인트")]
@@ -113,7 +113,6 @@ public class MonsterSpawner : MonoBehaviour
             var cmd = queue.Dequeue();
             Vector3 spawnPos = PickSpawnPosition(cmd.Type);
 
-            // bool isBoss = cmd.Type == StageModel.SpawnType.Elite || cmd.Type == StageModel.SpawnType.Boss; 에서 아래로 변경(최동훈)
             bool isBoss = cmd.Type == StageModel.SpawnType.Boss;
             bool isElite = cmd.Type == StageModel.SpawnType.Elite;            
             
@@ -164,7 +163,7 @@ public class MonsterSpawner : MonoBehaviour
         return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
     }
 
-    private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss, bool isElite) //엘리트 인자 추가 (최동훈)
+    private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss, bool isElite)
     {
         var characterRepo = DataManager.Instance.CharacterRepo;
         var stats = characterRepo.GetCommonStatus(characterId);
@@ -187,7 +186,7 @@ public class MonsterSpawner : MonoBehaviour
 
         if (ai != null)
         {
-            ai.Initialize(stats, monsterStats, characterId, isBoss, isElite); //엘리트 인자 추가 (최동훈)
+            ai.Initialize(stats, monsterStats, characterId, isBoss, isElite);
             ai.SetPlayerModel(ResolvePlayerModel());
             ai.OnDeath += HandleMonsterDeath;
             ai.OnRewardContained += HandlePrizeReward;
@@ -284,7 +283,7 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // ---------- 몬스터 사망 ----------
-    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss, bool isElite) // 엘리트 인자 추가 (최동훈)
+    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss, bool isElite)
     {
         monster.OnDeath -= HandleMonsterDeath;
         monster.OnRewardContained -= HandlePrizeReward;
@@ -298,7 +297,7 @@ public class MonsterSpawner : MonoBehaviour
             IsBossDeath?.Invoke();
         }
 
-        if (isElite) // 엘리트 사망 이벤트 호출 (최동훈)
+        if (isElite)
         {
             OnEliteDeath?.Invoke();
         }
