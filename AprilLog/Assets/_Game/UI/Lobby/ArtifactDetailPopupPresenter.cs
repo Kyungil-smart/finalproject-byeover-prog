@@ -345,6 +345,12 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
             Sprite icon = LoadIcon(master.IconSpriteKey);
             _artifactIcon.sprite = icon;
             _artifactIcon.enabled = icon != null;
+
+            // 등급 배경(불투명한 레전더리 배경 등)이 아이콘보다 앞에 그려지면 아이콘을 덮으므로, 배경을 아이콘 뒤로 보낸다.
+            int iconSib = _artifactIcon.transform.GetSiblingIndex();
+            bool sameParent = _gradeBg != null && _gradeBg.transform.parent == _artifactIcon.transform.parent;
+            if (sameParent && _gradeBg.transform.GetSiblingIndex() > iconSib)
+                _gradeBg.transform.SetSiblingIndex(iconSib);
         }
 
         if (_nameText != null) _nameText.text = ResolveName(master);
@@ -559,20 +565,37 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     }
 
     // 특수능력 설명은 GearMasterData.SpecialExplanation(번역 연결 ID)로 Gear 테이블에서 조회한다.
+    // 설명 템플릿에 있는 {0} 자리는 특수효과 수치로 채운다(예: "공격력을 {0}% 증가" → "... 10% 증가").
     private string ResolveSpecialDesc(GearMasterData gear)
     {
         if (gear == null) return "특수능력 정보 없음";
+
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        GearSpecialEffectData eff = repo != null ? repo.GetGearSpecialEffect(gear.Special_ID) : null;
 
         LocalizationManager lm = LocalizationManager.Instance;
         if (lm != null && gear.SpecialExplanation != 0)
         {
             string desc = lm.Get(gear.SpecialExplanation, LocalizingType.Gear);
-            if (!string.IsNullOrEmpty(desc) && !desc.StartsWith("[")) return desc;
+            if (!string.IsNullOrEmpty(desc) && !desc.StartsWith("["))
+                return FillSpecialAmount(desc, eff);
         }
 
-        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
-        GearSpecialEffectData eff = repo != null ? repo.GetGearSpecialEffect(gear.Special_ID) : null;
         return eff != null ? eff.Special : "특수능력 정보 없음";
+    }
+
+    // 설명 템플릿의 {0}을 특수효과 기본 수치(BaseAmount)로 치환한다. {0}이 없으면 원본 그대로 반환.
+    private static string FillSpecialAmount(string template, GearSpecialEffectData eff)
+    {
+        if (string.IsNullOrEmpty(template) || !template.Contains("{0}")) return template;
+
+        float amount = eff != null ? eff.BaseAmount : 0f;
+        string amountText = Mathf.Approximately(amount, Mathf.Round(amount))
+            ? Mathf.RoundToInt(amount).ToString()
+            : amount.ToString();
+
+        try { return string.Format(template, amountText); }
+        catch (System.FormatException) { return template; }
     }
 
     // 보유 시 공격력 : 보유 특수효과(OwnedSpecial_ID)의 기본 값(베스트 에포트).
