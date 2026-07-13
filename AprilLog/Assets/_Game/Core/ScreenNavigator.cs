@@ -252,6 +252,7 @@ public class ScreenNavigator : MonoBehaviour
             if (mode != LoadSceneMode.Single) return;
             IsMenuOpen = false;
             IsEffectPlaying = false;   // 연출 도중 씬 이탈 시 static 고착 방지 (엘리트 보상 연출 등)
+            IsLevelUpActive = false;   // 레벨업 팝업 도중 씬 이탈 시 고착 방지 (엘리트 연출이 이 값을 대기함)
             Time.timeScale = 1f;
         };
     }

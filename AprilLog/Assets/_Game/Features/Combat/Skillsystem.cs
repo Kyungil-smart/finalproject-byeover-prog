@@ -1751,9 +1751,33 @@ public class SkillSystem : MonoBehaviour
     }
 
     /// <returns>실제로 발사했으면 true. 타겟 부재 등으로 스킵하면 false (자동공격 카운트는 발사 성공만 센다).</returns>
+    // 기본(60005)/자동(60010) 공격의 DB 행 캐시. 매 발사 딕셔너리 조회/미스 경고 스팸 방지.
+    private SkillTableData _sortBasicRow;
+    private SkillTableData _autoBasicRow;
+    private bool _basicRowsResolved;
+
+    private const int SortBasicSkillId = 60005;   // DB '일반 공격' (Dmg 100 = 100%)
+    private const int AutoBasicSkillId = 60010;   // DB '자동 공격' (Dmg 30 = 30%)
+
+    private void ResolveBasicAttackRows()
+    {
+        if (_basicRowsResolved) return;
+        var repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        if (repo == null) return;   // 아직 준비 전이면 다음 발사 때 재시도
+        _sortBasicRow = repo.GetSkillData(SortBasicSkillId);
+        _autoBasicRow = repo.GetSkillData(AutoBasicSkillId);
+        _basicRowsResolved = true;
+    }
+
     public bool FireBasicAttack(AttackType type = AttackType.Auto)
     {
-        float temp = _combatSystem.CalculateDamage(1.0f);
+        // 기본/자동 공격 위력은 DB(SkillEnchantTable 60005/60010)가 정본 - 일반 100% / 자동 30%.
+        // 기존엔 두 공격이 같은 하드코딩 배율(1.0)로 나가 DB를 무시했고 자동공격이 과대 데미지였다.
+        ResolveBasicAttackRows();
+        var row = type == AttackType.Auto ? _autoBasicRow : _sortBasicRow;
+        float dmgRate = row != null && row.Dmg > 0 ? row.Dmg / 100f : 1f;
+
+        float temp = _combatSystem.CalculateDamage(dmgRate);
         int baseDmg = CalGroupDamageBonus(temp, DamageGroupType.None);
 
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
