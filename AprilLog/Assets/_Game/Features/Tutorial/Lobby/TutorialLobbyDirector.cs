@@ -493,7 +493,9 @@ public class TutorialLobbyDirector : MonoBehaviour
             bool advanced = false;
             Action handleAdvance = () => advanced = true;
             _talkBubble.OnAdvanceRequested += handleAdvance;
-            _talkBubble.PlayLine(line.name_KR, line.Text_KR);
+            _talkBubble.PlayLine(
+                ResolveLocalizedDialogue(line.name_KR, line.name_EN),
+                ResolveLocalizedDialogue(line.Text_KR, line.Text_EN));
 
             while (!advanced)
                 yield return null;
@@ -506,8 +508,17 @@ public class TutorialLobbyDirector : MonoBehaviour
         _isPlayingBubble = false;
     }
 
-    // 담당자 스크립트(StoryRepo/ScenarioDataDriver)를 수정하지 않기 위해,
-    // 튜토리얼 전용으로 GroupID 3002 대사 목록에서 Talk ID 범위만 골라 ScenarioDataDriver에 주입한다.
+    private static string ResolveLocalizedDialogue(string korean, string english)
+    {
+        bool useEnglish = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "en"
+            : Application.systemLanguage != SystemLanguage.Korean;
+
+        return useEnglish && !string.IsNullOrWhiteSpace(english) ? english : korean;
+    }
+
+    // 기존 ScenarioDataDriver 재생 흐름을 그대로 사용하기 위해,
+    // 튜토리얼 전용 GroupID 3002 대사 목록에서 Talk ID 범위만 골라 주입한다.
     private bool TryPlayTutorialScenarioRange(int startId, int endId)
     {
         if (_scenarioDriver == null)

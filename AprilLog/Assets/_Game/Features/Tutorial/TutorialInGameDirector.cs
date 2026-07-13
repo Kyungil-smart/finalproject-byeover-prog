@@ -1624,10 +1624,22 @@ public class TutorialInGameDirector : MonoBehaviour
             TalkSpeaker speaker = string.Equals(line.name_KR, _aprilSpeakerName)
                 ? TalkSpeaker.April
                 : TalkSpeaker.Rary;
-            result.Add(new TalkLine(speaker, line.name_KR, line.Text_KR));
+            result.Add(new TalkLine(
+                speaker,
+                ResolveLocalizedDialogue(line.name_KR, line.name_EN),
+                ResolveLocalizedDialogue(line.Text_KR, line.Text_EN)));
         }
 
         return result;
+    }
+
+    private static string ResolveLocalizedDialogue(string korean, string english)
+    {
+        bool useEnglish = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "en"
+            : Application.systemLanguage != SystemLanguage.Korean;
+
+        return useEnglish && !string.IsNullOrWhiteSpace(english) ? english : korean;
     }
 
     // 월드(필드) 인게임 대사: 버블 프리젠터가 연결돼 있으면 스토리박스(버블)로, 없으면 기존 ScenarioView로 폴백.

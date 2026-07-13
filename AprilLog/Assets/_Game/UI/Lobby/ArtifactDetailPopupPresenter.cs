@@ -243,8 +243,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
             _levelUpButtonLabel = ResolveLevelUpButtonLabel();
         if (_levelUpButtonLabel != null)
             _levelUpButtonLabel.text = isLevelCapReached
-                ? LocalizedText(11071, _ascendLabel)     // 돌파
-                : LocalizedText(11069, _levelUpLabel);    // 레벨업
+                ? LocalizedText(11071, _ascendLabel, "Breakthrough") // 돌파
+                : LocalizedText(11069, _levelUpLabel, "Level Up");   // 레벨업
 
         // 장착 버튼 라벨 : 이미 장착된 아티팩트면 '해제', 아니면 '장착'.
         if (_equipButtonLabel != null)
@@ -481,6 +481,13 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (lm == null) return fallback;
         string s = lm.Get(id, LocalizingType.UI);
         return string.IsNullOrEmpty(s) || s.StartsWith("[") ? fallback : s;
+    }
+
+    private static string LocalizedText(int id, string fallbackKr, string fallbackEn)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        string fallback = lm != null && lm.CurrentLanguage == "en" ? fallbackEn : fallbackKr;
+        return LocalizedText(id, fallback);
     }
 
     // 등급 표시명을 현지화한다(레어 11053 / 에픽 11054 / 레전더리 11055).
