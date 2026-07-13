@@ -410,7 +410,22 @@ public class SkillSystem : MonoBehaviour
         ResolveReferences();
         if (_monsterSpawner == null || _firePoint == null) yield break;
 
-        Vector2 sizeWorld = new Vector2(PxToWorld(cfg.widthPx), PxToWorld(cfg.heightPx));
+        // 장판 기본 크기: DB(SkillEnchantTable HitSize_X/Y, 레벨별 행)가 정본. 행이 없거나 0이면 config 폴백.
+        // 기존엔 부트스트랩 하드코딩만 써서 시트의 레벨별 성장(파이어브레스 Lv3, 돌풍, 허리케인 등)이 무시됐다.
+        float basisWidthPx = cfg.widthPx;
+        float basisHeightPx = cfg.heightPx;
+        if (!cfg.skipDbHitSize)
+        {
+            var dbRow = ResolveNewSkillRow(data);
+            if (dbRow != null && dbRow.HitSize_X > 0f && dbRow.HitSize_Y > 0f)
+            {
+                float sizeScale = cfg.dbSizeScale > 0f ? cfg.dbSizeScale : 1f;
+                basisWidthPx = dbRow.HitSize_X * sizeScale;
+                basisHeightPx = dbRow.HitSize_Y * sizeScale;
+            }
+        }
+
+        Vector2 sizeWorld = new Vector2(PxToWorld(basisWidthPx), PxToWorld(basisHeightPx));
         // 인챈트 범위 확장(HitSize_X/Y). 보유 인챈트 없으면 1f라 무변화. DealHazardDamage·VFX 둘 다 sizeWorld 기반이라 동시 적용됨.
         if (_enchantCalculator != null)
         {
@@ -1674,7 +1689,12 @@ public class SkillSystem : MonoBehaviour
         else if (data.StandardID == 305)
         {
             maxPierce = 6 + 2 * lv;                                       // 템페스트 관통 8/10/12
-            hitMul = data.NumberOfCycle > 0 ? data.NumberOfCycle : 1;     // 피격 시 8회 대미지
+            // 멀티히트는 DB(SkillEnchantTable Count 8/10/12, 레벨 성장)가 정본.
+            // 레거시 NumberOfCycle은 전 레벨 8 고정이라 Lv2/3 성장이 무시되고 있었다. 행 없으면 레거시 폴백.
+            var tempestRow = ResolveNewSkillRow(data);
+            hitMul = tempestRow != null && tempestRow.Count > 1f
+                ? Mathf.RoundToInt(tempestRow.Count)
+                : (data.NumberOfCycle > 0 ? data.NumberOfCycle : 1);
         }
         else if (data.StandardID == 502) maxPierce = 15 + 5 * lv;         // 글레이셜 피어스 관통 20/25/30
         controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed, pierce, maxPierce, hitMul, data.StandardID);
@@ -1866,6 +1886,22 @@ public class SkillSystem : MonoBehaviour
         return (legacySkillId / 1000) * 10000 + (legacySkillId % 1000);   // insert-0: 2011→20011, 5053→50053
     }
 
+    // 새 DB(SkillEnchantTable) 행 캐시 조회. 발동마다 딕셔너리 재조회/미스 경고 스팸을 막는다(미스도 null로 캐시).
+    private readonly Dictionary<int, SkillTableData> _newRowCache = new Dictionary<int, SkillTableData>();
+
+    private SkillTableData ResolveNewSkillRow(Legacy_SkillData data)
+    {
+        if (data == null) return null;
+        if (_newRowCache.TryGetValue(data.SkillID, out var cached)) return cached;
+
+        var repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        if (repo == null) return null;   // 아직 준비 전이면 캐시하지 않고 다음 발동 때 재시도
+
+        var row = repo.GetSkillData(MapToNewDamageId(data.SkillID));
+        _newRowCache[data.SkillID] = row;
+        return row;
+    }
+
     // 새 인챈트 경로 데미지: DamageCalculate(ATK/크리/스킬·그룹보너스) × 콤보(보존). 매핑 데미지 0(분할 본체/미정의)·계산기 부재 시 레거시 공식 폴백 → 0뎀으로 안 깨짐.
     private int ComputeSkillDamage(Legacy_SkillData data)
     {
@@ -1957,10 +1993,15 @@ public struct HazardConfig
 {
     public HazardPlacement placement;
     public HazardStyle style;
-    public float widthPx;        // 기획 테이블 px 좌표계 (화면 폭 1440px 기준)
+    public float widthPx;        // 기획 테이블 px 좌표계 (화면 폭 1440px 기준). DB 행이 없을 때의 폴백
     public float heightPx;
     public float pulseInterval;  // 다회 타격 간격(초)
     public Color flashColor;
+
+    // 장판 크기는 DB(SkillEnchantTable HitSize_X/Y)가 정본이고 위 widthPx/heightPx는 폴백이다.
+    // 구현 방식이 DB 좌표 의미와 다른 스킬(에너지볼 hop 존 등)만 skipDbHitSize로 코드 값을 유지한다.
+    public bool skipDbHitSize;   // true면 DB HitSize를 읽지 않고 widthPx/heightPx 사용
+    public float dbSizeScale;    // DB 값에 곱하는 승인된 보정 배율. 0이면 1로 취급 (예: 벼락 +50% QA 요청 = 1.5)
 }
 
 public struct SummonConfig

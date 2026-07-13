@@ -803,13 +803,15 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(4033, discharge);
 
         // 사슬 번개 4021~23 (조합): 랜덤 시작→가까운 적 순차 연결 최대 5마리, 4회 반복 타격(PelletCount 4)·LineRenderer 번개줄 (기획 4-2). 5마리×4회 구현.
-        var chainLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningChain, widthPx = 700, heightPx = 200, pulseInterval = 0.375f, flashColor = new Color(0.9f, 0.85f, 1f, 0.4f) };
+        // skipDbHitSize: 여기 크기는 튕김(hop) 탐색 존이라 DB HitSize(구슬 자체 크기 100×100)와 의미가 다르다.
+        var chainLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningChain, widthPx = 700, heightPx = 200, skipDbHitSize = true, pulseInterval = 0.375f, flashColor = new Color(0.9f, 0.85f, 1f, 0.4f) };
         skillSystem.RegisterHazardSkill(4021, chainLightning);
         skillSystem.RegisterHazardSkill(4022, chainLightning);
         skillSystem.RegisterHazardSkill(4023, chainLightning);
 
         // 벼락 4041~43: 엘리트/보스 우선 타겟(없으면 최단거리) 정사각 낙뢰 4히트(PelletCount 4). 실제 VFX(Lightning_Big)·피격 675×675 (기획 450×450 +50% 요청). Lv3 스턴(1.5초) 구현.
-        var thunderbolt = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 675, heightPx = 675, pulseInterval = 0.1f, flashColor = new Color(1f, 0.9f, 0.4f, 0.45f) };
+        // dbSizeScale 1.5: DB HitSize 450×450에 대한 +50% 확대는 QA 승인 사항 — DB 연동 후에도 유지(450×1.5=675).
+        var thunderbolt = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 675, heightPx = 675, dbSizeScale = 1.5f, pulseInterval = 0.1f, flashColor = new Color(1f, 0.9f, 0.4f, 0.45f) };
         skillSystem.RegisterHazardSkill(4041, thunderbolt);
         skillSystem.RegisterHazardSkill(4042, thunderbolt);
         skillSystem.RegisterHazardSkill(4043, thunderbolt);
@@ -823,7 +825,9 @@ public class InGameBootstrap : MonoBehaviour
         // ===== 물 속성 장판 (VFX=WaterSkillVfxLibrary 연결, 슬로우/넉백=DealHazardDamage CC, 물폭탄/파도/하이드로=전용 루틴) =====
         Color waterFlash = new Color(0.2f, 0.5f, 1f, 0.4f);
         // 물 폭탄 2011~13 (일반): 장벽서 물 공이 최단거리 타겟으로 날아가 착탄 폭발 250×250 + 50% 슬로우 (WaterBombRoutine).
-        var waterBomb = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.WaterBombImpact, widthPx = 250, heightPx = 250, pulseInterval = 0.2f, flashColor = waterFlash };
+        // skipDbHitSize: 폭발 반경 250은 협의된 오버라이드 값. DB HitSize(100×100)를 그대로 쓰면 폭발이 1/6로 줄어든다
+        // — 시트가 폭발 반경 기준으로 정리되면 이 예외를 풀 것.
+        var waterBomb = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.WaterBombImpact, widthPx = 250, heightPx = 250, skipDbHitSize = true, pulseInterval = 0.2f, flashColor = waterFlash };
         skillSystem.RegisterHazardSkill(2011, waterBomb);
         skillSystem.RegisterHazardSkill(2012, waterBomb);
         skillSystem.RegisterHazardSkill(2013, waterBomb);
