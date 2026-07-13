@@ -37,9 +37,9 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     private float _lastUsedTime = -60f;
     private const float _coolDown = 60f;
     private float _totalInGameTime = 0f;
-    private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정  
     private bool _isLobby = false;
     private bool _isRestoredFromSave = false;
+    private Coroutine _activeJokerRoutine;
 
     private void Update()
     {
@@ -115,7 +115,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         int firstTargetTable = _activePattern.tableIndices[0];
         int baseUnitType = FindFirstValidUnitInTable(firstTargetTable);
 
-        StartCoroutine(JokerRoutine(baseUnitType));
+        _activeJokerRoutine = StartCoroutine(JokerRoutine(baseUnitType));
     }
 
     private void UpdateJokerUI()
@@ -176,6 +176,29 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         if (_view != null) _view._isHintBlocked = false;
 
         IsActive = false;
+    }
+
+    public void ForceStopJokerEffect()
+    {
+        if (_activeJokerRoutine != null)
+        {
+            StopCoroutine(_activeJokerRoutine);
+            _activeJokerRoutine = null;
+        }
+
+        if (_effectSprite != null)
+        {
+            _effectSprite.gameObject.SetActive(false);
+        }
+
+        IsActive = false;
+        if (_inputHandler != null) _inputHandler.enabled = true;
+        if (_view != null) _view._isHintBlocked = false;
+
+        foreach (var group in _maskCanvasGroups)
+        {
+            if (group != null) group.alpha = 0.78f;
+        }
     }
 
     private void HighlightTable(int targetIndex)
