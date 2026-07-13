@@ -111,6 +111,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     private void OnEnable()
     {
         ResolveLevelUpButtonReference();
+        SubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked += HandleSlotClicked;
         if (_equipBinder != null) _equipBinder.OnSlotClicked += HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.AddListener(Close);
@@ -125,6 +126,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     private void OnDisable()
     {
+        UnsubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked -= HandleSlotClicked;
         if (_equipBinder != null) _equipBinder.OnSlotClicked -= HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.RemoveListener(Close);
@@ -133,6 +135,26 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
             _levelUpButton.onClick.RemoveListener(HandleLevelUpClicked);
         _levelUpButtonListenerRegistered = false;
         UnsubscribeInventoryUpdated();
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+        LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
+    private void HandleLanguageChanged()
+    {
+        if (CurrentGearId == 0 || _popup == null || !_popup.activeInHierarchy) return;
+        Populate(CurrentGearId);
+        RefreshOwnedState(CurrentGearId);
     }
 
     // 장착 버튼 클릭 → 현재 표시 중인 아티팩트의 장착/해제를 컨트롤러에 요청.
@@ -474,29 +496,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         return id != 0 ? LocalizedText(id, ArtifactGradeInfo.DisplayName(grade)) : ArtifactGradeInfo.DisplayName(grade);
     }
 
-    private string ResolveSpecialName(string code) => code switch
-    {
-        "ATKPercent"      => "공격력 증가",
-        "HPPercent"       => "체력 증가",
-        "CriticalRate"    => "치명타 확률",
-        "GoldBonus"       => "골드 획득",
-        "PlainDMG"        => "추가 피해",
-        "FireDMG"         => "화염 피해",
-        "IceDMG"          => "냉기 피해",
-        "LightingDMG"     => "전격 피해",
-        "WindDMG"         => "바람 피해",
-        "WaterDMG"        => "물 피해",
-        "ElementDMG"      => "속성 피해",
-        "WaveHealPencent" => "웨이브 회복",
-        "AutoDMG"         => "자동 포탑 피해",
-        "RecipeDMG"       => "조합 피해",
-        "ComboDMG"        => "콤보 피해",
-        "Execute"         => "처형",
-        "Revive"          => "부활",
-        "CastPerKillCount"=> "처치 시 시전",
-        "Reroll"          => "리롤",
-        _                 => string.IsNullOrEmpty(code) ? _specialFallbackName : code
-    };
+    private string ResolveSpecialName(string code)
+        => ArtifactSpecialNameLocalization.Resolve(code, _specialFallbackName);
 
     private static int CostOf(GearRepo repo, int gearId, int level, int itemId)
     {

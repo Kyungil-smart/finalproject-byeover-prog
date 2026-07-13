@@ -100,18 +100,39 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
 
     private void OnEnable()
     {
+        SubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked += HandleSlotClicked;
         TrySubscribeInventory();
     }
 
     private void OnDisable()
     {
+        UnsubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked -= HandleSlotClicked;
         if (_subscribedManager != null)
         {
             _subscribedManager.OnInventoryUpdated -= HandleInventoryUpdated;
             _subscribedManager = null;
         }
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+        LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
+    private void HandleLanguageChanged()
+    {
+        if (_currentGearId >= 0 && Root != null && Root.activeInHierarchy)
+            Refresh();
     }
 
     private void Start()
@@ -196,7 +217,10 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         // 제작 버튼 상태
         bool canCraft = Service.CanCraft(_currentGearId);
         if (_craftButton != null) _craftButton.interactable = canCraft;
-        if (_craftButtonLabel != null) _craftButtonLabel.text = canCraft ? _craftLabelNormal : _craftLabelShort;
+        if (_craftButtonLabel != null)
+            _craftButtonLabel.text = canCraft
+                ? LocalizedText(11072, _craftLabelNormal)
+                : LocalizedShortageText();
     }
 
     
@@ -342,29 +366,25 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         return eff != null ? ResolveSpecialName(eff.Special) : _specialFallbackName;
     }
 
-    private string ResolveSpecialName(string code) => code switch
+    private string ResolveSpecialName(string code)
+        => ArtifactSpecialNameLocalization.Resolve(code, _specialFallbackName);
+
+    private string LocalizedShortageText()
     {
-        "ATKPercent"      => "공격력 증가",
-        "HPPercent"       => "체력 증가",
-        "CriticalRate"    => "치명타 확률",
-        "GoldBonus"       => "골드 획득",
-        "PlainDMG"        => "추가 피해",
-        "FireDMG"         => "화염 피해",
-        "IceDMG"          => "냉기 피해",
-        "LightingDMG"     => "전격 피해",
-        "WindDMG"         => "바람 피해",
-        "WaterDMG"        => "물 피해",
-        "ElementDMG"      => "속성 피해",
-        "WaveHealPencent" => "웨이브 회복",
-        "AutoDMG"         => "자동 포탑 피해",
-        "RecipeDMG"       => "조합 피해",
-        "ComboDMG"        => "콤보 피해",
-        "Execute"         => "처형",
-        "Revive"          => "부활",
-        "CastPerKillCount"=> "처치 시 시전",
-        "Reroll"          => "리롤",
-        _                 => string.IsNullOrEmpty(code) ? _specialFallbackName : code
-    };
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null)
+            return Application.systemLanguage == SystemLanguage.Korean ? _craftLabelShort : "Not Enough Shards";
+
+        return lm.CurrentLanguage == "ko" ? _craftLabelShort : "Not Enough Shards";
+    }
+
+    private static string LocalizedText(int id, string fallback)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null) return fallback;
+        string text = lm.Get(id, LocalizingType.UI);
+        return string.IsNullOrEmpty(text) || text.StartsWith("[") ? fallback : text;
+    }
 
     // 특수능력 설명은 SpecialExplanation(번역 ID)로 조회하고, 템플릿의 {0}은 특수효과 수치로 채운다. (상세 팝업과 동일 방식)
     private string ResolveSpecialDesc(GearMasterData gear)

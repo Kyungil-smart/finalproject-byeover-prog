@@ -1,3 +1,6 @@
+using Regex = System.Text.RegularExpressions.Regex;
+using RegexOptions = System.Text.RegularExpressions.RegexOptions;
+using StringComparison = System.StringComparison;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -111,10 +114,88 @@ public class ShopGachaPresenter : MonoBehaviour
             _currencyModel = FindFirstObjectByType<CurrencyModel>(FindObjectsInactive.Include);
     }
 
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        RefreshLocalizedTexts();
+    }
+
+    private void OnDisable()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= RefreshLocalizedTexts;
+    }
+
     private void Start()
     {
         // 시작 시 기본 활성 가챠(_gachaId)의 소모 재화 아이콘을 한 번 반영.
         RefreshCostIcon();
+        RefreshLocalizedTexts();
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= RefreshLocalizedTexts;
+        LocalizationManager.Instance.OnLanguageChanged += RefreshLocalizedTexts;
+    }
+
+    private void RefreshLocalizedTexts()
+    {
+        TMP_Text[] texts = GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text target = texts[i];
+            if (target == null) continue;
+
+            string current = (target.text ?? string.Empty).Trim();
+            string singleLine = current.Replace("\r", string.Empty).Replace("\n", string.Empty);
+
+            if (singleLine == "1회 뽑기" || singleLine.Equals("Open x1", StringComparison.OrdinalIgnoreCase))
+            {
+                target.text = GetUiText(11088, "1회 뽑기", "Open x1");
+                continue;
+            }
+
+            if (singleLine == "10회 뽑기" || singleLine.Equals("Open x10", StringComparison.OrdinalIgnoreCase))
+            {
+                target.text = GetUiText(11089, "10회 뽑기", "Open x10");
+                continue;
+            }
+
+            if (singleLine == "등급별 획득 확률" || singleLine.Equals("Rates by Rarity", StringComparison.OrdinalIgnoreCase))
+            {
+                target.text = GetUiText(11091, "등급별 획득 확률", "Rates by Rarity");
+                continue;
+            }
+
+            if (target.gameObject.name.Contains("GachaInfo") && current.Contains("%"))
+                target.text = LocalizeRarityNames(current);
+        }
+    }
+
+    private static string LocalizeRarityNames(string text)
+    {
+        string rare = GetUiText(11053, "레어", "Rare");
+        string epic = GetUiText(11054, "에픽", "Epic");
+        string legendary = GetUiText(11055, "레전더리", "Legendary");
+
+        string result = Regex.Replace(text, "레어|Rare", rare, RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, "에픽|Epic", epic, RegexOptions.IgnoreCase);
+        return Regex.Replace(result, "레전더리|Legendary", legendary, RegexOptions.IgnoreCase);
+    }
+
+    private static string GetUiText(int id, string fallbackKr, string fallbackEn)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null)
+            return Application.systemLanguage == SystemLanguage.Korean ? fallbackKr : fallbackEn;
+
+        string localized = lm.Get(id, LocalizingType.UI);
+        if (!string.IsNullOrEmpty(localized) && !localized.StartsWith("["))
+            return localized;
+
+        return lm.CurrentLanguage == "ko" ? fallbackKr : fallbackEn;
     }
 
     // ---------- 버튼 진입점 ----------

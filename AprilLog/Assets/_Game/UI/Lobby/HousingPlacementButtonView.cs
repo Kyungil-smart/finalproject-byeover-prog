@@ -20,6 +20,7 @@ public class HousingPlacementButtonView : MonoBehaviour
     [Header("상태 표시")]
     [SerializeField] private TextMeshProUGUI _placementModeText;
     [SerializeField] private TextMeshProUGUI _placementButtonLabelText;
+    [SerializeField] private TextMeshProUGUI _closeButtonLabelText;
 
     [Header("팝업")]
     [SerializeField] private GameObject _popupRoot;
@@ -65,6 +66,11 @@ public class HousingPlacementButtonView : MonoBehaviour
         {
             _placementButtonLabelText = _placementButton.transform.Find("Text_Label")?.GetComponent<TextMeshProUGUI>();
         }
+
+        if (_closeButtonLabelText == null && _closeButton != null)
+        {
+            _closeButtonLabelText = _closeButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        }
     }
 
     private void SubscribeLocalization()
@@ -90,6 +96,15 @@ public class HousingPlacementButtonView : MonoBehaviour
         {
             _placementButtonLabelText.text = LocalizationManager.Instance.Get(13000, LocalizingType.UI);
         }
+
+        bool isKorean = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "ko"
+            : Application.systemLanguage == SystemLanguage.Korean;
+
+        if (_placementModeText != null)
+            _placementModeText.text = isKorean ? "가구 배치 중..." : "Placing Furniture...";
+        if (_closeButtonLabelText != null)
+            _closeButtonLabelText.text = isKorean ? "닫기" : "Close";
     }
 
     // 배치 모드 여부에 따른 팝업·버튼·안내 문구 표시 전환
@@ -103,7 +118,7 @@ public class HousingPlacementButtonView : MonoBehaviour
         if (_placementModeText != null)
         {
             _placementModeText.gameObject.SetActive(_isActive);
-            _placementModeText.text = "가구 배치 중...";
+            UpdateLocalizedTexts();
         }
 
         SetPopupVisible(_isActive);

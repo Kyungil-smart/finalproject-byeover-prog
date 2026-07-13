@@ -451,10 +451,9 @@ public class ReplayStoryPopup : MonoBehaviour
     private static string BuildUnlockText(int chapter, int stage, bool needClear)
     {
         string stageLabel = chapter + "-" + stage;
-        if (Application.systemLanguage == SystemLanguage.Korean)
-            return needClear ? stageLabel + " 클리어 필요" : stageLabel + " 도달 필요";
-
-        return needClear ? "Clear " + stageLabel + " to unlock" : "Reach " + stageLabel + " to unlock";
+        return needClear
+            ? LocalizeSystem(stageLabel + " 클리어 필요", "Clear " + stageLabel + " to unlock")
+            : LocalizeSystem(stageLabel + " 도달 필요", "Reach " + stageLabel + " to unlock");
     }
 
     private static string GetChapterTitle(int chapter)
@@ -480,6 +479,9 @@ public class ReplayStoryPopup : MonoBehaviour
 
     private static string LocalizeSystem(string kr, string en)
     {
+        if (LocalizationManager.Instance != null)
+            return LocalizationManager.Instance.CurrentLanguage == "ko" ? kr : en;
+
         return Application.systemLanguage == SystemLanguage.Korean ? kr : en;
     }
 
@@ -696,15 +698,18 @@ public class ReplayStoryPopup : MonoBehaviour
         string _chapterName = BuildChapterName(_trigger.Target_ID);
 
         if (_triggerType == _triggerTypeChapterStart)
-            return _chapterName + " 시작";
+            return LocalizeSystem(_chapterName + " 시작", _chapterName + " Start");
 
         if (_triggerType == _triggerTypeChapterEnd)
-            return _chapterName + " 클리어 후";
+            return LocalizeSystem(_chapterName + " 클리어 후", "After Clearing " + _chapterName);
 
         if (_triggerType == _triggerTypeThemeEnd)
-            return BuildThemeName(_trigger.Target_ID) + " 완료";
+        {
+            string _themeName = BuildThemeName(_trigger.Target_ID);
+            return LocalizeSystem(_themeName + " 완료", _themeName + " Complete");
+        }
 
-        return _chapterName + " 스토리";
+        return LocalizeSystem(_chapterName + " 스토리", _chapterName + " Story");
     }
 
     private static string BuildReplayUnlockCondition(StoryTriggerData _trigger)
@@ -713,15 +718,24 @@ public class ReplayStoryPopup : MonoBehaviour
         string _chapterName = BuildChapterName(_trigger.Target_ID);
 
         if (_triggerType == _triggerTypeChapterStart)
-            return _chapterName + " 진입 스토리 최초 감상 필요";
+            return LocalizeSystem(
+                _chapterName + " 진입 스토리 최초 감상 필요",
+                "Watch the " + _chapterName + " entry story first");
 
         if (_triggerType == _triggerTypeChapterEnd)
-            return _chapterName + " 클리어 스토리 최초 감상 필요";
+            return LocalizeSystem(
+                _chapterName + " 클리어 스토리 최초 감상 필요",
+                "Watch the " + _chapterName + " clear story first");
 
         if (_triggerType == _triggerTypeThemeEnd)
-            return BuildThemeName(_trigger.Target_ID) + " 완료 스토리 최초 감상 필요";
+        {
+            string _themeName = BuildThemeName(_trigger.Target_ID);
+            return LocalizeSystem(
+                _themeName + " 완료 스토리 최초 감상 필요",
+                "Watch the " + _themeName + " completion story first");
+        }
 
-        return _lockedFallbackCondition;
+        return LocalizeSystem(_lockedFallbackCondition, "Watch the story once to unlock");
     }
 
     private static string NormalizeTriggerType(string _triggerType)
@@ -751,7 +765,7 @@ public class ReplayStoryPopup : MonoBehaviour
         int _chapterNumber = ResolveChapterNumber(_chapterId);
 
         if (_themeNumber <= 0 || _chapterNumber <= 0)
-            return "챕터 " + _chapterId;
+            return LocalizeSystem("챕터 " + _chapterId, "Chapter " + _chapterId);
 
         return _themeNumber + "-" + _chapterNumber;
     }
@@ -759,7 +773,9 @@ public class ReplayStoryPopup : MonoBehaviour
     private static string BuildThemeName(int _chapterId)
     {
         int _themeNumber = ResolveThemeNumber(_chapterId);
-        return _themeNumber > 0 ? "CHAPTER." + _themeNumber : "테마";
+        return _themeNumber > 0
+            ? "CHAPTER." + _themeNumber
+            : LocalizeSystem("테마", "Theme");
     }
 
     private void LoadStoryScene()
