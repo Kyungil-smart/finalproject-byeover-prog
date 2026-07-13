@@ -21,6 +21,10 @@ public class RewardedAdService : MonoBehaviour
     [Header("설정")]
     [Tooltip("Start 에서 SDK 초기화와 첫 광고 로드를 자동 수행한다.")]
     [SerializeField] private bool _autoInitialize = true;
+    [Tooltip("초기화·로드 실패 시 일정 시간 뒤 자동으로 다시 시도한다. 첫 로드가 실패해 광고가 준비되지 않는 것을 방지한다.")]
+    [SerializeField] private bool _autoRetryOnFailure = true;
+    [Tooltip("자동 재시도 간격(초).")]
+    [SerializeField] private float _retryDelaySeconds = 15f;
 
     // ---------- 이벤트 ----------
     public event Action OnAdLoaded;        // 광고 로드 완료(표시 가능)
@@ -51,6 +55,7 @@ public class RewardedAdService : MonoBehaviour
 
     private void OnDestroy()
     {
+        CancelInvoke();
         OnSdkInitializationCompleted -= HandleSdkInitializationCompleted;
 
         if (_isShowingAd)
@@ -108,6 +113,7 @@ public class RewardedAdService : MonoBehaviour
         {
             Debug.LogWarning("[RewardedAdService] Mobile Ads SDK 초기화에 실패했습니다.", this);
             OnAdLoadFailed?.Invoke();
+            ScheduleRetry(nameof(RetryInitialize));
             return;
         }
 
@@ -146,14 +152,50 @@ public class RewardedAdService : MonoBehaviour
             {
                 Debug.LogWarning($"[RewardedAdService] 광고 로드 실패: {error}", this);
                 OnAdLoadFailed?.Invoke();
+                ScheduleRetry(nameof(RetryLoad));
                 return;
             }
 
             Debug.Log("[RewardedAdService] 광고 로드 완료");
+            CancelInvoke(nameof(RetryLoad));
             _rewardedAd = ad;
             RegisterAdEvents(ad);
             OnAdLoaded?.Invoke();
         });
+    }
+
+    // ---------- 실패 재시도 ----------
+    // 첫 초기화·로드가 실패해도 일정 시간 뒤 다시 시도해 광고가 준비되지 않는 상태로 방치되지 않게 한다.
+    private void ScheduleRetry(string _methodName)
+    {
+        if (!_autoRetryOnFailure || !isActiveAndEnabled)
+        {
+            return;
+        }
+
+        CancelInvoke(_methodName);
+        Invoke(_methodName, Mathf.Max(1f, _retryDelaySeconds));
+    }
+
+    private void RetryLoad()
+    {
+        if (IsAdReady || _isShowingAd)
+        {
+            return;
+        }
+
+        LoadAd();
+    }
+
+    private void RetryInitialize()
+    {
+        if (IsInitialized)
+        {
+            LoadAd();
+            return;
+        }
+
+        Initialize();
     }
 
     // ---------- 표시 ----------

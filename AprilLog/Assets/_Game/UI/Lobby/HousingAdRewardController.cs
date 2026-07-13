@@ -210,6 +210,14 @@ public class HousingAdRewardController : MonoBehaviour
             return;
         }
 
+        // 이미 로드된 보상형 광고는 오프라인이어도 재생 가능하므로 네트워크 상태보다 우선해서 노출한다.
+        // (에디터에서는 Application.internetReachability가 실제와 무관하게 오프라인으로 잡히는 경우가 있어 이 우선 판정이 필요함)
+        if (_adService != null && _adService.IsAdReady)
+        {
+            _presenter.SetAdStatus(HousingAdRewardStatus.Ready, _message, true);
+            return;
+        }
+
         if (_networkChecker != null && !_networkChecker.IsOnline)
         {
             _presenter.SetAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
@@ -219,12 +227,6 @@ public class HousingAdRewardController : MonoBehaviour
         if (_adService == null)
         {
             SetFailedState("광고 서비스를 찾을 수 없습니다.");
-            return;
-        }
-
-        if (_adService.IsAdReady)
-        {
-            _presenter.SetAdStatus(HousingAdRewardStatus.Ready, _message, true);
             return;
         }
 
@@ -264,7 +266,8 @@ public class HousingAdRewardController : MonoBehaviour
 
         ResolveAdReferences();
 
-        if (_networkChecker != null && !_networkChecker.IsOnline)
+        // 준비된 광고가 없을 때만 오프라인으로 막는다. 이미 로드된 광고는 오프라인이어도 재생 가능.
+        if (_networkChecker != null && !_networkChecker.IsOnline && (_adService == null || !_adService.IsAdReady))
         {
             Debug.LogWarning("[HousingAdRewardController] 오프라인 상태라 광고를 표시할 수 없습니다.", this);
             _presenter?.ShowAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
