@@ -179,6 +179,7 @@ public class ScenarioDataDriver : MonoBehaviour
         bool showTextbox = line.TextBox != 0;
 
         _view.ShowLine(speakerName, text, showTextbox, pLeft, pCenter, pRight, speaker, bg, cg);
+        
     }
 
     // ---------- 스프라이트 해석 ----------
@@ -212,6 +213,17 @@ public class ScenarioDataDriver : MonoBehaviour
         if (sprite == null)
             Debug.Log($"[ScenarioDataDriver] 스프라이트 없음(텍스트만 진행): Resources/{path}");
         return sprite;
+    }
+    
+    // ---------- BGM 해석 ----------
+    private SfxId ResolveBGM(int bgmId)
+    {
+        return SfxId.None;
+    }
+
+    private void PlayBGM(SfxId bgmId)
+    {
+        AudioManager.Bgm(bgmId);
     }
 
     // ---------- 이벤트 구독 ----------

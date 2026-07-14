@@ -60,6 +60,9 @@ public enum SfxId
     HousingBed = 63,         // 침대 터치(가이드에 파일 미지정 - 기획 확정 대기)
     HousingCoffee = 64,      // 커피머신 터치
     HousingCurrencyMaker = 65, // 재화 자동 생산기 터치
+    
+    // ---------- 시나리오 사운드 ----------
+    
 }
 
 /// <summary>SfxId → 클립/재생 정책. Resources/SoundLibrary.asset 으로 두고 AudioManager가 Resources.Load로 읽는다.</summary>

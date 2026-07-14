@@ -13,20 +13,27 @@ public class PlayerProgressModel : MonoBehaviour
 {
     public const int StartLevel = 1;
 
-    // 데이터 미준비(테스트 씬 등) 시 사용할 폴백 상한
-    private const int FallbackMaxLevel = 10;
-
-    // 최대 레벨은 OutLevel 테이블 행 수에서 읽는다. 데이터가 없으면 폴백값 사용.
+    // 최대 레벨은 OutLevelTable 데이터가 정본(현행 50). 상수 10("테스트 최대")으로 박혀 있어
+    // 데이터가 50레벨로 확장된 뒤에도 10에서 멈추던 문제 수정 — 데이터 행이 늘면 상한도 자동 추종.
     public static int MaxLevel
     {
         get
         {
-            int dataMax = DataManager.Instance != null && DataManager.Instance.ConfigRepo != null
-                ? DataManager.Instance.ConfigRepo.GetMaxOutLevel()
-                : 0;
-            return dataMax > 0 ? dataMax : FallbackMaxLevel;
+            if (s_cachedMaxLevel > 0) return s_cachedMaxLevel;
+
+            var repo = DataManager.Instance != null ? DataManager.Instance.ConfigRepo : null;
+            int dataMax = repo != null ? repo.GetMaxOutLevel() : 0;
+            if (dataMax > 0)
+            {
+                s_cachedMaxLevel = dataMax;   // 데이터가 준비된 뒤에만 캐시
+                return dataMax;
+            }
+            return FallbackMaxLevel;          // 미로드 시 임시값(캐시 안 함, 다음 호출에 재시도)
         }
     }
+
+    private const int FallbackMaxLevel = 50;
+    private static int s_cachedMaxLevel;
 
     // ---------- 이벤트 ----------
     public event Action<int> OnCharacterLevelChanged;

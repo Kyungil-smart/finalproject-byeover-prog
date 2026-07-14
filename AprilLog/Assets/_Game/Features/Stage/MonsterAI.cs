@@ -460,10 +460,14 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
                 return baseStat + Mathf.RoundToInt(growthValue * accumulateCount);
                 
             case "Rate":
-                // 비율 누적 
+                // 비율 누적
                 // 수식: 기본스탯 * (1 + (비율 * 누적횟수)) 복리 대신 단리로 적용 (기획 정석)
                 // 예: HP 100, 증가량 0.1(10%), 누적 4회 -> 100 * (1 + (0.1 * 4)) = 140
-                return Mathf.RoundToInt(baseStat * (1f + (growthValue * accumulateCount)));
+                // 시트에 비율이 퍼센트 표기(4 = 4%)로 들어오는 경우를 정규화한다.
+                // 4를 소수 비율로 읽으면 스테이지당 +400%(7스테이지에 체력 25배)가 되어
+                // 몬스터가 설계보다 안 죽는 원인이었다. 1 초과 값은 퍼센트로 간주해 100으로 나눈다.
+                float rate = growthValue > 1f ? growthValue / 100f : growthValue;
+                return Mathf.RoundToInt(baseStat * (1f + (rate * accumulateCount)));
                 
             case "None":
             default:

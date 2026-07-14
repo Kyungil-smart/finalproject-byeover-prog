@@ -61,14 +61,10 @@ public class ConfigRepo : MonoBehaviour
     public InLevelData GetInLevel(int level) => GetData(_inLevel, level, nameof(GetInLevel));
     public OutLevelData GetOutLevel(int level) => GetData(_outLevel, level, nameof(GetOutLevel));
 
-    // OutLevel 테이블에 존재하는 가장 높은 레벨(= 아웃게임 캐릭터 레벨 상한)
+    /// <summary>OutLevelTable에 정의된 최대 레벨. 캐릭터 레벨 상한은 이 데이터가 정본이다(미로드 시 0).</summary>
     public int GetMaxOutLevel()
     {
-        if (_outLevel == null || _outLevel.Count == 0)
-        {
-            Debug.LogWarning("[ConfigRepo] OutLevel 캐시가 비어 있어 최대 레벨을 확인할 수 없습니다.");
-            return 0;
-        }
+        if (_outLevel == null || _outLevel.Count == 0) return 0;
 
         int max = 0;
         foreach (int level in _outLevel.Keys)

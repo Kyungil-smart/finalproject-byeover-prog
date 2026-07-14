@@ -441,8 +441,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_levelText != null)
             _levelText.text = $"Lv.{level}";
 
-        int atkPer = levelData != null ? levelData.AttackValue : 0;
-        int hpPer  = levelData != null ? levelData.MaxHPValue  : 0;
+        float atkPer = levelData != null ? levelData.AttackValue : 0;
+        float hpPer  = levelData != null ? levelData.MaxHPValue  : 0;
 
         // 현재 레벨 스탯
         if (_curAtkText != null) _curAtkText.text = ComputeStat(master.AttackBaseAmount, atkPer, level).ToString();
@@ -548,9 +548,9 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     }
 
     // 시트 정의 : 최종값 = base + (base × perLevel) × (현재레벨 - 1)
-    private static int ComputeStat(int baseAmount, int perLevelValue, int level)
+    private static int ComputeStat(int baseAmount, float perLevelValue, int level)
     {
-        return baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
+        return baseAmount + Mathf.RoundToInt(baseAmount * perLevelValue * Mathf.Max(0, level - 1));
     }
 
     private static bool IsFinalLevelMax(ArtifactInstance inst)
