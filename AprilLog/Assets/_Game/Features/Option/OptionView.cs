@@ -8,6 +8,7 @@
 // 수정내용 : 전체볼륨·언어 버튼·로그아웃·탈퇴 기능 추가 및 탈퇴 확인 패널 추가
 
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -77,10 +78,14 @@ public class OptionView : MonoBehaviour, IOptionView
         }
 
         RefreshLanguageIndicator();
+        SubscribeLocalization();
+        RefreshDeleteConfirmationTexts();
 
         if (_confirmDeletePanel != null)
             _confirmDeletePanel.SetActive(false);
     }
+
+    private void OnDisable() => UnsubscribeLocalization();
 
     private void OnDestroy() => _presenter?.Dispose();
 
@@ -204,8 +209,69 @@ public class OptionView : MonoBehaviour, IOptionView
             _localization = LocalizationManager.Instance;
     }
 
+    private void SubscribeLocalization()
+    {
+        if (_localization == null) return;
+
+        _localization.OnLanguageChanged -= HandleLanguageChanged;
+        _localization.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (_localization != null)
+            _localization.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
+    private void HandleLanguageChanged()
+    {
+        RefreshLanguageIndicator();
+        RefreshDeleteConfirmationTexts();
+    }
+
+    private void RefreshDeleteConfirmationTexts()
+    {
+        if (_confirmDeletePanel == null) return;
+
+        bool isKorean = _localization == null || _localization.CurrentLanguage == "ko";
+        TMP_Text message = FindTextByName(_confirmDeletePanel.transform, "Text_ConfirmDelAccount");
+        TMP_Text yes = FindTextByName(_confirmDeleteYesButton != null ? _confirmDeleteYesButton.transform : null, "Text_Yes");
+        TMP_Text no = FindTextByName(_confirmDeleteNoButton != null ? _confirmDeleteNoButton.transform : null, "Text_No");
+
+        if (message != null)
+            message.SetText(isKorean ? "정말 탈퇴 하시겠습니까?\n대충 안내 문구" : "Are you sure you want to delete your account?\nThis action cannot be undone.");
+        if (yes != null)
+            yes.SetText(GetLocalizedText(11081, isKorean ? "예" : "YES"));
+        if (no != null)
+            no.SetText(GetLocalizedText(11082, isKorean ? "아니오" : "NO"));
+    }
+
+    private string GetLocalizedText(int id, string fallback)
+    {
+        if (_localization == null) return fallback;
+
+        string text = _localization.Get(id, LocalizingType.UI);
+        return string.IsNullOrEmpty(text) || text.StartsWith("[") ? fallback : text;
+    }
+
+    private static TMP_Text FindTextByName(Transform root, string objectName)
+    {
+        if (root == null) return null;
+
+        TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] != null && texts[i].gameObject.name == objectName)
+                return texts[i];
+        }
+
+        return null;
+    }
+
     private void OpenConfirmDeletePanel()
     {
+        RefreshDeleteConfirmationTexts();
+
         if (_confirmDeletePanel != null)
             _confirmDeletePanel.SetActive(true);
     }

@@ -97,10 +97,47 @@ public class ArtifactDecomposePopupPresenter : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        UpdateLocalizedDropdown();
+    }
+
+    private void OnDisable()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedDropdown;
+    }
+
     private void Start()
     {
         SetActive(_popup, false);
         SetActive(_confirmPopup, false);
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedDropdown;
+        LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedDropdown;
+    }
+
+    private void UpdateLocalizedDropdown()
+    {
+        if (_sortingDropdown == null) return;
+
+        bool isKorean = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "ko"
+            : Application.systemLanguage == SystemLanguage.Korean;
+        string[] labels = isKorean
+            ? new[] { "정렬", "등급순", "이름순", "공격순", "HP순" }
+            : new[] { "Sort", "Grade", "Name", "Attack", "HP" };
+
+        int count = Mathf.Min(_sortingDropdown.options.Count, labels.Length);
+        for (int i = 0; i < count; i++)
+            _sortingDropdown.options[i].text = labels[i];
+
+        _sortingDropdown.RefreshShownValue();
     }
 
     // ==================================================================

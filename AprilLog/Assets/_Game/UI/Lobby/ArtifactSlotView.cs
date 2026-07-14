@@ -48,6 +48,7 @@ public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
             _gradeBackground.sprite = ArtifactGradeInfo.SlotSprite(grade);
             _gradeBackground.color = Color.white; // 이미지 원본 색 유지(틴트 제거)
         }
+
         SetIcon(LoadIcon(data.IconSpriteKey));
         SetAscensionBorder(0);
     }
