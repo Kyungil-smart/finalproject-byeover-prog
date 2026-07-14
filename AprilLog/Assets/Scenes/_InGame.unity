@@ -743,9 +743,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 0, y: 50}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &51931583
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10758,6 +10758,7 @@ RectTransform:
   m_Children:
   - {fileID: 776535668}
   - {fileID: 2143000002}
+  - {fileID: 2126823800}
   - {fileID: 834509325}
   - {fileID: 1628563998}
   - {fileID: 1473500536}
@@ -10790,6 +10791,7 @@ MonoBehaviour:
   _puzzleOverscanBackground: {fileID: 2143000002}
   _middleBar: {fileID: 1628563998}
   _puzzleBottomOverscan: 100
+  _puzzleBottomReservedHeight: 30
 --- !u!114 &650796075
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10802,9 +10804,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0a1b596cf63f0e47b2cb087e1a28d16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SafeAreaFitter
-  _appliedEdges: 7
+  _appliedEdges: -1
   _applyOnEnable: 1
-  _useEditorOverride: 1
+  _useEditorOverride: 0
   _editorSafeAreaOverride:
     serializedVersion: 2
     x: 0
@@ -14606,7 +14608,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2126823800}
   - {fileID: 967314019}
   - {fileID: 1891680854}
   m_Father: {fileID: 650796073}
@@ -18315,10 +18316,10 @@ RectTransform:
   - {fileID: 2136922698}
   m_Father: {fileID: 317800451}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -50, y: 0}
-  m_SizeDelta: {x: 900, y: 0}
+  m_AnchorMin: {x: 0, y: 0.5}
+  m_AnchorMax: {x: 1, y: 0.5}
+  m_AnchoredPosition: {x: -50.378906, y: 0}
+  m_SizeDelta: {x: -518.5336, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1061884320
 MonoBehaviour:
@@ -19240,7 +19241,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 52.442}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1109477076
 MonoBehaviour:
@@ -31526,57 +31527,6 @@ MonoBehaviour:
   EnchantUnit: {fileID: 1200475105}
   joker1: {fileID: 649672371}
   joker2: {fileID: 279645667}
---- !u!1 &1810505861
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1810505863}
-  - component: {fileID: 1810505862}
-  m_Layer: 0
-  m_Name: DummyCombat
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1810505862
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1810505861}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 05ae50a2ab06b654fab933dba080e4d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DummyCombatTester
-  _monsterCount: 3
-  _monsterHP: 60
-  _spawnY: 5
-  _respawnDelay: 1
-  _firePointPos: {x: 0, y: -2.5, z: 0}
-  _sortSkillDamage: 25
-  _comboMultiples: 050000000a000000
---- !u!4 &1810505863
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1810505861}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1827334129
 GameObject:
   m_ObjectHideFlags: 0
@@ -36688,7 +36638,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 51931582}
-  m_Father: {fileID: 834509325}
+  m_Father: {fileID: 650796073}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -37767,7 +37717,6 @@ SceneRoots:
   - {fileID: 1711602647}
   - {fileID: 1526896341}
   - {fileID: 341681047}
-  - {fileID: 1810505863}
   - {fileID: 2139000201}
   - {fileID: 995847295}
   - {fileID: 863567413}
