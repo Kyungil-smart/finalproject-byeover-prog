@@ -12,7 +12,28 @@ using UnityEngine;
 public class PlayerProgressModel : MonoBehaviour
 {
     public const int StartLevel = 1;
-    public const int MaxLevel   = 10;   // 테스트 최대 레벨
+
+    // 최대 레벨은 OutLevelTable 데이터가 정본(현행 50). 상수 10("테스트 최대")으로 박혀 있어
+    // 데이터가 50레벨로 확장된 뒤에도 10에서 멈추던 문제 수정 — 데이터 행이 늘면 상한도 자동 추종.
+    public static int MaxLevel
+    {
+        get
+        {
+            if (s_cachedMaxLevel > 0) return s_cachedMaxLevel;
+
+            var repo = DataManager.Instance != null ? DataManager.Instance.ConfigRepo : null;
+            int dataMax = repo != null ? repo.GetMaxOutLevel() : 0;
+            if (dataMax > 0)
+            {
+                s_cachedMaxLevel = dataMax;   // 데이터가 준비된 뒤에만 캐시
+                return dataMax;
+            }
+            return FallbackMaxLevel;          // 미로드 시 임시값(캐시 안 함, 다음 호출에 재시도)
+        }
+    }
+
+    private const int FallbackMaxLevel = 50;
+    private static int s_cachedMaxLevel;
 
     // ---------- 이벤트 ----------
     public event Action<int> OnCharacterLevelChanged;

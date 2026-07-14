@@ -60,6 +60,18 @@ public class ConfigRepo : MonoBehaviour
     // ---------- 조회 API ----------
     public InLevelData GetInLevel(int level) => GetData(_inLevel, level, nameof(GetInLevel));
     public OutLevelData GetOutLevel(int level) => GetData(_outLevel, level, nameof(GetOutLevel));
+
+    /// <summary>OutLevelTable에 정의된 최대 레벨. 캐릭터 레벨 상한은 이 데이터가 정본이다(미로드 시 0).</summary>
+    public int GetMaxOutLevel()
+    {
+        if (_outLevel == null || _outLevel.Count == 0) return 0;
+
+        int max = 0;
+        foreach (int level in _outLevel.Keys)
+            if (level > max) max = level;
+        return max;
+    }
+
     public Legacy_AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
     
 
