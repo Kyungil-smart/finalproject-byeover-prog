@@ -112,21 +112,30 @@ public class GameStartBridge : MonoBehaviour
             return;
         }
         
+        var repo = DataManager.Instance != null ? DataManager.Instance.StageRepo : null;
+        var stageId = repo != null ? repo.GetStageId(chapterId,1) : -1;
+        if (stageId == -1)
+        {
+            Debug.LogWarning("잘못된 챕터 ID입니다. 1챕터 1스테이지로 이동.");
+            GameStart();
+            return;
+        }
+        
         int groupId = GetScenarioGroupId(chapterId);
         if (groupId == -1)
         {
             Debug.LogWarning($"[GameStartBridge] 해당 챕터에 맞는 시나리오 그룹 ID를 찾을수 없습니다 : {chapterId}. 스토리를 건너뜁니다.");
-            GameStart(chapterId);
+            GameStart(stageId);
             return;
         }
         
         if (IsFirstSeenScenario(groupId))
         {
-            GameStart(chapterId);
+            GameStart(stageId);
         }
         else
         {
-            GameManager.Instance.SelectedChapterId = chapterId;
+            GameManager.Instance.SelectedChapterId = stageId;
             StoryStart(groupId);
         }
     }
@@ -141,14 +150,14 @@ public class GameStartBridge : MonoBehaviour
         GameManager.Instance.LoadInGame();
     }
     
-    private void GameStart(int chapterId)
+    private void GameStart(int stageId)
     {
         if (GameManager.Instance == null)
         {
             StartCoroutine(LoadSceneCoroutine(INGAME_SCENE_NAME));
             return;
         }
-        GameManager.Instance.LoadInGame(chapterId);
+        GameManager.Instance.LoadInGame(stageId);
     }
 
     private void StoryStart(int groupId)
