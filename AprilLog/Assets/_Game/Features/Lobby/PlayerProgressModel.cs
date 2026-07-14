@@ -12,7 +12,21 @@ using UnityEngine;
 public class PlayerProgressModel : MonoBehaviour
 {
     public const int StartLevel = 1;
-    public const int MaxLevel   = 10;   // 테스트 최대 레벨
+
+    // 데이터 미준비(테스트 씬 등) 시 사용할 폴백 상한
+    private const int FallbackMaxLevel = 10;
+
+    // 최대 레벨은 OutLevel 테이블 행 수에서 읽는다. 데이터가 없으면 폴백값 사용.
+    public static int MaxLevel
+    {
+        get
+        {
+            int dataMax = DataManager.Instance != null && DataManager.Instance.ConfigRepo != null
+                ? DataManager.Instance.ConfigRepo.GetMaxOutLevel()
+                : 0;
+            return dataMax > 0 ? dataMax : FallbackMaxLevel;
+        }
+    }
 
     // ---------- 이벤트 ----------
     public event Action<int> OnCharacterLevelChanged;
