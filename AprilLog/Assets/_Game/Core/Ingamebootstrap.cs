@@ -1000,8 +1000,8 @@ public class InGameBootstrap : MonoBehaviour
             if (master == null) continue;
 
             GearLevelData level = repo.GetGearLevel(inst.MasterId);
-            int atkPer = level != null ? level.AttackValue : 0;
-            int hpPer = level != null ? level.MaxHPValue : 0;
+            float atkPer = level != null ? level.AttackValue : 0;
+            float hpPer = level != null ? level.MaxHPValue : 0;
 
             attackBonus += ComputeArtifactStat(master.AttackBaseAmount, atkPer, inst.CurrentLevel);
             hpBonus += ComputeArtifactStat(master.MaxHPBaseAmount, hpPer, inst.CurrentLevel);
@@ -1009,6 +1009,6 @@ public class InGameBootstrap : MonoBehaviour
     }
 
     // 최종값 = base + (base × perLevel) × (현재레벨 - 1)
-    private static int ComputeArtifactStat(int baseAmount, int perLevelValue, int level)
-        => baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
+    private static int ComputeArtifactStat(int baseAmount, float perLevelValue, int level)
+        => baseAmount + Mathf.RoundToInt(baseAmount * perLevelValue * Mathf.Max(0, level - 1));
 }

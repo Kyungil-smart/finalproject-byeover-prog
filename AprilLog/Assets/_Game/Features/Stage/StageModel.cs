@@ -388,7 +388,7 @@ public class StageModel
         {
             // 예: Start가 101이고 현재가 105라면 -> 105 - 101 = 4번 누적!
             // (만약 101스테이지 당시에 1번 누적하고 싶다면 마지막에 +1을 해주면 됩니다)
-            accumulateCount = Mathf.Max(0, _stageData.Stage_ID - scalingData.StartStage_ID);
+            accumulateCount = Mathf.Max(0, DataManager.Instance.StageRepo.GetIndexByStageId(_stageData.Stage_ID) - DataManager.Instance.StageRepo.GetIndexByStageId(scalingData.StartStage_ID));
         }
 
         return new SpawnCommand
@@ -441,9 +441,9 @@ public class StageModel
             int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
             // 스케일링 테이블의 MonsterPool_ID 열에는 실제로 웨이브풀 ID가 들어 있다(일반 웨이브 수정과 동일 기준).
             // resolved poolId를 넘기면 매칭이 안 돼 특수 웨이브(러시/보스)만 스테이지 보정을 못 받는다.
-            var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _currentSpecialRule.MonsterWavePool_ID);
+            var scalingData = _currentSpecialRule.MonsterWavePool_ID != 0 ? DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _currentSpecialRule.MonsterWavePool_ID) : DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _waveRules[_currentWaveIndex].MonsterWavePool_ID);
             int accumulateCount =
-                (scalingData != null) ? Mathf.Max(0, _stageData.Stage_ID - scalingData.StartStage_ID) : 0;
+                (scalingData != null) ? Mathf.Max(0, DataManager.Instance.StageRepo.GetIndexByStageId(_stageData.Stage_ID) - DataManager.Instance.StageRepo.GetIndexByStageId(scalingData.StartStage_ID)) : 0;
 
             if (characterId > 0)
             {
