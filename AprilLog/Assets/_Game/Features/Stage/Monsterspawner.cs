@@ -160,7 +160,16 @@ public class MonsterSpawner : MonoBehaviour
 
         // 고정 포인트 중 하나를 무작위로 고름
         int idx = _rng.Next(0, _spawnPoints.Length);
-        return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
+        Vector3 pos = _spawnPoints[idx] != null
+            ? _spawnPoints[idx].position
+            : new Vector3(Mathf.Lerp(_normalSpawnLineXMin, _normalSpawnLineXMax, (float)_rng.NextDouble()), _normalSpawnLineY, 0f);
+
+        // 씬의 고정 포인트는 y가 구 좌표(화면 중간, y=2)로 남아 있어 그대로 쓰면 보스/엘리트가
+        // 전투구역 한가운데서 스폰된다(#518). X 레인 배치만 쓰고 Y는 카메라 기준 상단 라인으로 통일한다.
+        // (부트스트랩이 SetNormalSpawnLine으로 상단 Y를 넣기 전(0)에는 포인트 원값 유지)
+        if (_normalSpawnLineY != 0f)
+            pos.y = _normalSpawnLineY;
+        return pos;
     }
 
     private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss, bool isElite)

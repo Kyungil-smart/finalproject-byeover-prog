@@ -77,6 +77,9 @@ public class ShopGachaPresenter : MonoBehaviour
 
     [Header("재화 부족 팝업")]
     [SerializeField] private GameObject _insufficientPopup;
+    [Tooltip("재화 부족 안내 자동 숨김 시간(초). 토스트 형태라 확인 버튼 없이도 스스로 사라져야 한다 (#515)")]
+    [SerializeField] private float _insufficientAutoHideSeconds = 2f;
+    private Coroutine _insufficientHideRoutine;
 
     [Header("튜토리얼")]
     [Tooltip("튜토리얼 뽑기에서 고정 지급할 기어 ID(수습 마법사의 인장)")]
@@ -670,10 +673,24 @@ public class ShopGachaPresenter : MonoBehaviour
 
     private void ShowInsufficient()
     {
-        if (_insufficientPopup != null)
-            _insufficientPopup.SetActive(true);
-        else
+        if (_insufficientPopup == null)
+        {
             Debug.LogWarning("[ShopGachaPresenter] 재화 부족 팝업이 연결되지 않았습니다.", this);
+            return;
+        }
+
+        _insufficientPopup.SetActive(true);
+
+        // 토스트는 스스로 사라져야 한다. 연타 시 타이머를 리셋해 마지막 표시 기준으로 유지.
+        if (_insufficientHideRoutine != null) StopCoroutine(_insufficientHideRoutine);
+        _insufficientHideRoutine = StartCoroutine(HideInsufficientAfterDelay());
+    }
+
+    private System.Collections.IEnumerator HideInsufficientAfterDelay()
+    {
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.5f, _insufficientAutoHideSeconds));
+        if (_insufficientPopup != null) _insufficientPopup.SetActive(false);
+        _insufficientHideRoutine = null;
     }
 
     private void FillSlots(GachaResultSlotView[] slots, List<int> drawn)
