@@ -254,8 +254,8 @@ public class GearLevelData
     public int Gear_ID;
     public int StartLevel; // 최초 획득 시 시작 레벨
     public int EndLevel; // 모든 돌파 적용 후 최종 레벨
-    public int MaxHPValue; // 레벨업 당 Hp 증가량 : 최종 MaxHP = MaxHPBaseAmount + (MaxHPBaseAmount × MaxHPValue) × (현재 레벨 - 1)
-    public int AttackValue; // 레벨업 당 Attack 증가량 : 최종 Attack = AttackBaseAmount + (AttackBaseAmount × AttackValue) × (현재 레벨 - 1)
+    public float MaxHPValue; // 레벨업 당 Hp 증가량 : 최종 MaxHP = MaxHPBaseAmount + (MaxHPBaseAmount × MaxHPValue) × (현재 레벨 - 1)
+    public float AttackValue; // 레벨업 당 Attack 증가량 : 최종 Attack = AttackBaseAmount + (AttackBaseAmount × AttackValue) × (현재 레벨 - 1)
 }
 
 /// <summary>
