@@ -23,10 +23,9 @@ public class TutorialManager : MonoBehaviour
 
     [SerializeField] private TutorialStepData _stepData;
 
-#if UNITY_EDITOR
+    // 직렬화 필드는 항상 컴파일해야 에디터/빌드 레이아웃이 일치한다(사용만 에디터 전용).
     [Tooltip("0 이상이면 Start에서 그 단계부터 시작한다(에디터 테스트용).")]
     [SerializeField] private int _debugStartIndex = -1;
-#endif
 
     private const string DONE_KEY = "Tutorial_Completed";
     private const string IN_GAME_SCENE_NAME = "_InGame";

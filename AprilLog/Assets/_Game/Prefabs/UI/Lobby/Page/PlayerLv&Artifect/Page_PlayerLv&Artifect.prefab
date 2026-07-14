@@ -122,7 +122,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!1 &5028179058159082215
 GameObject:
   m_ObjectHideFlags: 0
@@ -232,6 +232,9 @@ MonoBehaviour:
   textNextATK: {fileID: 7885875445691610663}
   textNextStern: {fileID: 6831239934142403942}
   textNextSlow: {fileID: 8832606407975831816}
+  nextLevelArrow: {fileID: 7946774640957373125}
+  currentStatGroup: {fileID: 1721899091684229218}
+  currentStatMaxPosition: {x: 0, y: 158.4}
   iconCurrentHP: {fileID: 8736866310801534083}
   iconCurrentATK: {fileID: 6192411738449437553}
   iconCurrentStern: {fileID: 6871777473238534609}
@@ -570,6 +573,26 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2663528805380123779, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2663528805380123779, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2663528805380123779, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2663528805380123779, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2663528805380123779, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 158.40002
+      objectReference: {fileID: 0}
     - target: {fileID: 2845631956002098700, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -673,6 +696,26 @@ PrefabInstance:
     - target: {fileID: 3927469984077411108, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4065299467403468142, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_Pivot.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4065299467403468142, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4065299467403468142, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4065299467403468142, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4065299467403468142, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 158.40002
       objectReference: {fileID: 0}
     - target: {fileID: 4236468799966394000, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
       propertyPath: m_SizeDelta.y
@@ -871,6 +914,11 @@ RectTransform:
 --- !u!1 &1637156707104570530 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2714529377122930755, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+  m_PrefabInstance: {fileID: 3680473680432590049}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &1721899091684229218 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 2663528805380123779, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
   m_PrefabInstance: {fileID: 3680473680432590049}
   m_PrefabAsset: {fileID: 0}
 --- !u!114 &2191586636384307729 stripped
@@ -1097,6 +1145,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!1 &7946774640957373125 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6727029985229624868, guid: c4845d0cc5e02b94480678873adf6589, type: 3}
+  m_PrefabInstance: {fileID: 3680473680432590049}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &8056652438058326179 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6691594760594633794, guid: c4845d0cc5e02b94480678873adf6589, type: 3}

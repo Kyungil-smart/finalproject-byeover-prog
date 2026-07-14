@@ -40,7 +40,7 @@ public class FirebaseAuthService : MonoBehaviour
     [Tooltip("Google ID Token을 Firebase Credential로 교환할 때 기다릴 최대 시간입니다.")]
     [SerializeField] private float _firebaseAuthTimeoutSeconds = DEFAULT_FIREBASE_AUTH_TIMEOUT_SECONDS;
 
-#if UNITY_EDITOR
+    // 직렬화 필드는 항상 컴파일해야 에디터/빌드 레이아웃이 일치한다(값의 사용만 에디터 전용).
     [Header("에디터 테스트")]
     [Tooltip("Unity Editor에서 구글 로그인 이후 흐름을 테스트할 때만 켭니다. 실제 구글 계정 인증은 안드로이드 빌드에서 진행해야 합니다.")]
     [SerializeField] private bool _enableEditorGoogleLoginTest;
@@ -54,7 +54,6 @@ public class FirebaseAuthService : MonoBehaviour
     [SerializeField] private string _editorGoogleTestUserKey = "google_test_01";
     [Tooltip("에디터 구글 로그인 테스트에서 프로필 생성 흐름에 전달할 표시 이름입니다.")]
     [SerializeField] private string _editorGoogleTestDisplayName = "Editor Google Tester";
-#endif
 
     public string UserUID { get; private set; }
     public string UserEmail { get; private set; }

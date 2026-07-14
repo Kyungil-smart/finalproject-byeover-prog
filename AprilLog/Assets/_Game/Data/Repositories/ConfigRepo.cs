@@ -71,7 +71,6 @@ public class ConfigRepo : MonoBehaviour
             if (level > max) max = level;
         return max;
     }
-
     public Legacy_AchievementData GetAchievement(int id) => GetData(_achievements, id, nameof(GetAchievement));
     
 
