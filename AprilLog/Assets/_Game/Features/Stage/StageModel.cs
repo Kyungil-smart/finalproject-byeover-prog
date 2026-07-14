@@ -441,7 +441,7 @@ public class StageModel
             int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
             // 스케일링 테이블의 MonsterPool_ID 열에는 실제로 웨이브풀 ID가 들어 있다(일반 웨이브 수정과 동일 기준).
             // resolved poolId를 넘기면 매칭이 안 돼 특수 웨이브(러시/보스)만 스테이지 보정을 못 받는다.
-            var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _currentSpecialRule.MonsterWavePool_ID);
+            var scalingData = _currentSpecialRule.MonsterWavePool_ID != 0 ? DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _currentSpecialRule.MonsterWavePool_ID) : DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _waveRules[_currentWaveIndex].MonsterWavePool_ID);
             int accumulateCount =
                 (scalingData != null) ? Mathf.Max(0, DataManager.Instance.StageRepo.GetChapterIdByIndex(_stageData.Stage_ID) - DataManager.Instance.StageRepo.GetChapterIdByIndex(scalingData.StartStage_ID)) : 0;
 
