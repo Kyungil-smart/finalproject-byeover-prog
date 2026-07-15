@@ -78,6 +78,7 @@ public class DebugControlPanel : MonoBehaviour
         GUILayout.Space(10f);
         GUILayout.Label("초기화", _header);
         if (GUILayout.Button("세이브 전체 초기화", _button)) ResetSave();
+        if (GUILayout.Button("캐릭터 레벨 초기화", _button)) ResetCharacterLevel();
         if (GUILayout.Button("튜토리얼만 리셋", _button)) ResetTutorial();
 
         if (!string.IsNullOrEmpty(_status))
@@ -194,6 +195,17 @@ public class DebugControlPanel : MonoBehaviour
         gm.SyncToCloud(cd);
         gm.LoadLobby();
         _status = "세이브 초기화 완료(로비 재진입)";
+    }
+
+    private void ResetCharacterLevel()
+    {
+        GameManager gm = GameManager.Instance;
+        if (gm == null || gm.CloudData == null) { _status = "CloudData 없음"; return; }
+
+        gm.CloudData.characterLevel = UserCloudData.CreateDefault().characterLevel;
+        gm.SyncToCloud(gm.CloudData);
+        gm.LoadLobby();
+        _status = $"캐릭터 레벨 초기화 완료(Lv.{gm.CloudData.characterLevel}, 로비 재진입)";
     }
 
     private void ResetTutorial()
