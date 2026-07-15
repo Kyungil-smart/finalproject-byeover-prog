@@ -67,6 +67,8 @@ public class DebugControlPanel : MonoBehaviour
         DrawGrant("강화석 +9,999", UpgradeStoneId, 9999);
         DrawGrant("조각 +999", LegendaryShardId, 999);
         if (GUILayout.Button("전부 지급", _button)) GrantAll();
+        if (GUILayout.Button("조커블록 +1", _button)) GrantJoker();
+        if (GUILayout.Button("조커블록 쿨타임 초기화", _button)) ResetJokerCooldown();
 
         GUILayout.Space(10f);
         GUILayout.Label("스테이지", _header);
@@ -76,9 +78,18 @@ public class DebugControlPanel : MonoBehaviour
         if (GUILayout.Button("이 챕터 인게임 진입", _button)) EnterStage();
 
         GUILayout.Space(10f);
+        GUILayout.Label($"배속 (현재 x{Time.timeScale:0.#})", _header);
+        GUILayout.BeginHorizontal();
+        DrawSpeed("x1", 1f);
+        DrawSpeed("x2", 2f);
+        DrawSpeed("x4", 4f);
+        DrawSpeed("x8", 8f);
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(10f);
         GUILayout.Label("초기화", _header);
         if (GUILayout.Button("세이브 전체 초기화", _button)) ResetSave();
-        if (GUILayout.Button("튜토리얼만 리셋", _button)) ResetTutorial();
+        if (GUILayout.Button("튜토리얼 스킵", _button)) SkipTutorial();
 
         if (!string.IsNullOrEmpty(_status))
         {
@@ -98,6 +109,38 @@ public class DebugControlPanel : MonoBehaviour
             Grant(itemId, amount);
             _status = $"{caption} 지급";
         }
+    }
+
+    // 인게임 QA 배속. 튜토리얼 연출이 timeScale 을 0↔1 로 바꾸면 그때 덮어써질 수 있다(QA 한정).
+    private void DrawSpeed(string caption, float scale)
+    {
+        if (GUILayout.Button(caption, _button))
+        {
+            Time.timeScale = scale;
+            _status = $"배속 x{scale:0.#}";
+        }
+    }
+
+    // 쿨타임만 즉시 해제(보유 수는 유지). RestoreFromSave(잔여=0)로 마지막 사용시각을 초기화한다.
+    // UI 카운트다운은 진행 중이던 연출이 끝날 때까지 잠깐 남을 수 있으나 조커는 바로 사용 가능하다.
+    private void ResetJokerCooldown()
+    {
+        JokerSystem joker = FindFirstObjectByType<JokerSystem>();
+        if (joker == null) { _status = "JokerSystem 없음(인게임 아님)"; return; }
+
+        joker.RestoreFromSave(joker.GetJokerCount(), 0f);
+        _status = "조커블록 쿨타임 초기화";
+    }
+
+    private void GrantJoker()
+    {
+        JokerSystem joker = FindFirstObjectByType<JokerSystem>();
+        if (joker == null) { _status = "JokerSystem 없음(인게임 아님)"; return; }
+
+        int before = joker.GetJokerCount();
+        joker.AcquireJokerItem();
+        int after = joker.GetJokerCount();
+        _status = after > before ? $"조커블록 지급 (보유 {after})" : $"조커블록 최대치({after})";
     }
 
     private void GrantAll()
@@ -189,6 +232,7 @@ public class DebugControlPanel : MonoBehaviour
         cd._tutorialCompleted = false;
 
         PlayerPrefs.SetInt("Tutorial_Completed", 0);
+        PlayerPrefs.SetInt("Tutorial_SkillExplainSeen", 0);   // 스킬 설명 재확인 가능하도록 초기화
         PlayerPrefs.Save();
 
         gm.SyncToCloud(cd);
@@ -196,19 +240,16 @@ public class DebugControlPanel : MonoBehaviour
         _status = "세이브 초기화 완료(로비 재진입)";
     }
 
-    private void ResetTutorial()
+    // 튜토리얼을 완료 처리(다시 안 뜨게 저장)하고 로비로 이동. 시나리오 스킵 버튼과 동일 동작.
+    private void SkipTutorial()
     {
+        if (TutorialManager.Instance != null) TutorialManager.Instance.Complete();
+
         GameManager gm = GameManager.Instance;
-        if (gm == null || gm.CloudData == null) { _status = "CloudData 없음"; return; }
+        if (gm != null) gm.LoadLobby();
+        else UnityEngine.SceneManagement.SceneManager.LoadScene("_Lobby");
 
-        gm.CloudData._initialStoryStarted = false;
-        gm.CloudData._tutorialCompleted = false;
-        PlayerPrefs.SetInt("Tutorial_Completed", 0);
-        PlayerPrefs.Save();
-
-        gm.SyncToCloud(gm.CloudData);
-        gm.LoadLobby();
-        _status = "튜토리얼 리셋 완료(로비 재진입)";
+        _status = "튜토리얼 스킵 완료(로비 재진입)";
     }
 
     // ---------- 입력/스타일 ----------

@@ -128,22 +128,21 @@ public class EnchantCardUI : MonoBehaviour
         return string.Join("\n", _descriptionLines);
     }
 
-    public void SetRerollState(bool available, int remaining)
+    // visible = 리롤 기능 자체가 켜졌는지(전역). interactable = 이 카드가 지금 리롤 가능한지(잔여/사용 여부).
+    // 버튼 노출은 기능 활성 여부로만 결정해 항상 보이게 하고, 사용된 카드는 비활성(회색)으로 둔다.
+    public void SetRerollState(bool visible, bool interactable)
     {
         EnsureRerollUI();
 
-        bool hasReroll = available && remaining != 0;
-
         if (_rerollRoot != null)
         {
-            _rerollRoot.gameObject.SetActive(available);
+            _rerollRoot.gameObject.SetActive(visible);
         }
 
         if (_rerollButton != null)
         {
-            _rerollButton.interactable = hasReroll;
+            _rerollButton.interactable = interactable;
         }
-
     }
 
     public void AttachRerollOverlay(RectTransform overlay)

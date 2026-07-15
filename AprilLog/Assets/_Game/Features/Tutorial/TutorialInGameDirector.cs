@@ -121,6 +121,9 @@ public class TutorialInGameDirector : MonoBehaviour
     private const int EnchantCardCombination = 1;
     private const int EnchantCardCombo = 2;
 
+    // 범람(첫 전투)에서 스킬 설명 시퀀스를 끝까지 봤는지 지속 저장(보스에서 재설명 여부 판정용).
+    private const string SkillExplainSeenKey = "Tutorial_SkillExplainSeen";
+
     [Header("step0 전투 연출")]
     [Tooltip("0챕터 진입 대사(몬스터 없는 화면). 100009(전체화면 오프닝 컷)는 인트로에서 재생하므로 인게임은 100010부터.")]
     [SerializeField] private int _step0EntryScenarioStartId = 100010;
@@ -803,8 +806,35 @@ public class TutorialInGameDirector : MonoBehaviour
         _step14EntryScenarioPlayed = true;
         PauseStep14Scenario();
         yield return PlayWorldDialogue(_step14EntryScenarioStartId, _step14EntryScenarioEndId);
+
+        // 범람(첫 전투)에서 방치 사망 등으로 스킬 설명을 못 본 유저에게 보스 진입 시 대사로 요약 설명한다.
+        if (!HasSeenSkillExplain())
+        {
+            yield return PlaySkillExplainSummary();
+            MarkSkillExplainSeen();
+        }
+
         ResumeStep14ScenarioPause();
         _step14Routine = null;
+    }
+
+    // 인챈트 카드 없이 대사(버블)만으로 자동공격/조합/콤보 스킬을 요약 설명한다. (조합식 테이블 강조 100038은 카드 의존이라 제외)
+    private IEnumerator PlaySkillExplainSummary()
+    {
+        SetEnchantDialogueBubblePosition();
+        yield return PlayWorldDialogue(_enchantAutoAttackStartId, _enchantAutoAttackEndId);
+        yield return PlayWorldDialogue(_enchantCombinationId, _enchantCombinationId);
+        yield return PlayWorldDialogue(_enchantComboStartId, _enchantComboEndId);
+        yield return PlayWorldDialogue(_enchantWrapupId, _enchantWrapupId);
+        ClearEnchantDialogueBubblePosition();
+    }
+
+    private static bool HasSeenSkillExplain() => PlayerPrefs.GetInt(SkillExplainSeenKey, 0) == 1;
+
+    private static void MarkSkillExplainSeen()
+    {
+        PlayerPrefs.SetInt(SkillExplainSeenKey, 1);
+        PlayerPrefs.Save();
     }
 
     private IEnumerator RunStep14BossScenario()
@@ -1119,6 +1149,9 @@ public class TutorialInGameDirector : MonoBehaviour
         ClearEnchantDim();
         yield return PlayWorldDialogue(_enchantWrapupId, _enchantWrapupId);
         ClearEnchantDialogueBubblePosition();
+
+        // 스킬 설명을 끝까지 봤으므로 보스에서 재설명하지 않도록 표시.
+        MarkSkillExplainSeen();
 
         // 4-3-1-8 유저가 3장 중 1장 선택 → 팝업 닫힘 → 다음 단계
         UnlockFirstEnchantSelection();
