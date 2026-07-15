@@ -13,11 +13,17 @@ public class HousingPlacementModel
 {
     private const string _locationTable = "location4";
     private const string _locationSofa = "location5";
+    private const string _locationBed = "location1";
     private const string _typeFloor = "floor";
     private const string _typeWall = "wall";
     private const string _typeBed = "bed";
     private const string _typeKitchen = "coffee";
     private const string _typeDesk = "reward";
+
+    // 크리스마스 침대는 크리스마스 주방·책상을 모두 장착했을 때만 침대 목록에 노출한다.
+    private const int _christmasKitchenId = 21002;
+    private const int _christmasDeskId = 21003;
+    private const int _christmasBedId = 23001;
 
     private readonly List<HousingPlacementItemData> _items = new();
     private readonly HashSet<int> _equippedFurnitureIds = new();
@@ -267,6 +273,7 @@ public class HousingPlacementModel
         switch (_category)
         {
             case HousingPlacementCategory.Decoration:
+                AddSectionByLocation(_sections, _category, "\uCE68\uB300", 13011, _locationBed);
                 AddSectionByLocation(_sections, _category, "\uD14C\uC774\uBE14", 13001, _locationTable);
                 AddSectionByLocation(_sections, _category, "\uC18C\uD30C", 13008, _locationSofa);
                 break;
@@ -275,7 +282,7 @@ public class HousingPlacementModel
                 AddSectionByType(_sections, _category, "\uBC30\uACBD", 13010, _typeWall);
                 break;
             case HousingPlacementCategory.Function:
-                AddSectionByType(_sections, _category, "\uCE68\uB300", 13011, _typeBed);
+                AddBedSection(_sections, _category, "\uCE68\uB300", 13011);
                 AddSectionByType(_sections, _category, "\uC8FC\uBC29", 13012, _typeKitchen);
                 AddSectionByType(_sections, _category, "\uCC45\uC0C1", 13013, _typeDesk);
                 break;
@@ -292,6 +299,28 @@ public class HousingPlacementModel
         string _location)
     {
         AddSection(_sections, _title, _titleLanguageId, FindItems(_category, _location, null));
+    }
+
+    // 침대 섹션: 크리스마스 침대는 크리스마스 주방·책상을 모두 장착했을 때만 노출한다.
+    private void AddBedSection(
+        List<HousingPlacementSectionData> _sections,
+        HousingPlacementCategory _category,
+        string _title,
+        int _titleLanguageId)
+    {
+        List<HousingPlacementItemData> _bedItems = FindItems(_category, null, _typeBed);
+
+        if (!IsChristmasBedRevealed())
+        {
+            _bedItems.RemoveAll(_item => _item != null && _item.FurnitureId == _christmasBedId);
+        }
+
+        AddSection(_sections, _title, _titleLanguageId, _bedItems);
+    }
+
+    private bool IsChristmasBedRevealed()
+    {
+        return IsEquipped(_christmasKitchenId) && IsEquipped(_christmasDeskId);
     }
 
     private void AddSectionByType(
