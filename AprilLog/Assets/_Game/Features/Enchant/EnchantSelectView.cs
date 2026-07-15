@@ -266,7 +266,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
                 cardUI.OnRerollClicked += () => OnCardRerollSelected?.Invoke(index);
                 cardUI.AttachRerollOverlay(_rerollOverlay);
-                cardUI.SetRerollState(IsCardRerollAvailable(index), _currentRerollRemaining);
+                cardUI.SetRerollState(_currentRerollAvailable, IsCardRerollAvailable(index));
             }
         }
 
@@ -362,7 +362,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
             if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
-                cardUI.SetRerollState(IsCardRerollAvailable(i), remaining);
+                cardUI.SetRerollState(_currentRerollAvailable, IsCardRerollAvailable(i));
             }
         }
     }
@@ -377,7 +377,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
             if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
-                cardUI.SetRerollState(IsCardRerollAvailable(i), _currentRerollRemaining);
+                cardUI.SetRerollState(_currentRerollAvailable, IsCardRerollAvailable(i));
             }
         }
     }
@@ -397,7 +397,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             if (card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
                 cardUI.SetSelectInteractable(false);
-                cardUI.SetRerollState(false, _currentRerollRemaining);
+                cardUI.SetRerollState(_currentRerollAvailable, false);
             }
         }
     }

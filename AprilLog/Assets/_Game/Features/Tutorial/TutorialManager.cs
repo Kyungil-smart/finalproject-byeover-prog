@@ -35,6 +35,7 @@ public class TutorialManager : MonoBehaviour
     private int _currentIndex = -1;     // -1 = 진행 중 아님
     private ITutorialView _view;        // 현재 씬의 오버레이(있을 때만)
     private GameObject _spawnedInGameOverlay;
+    private string _previousSceneName;  // 직전 로드된 씬 이름(전투 복귀 판별용)
 
     public bool IsCompleted => GameManager.Instance != null
         ? GameManager.Instance.IsTutorialCompleted()
@@ -163,6 +164,31 @@ public class TutorialManager : MonoBehaviour
         else
         {
             _spawnedInGameOverlay = null;
+        }
+
+        HealStaleInGameStepOnLobbyReturn(scene.name);
+        _previousSceneName = scene.name;
+    }
+
+    // 인게임 전투에서 로비로 돌아왔는데 튜토리얼 단계가 아직 InGame 단계에 멈춰 있으면
+    // 다음 로비 단계까지 이어 붙인다. (예: 방치 사망이 범람 패배 흐름을 타지 못해 단계 전진이 누락된 경우)
+    // 최초 튜토리얼은 로비에서 InGame 단계로 시작해 인게임으로 넘어가므로, 그 첫 전투를 건너뛰지 않도록
+    // 직전 씬이 인게임이었을 때(=전투에서 복귀한 경우)만 보정한다.
+    private void HealStaleInGameStepOnLobbyReturn(string loadedSceneName)
+    {
+        if (loadedSceneName != LOBBY_SCENE_NAME) return;
+        if (_previousSceneName != IN_GAME_SCENE_NAME) return;
+        if (!IsRunning) return;
+
+        // 첫 전투(방치 사망이 문제되는 stepId 0~3)에 한정한다. 후반 재진입(step14) 실패 복귀까지
+        // 이어붙이면 튜토리얼이 조기 완료될 수 있어 제외한다.
+        TutorialStep step = CurrentStep;
+        if (step == null || step.scene != TutorialScene.InGame || step.stepId > 3) return;
+
+        Debug.LogWarning("[Tutorial] 전투 복귀 후 첫 전투 InGame 단계가 남아 있어 다음 로비 단계로 이어붙입니다.");
+        while (IsRunning && CurrentStep != null && CurrentStep.scene == TutorialScene.InGame && CurrentStep.stepId <= 3)
+        {
+            AdvanceStep();
         }
     }
 
