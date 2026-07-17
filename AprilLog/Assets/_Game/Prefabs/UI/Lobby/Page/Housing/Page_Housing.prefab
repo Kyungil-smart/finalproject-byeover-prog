@@ -95,11 +95,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HousingAdRewardPopupView
   _popupRoot: {fileID: 61227602119663267}
-  _keepInspectorTextValues: 1
   _rewardFurnitureIconImage: {fileID: 5547389705528181894}
+  _rewardFurnitureTitleText: {fileID: 0}
   _messageText: {fileID: 2681774886516442969}
   _rewardTitleText: {fileID: 803071037966804267}
   _rewardArea: {fileID: 2367306845665560882}
+  _heartRewardAmountText: {fileID: 0}
+  _diamondRewardAmountText: {fileID: 0}
   _confirmButton: {fileID: 6043433481182490499}
   _confirmButtonText: {fileID: 8996423315108388540}
   _cancelButton: {fileID: 3037560588430705005}
@@ -814,6 +816,11 @@ MonoBehaviour:
   _nonFlipTargets: []
   _defaultFacesRight: 0
   _moveSpeed: 90
+  _minPatrolDistance: 120
+  _maxPatrolDistance: 360
+  _minIdleTime: 2
+  _maxIdleTime: 3
+  _autoPatrolMaxPickCount: 30
   _obstacleColliders: []
 --- !u!1 &733620983668813659
 GameObject:
@@ -2580,6 +2587,81 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &940000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 940000000000000002}
+  - component: {fileID: 940000000000000003}
+  - component: {fileID: 940000000000000004}
+  m_Layer: 0
+  m_Name: Image_Visual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &940000000000000002
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 940000000000000001}
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8314097362918029153}
+  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &940000000000000003
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 940000000000000001}
+  m_CullTransparentMesh: 1
+--- !u!114 &940000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 940000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 4642557944862961517, guid: 5652ad21b8a7baf47a39a2a6b35ff766, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &1070779098525265860
 GameObject:
   m_ObjectHideFlags: 0
@@ -2678,7 +2760,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
+  m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -3195,81 +3277,6 @@ RectTransform:
   m_AnchoredPosition: {x: 393, y: -280}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &940000000000000001
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 940000000000000002}
-  - component: {fileID: 940000000000000003}
-  - component: {fileID: 940000000000000004}
-  m_Layer: 0
-  m_Name: Image_Visual
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &940000000000000002
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 940000000000000001}
-  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8314097362918029153}
-  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &940000000000000003
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 940000000000000001}
-  m_CullTransparentMesh: 1
---- !u!114 &940000000000000004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 940000000000000001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 4642557944862961517, guid: 5652ad21b8a7baf47a39a2a6b35ff766, type: 3}
-  m_Type: 0
-  m_PreserveAspect: 1
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &1514208982600280051
 GameObject:
   m_ObjectHideFlags: 0
@@ -7268,6 +7275,7 @@ MonoBehaviour:
   _circleFillRect: {fileID: 891825931107010546}
   _furnitureIconImage: {fileID: 0}
   _messageText: {fileID: 3323985894519578656}
+  _rewardTitleText: {fileID: 0}
   _goldIconImage: {fileID: 6635367229379806833}
   _parchmentIconImage: {fileID: 4358065909017045702}
   _diamondIconImage: {fileID: 8600233088490008162}
@@ -7278,7 +7286,9 @@ MonoBehaviour:
   _parchmentRewardText: {fileID: 7134977311424815447}
   _diamondRewardText: {fileID: 281299450051724216}
   _confirmButton: {fileID: 1385304610799876146}
+  _confirmButtonText: {fileID: 0}
   _cancelButton: {fileID: 3301201524767928080}
+  _cancelButtonText: {fileID: 0}
 --- !u!1 &5292171283694999124
 GameObject:
   m_ObjectHideFlags: 0
@@ -9120,6 +9130,8 @@ MonoBehaviour:
   _placementButton: {fileID: 468533864138050504}
   _closeButton: {fileID: 1691355752774054919}
   _placementModeText: {fileID: 2605161948846082430}
+  _placementButtonLabelText: {fileID: 0}
+  _closeButtonLabelText: {fileID: 0}
   _popupRoot: {fileID: 8289200822161560673}
 --- !u!114 &3536726636646388008
 MonoBehaviour:
@@ -9310,7 +9322,9 @@ MonoBehaviour:
   _confirmPopupRoot: {fileID: 930000000000000010}
   _confirmMessageText: {fileID: 930000000000000034}
   _confirmButton: {fileID: 930000000000000045}
+  _confirmButtonText: {fileID: 0}
   _cancelButton: {fileID: 930000000000000065}
+  _cancelButtonText: {fileID: 0}
   _insufficientNoticeRoot: {fileID: 930000000000000070}
   _insufficientMessageText: {fileID: 930000000000000084}
   _insufficientCurrencyMessage: "\uD604\uC7AC \uC7AC\uD654\uAC00 \uBD80\uC871\uD569\uB2C8\uB2E4."
@@ -10916,9 +10930,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4db27443fd8187a48af0286db4110110, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RewardedAdService
-  _useTestIds: 1
-  _androidAdUnitId: 
+  _useTestIds: 0
+  _androidAdUnitId: ca-app-pub-8466823107448489/3660504406
   _autoInitialize: 0
+  _autoRetryOnFailure: 1
+  _retryDelaySeconds: 15
 --- !u!114 &8090646910189788838
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11093,7 +11109,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
+  m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
