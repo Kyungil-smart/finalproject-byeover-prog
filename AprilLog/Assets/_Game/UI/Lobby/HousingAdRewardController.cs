@@ -1,4 +1,7 @@
 //담당자: 조규민
+// 광고·네트워크·보상 서비스 참조 해석과 외부 이벤트 등록·해제
+// 광고 로드·재생·보상 지급·실패 상태를 Presenter와 Model에 전달
+// 보상 종류에 따른 스태미나·다이아 지급과 팝업 상태 갱신
 
 using UnityEngine;
 using UnityEngine.Events;
@@ -78,8 +81,10 @@ public class HousingAdRewardController : MonoBehaviour
         _presenter?.Release();
     }
 
+    // 광고 로드·보상·종료와 네트워크 상태 이벤트 등록
     private void SubscribeExternalEvents()
     {
+        UseReadyAdServiceIfAvailable();
         ResolveAdReferences();
 
         if (_adService != null)
@@ -116,6 +121,7 @@ public class HousingAdRewardController : MonoBehaviour
         }
     }
 
+    // Inspector 누락 참조 자동 탐색과 서비스별 참조 분리
     private void ResolveReferences()
     {
         if (_buttonView == null)
@@ -145,6 +151,26 @@ public class HousingAdRewardController : MonoBehaviour
         }
     }
 
+    // 상점에서 미리 로드한 광고가 있으면 하우징 전용 광고를 다시 기다리지 않고 재사용한다.
+    private void UseReadyAdServiceIfAvailable()
+    {
+        RewardedAdService[] _services = FindObjectsByType<RewardedAdService>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < _services.Length; i++)
+        {
+            RewardedAdService _service = _services[i];
+            if (_service == null || !_service.IsAdReady)
+            {
+                continue;
+            }
+
+            _adService = _service;
+            return;
+        }
+    }
+
     private void ResolveRewardReferences()
     {
         if (_staminaModel == null)
@@ -160,6 +186,7 @@ public class HousingAdRewardController : MonoBehaviour
 
     private void InitializePresenter()
     {
+        _popupView?.SetRewardAmounts(_rewardStamina, _rewardDiamond);
         _model = new HousingAdRewardModel(_message, _rewardTitle, _confirmText, _cancelText);
         _presenter = new HousingAdRewardPresenter(_model, _popupView, _buttonView, HandleAdWatchRequested);
         _presenter.Initialize();
@@ -170,6 +197,7 @@ public class HousingAdRewardController : MonoBehaviour
         }
     }
 
+    // 네트워크와 광고 서비스 준비 상태 확인 후 보상형 광고 로드 요청
     private void PrepareAd()
     {
         if (!_loadAdOnEnable)
@@ -203,6 +231,14 @@ public class HousingAdRewardController : MonoBehaviour
             return;
         }
 
+        // 이미 로드된 보상형 광고는 오프라인이어도 재생 가능하므로 네트워크 상태보다 우선해서 노출한다.
+        // (에디터에서는 Application.internetReachability가 실제와 무관하게 오프라인으로 잡히는 경우가 있어 이 우선 판정이 필요함)
+        if (_adService != null && _adService.IsAdReady)
+        {
+            _presenter.SetAdStatus(HousingAdRewardStatus.Ready, _message, true);
+            return;
+        }
+
         if (_networkChecker != null && !_networkChecker.IsOnline)
         {
             _presenter.SetAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
@@ -212,12 +248,6 @@ public class HousingAdRewardController : MonoBehaviour
         if (_adService == null)
         {
             SetFailedState("광고 서비스를 찾을 수 없습니다.");
-            return;
-        }
-
-        if (_adService.IsAdReady)
-        {
-            _presenter.SetAdStatus(HousingAdRewardStatus.Ready, _message, true);
             return;
         }
 
@@ -247,6 +277,7 @@ public class HousingAdRewardController : MonoBehaviour
         return TryShowRewardedAd();
     }
 
+    // 광고 준비 상태 검증 후 보상형 광고 표시 요청
     private bool TryShowRewardedAd()
     {
         if (_isShowingAd)
@@ -256,7 +287,8 @@ public class HousingAdRewardController : MonoBehaviour
 
         ResolveAdReferences();
 
-        if (_networkChecker != null && !_networkChecker.IsOnline)
+        // 준비된 광고가 없을 때만 오프라인으로 막는다. 이미 로드된 광고는 오프라인이어도 재생 가능.
+        if (_networkChecker != null && !_networkChecker.IsOnline && (_adService == null || !_adService.IsAdReady))
         {
             Debug.LogWarning("[HousingAdRewardController] 오프라인 상태라 광고를 표시할 수 없습니다.", this);
             _presenter?.ShowAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
@@ -316,6 +348,7 @@ public class HousingAdRewardController : MonoBehaviour
         _onRewardGranted?.Invoke();
     }
 
+    // 선택된 광고 보상 종류에 따른 실제 재화 지급 분기
     private void GrantReward()
     {
         ResolveRewardReferences();
@@ -420,6 +453,7 @@ public class HousingAdRewardController : MonoBehaviour
         _presenter?.SetAdStatus(HousingAdRewardStatus.Offline, "인터넷 연결을 확인해 주세요.", false);
     }
 
+    // 광고 실패 메시지와 재시도 가능 상태를 Model에 반영
     private void SetFailedState(string _messageText, bool _showPopup = false)
     {
         if (_showPopup)

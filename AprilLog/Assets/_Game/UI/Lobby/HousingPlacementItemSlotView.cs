@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 수정 내용 : 미보유 가구 구매 입력을 슬롯 전체가 아닌 상태 버튼으로 분리하고 가격 상태에서만 버튼 레이캐스트를 켬
 
 using System;
 using TMPro;
@@ -8,6 +9,8 @@ using UnityEngine.UI;
 /// <summary>
 /// 하우징 배치 아이템 한 칸을 표시합니다.
 /// </summary>
+// 배치 아이템 상태에 따른 아이콘·가격·잠금·선택·구매 버튼 표시 갱신
+// 슬롯 클릭과 구매 클릭 이벤트를 구분해 Presenter에 전달
 public class HousingPlacementItemSlotView : MonoBehaviour
 {
     [Header("표시 요소")]
@@ -42,10 +45,13 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
     [Header("입력")]
     [SerializeField] private Button _slotButton;
+    [SerializeField] private Button _stateButton;
 
     private HousingPlacementItemData _itemData;
+    private HousingPlacementItemState _itemState;
 
     public event Action<HousingPlacementItemData> OnClicked;
+    public event Action<HousingPlacementItemData> OnPurchaseClicked;
 
     private void Awake()
     {
@@ -53,19 +59,36 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         Bind();
     }
 
-    private void OnDestroy()
+    private void OnEnable()
     {
-        if (_slotButton == null)
-        {
-            return;
-        }
-
-        _slotButton.onClick.RemoveListener(HandleClicked);
+        SubscribeLocalization();
+        RefreshLocalizedContent();
     }
 
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeLocalization();
+        if (_slotButton != null)
+        {
+            _slotButton.onClick.RemoveListener(HandleClicked);
+        }
+
+        if (_stateButton != null)
+        {
+            _stateButton.onClick.RemoveListener(HandlePurchaseClicked);
+        }
+    }
+
+    // ViewModel 성격의 아이템 데이터와 상태 기반 슬롯 전체 갱신
     public void SetData(HousingPlacementItemData _data, HousingPlacementItemState _state)
     {
         _itemData = _data;
+        _itemState = _state;
 
         if (_data == null)
         {
@@ -77,6 +100,7 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         SetIcon(_data.Icon);
         SetName(_data);
         SetState(_data, _state);
+        SetPurchaseButtonInteractable(_state == HousingPlacementItemState.Price);
     }
 
     private void SetIcon(Sprite _icon)
@@ -96,10 +120,11 @@ public class HousingPlacementItemSlotView : MonoBehaviour
     {
         if (_nameText != null)
         {
-            _nameText.text = string.IsNullOrWhiteSpace(_data.DisplayName) ? _data.ItemId : _data.DisplayName;
+            _nameText.text = ResolveLocalizedName(_data);
         }
     }
 
+    // 잠금·구매 가능·보유·장착 상태별 UI 표시 전환
     private void SetState(HousingPlacementItemData _data, HousingPlacementItemState _state)
     {
         if (_stateText == null)
@@ -114,11 +139,11 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         {
             case HousingPlacementItemState.Equipped:
                 SetPreviewFrame(_equippedPreviewFrameSprite);
-                SetStateVisual(_equippedStateSprite, _equippedStateColor, "장착됨");
+                SetStateVisual(_equippedStateSprite, _equippedStateColor, GetLocalizedText(13006));
                 break;
             case HousingPlacementItemState.Owned:
                 SetPreviewFrame(_defaultPreviewFrameSprite);
-                SetStateVisual(_ownedStateSprite, _ownedStateColor, "보유중");
+                SetStateVisual(_ownedStateSprite, _ownedStateColor, GetLocalizedText(13005));
                 break;
             case HousingPlacementItemState.Price:
                 SetPreviewFrame(_defaultPreviewFrameSprite);
@@ -158,9 +183,64 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
     private void SetPriceState(HousingPlacementItemData _data)
     {
-        SetStateVisual(_priceStateSprite, _priceStateColor, FormatPrice(_data));
+        SetStateVisual(_priceStateSprite, _priceStateColor, GetLocalizedText(13007, FormatPrice(_data)));
         SetCurrencyIcon(ResolvePriceCurrencyIcon(_data));
         SetCurrencyVisible(true);
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= RefreshLocalizedContent;
+            LocalizationManager.Instance.OnLanguageChanged += RefreshLocalizedContent;
+        }
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= RefreshLocalizedContent;
+        }
+    }
+
+    private void RefreshLocalizedContent()
+    {
+        if (_itemData == null)
+        {
+            return;
+        }
+
+        SetName(_itemData);
+        SetState(_itemData, _itemState);
+    }
+
+    private static string ResolveLocalizedName(HousingPlacementItemData _data)
+    {
+        if (_data?.NameId > 0 && LocalizationManager.Instance != null)
+        {
+            string _localizedName = LocalizationManager.Instance.Get(_data.NameId, LocalizingType.Housing);
+
+            if (!string.IsNullOrWhiteSpace(_localizedName) && !_localizedName.StartsWith("["))
+            {
+                return _localizedName;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(_data?.DisplayName) ? _data?.ItemId ?? string.Empty : _data.DisplayName;
+    }
+
+    private static string GetLocalizedText(int _id, params object[] _args)
+    {
+        if (LocalizationManager.Instance == null)
+        {
+            return $"[{_id}]";
+        }
+
+        return _args == null || _args.Length == 0
+            ? LocalizationManager.Instance.Get(_id, LocalizingType.UI)
+            : LocalizationManager.Instance.Get(_id, LocalizingType.UI, _args);
     }
 
     private string FormatPrice(HousingPlacementItemData _data)
@@ -240,6 +320,11 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         {
             _currencyIconImage = transform.Find("StateButton_Image/CurrencyIcon_Image")?.GetComponent<Image>();
         }
+
+        if (_stateButton == null)
+        {
+            _stateButton = transform.Find("StateButton_Image")?.GetComponent<Button>();
+        }
     }
 
     private void Bind()
@@ -252,6 +337,15 @@ public class HousingPlacementItemSlotView : MonoBehaviour
 
         _slotButton.onClick.RemoveListener(HandleClicked);
         _slotButton.onClick.AddListener(HandleClicked);
+
+        if (_stateButton == null)
+        {
+            Debug.LogWarning("[HousingPlacementItemSlotView] 상태 Button 연결이 필요합니다.", this);
+            return;
+        }
+
+        _stateButton.onClick.RemoveListener(HandlePurchaseClicked);
+        _stateButton.onClick.AddListener(HandlePurchaseClicked);
     }
 
     private void HandleClicked()
@@ -262,5 +356,29 @@ public class HousingPlacementItemSlotView : MonoBehaviour
         }
 
         OnClicked?.Invoke(_itemData);
+    }
+
+    // 추가: 조규민 - 미보유 가구는 가격이 표시된 상태 버튼을 눌렀을 때만 구매 요청을 전달한다.
+    private void HandlePurchaseClicked()
+    {
+        if (_itemData == null || _itemState != HousingPlacementItemState.Price)
+        {
+            return;
+        }
+
+        OnPurchaseClicked?.Invoke(_itemData);
+    }
+
+    private void SetPurchaseButtonInteractable(bool _isInteractable)
+    {
+        if (_stateButtonImage != null)
+        {
+            _stateButtonImage.raycastTarget = _isInteractable;
+        }
+
+        if (_stateButton != null)
+        {
+            _stateButton.interactable = _isInteractable;
+        }
     }
 }

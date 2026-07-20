@@ -231,7 +231,7 @@ public class EnchantModel : MonoBehaviour
         Initialize(); 
         if (saves == null || saves.Count == 0)
         {
-            _uiModel?.RefreshAll();
+            RefreshRestoredDisplayState();
             return;
         }
 
@@ -296,6 +296,19 @@ public class EnchantModel : MonoBehaviour
             Debug.LogWarning($"[EnchantModel] 세이브 복구 실패. 삭제되었거나 유효하지 않은 인챈트 ID: {targetId}");
         }
 
+        RefreshRestoredDisplayState();
+    }
+
+    // 3차 수정자 : 조규민
+    // 수정 내용 : 로비 복귀 후 이어하기 시 보유 인챈트 정보와 조합식 아이콘 표시 데이터가 저장 복원 직후 갱신되도록 처리
+    private void RefreshRestoredDisplayState()
+    {
+        if (_combinationModel == null)
+        {
+            _combinationModel = GetComponent<EnchantCombinationModel>();
+        }
+
+        _combinationModel?.RebuildFromOwnedSkills();
         _uiModel?.RefreshAll();
     }
 

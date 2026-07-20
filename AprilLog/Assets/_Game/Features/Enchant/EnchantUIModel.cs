@@ -99,16 +99,20 @@ public class EnchantUIModel : MonoBehaviour
             foreach (var pair in _model.OwnedSkills)
             {
                 var data = pair.Value;
+                var enchantGroupType = EnchantGroupIDToEnchantGroupTypeMapper.GetEnchantGroupType(data.Data.SkillGroup_ID);
+                var elementalType = TagToElementalMapper.GetElemental(data.Data.Tag_ID_1);
+                
                 if (_localizationManager == null)
                 {
                     OwnedSkillList.Add(new EnchantDisplayData
                     {
                         EnchantId = pair.Key,
                         Level = data.Level,
-                        TypeLabel = "스킬",
+                        TypeLabel = enchantGroupType,
                         Name = $"Skill_ID: {data.Data.Name}",
                         Description = $"Description_ID: {data.Data.Skill_Descrip}",
-                        ImageKey = $"{data.Data.SkillIcon_ID}"
+                        ImageKey = $"{data.Data.SkillIcon_ID}",
+                        ElementalType = elementalType
                     });
                 }
                 else
@@ -117,10 +121,11 @@ public class EnchantUIModel : MonoBehaviour
                     {
                         EnchantId = pair.Key,
                         Level = data.Level,
-                        TypeLabel = "스킬",
+                        TypeLabel = enchantGroupType,
                         Name = _localizationManager.Get(data.Data.Name, LocalizingType.Enchant),
-                        Description = _localizationManager.Get(data.Data.Skill_Descrip, LocalizingType.Enchant),
-                        ImageKey = $"{data.Data.SkillIcon_ID}"
+                        Description = _localizationManager.Get(data.Data.Skill_Descrip, LocalizingType.Enchant, data.Data.RequiredValue_1),
+                        ImageKey = $"{data.Data.SkillIcon_ID}",
+                        ElementalType = elementalType
                     });
                 }
             }
@@ -139,6 +144,9 @@ public class EnchantUIModel : MonoBehaviour
             foreach (var pair in _model.OwnedStats)
             {
                 var data = pair.Value;
+                var enchantGroupType = EnchantGroupIDToEnchantGroupTypeMapper.GetEnchantGroupType(data.Data.StatGroup_ID);
+                var elementalType = TagToElementalMapper.GetElemental(data.Data.Target_2);
+                
                 if (_localizationManager == null)
                 {
                     Debug.LogWarning("No localization manager found. No Localization.");
@@ -146,10 +154,11 @@ public class EnchantUIModel : MonoBehaviour
                     {
                         EnchantId = pair.Key,
                         Level = data.Level,
-                        TypeLabel = "스텟",
+                        TypeLabel = enchantGroupType,
                         Name = $"Skill_ID: {data.Data.StatName}",
                         Description = $"Description_ID: {data.Data.StatDescrip}",
-                        ImageKey = $"{data.Data.Image_ID}"
+                        ImageKey = $"{data.Data.Image_ID}",
+                        ElementalType = elementalType
                     });
                 }
                 else
@@ -158,10 +167,11 @@ public class EnchantUIModel : MonoBehaviour
                     {
                         EnchantId = pair.Key,
                         Level = data.Level,
-                        TypeLabel = "스텟",
+                        TypeLabel = enchantGroupType,
                         Name = _localizationManager.Get(data.Data.StatName, LocalizingType.Enchant),
                         Description = _localizationManager.Get(data.Data.StatDescrip, LocalizingType.Enchant),
-                        ImageKey = $"{data.Data.Image_ID}"
+                        ImageKey = $"{data.Data.Image_ID}",
+                        ElementalType = elementalType
                     });
                 }
             }

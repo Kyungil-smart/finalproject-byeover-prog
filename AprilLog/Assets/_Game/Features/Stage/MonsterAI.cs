@@ -23,6 +23,9 @@ using static PixelConverter;
 // 수정자 : 김영찬
 // 수정 내용 : 기획에서 거리/속도에 대한 값을 픽셀 기준으로 하여, 변환함
 
+// 수정자 : 최동훈
+// 수정 내용 : 엘리트 인자 추가
+
 /// <summary>
 /// 몬스터 1마리의 상태(이동/공격/사망)와 이동을 처리한다.
 /// 이동 방식은 IMovementPattern으로 교체 가능.
@@ -35,7 +38,10 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     /// 앞의 bool = true면 자폭한 몬스터<br/>
     /// 뒤의 bool = true면 보스 몬스터
     /// </summary>
-    public event Action<MonsterAI, bool, bool> OnDeath;
+    public event Action<MonsterAI, bool, bool, bool> OnDeath;
+    public event Action<float> OnHit; // 피격 피드백 연출용
+    public event Action<CrowdControlType, float> OnCrowdControl; // 상태이상 피드백 연출용
+    public event Action OnAttack; // 공격 애니메이션 연출용
     public event Action<int, int> OnHPChanged;
     public event Action<MonsterAI, int> OnRewardContained;
 
@@ -44,8 +50,8 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     [Tooltip("방어선 Y좌표. 이 아래로 내려가면 공격 상태")]
     [SerializeField] private float _defenseLineY = -3f;
 
-    [Tooltip("애니메이터 지정")] 
-    [SerializeField] private Animator _animator;
+    [Tooltip("피격 시 스턴 시간 설정")] 
+    [SerializeField] private float _onHitRootTime = 0.1f;
     
     // ---------- IDamageable ----------
     public int CurrentHP { get; private set; }
@@ -69,11 +75,14 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // ---------- 상태 ----------
     private enum State { Moving, Attacking, Dead }
     private enum MoveType{ Straight, Zigzag }
+    
     private State _state;
     
     private float _attackTimer;
-    private Rect _moveBounds;
+    private Rect _moveBounds; 
     private bool _isBoss;
+    private bool _isElite;
+
 
     // ---------- CC 상태 (바람: 허리케인=슬로우 / 돌풍=넉백) ----------
     private float _slowFactor = 1f;                 // 1=정상, <1=이동 감속 배율
@@ -81,9 +90,11 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     private Vector2 _knockbackVel = Vector2.zero;   // 넉백 중 월드 속도(units/s)
     private float _knockbackEndTime = 0f;
     private float _stunEndTime = 0f;                // 스턴(번개 벼락): 이동+공격 완전 정지
+    private float _rootEndTime = 0f;                // 루트(속박) : 이동 정지 - 피격시 경직에 사용
 
     /// <summary>이 몬스터가 보스인지 (번개 벼락의 엘리트/보스 우선 타겟용). Elite도 현재 isBoss=true로 스폰됨.</summary>
     public bool IsBoss => _isBoss;
+    public bool IsElite => _isElite; // 엘리트 추가
 
     // 플레이어 참조 (공격할 때 TakeDamage 호출용)
     private PlayerModel _playerModel;
@@ -91,8 +102,11 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // 전투 보상
     private int _rewardTriggerId;
 
+    // 방벽 정지선 캐시 (스폰마다 GameObject.Find 방지, 파괴 시 자동 재탐색)
+    private static Transform s_defenseLine;
+
     // ---------- 초기화 ----------
-    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false)
+    public void Initialize(CommonStatusData stats, MonsterStatusData monsterStats, int monsterId, bool isBoss = false, bool isElite = false)
     {
         MonsterID = monsterId;
         MaxHP = stats != null ? stats.MaxHP : 1;
@@ -107,15 +121,33 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _range = monsterStats != null ? PixelsToUnits(monsterStats.Range) : 1;
         Exp = monsterStats != null ? monsterStats.EXP : 0;
         _zigzagAmplitude = monsterStats != null ? monsterStats.ZigzagAmplitude : -1;
-        
+                
         _isBoss = isBoss;
+        _isElite = isElite;
+
+        // _Test 씬 밸런스 콘솔의 몬스터 배율. 테스트 씬 밖에서는 항상 1이라 본편에 영향 없음.
+        if (BalanceTestConsole.MonsterHpMul != 1f)
+        {
+            MaxHP = Mathf.Max(1, Mathf.RoundToInt(MaxHP * BalanceTestConsole.MonsterHpMul));
+            CurrentHP = MaxHP;
+        }
+        if (BalanceTestConsole.MonsterAtkMul != 1f)
+        {
+            _attack = Mathf.Max(1, Mathf.RoundToInt(_attack * BalanceTestConsole.MonsterAtkMul));
+        }
 
         // 방벽 정지선: DefenseLine(방벽) 오브젝트의 Y를 단일 진실 소스로 사용한다.
         // 플레이어도 같은 DefenseLine에 정렬되므로 정지선과 플레이어 위치가 항상 일치한다.
         // (오브젝트가 없으면 serialized 기본값 _defenseLineY 유지)
-        var defenseLine = GameObject.Find("DefenseLine");
-        if (defenseLine != null)
-            _defenseLineY = defenseLine.transform.position.y;
+        // GameObject.Find는 씬 전체 선형 탐색이라 스폰마다 부르지 않고 static으로 캐시한다.
+        // (씬 전환으로 파괴되면 유니티 null 비교에 걸려 다음 스폰 때 재탐색된다)
+        if (s_defenseLine == null)
+        {
+            var defenseLine = GameObject.Find("DefenseLine");
+            s_defenseLine = defenseLine != null ? defenseLine.transform : null;
+        }
+        if (s_defenseLine != null)
+            _defenseLineY = s_defenseLine.position.y;
 
         _state = State.Moving;
         _attackTimer = 0f;
@@ -195,6 +227,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_state == State.Dead) return;
         _slowFactor = Mathf.Clamp01(factor);
         _slowEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Slow, _slowEndTime);
     }
 
     /// <summary>displacement(월드)만큼 duration초에 걸쳐 밀어낸다. (바람 돌풍 넉백)</summary>
@@ -203,6 +236,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_state == State.Dead || duration <= 0f) return;
         _knockbackVel = displacement / duration;
         _knockbackEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Knockback, _knockbackEndTime);
     }
 
     /// <summary>duration초 동안 이동+공격 완전 정지. (번개 벼락 Lv3 스턴)</summary>
@@ -210,18 +244,26 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     {
         if (_state == State.Dead || duration <= 0f) return;
         _stunEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Stun, _stunEndTime);
+    }
+
+    public void ApplyRoot(float duration)
+    {
+        if (_state == State.Dead || duration <= 0f) return;
+        _rootEndTime = Time.time + duration;
+        OnCrowdControl?.Invoke(CrowdControlType.Root, _rootEndTime);
+    }
+
+    private void ApplyHitRoot()
+    {
+        if (_state == State.Dead) return;
+        _rootEndTime = Time.time + _onHitRootTime;
+        OnHit?.Invoke(_onHitRootTime);
     }
 
     // ---------- FSM ----------
     private void Update()
     {
-        // 스턴(번개 벼락) 중이면 이동·공격 모두 정지
-        if (Time.time < _stunEndTime)
-        {
-            if (_animator != null) _animator.SetBool("Move", false);
-            return;
-        }
-
         switch (_state)
         {
             case State.Moving:
@@ -231,16 +273,16 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
                 UpdateAttacking();
                 break;
         }
-        
-        // 애니메이션 제어
-        if (_animator != null)
-        {
-            _animator.SetBool("Move", _state == State.Moving);
-        }
     }
 
     private void UpdateMoving()
     {
+        // 속박(공격 시 경직 등) 중이면 이동 정지
+        if (Time.time < _rootEndTime) return;
+        
+        // 스턴(번개 벼락) 중이면 이동·공격 모두 정지
+        if (Time.time < _stunEndTime) return;
+        
         // 넉백(돌풍) 중이면 이동 패턴 무시하고 넉백 속도로 밀린다. 끝나면 일반 이동 복귀.
         if (Time.time < _knockbackEndTime)
         {
@@ -252,6 +294,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
         // 슬로우(허리케인): 지속시간 내면 이동 dt에 배율, 만료되면 1로 복귀.
         float slow = (Time.time < _slowEndTime) ? _slowFactor : 1f;
+        
         Vector2 newPos = _movement.CalculateNextPosition(
             transform.position, Time.deltaTime * slow, _moveBounds);
         transform.position = newPos;
@@ -265,6 +308,9 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
 
     private void UpdateAttacking()
     {
+        // 스턴(번개 벼락) 중이면 이동·공격 모두 정지
+        if (Time.time < _stunEndTime) return;
+        
         _attackTimer += Time.deltaTime;
         if (_attackTimer >= _attackInterval)
         {
@@ -276,9 +322,6 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
     // ---------- 공격 지원 ----------
     private void AttackSupport()
     {
-        if (_animator != null)
-            _animator.SetTrigger("Attack");
-
         switch (_attackType)
         {
             case AttackType.Melee:
@@ -291,6 +334,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
                 KamikazeAttack(_attack);
                 break;
         }
+        OnAttack?.Invoke();
     }
     
     private void MeleeAttack(int damage)
@@ -315,7 +359,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_playerModel != null)
             _playerModel.TakeDamage(damage);
         _state = State.Dead;
-        OnDeath?.Invoke(this, true, _isBoss);
+        OnDeath?.Invoke(this, true, _isBoss, _isElite);
     }
 
     private void AttackTypeSelect(float range)
@@ -343,18 +387,34 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         if (_state == State.Dead) return;
 
         // Final_Damage = Base_Damage x { 1 - Effective_Armor / (100 + Effective_Armor) }
-        int penetration = 0; // Todo : 데모때는 관통 없음. CBT때 시트 수정 예정
+        // 플레이어 참조가 아직 없으면(스폰 직후 등) 관통 0으로 계산 -- 피격마다 NRE 방지.
+        int penetration = _playerModel != null ? _playerModel.FlatPierce : 0;
         // 유효 방어력 하한 0 (관통이 방어력보다 커도 데미지가 증폭되지 않도록, 기획 2-4-4)
         int effectiveArmor = Mathf.Max(0, _defense - penetration);
         int finalDamage = Mathf.FloorToInt(baseDamage * (1 - effectiveArmor / (float)(100 + effectiveArmor)));
 
         RunStats.AddDamage(finalDamage, skillId); // 정산용: 총 데미지 + 스킬(인챈트)별 최고뎀 누적
+        // 피격 개별 로그 금지: 다발 스킬이면 초당 수십 회라 릴리스에서도 프레임 부담이 된다.
+
+        // 원소 피격음(SFX 가이드 인게임 2~6): skillId=StandardID(1xx~5xx)의 백의 자리가 원소. 기본공격(0)은 대상 아님.
+        // SfxId.HitFire~HitIce가 원소 번호 순서라 산술 변환 가능. 다발 피격 스팸은 라이브러리 minInterval이 걸러준다.
+        int element = skillId / 100;
+        if (element >= 1 && element <= 5)
+            AudioManager.Play((SfxId)((int)SfxId.HitFire + element - 1));
 
         CurrentHP = Mathf.Max(0, CurrentHP - finalDamage);
         OnHPChanged?.Invoke(CurrentHP, MaxHP);
+        
+        if (CurrentHP > 0 && finalDamage > 0)
+            HitFeedBack();
 
         if (CurrentHP <= 0)
             Die();
+    }
+    
+    private void HitFeedBack()
+    {
+        ApplyHitRoot();
     }
 
     private void Die()
@@ -362,7 +422,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _state = State.Dead;
         if(_rewardTriggerId != 0)
             OnRewardContained?.Invoke(this ,_rewardTriggerId);
-        OnDeath?.Invoke(this, false, _isBoss);
+        OnDeath?.Invoke(this, false, _isBoss, _isElite);
     }
 
     // ---------- IPoolable ----------
@@ -387,7 +447,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
         _knockbackVel = Vector2.zero; _knockbackEndTime = 0f;
         _stunEndTime = 0f;
     }
-    
+
     // ---------- Stat Scaling ----------
     private int CalculateScaledStat(int baseStat, string growthType, float growthValue, int accumulateCount)
     {
@@ -400,7 +460,7 @@ public class MonsterAI : MonoBehaviour, IDamageable, IPoolable
                 return baseStat + Mathf.RoundToInt(growthValue * accumulateCount);
                 
             case "Rate":
-                // 비율 누적 
+                // 비율 누적
                 // 수식: 기본스탯 * (1 + (비율 * 누적횟수)) 복리 대신 단리로 적용 (기획 정석)
                 // 예: HP 100, 증가량 0.1(10%), 누적 4회 -> 100 * (1 + (0.1 * 4)) = 140
                 return Mathf.RoundToInt(baseStat * (1f + (growthValue * accumulateCount)));

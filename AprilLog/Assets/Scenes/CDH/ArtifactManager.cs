@@ -2,6 +2,9 @@
 // 수정 내용 : 실제 재화에 반영 하는 부분을 GameManager에서 담당 및 GameManager 비 활성화 시 테스트용 로컬 변수 활용 하도록 변경
 //           세이브 / 로드를 게임 매니저에서 일괄 담당하도록 수정
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 외부 아티팩트 수량 변경을 저장 이벤트가 보장되는 Manager API로 통합하고 로드 완료 상태를 노출
+
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -14,10 +17,10 @@ public class ArtifactManager : MonoBehaviour
     private const int UpgradeStoneId = 70004;
     private const int LegendaryShardId = 70005;
     
-    public int UpgradeStone => GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null
+    public int UpgradeStone => GameManager.Instance != null
         ? DataManager.Instance.ResourceRepo.GetItemCount(UpgradeStoneId)
         : _localUpgradeStones;
-    public int LegendaryShard => GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null
+    public int LegendaryShard => GameManager.Instance != null
         ? DataManager.Instance.ResourceRepo.GetItemCount(LegendaryShardId)
         : _localLegendaryShard;
     
@@ -27,10 +30,11 @@ public class ArtifactManager : MonoBehaviour
     public event Action OnInventoryUpdated;
 
     public List<ArtifactInstance> MyArtifacts = new List<ArtifactInstance>();
-    
+    public bool HasLoadedData { get; private set; }
+
     public void InitializeItems(int upgradeStone, int legendaryShard)
     {
-        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        if (GameManager.Instance != null)
         {
             DataManager.Instance.ResourceRepo.SetItemCount(UpgradeStoneId, Mathf.Max(0, upgradeStone));
             DataManager.Instance.ResourceRepo.SetItemCount(LegendaryShardId, Mathf.Max(0, legendaryShard));
@@ -54,6 +58,8 @@ public class ArtifactManager : MonoBehaviour
         if(GameManager.Instance != null && DataManager.Instance != null)
         {
             GameManager.Instance.ApplyCloudDataToArtifactManager(this);
+            HasLoadedData = true;
+            OnInventoryUpdated?.Invoke(); // 로드 전에 그려진 장착 슬롯을 저장 데이터로 다시 동기화한다.
             Debug.Log("[로드 완료] 아티팩트 데이터를 불러왔습니다.");
         }
     }
@@ -143,6 +149,42 @@ public class ArtifactManager : MonoBehaviour
         OnInventoryUpdated?.Invoke();
     }
 
+    public bool TryAddArtifactCount(int uniqueId, int amount)
+    {
+        if (amount <= 0)
+        {
+            return false;
+        }
+
+        ArtifactInstance _artifact = MyArtifacts.Find(_item => _item != null && _item.UniqueId == uniqueId);
+        if (_artifact == null || _artifact.CurrentCount > int.MaxValue - amount)
+        {
+            return false;
+        }
+
+        _artifact.CurrentCount += amount;
+        OnInventoryUpdated?.Invoke();
+        return true;
+    }
+
+    public bool EnsureArtifactCount(int uniqueId, int minimumCount)
+    {
+        if (minimumCount <= 0)
+        {
+            return false;
+        }
+
+        ArtifactInstance _artifact = MyArtifacts.Find(_item => _item != null && _item.UniqueId == uniqueId);
+        if (_artifact == null || _artifact.CurrentCount >= minimumCount)
+        {
+            return false;
+        }
+
+        _artifact.CurrentCount = minimumCount;
+        OnInventoryUpdated?.Invoke();
+        return true;
+    }
+
     private void CheckAndHandleExcess(ArtifactInstance item)
     {
         var master = item.MasterData;
@@ -161,21 +203,18 @@ public class ArtifactManager : MonoBehaviour
             int excessCount = item.CurrentCount - currentLimit;
             item.CurrentCount = currentLimit;
 
-            var repo = DataManager.Instance.ResourceRepo;
-            
+            // 지급은 지갑 API로(영속+이벤트 포함). 옛 repo 직접 지급은 영속 호출이 빠져 있어 재시작 시 유실될 수 있었다.
             if (grade == "Legendary")
             {
-                repo.AddItem(LegendaryShardId, excessCount);
+                AddShard(excessCount);
                 Debug.Log($"[자동 분해] 레전더리 초과분 {excessCount}개 → 레전더리 조각 지급");
             }
-
             else
             {
                 int reward = excessCount * dismantleData.RewardAmount;
-                repo.AddItem(UpgradeStoneId, reward);
+                AddStone(reward);
                 Debug.Log($"[자동 분해] {grade} 초과분 {excessCount}개 → 에픽 강화석 지급");
             }
-
         }
     }
 
@@ -203,35 +242,24 @@ public class ArtifactManager : MonoBehaviour
         int goldCost = Mathf.Max(0, repo.GetGearUpgradeCost(artifact.MasterId, artifact.CurrentLevel, GoldItemId));
         int stoneCost = Mathf.Max(0, repo.GetGearUpgradeCost(artifact.MasterId, artifact.CurrentLevel, UpgradeStoneId));
 
-        // 보유 검사 : 골드는 GameManager(영속 재화), 강화석은 UpgradeStone. (GameManager 없으면 골드 무시)
-        bool canGold = GameManager.Instance == null || GameManager.Instance.CanAffordCurrency(goldCost, 0);
-        if (!canGold || UpgradeStone < stoneCost)
-        {
-            Debug.LogWarning($"[레벨업] 재화 부족. 골드 {goldCost} / 강화석 {stoneCost}");
-            return;
-        }
-
-        // 차감 → 레벨업
-
-        // 부트씬 안거치고 로비에서 작동 => GameManager == null
+        // 보유 검사 + 차감 : 골드(70001)+강화석(70004)을 지갑 API로 원자 처리(부족하면 아무것도 차감 안 됨).
+        // 옛 코드는 골드/강화석을 서로 다른 API로 차감하고 실패 시 수동 롤백했는데, 그 롤백 경로가 이벤트/영속 타이밍 불일치의 원인이었다.
+        // 부트씬 안 거치고 로비 단독 실행 => GameManager == null → 골드 개념 없이 로컬 강화석만.
         if (GameManager.Instance != null)
         {
-            if(!GameManager.Instance.TrySpendCurrency(goldCost, 0)) return;
-            
-            if(!DataManager.Instance.ResourceRepo.UseItem(UpgradeStoneId, stoneCost))
+            if (!GameManager.Instance.TrySpendResources("아티팩트 레벨업", (GoldItemId, goldCost), (UpgradeStoneId, stoneCost)))
             {
-                // 골드가 소모 되었으나, 강화석 소모에 실패 할 경우에는 다시 재화 롤백
-                DataManager.Instance.ResourceRepo.AddItem(GoldItemId, goldCost);
-                GameManager.Instance.SyncAndSaveResourceCloudData();
+                Debug.LogWarning($"[레벨업] 재화 부족. 골드 {goldCost} / 강화석 {stoneCost}");
                 return;
             }
-            
-            GameManager.Instance.SyncAndSaveResourceCloudData();
         }
-
         else
         {
-            // 로컬에서는 골드 차감 없음
+            if (UpgradeStone < stoneCost)
+            {
+                Debug.LogWarning($"[레벨업] 강화석 부족. {stoneCost}");
+                return;
+            }
             _localUpgradeStones -= stoneCost;
         }
         
@@ -252,21 +280,20 @@ public class ArtifactManager : MonoBehaviour
 
         string materialType = useShard ? "Shard" : "SameGear";
         var costData = DataManager.Instance.GearRepo.GetAscensionCosts(item.MasterData.GearGrade, materialType);
+        int ascensionBefore = item.AscensionCount;   // 성공 판정용(아래 경로 중 하나라도 ++ 되면 성공)
 
         if (useShard)
         {
-            if (LegendaryShard >= costData.CostAmount)
+            // 옛 코드는 조각 보유를 검사해놓고 강화석(UpgradeStoneId)을 차감하는 재화 불일치 버그가 있었다. 조각(70005)으로 통일.
+            if (GameManager.Instance != null)
             {
-                if (DataManager.Instance != null)
-                {
-                    if(DataManager.Instance.ResourceRepo.UseItem(UpgradeStoneId, costData.CostAmount))
-                        item.AscensionCount++;
-                }
-                else
-                {
-                    _localLegendaryShard -= costData.CostAmount;
+                if (GameManager.Instance.UseResource(LegendaryShardId, costData.CostAmount))
                     item.AscensionCount++;
-                }
+            }
+            else if (_localLegendaryShard >= costData.CostAmount)
+            {
+                _localLegendaryShard -= costData.CostAmount;
+                item.AscensionCount++;
             }
         }
 
@@ -275,6 +302,9 @@ public class ArtifactManager : MonoBehaviour
             item.CurrentCount -= costData.CostAmount;
             item.AscensionCount++;
         }
+
+        if (item.AscensionCount > ascensionBefore)
+            AudioManager.Play(SfxId.ArtifactAscension);   // SFX 가이드 아웃게임 4: 돌파 성공
 
         OnInventoryUpdated?.Invoke();
     }
@@ -292,6 +322,7 @@ public class ArtifactManager : MonoBehaviour
         item.CurrentCount -= countToDisassemble;
 
         GiveReward(item.MasterData.GearGrade, countToDisassemble);
+        AudioManager.Play(SfxId.ArtifactDisassemble);   // SFX 가이드 아웃게임 5: 아티팩트 분해
 
         OnInventoryUpdated?.Invoke();
     }
@@ -299,38 +330,16 @@ public class ArtifactManager : MonoBehaviour
     private void GiveReward(string grade, int amount)
     {
         var dismantleData = DataManager.Instance.GearRepo.GetGearDismantleData(grade);
+        if (dismantleData == null) return;
 
-        if (dismantleData != null)
-        {
-            int rewardAmount = amount * dismantleData.RewardAmount;
-            var repo = DataManager.Instance.ResourceRepo;
+        int rewardAmount = amount * dismantleData.RewardAmount;
 
-            if (grade == "Legendary")
-            {
-                if (DataManager.Instance != null)
-                {
-                    repo.AddItem(LegendaryShardId, rewardAmount);
-                    GameManager.Instance.SyncAndSaveResourceCloudData();
-                }
-                else
-                {
-                    _localLegendaryShard += rewardAmount;
-                }
-            }
-            else
-            {
-                if (DataManager.Instance != null)
-                {
-                    repo.AddItem(UpgradeStoneId, rewardAmount);
-                    GameManager.Instance.SyncAndSaveResourceCloudData();
-                }
-                else
-                {
-                    _localUpgradeStones += rewardAmount;
-                }
-            }
-            Debug.Log($"[분해 완료] {grade} {amount}개 분해 → {rewardAmount}개 획득");
-        }
+        if (grade == "Legendary")
+            AddShard(rewardAmount);
+        else
+            AddStone(rewardAmount);
+
+        Debug.Log($"[분해 완료] {grade} {amount}개 분해 → {rewardAmount}개 획득");
     }
 
     public void LevelUpArtifact(ArtifactInstance data)
@@ -353,17 +362,11 @@ public class ArtifactManager : MonoBehaviour
     /// <param name="amount"></param>
     public void AddShard(int amount)
     {
-        var repo = DataManager.Instance.ResourceRepo;
-
-        if (DataManager.Instance != null)
-        {
-            repo.AddItem(LegendaryShardId, Mathf.Max(0, amount));
-            GameManager.Instance.SyncAndSaveResourceCloudData();
-        }
+        // 지갑 API 경유(영속+이벤트+사유 로그). 부트 안 거친 테스트 씬(GameManager 없음)만 로컬 변수.
+        if (GameManager.Instance != null)
+            GameManager.Instance.AddResource(LegendaryShardId, Mathf.Max(0, amount), "아티팩트 조각 지급");
         else
-        {
             _localLegendaryShard += Mathf.Max(0, amount);
-        }
     }
 
     /// <summary>
@@ -372,17 +375,10 @@ public class ArtifactManager : MonoBehaviour
     /// <param name="amount"></param>
     public void UseShard(int amount)
     {
-        var repo = DataManager.Instance.ResourceRepo;
-        
-        if (DataManager.Instance != null)
-        {
-            if(!repo.UseItem(LegendaryShardId, Mathf.Max(0, amount))) return;
-            GameManager.Instance.SyncAndSaveResourceCloudData();
-        }
+        if (GameManager.Instance != null)
+            GameManager.Instance.UseResource(LegendaryShardId, Mathf.Max(0, amount));
         else
-        {
             _localLegendaryShard -= Mathf.Max(0, amount);
-        }
     }
 
     /// <summary>
@@ -391,17 +387,10 @@ public class ArtifactManager : MonoBehaviour
     /// <param name="amount"></param>
     public void AddStone(int amount)
     {
-        var repo = DataManager.Instance.ResourceRepo;
-
-        if (DataManager.Instance != null)
-        {
-            repo.AddItem(UpgradeStoneId, Mathf.Max(0, amount));
-            GameManager.Instance.SyncAndSaveResourceCloudData();
-        }
+        if (GameManager.Instance != null)
+            GameManager.Instance.AddResource(UpgradeStoneId, Mathf.Max(0, amount), "강화석 지급");
         else
-        {
             _localUpgradeStones += Mathf.Max(0, amount);
-        }
     }
 
     /// <summary>
@@ -410,17 +399,10 @@ public class ArtifactManager : MonoBehaviour
     /// <param name="amount"></param>
     public void UseStone(int amount)
     {
-        var repo = DataManager.Instance.ResourceRepo;
-        
-        if (DataManager.Instance != null)
-        {
-            repo.UseItem(UpgradeStoneId, Mathf.Max(0, amount));
-            GameManager.Instance.SyncAndSaveResourceCloudData();
-        }
+        if (GameManager.Instance != null)
+            GameManager.Instance.UseResource(UpgradeStoneId, Mathf.Max(0, amount));
         else
-        {
             _localUpgradeStones -= Mathf.Max(0, amount);
-        }
     }
     
     /// <summary>

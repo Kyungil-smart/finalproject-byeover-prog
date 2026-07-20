@@ -8,6 +8,7 @@ public class ReplayStoryData
     public string EpisodeTitle;
     public ReplayStoryState State;
     public string UnlockConditionText;
+    public string BackgroundResourcePath;
 
     public ReplayStoryData(
         string storyId,

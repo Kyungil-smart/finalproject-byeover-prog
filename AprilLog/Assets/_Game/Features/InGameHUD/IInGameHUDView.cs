@@ -4,6 +4,8 @@
 // 수정자 : 김영찬
 // 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
 
+using UnityEngine;
+
 /// <summary>
 /// 인게임 HUD가 구현해야 할 표시 메서드.
 /// </summary>
@@ -16,8 +18,9 @@ public interface IInGameHUDView
     void UpdateLevelText(int current);
     void UpdateCombo(int count);
     void UpdateStageTimer(float remainingTime);
-    void UpdateStageProgress(int stageId);
+    void UpdateStageProgress(int chapterOrder, int stageOrder);
     void UpdateWaveStateText(StageModel.WaveState waveState);
     void UpdateSpecialWavePopup(StageModel.SpawnType spawnType);
     void ShowLevelUpEffect();
+    void SetFeedBackBarColor(Color color);
 }

@@ -41,6 +41,15 @@ public class StageRepo : MonoBehaviour
     private Dictionary<int, SpecialWaveRuleData> _specialRules;
     private List<MonsterStageScalingData> _scalingRules;
     
+    // 챕터/스테이지의 연결 순서를 인덱스로 저장하는 Mapping Dict -> 변동보상 및 로비의 스테이지 선택 등에서 사용
+    private Dictionary<int, int> _chapterStepMapping;
+    private Dictionary<int, int> _stageStepMapping;
+    private Dictionary<int, int> _stepIndexToChapterIdMapping;
+    private Dictionary<int, int> _stepIndexToStageIdMapping;
+    
+    // 오류 코드 출력 방지를 위한 튜토리얼 챕터 ID 저장
+    private HashSet<int> _tutorialChapterIds = new HashSet<int> { 9901, 9801 };
+    
     private bool _isInitialized;
 
     public void Initialize()
@@ -62,8 +71,16 @@ public class StageRepo : MonoBehaviour
         
         _specialRules = BuildDictionary(_specialRuleTable, nameof(_specialRuleTable), r => r.SpecialWave_ID);
         _scalingRules = BuildList(_scalingTable, nameof(_scalingTable));
+
+        BuildStepMapping(GetValidChapterList(), GetValidStageList());
         _isInitialized = true;
         Debug.Log($"[StageRepo] 초기화 완료. Chapters: {_chapters.Count}, Stages: {_stages.Count}, PoolMasters: {_poolMasters.Count}, Pools: {_pools.Count}, SpawnRules: {_waveRules.Count}, ScalingRules: {_scalingRules.Count}");
+    }
+
+    public void ExportStepMapping(out Dictionary<int, int> chapterStepMapping, out Dictionary<int, int> stageStepMapping)
+    {
+        chapterStepMapping = _chapterStepMapping;
+        stageStepMapping = _stageStepMapping;
     }
 
     public ChapterData GetChapter(int id)
@@ -246,12 +263,12 @@ public class StageRepo : MonoBehaviour
     }
     
     // 여러 챕터에 걸친 보상을 계산하기 위해 챕터번호/스테이지 번호만 따로 리스트업해서 외부(RewardRepo)로 전송함
-    public List<int> GetValidChapterList()
+    private List<int> GetValidChapterList()
     {
         var list = new List<int>();
-        HashSet<int> registered = new HashSet<int>();
+        HashSet<int> registered = new HashSet<int> { 9901, 9801 }; // 튜토리얼은 미리 제외하고 시작
 
-        foreach (var data in _stageTable.rows)
+        foreach (var data in _chapterTable.rows)
         {
             if(registered.Contains(data.Chapter_ID)) continue;
             list.Add(data.Chapter_ID);
@@ -261,10 +278,10 @@ public class StageRepo : MonoBehaviour
         return list;
     }
 
-    public List<int> GetValidStageList()
+    private List<int> GetValidStageList()
     {
         var list = new List<int>();
-        HashSet<int> registered = new HashSet<int>();
+        HashSet<int> registered = new HashSet<int>{ 990101, 980101, 980102 }; // 튜토리얼은 미리 제외하고 시작
         
         foreach (var data in _stageTable.rows)
         {
@@ -274,6 +291,78 @@ public class StageRepo : MonoBehaviour
         }
         
         return list;
+    }
+    
+    public int GetChapterIdByStep(int targetChapterId, int step)
+    {
+        int index = GetIndexByChapterId(targetChapterId);
+        if(index == -1) return -1;
+        
+        int temp = index - step;
+        int id = GetChapterIdByIndex(temp);
+        
+        return id;
+    }
+    
+    public int GetStageIdByStep(int targetStageId, int step)
+    {
+        int index = GetIndexByStageId(targetStageId);
+        if(index == -1) return -1;
+
+        int temp = index - step;
+        int id = GetStageIdByIndex(temp);
+        
+        return id;
+    }
+
+    public int GetIndexByChapterId(int chapterId)
+    {
+        if (_tutorialChapterIds.Contains(chapterId))
+        {
+            Debug.Log("[StageRepo] 튜토리얼 Chapter ID입력. -1 반환");
+            return -1;
+        }
+        
+        if(_chapterStepMapping.TryGetValue(chapterId, out int index))
+        {
+            return index;
+        }
+
+        Debug.LogError($"[StageRepo] Chapter ID {chapterId}에 해당하는 ID를 찾을 수 없습니다.");
+        return -1;
+    }
+
+    public int GetIndexByStageId(int stageId)
+    {
+        if(_stageStepMapping.TryGetValue(stageId, out int index))
+        {
+            return index;
+        }
+        
+        Debug.LogError($"[StageRepo] Stage ID {stageId}에 해당하는 ID를 찾을 수 없습니다.");
+        return -1;
+    }
+
+    public int GetChapterIdByIndex(int index)
+    {
+        if (_stepIndexToChapterIdMapping.TryGetValue(index, out int id))
+        {
+            return id;
+        }
+    
+        Debug.LogError($"[StageRepo] Index {index}에 해당하는 ID를 찾을 수 없습니다.");
+        return -1;
+    }
+
+    public int GetStageIdByIndex(int index)
+    {
+        if (_stepIndexToStageIdMapping.TryGetValue(index, out int id))
+        {
+            return id;
+        }
+    
+        Debug.LogError($"[StageRepo] Index {index}에 해당하는 ID를 찾을 수 없습니다.");
+        return -1;
     }
 
     private Dictionary<TKey, TData> BuildDictionary<TData, TKey>(
@@ -316,6 +405,17 @@ public class StageRepo : MonoBehaviour
         }
 
         return result;
+    }
+
+    public Dictionary<int, int> GetStepIndexToChapterIdMappingData()
+    {
+        if (!_isInitialized)
+        {
+            Debug.LogWarning($"[StageRepo] {nameof(StageRepo)} is not initialized. Not initialized.");
+            return new Dictionary<int, int>();
+        }
+        
+        return _stepIndexToChapterIdMapping;
     }
 
     // (Chapter_ID, StageOrder) -> StageData 역조회 맵 구성. Stage_ID가 불규칙이라 런타임은 챕터/순서로 찾는다.
@@ -379,13 +479,13 @@ public class StageRepo : MonoBehaviour
     {
         var result = new Dictionary<int, List<StageWaveRuleData>>();
 
-        if (_poolTable == null)
+        if (_waveRuleTable == null)
         {
             Debug.LogWarning($"[StageRepo] {nameof(_waveRuleTable)} is not assigned. Empty pool dictionary will be used.");
             return result;
         }
 
-        if (_poolTable.rows == null)
+        if (_waveRuleTable.rows == null)
         {
             Debug.LogWarning($"[StageRepo] {nameof(_waveRuleTable)}.rows is null. Empty pool dictionary will be used.");
             return result;
@@ -410,6 +510,26 @@ public class StageRepo : MonoBehaviour
         }
 
         return result;
+    }
+    
+    private void BuildStepMapping(List<int> validChapterIds ,List<int> validStageIds)
+    {
+        _chapterStepMapping = new Dictionary<int, int>();
+        _stageStepMapping = new Dictionary<int, int>();
+        _stepIndexToChapterIdMapping = new Dictionary<int, int>();
+        _stepIndexToStageIdMapping = new Dictionary<int, int>();
+        
+        for (int i = 0; i < validChapterIds.Count; i++)
+        {
+            _chapterStepMapping[validChapterIds[i]] = i; 
+            _stepIndexToChapterIdMapping[i] = validChapterIds[i];
+        }
+        
+        for (int i = 0; i < validStageIds.Count; i++)
+        {
+            _stageStepMapping[validStageIds[i]] = i; 
+            _stepIndexToStageIdMapping[i] = validStageIds[i];
+        }
     }
 
     private List<TData> BuildList<TData>(DataTable<TData> table, string tableName)

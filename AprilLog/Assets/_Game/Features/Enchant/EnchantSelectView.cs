@@ -22,6 +22,12 @@
 // 수정 내용 : 기존 인첸트 선택 로직과 신규 인첸트 선택 로직을 선택해 게임에 적용 가능 하도록 수정
 //           이 기능은 인스팩터에서 작동 되며, 게임 씬 구동 전에 선택 해둬야됨. (빌드나 에디터 실행 도중에는 스위치 되지 않음)
 
+// 수정 내용 : RerollBoundary 기반 우상단 리롤 횟수 표시 UI 의존성 제거
+//            인챈트 교체 팝업이 선택 직후 닫히지 않도록 카드 선택 후 View 직접 닫기 제거
+
+// 4차 수정자 : 조규민
+// 수정 내용 : 미선택 진행 버튼 클릭 시 확인 팝업을 거친 뒤에만 인챈트 선택을 건너뛰도록 변경
+
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -59,12 +65,14 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     [Tooltip("Horizontal Layout Group이 붙은 Content")]
     [SerializeField] private Transform _choiceContainer;
     [SerializeField] private Button _skipButton;
-    [SerializeField] private Button _rerollButton;
-    [SerializeField] private TMP_Text _rerollCountText;
+    [Tooltip("미선택 진행 버튼을 눌렀을 때 사용할 확인 팝업입니다. 비워두면 씬에서 자동으로 찾습니다.")]
+    [SerializeField] private InGameConfirmPopupView _noSelectConfirmPopupView;
+    [Tooltip("미선택 진행 확인 팝업에 표시할 문구입니다.")]
+    [TextArea]
+    [SerializeField] private string _noSelectConfirmMessage = "인챈트를 선택하지 않고 진행하시겠습니까?\n선택하지 않은 인챈트는 획득할 수 없습니다.";
     [Tooltip("현재 스킬/스탯 인첸트 선택 종류를 표시하는 제목")]
     [SerializeField] private TMP_Text _headerText;
-    [SerializeField] private string _skillSelectionHeader = "스킬 인첸트 선택";
-    [SerializeField] private string _statSelectionHeader = "스탯 인첸트 선택";
+    [SerializeField] private string _tempSelectionHeader = "인첸트 선택";
 
     [Header("리롤 오버레이")]
     [Tooltip("비워두면 EnchantSelectCanvas 아래에 Viewport Mask 영향을 받지 않는 오버레이를 자동 생성합니다.")]
@@ -81,16 +89,18 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     private IEnchantSelectPresenter _selectPresenter;
     private EnchantChangePresenter _changePresenter;
     
+    private LocalizationManager _localizationManager;
+    
     private bool _isInitialized;
     
     // 런타임에 생성된 카드들을 추적하기 위한 캐시 리스트
     private List<GameObject> _spawnedCards = new List<GameObject>();
-    private TMP_Text _resolvedRerollCountText;
     private bool _currentRerollAvailable;
     private int _currentRerollRemaining;
     private bool[] _currentCardRerollAvailable;
     private ScrollRect _choiceScrollRect;
     private bool _hasLoggedMissingHeader;
+    private bool _isNoSelectConfirmPopupBound;
 
     private void OnEnable()
     {
@@ -134,16 +144,14 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 );
             }
             
-            _skipButton.onClick.AddListener(() => OnSkipSelected?.Invoke());
-            if (_rerollButton != null)
-            {
-                ConfigureRerollCountDisplay();
-                SetLegacyRerollVisible(true);
-            }
+            _skipButton.onClick.AddListener(OpenNoSelectConfirmPopup);
             
             _isInitialized = true;
         }
 
+        _localizationManager ??= LocalizationManager.Instance;
+        ResolveNoSelectConfirmPopupView();
+        CloseNoSelectConfirmPopup();
         EnsureRerollOverlay();
         SubscribeScrollPosition();
         
@@ -151,9 +159,22 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         _selectPresenter?.ShowSelection();
     }
 
+    private void OnDisable()
+    {
+        CloseNoSelectConfirmPopup();
+        ScreenNavigator.IsLevelUpActive = false;
+    }
+
     private void OnDestroy()
     {
         UnsubscribeScrollPosition();
+        UnbindNoSelectConfirmPopup();
+
+        if (_skipButton != null)
+        {
+            _skipButton.onClick.RemoveListener(OpenNoSelectConfirmPopup);
+        }
+
         _selectPresenter?.Dispose();
         _changePresenter?.Dispose();
     }
@@ -162,6 +183,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public void Hide() => _navigator.OnCloseButtonClick();
 
     // 추가: 조규민 - Presenter가 전달한 선택 종류에 맞춰 인첸트 선택 제목을 갱신한다.
+    // 수정 : 김영찬 - 번역 데이터 상. 헤더 섹션은 1종류만 존재 함으로 통합한다.
     public void SetSelectionType(EnchantType type)
     {
         if (_headerText == null)
@@ -177,20 +199,9 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             return;
         }
 
-        switch (type)
-        {
-            case EnchantType.Skill:
-                _headerText.text = _skillSelectionHeader;
-                return;
-
-            case EnchantType.Stat:
-                _headerText.text = _statSelectionHeader;
-                return;
-
-            default:
-                Debug.LogError($"[EnchantSelectView] 지원하지 않는 인첸트 선택 타입입니다. type={type}", this);
-                return;
-        }
+        _headerText.text = _localizationManager != null
+            ? _localizationManager.Get(12010, LocalizingType.UI)
+            : _tempSelectionHeader;
     }
 
 #if UNITY_EDITOR
@@ -250,13 +261,12 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
                 cardUI.OnCardClicked += () =>
                 {
                     DisableAllCardButtons();
-                    SelectChoice(index); 
-                    Hide();              
+                    SelectChoice(index);
                 };
 
                 cardUI.OnRerollClicked += () => OnCardRerollSelected?.Invoke(index);
                 cardUI.AttachRerollOverlay(_rerollOverlay);
-                cardUI.SetRerollState(IsCardRerollAvailable(index), _currentRerollRemaining);
+                cardUI.SetRerollState(_currentRerollAvailable, IsCardRerollAvailable(index));
             }
         }
 
@@ -267,14 +277,84 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
     public void SelectChoice(int index) => OnChoiceSelected?.Invoke(index);
     public void ConfirmDelete(int index) => OnDeleteConfirmed?.Invoke(index);
 
+    private void OpenNoSelectConfirmPopup()
+    {
+        ResolveNoSelectConfirmPopupView();
+
+        if (_noSelectConfirmPopupView == null)
+        {
+            Debug.LogWarning("[EnchantSelectView] 미선택 진행 확인 팝업이 연결되지 않아 기존 미선택 진행 흐름을 실행합니다.", this);
+            OnSkipSelected?.Invoke();
+            return;
+        }
+
+        BindNoSelectConfirmPopup();
+        _noSelectConfirmPopupView.SetMessage(_noSelectConfirmMessage);
+        _noSelectConfirmPopupView.SetVisible(true);
+    }
+
+    private void HandleNoSelectConfirmYesClicked()
+    {
+        CloseNoSelectConfirmPopup();
+        OnSkipSelected?.Invoke();
+    }
+
+    private void HandleNoSelectConfirmCanceled()
+    {
+        CloseNoSelectConfirmPopup();
+    }
+
+    private void CloseNoSelectConfirmPopup()
+    {
+        if (_noSelectConfirmPopupView != null)
+        {
+            _noSelectConfirmPopupView.SetVisible(false);
+        }
+
+        UnbindNoSelectConfirmPopup();
+    }
+
+    private void ResolveNoSelectConfirmPopupView()
+    {
+        if (_noSelectConfirmPopupView != null)
+        {
+            return;
+        }
+
+        _noSelectConfirmPopupView = FindFirstObjectByType<InGameConfirmPopupView>(FindObjectsInactive.Include);
+    }
+
+    private void BindNoSelectConfirmPopup()
+    {
+        if (_noSelectConfirmPopupView == null || _isNoSelectConfirmPopupBound)
+        {
+            return;
+        }
+
+        _noSelectConfirmPopupView.OnYesClicked += HandleNoSelectConfirmYesClicked;
+        _noSelectConfirmPopupView.OnNoClicked += HandleNoSelectConfirmCanceled;
+        _noSelectConfirmPopupView.OnCloseClicked += HandleNoSelectConfirmCanceled;
+        _isNoSelectConfirmPopupBound = true;
+    }
+
+    private void UnbindNoSelectConfirmPopup()
+    {
+        if (_noSelectConfirmPopupView == null || !_isNoSelectConfirmPopupBound)
+        {
+            return;
+        }
+
+        _noSelectConfirmPopupView.OnYesClicked -= HandleNoSelectConfirmYesClicked;
+        _noSelectConfirmPopupView.OnNoClicked -= HandleNoSelectConfirmCanceled;
+        _noSelectConfirmPopupView.OnCloseClicked -= HandleNoSelectConfirmCanceled;
+        _isNoSelectConfirmPopupBound = false;
+    }
+
     /// <summary>새로고침(리롤) 버튼 상태 갱신. available=false면 버튼을 숨김(일반 씬). remaining=남은 횟수(0이면 비활성).</summary>
     public void SetRerollAvailable(bool available, int remaining)
     {
         _currentRerollAvailable = available;
         _currentRerollRemaining = remaining;
-
-        SetLegacyRerollVisible(true);
-        UpdateRerollCountText(remaining);
 
         for (int i = 0; i < _spawnedCards.Count; i++)
         {
@@ -282,7 +362,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
             if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
-                cardUI.SetRerollState(IsCardRerollAvailable(i), remaining);
+                cardUI.SetRerollState(_currentRerollAvailable, IsCardRerollAvailable(i));
             }
         }
     }
@@ -297,7 +377,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
 
             if (card != null && card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
-                cardUI.SetRerollState(IsCardRerollAvailable(i), _currentRerollRemaining);
+                cardUI.SetRerollState(_currentRerollAvailable, IsCardRerollAvailable(i));
             }
         }
     }
@@ -317,7 +397,7 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
             if (card.TryGetComponent<EnchantCardUI>(out var cardUI))
             {
                 cardUI.SetSelectInteractable(false);
-                cardUI.SetRerollState(false, _currentRerollRemaining);
+                cardUI.SetRerollState(_currentRerollAvailable, false);
             }
         }
     }
@@ -416,78 +496,6 @@ public class EnchantSelectView : MonoBehaviour, IEnchantSelectView
         if (!isActiveAndEnabled || _rerollOverlay == null) return;
 
         RefreshRerollPositions();
-    }
-
-    private void SetLegacyRerollVisible(bool visible)
-    {
-        if (_rerollButton == null) return;
-
-        GameObject rerollRoot = GetRerollRoot();
-        if (rerollRoot != null)
-            rerollRoot.SetActive(visible);
-        else
-            _rerollButton.gameObject.SetActive(visible);
-    }
-
-    private GameObject GetRerollRoot()
-    {
-        if (_rerollButton == null || _rerollButton.transform.parent == null)
-            return null;
-
-        return _rerollButton.transform.parent.gameObject;
-    }
-
-    private void ConfigureRerollCountDisplay()
-    {
-        GameObject rerollRoot = GetRerollRoot();
-        if (rerollRoot == null) return;
-
-        _rerollButton.enabled = false;
-
-        Graphic[] graphics = rerollRoot.GetComponentsInChildren<Graphic>(true);
-        foreach (Graphic graphic in graphics)
-        {
-            if (graphic == null) continue;
-
-            graphic.raycastTarget = false;
-        }
-    }
-
-    private void UpdateRerollCountText(int remaining)
-    {
-        TMP_Text countText = ResolveRerollCountText();
-        if (countText == null) return;
-
-        string remainingText = remaining < 0 ? "INF" : Mathf.Max(0, remaining).ToString();
-        countText.text = $"X {remainingText}";
-    }
-
-    private TMP_Text ResolveRerollCountText()
-    {
-        if (_rerollCountText != null)
-            return _rerollCountText;
-
-        if (_resolvedRerollCountText != null)
-            return _resolvedRerollCountText;
-
-        GameObject rerollRoot = GetRerollRoot();
-        if (rerollRoot == null)
-            return null;
-
-        TMP_Text[] texts = rerollRoot.GetComponentsInChildren<TMP_Text>(true);
-        foreach (TMP_Text text in texts)
-        {
-            if (text != null && text.name.Contains("RerollCountText"))
-            {
-                _resolvedRerollCountText = text;
-                return _resolvedRerollCountText;
-            }
-        }
-
-        if (texts.Length > 0)
-            _resolvedRerollCountText = texts[0];
-
-        return _resolvedRerollCountText;
     }
 
     // 추가: 조규민 - 선택 카드 생성 전 필수 UI와 데이터 참조 누락을 검사한다.

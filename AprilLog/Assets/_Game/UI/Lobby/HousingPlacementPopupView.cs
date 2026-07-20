@@ -1,14 +1,19 @@
 //담당자: 조규민
 
 /// 하우징 배치 팝업의 탭과 아이템 목록을 표시
-//  가구 배치 팝업에 카테고리 제목과 섹션별 아이템 그리드를 표시
+//  가구 배치 팝업에 카테고리 제목과 섹션별 아이템 그리드를 표시하고 구매 버튼 입력을 전달
+//  카테고리 갱신 시 슬롯을 재사용하고 View가 등록한 버튼 이벤트만 해제하도록 변경
+//  섹션 루트도 재사용하여 카테고리 전환 시 반복 생성과 파괴를 줄임
 
 using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
+// 카테고리별 배치 아이템 구역 생성과 슬롯 재사용을 통한 목록 UI 갱신
+// 카테고리·아이템·구매·적용 입력 이벤트 등록·해제
 public class HousingPlacementPopupView : MonoBehaviour
 {
     [Serializable]
@@ -60,23 +65,52 @@ public class HousingPlacementPopupView : MonoBehaviour
     [SerializeField] private bool _useCategorySelectionTextColor;
 
     private readonly List<HousingPlacementItemSlotView> _spawnedSlots = new();
+    private readonly Stack<HousingPlacementItemSlotView> _pooledSlots = new();
     private readonly List<GameObject> _spawnedSectionObjects = new();
+    private readonly Stack<GameObject> _pooledSectionObjects = new();
+    private readonly Dictionary<Button, UnityAction> _categoryButtonActions = new();
+    private bool _isDestroying;
 
     public event Action<HousingPlacementCategory> OnCategoryClicked;
     public event Action<HousingPlacementItemData> OnItemClicked;
+    public event Action<HousingPlacementItemData> OnPurchaseClicked;
     public event Action OnApplyClicked;
 
     private void Awake()
     {
         BindCategories();
         BindApplyButton();
+        UpdateLocalizedCategoryTexts();
+    }
+
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        UpdateLocalizedCategoryTexts();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
     }
 
     private void OnDestroy()
     {
+        UnsubscribeLocalization();
+        _isDestroying = true;
         UnbindCategories();
         UnbindApplyButton();
         ClearItems();
+    }
+
+    private void OnValidate()
+    {
+        _sectionColumnCount = Mathf.Max(1, _sectionColumnCount);
+        _sectionGridSpacing.x = Mathf.Max(0f, _sectionGridSpacing.x);
+        _sectionGridSpacing.y = Mathf.Max(0f, _sectionGridSpacing.y);
+        _sectionSpacing = Mathf.Max(0f, _sectionSpacing);
+        _sectionTopPadding = Mathf.Max(0, _sectionTopPadding);
+        _sectionTitleHeight = Mathf.Max(0f, _sectionTitleHeight);
     }
 
     public void RefreshItems(IReadOnlyList<HousingPlacementItemData> _items, HousingPlacementCategory _selectedCategory)
@@ -91,6 +125,7 @@ public class HousingPlacementPopupView : MonoBehaviour
         RefreshSections(_sections, _selectedCategory);
     }
 
+    // 카테고리별 구역 데이터 기반 제목·그리드·아이템 슬롯 재구성
     public void RefreshSections(
         IReadOnlyList<HousingPlacementSectionData> _sections,
         HousingPlacementCategory _selectedCategory,
@@ -118,6 +153,8 @@ public class HousingPlacementPopupView : MonoBehaviour
             return;
         }
 
+        int _createdSectionIndex = 0;
+
         for (int _index = 0; _index < _sections.Count; _index++)
         {
             HousingPlacementSectionData _section = _sections[_index];
@@ -127,7 +164,8 @@ public class HousingPlacementPopupView : MonoBehaviour
                 continue;
             }
 
-            CreateSection(_section, _stateResolver);
+            CreateSection(_section, _stateResolver, _createdSectionIndex);
+            _createdSectionIndex++;
         }
     }
 
@@ -149,6 +187,7 @@ public class HousingPlacementPopupView : MonoBehaviour
         _selectedItemText.gameObject.SetActive(_hasSelection);
     }
 
+    // 카테고리 버튼 이벤트 중복 제거 후 등록
     private void BindCategories()
     {
         if (_categoryButtons == null)
@@ -167,8 +206,15 @@ public class HousingPlacementPopupView : MonoBehaviour
 
             HousingPlacementCategory _category = _binding.Category;
             _binding.Button.transition = Selectable.Transition.None;
-            _binding.Button.onClick.RemoveAllListeners();
-            _binding.Button.onClick.AddListener(() => OnCategoryClicked?.Invoke(_category));
+
+            if (_categoryButtonActions.TryGetValue(_binding.Button, out UnityAction _previousAction))
+            {
+                _binding.Button.onClick.RemoveListener(_previousAction);
+            }
+
+            UnityAction _clickAction = () => OnCategoryClicked?.Invoke(_category);
+            _categoryButtonActions[_binding.Button] = _clickAction;
+            _binding.Button.onClick.AddListener(_clickAction);
         }
     }
 
@@ -181,15 +227,17 @@ public class HousingPlacementPopupView : MonoBehaviour
 
         for (int _index = 0; _index < _categoryButtons.Length; _index++)
         {
-            CategoryButtonBinding _binding = _categoryButtons[_index];
+            Button _button = _categoryButtons[_index]?.Button;
 
-            if (_binding?.Button == null)
+            if (_button == null || !_categoryButtonActions.TryGetValue(_button, out UnityAction _clickAction))
             {
                 continue;
             }
 
-            _binding.Button.onClick.RemoveAllListeners();
+            _button.onClick.RemoveListener(_clickAction);
         }
+
+        _categoryButtonActions.Clear();
     }
 
     private void BindApplyButton()
@@ -235,6 +283,59 @@ public class HousingPlacementPopupView : MonoBehaviour
         }
     }
 
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedCategoryTexts;
+            LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedCategoryTexts;
+        }
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+        {
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedCategoryTexts;
+        }
+    }
+
+    private void UpdateLocalizedCategoryTexts()
+    {
+        if (_categoryButtons == null || LocalizationManager.Instance == null)
+        {
+            return;
+        }
+
+        for (int _index = 0; _index < _categoryButtons.Length; _index++)
+        {
+            CategoryButtonBinding _binding = _categoryButtons[_index];
+
+            if (_binding?.LabelText == null)
+            {
+                continue;
+            }
+
+            _binding.LabelText.text = LocalizationManager.Instance.Get(
+                GetCategoryLanguageId(_binding.Category),
+                LocalizingType.UI);
+        }
+    }
+
+    private static int GetCategoryLanguageId(HousingPlacementCategory _category)
+    {
+        switch (_category)
+        {
+            case HousingPlacementCategory.Background:
+                return 13002;
+            case HousingPlacementCategory.Function:
+                return 13003;
+            default:
+                return 13001;
+        }
+    }
+
+    // 기존 아이템 슬롯과 구역 오브젝트를 재사용 풀로 반환
     private void ClearItems()
     {
         for (int _index = 0; _index < _spawnedSlots.Count; _index++)
@@ -247,6 +348,16 @@ public class HousingPlacementPopupView : MonoBehaviour
             }
 
             _slot.OnClicked -= HandleItemClicked;
+            _slot.OnPurchaseClicked -= HandlePurchaseClicked;
+
+            if (_isDestroying)
+            {
+                continue;
+            }
+
+            _slot.gameObject.SetActive(false);
+            _slot.transform.SetParent(_itemContent, false);
+            _pooledSlots.Push(_slot);
         }
 
         _spawnedSlots.Clear();
@@ -260,7 +371,14 @@ public class HousingPlacementPopupView : MonoBehaviour
                 continue;
             }
 
-            Destroy(_sectionObject);
+            if (_isDestroying)
+            {
+                continue;
+            }
+
+            _sectionObject.SetActive(false);
+            _sectionObject.transform.SetParent(_itemContent, false);
+            _pooledSectionObjects.Push(_sectionObject);
         }
 
         _spawnedSectionObjects.Clear();
@@ -272,7 +390,8 @@ public class HousingPlacementPopupView : MonoBehaviour
 
         if (_legacyGridLayout != null)
         {
-            DestroyImmediate(_legacyGridLayout);
+            _legacyGridLayout.enabled = false;
+            Destroy(_legacyGridLayout);
         }
 
         VerticalLayoutGroup _verticalLayout = _itemContent.GetComponent<VerticalLayoutGroup>();
@@ -301,29 +420,75 @@ public class HousingPlacementPopupView : MonoBehaviour
         _fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
     }
 
+    // 구역 제목과 아이템 개수에 맞는 그리드 생성 및 슬롯 배치
     private void CreateSection(
         HousingPlacementSectionData _section,
-        Func<HousingPlacementItemData, HousingPlacementItemState> _stateResolver)
+        Func<HousingPlacementItemData, HousingPlacementItemState> _stateResolver,
+        int _sectionIndex)
     {
-        GameObject _sectionRoot = CreateSectionRoot(_section.Title);
-        RectTransform _gridRoot = CreateSectionContent(_sectionRoot.transform, _section.Title, _section.Items.Count);
+        string _title = ResolveSectionTitle(_section);
+        GameObject _sectionRoot = CreateSectionRoot(_title);
+        _sectionRoot.transform.SetSiblingIndex(_sectionIndex);
+        RectTransform _gridRoot = CreateSectionContent(_sectionRoot.transform, _title, _section.Items.Count);
 
         for (int _index = 0; _index < _section.Items.Count; _index++)
         {
-            HousingPlacementItemSlotView _slot = Instantiate(_itemSlotPrefab, _gridRoot);
+            HousingPlacementItemSlotView _slot = GetItemSlot(_gridRoot);
             _slot.gameObject.SetActive(true);
+            _slot.transform.SetSiblingIndex(_index);
             HousingPlacementItemData _itemData = _section.Items[_index];
             HousingPlacementItemState _state = _stateResolver != null
                 ? _stateResolver(_itemData)
                 : HousingPlacementItemState.Owned;
             _slot.SetData(_itemData, _state);
             _slot.OnClicked += HandleItemClicked;
+            _slot.OnPurchaseClicked += HandlePurchaseClicked;
             _spawnedSlots.Add(_slot);
         }
     }
 
+    private static string ResolveSectionTitle(HousingPlacementSectionData _section)
+    {
+        if (_section == null || _section.TitleLanguageId <= 0 || LocalizationManager.Instance == null)
+        {
+            return _section?.Title ?? string.Empty;
+        }
+
+        return LocalizationManager.Instance.Get(_section.TitleLanguageId, LocalizingType.UI);
+    }
+
+    // 비활성 슬롯 우선 재사용 후 부족한 경우 Prefab 인스턴스 생성
+    private HousingPlacementItemSlotView GetItemSlot(RectTransform _gridRoot)
+    {
+        HousingPlacementItemSlotView _slot = null;
+
+        while (_pooledSlots.Count > 0 && _slot == null)
+        {
+            _slot = _pooledSlots.Pop();
+        }
+
+        if (_slot == null)
+        {
+            return Instantiate(_itemSlotPrefab, _gridRoot);
+        }
+
+        _slot.transform.SetParent(_gridRoot, false);
+        return _slot;
+    }
+
     private GameObject CreateSectionRoot(string _title)
     {
+        GameObject _pooledSection = GetPooledSection();
+
+        if (_pooledSection != null)
+        {
+            _pooledSection.name = $"Section_{_title}";
+            _pooledSection.transform.SetParent(_itemContent, false);
+            _pooledSection.SetActive(true);
+            _spawnedSectionObjects.Add(_pooledSection);
+            return _pooledSection;
+        }
+
         if (_sectionTemplate != null)
         {
             RectTransform _templateSectionRoot = Instantiate(_sectionTemplate, _itemContent);
@@ -360,6 +525,16 @@ public class HousingPlacementPopupView : MonoBehaviour
 
     private RectTransform CreateSectionContent(Transform _sectionRoot, string _title, int _itemCount)
     {
+        RectTransform _existingGrid = FindChildRecursive(_sectionRoot, "ItemGrid") as RectTransform;
+
+        if (_existingGrid != null)
+        {
+            ConfigureExistingSectionTitle(_sectionRoot, _title);
+            _existingGrid.gameObject.SetActive(true);
+            ConfigureGrid(_existingGrid, _itemCount);
+            return _existingGrid;
+        }
+
         if (_sectionTemplate != null)
         {
             RectTransform _templateGrid = ResolveTemplateChild(_sectionRoot, _sectionGridTemplate, "Template_ItemGrid");
@@ -378,6 +553,31 @@ public class HousingPlacementPopupView : MonoBehaviour
 
         CreateSectionTitle(_sectionRoot, _title);
         return CreateSectionGrid(_sectionRoot, _itemCount);
+    }
+
+    private GameObject GetPooledSection()
+    {
+        GameObject _section = null;
+
+        while (_pooledSectionObjects.Count > 0 && _section == null)
+        {
+            _section = _pooledSectionObjects.Pop();
+        }
+
+        return _section;
+    }
+
+    private static void ConfigureExistingSectionTitle(Transform _sectionRoot, string _title)
+    {
+        Transform _titleTransform = FindChildRecursive(_sectionRoot, "Text_Title");
+        TextMeshProUGUI _titleText = _titleTransform != null
+            ? _titleTransform.GetComponent<TextMeshProUGUI>()
+            : null;
+
+        if (_titleText != null)
+        {
+            _titleText.text = _title;
+        }
     }
 
     private void ConfigureTemplateTitle(Transform _sectionRoot, string _title)
@@ -627,6 +827,11 @@ public class HousingPlacementPopupView : MonoBehaviour
     private void HandleItemClicked(HousingPlacementItemData _itemData)
     {
         OnItemClicked?.Invoke(_itemData);
+    }
+
+    private void HandlePurchaseClicked(HousingPlacementItemData _itemData)
+    {
+        OnPurchaseClicked?.Invoke(_itemData);
     }
 
     private void HandleApplyClicked()

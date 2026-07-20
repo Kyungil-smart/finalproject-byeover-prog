@@ -1,4 +1,6 @@
 //담당자: 조규민
+// 인챈트 종료 선택에 따른 계속 진행·로비 복귀·챕터 재시작 흐름 분기
+// 로비 복귀 전 현재 진행 상태 저장 및 화면 전환 요청
 //포기하기 확인 시 인게임을 재시작하지 않고 진행 세이브를 삭제한 뒤 로비로 복귀하도록 변경
 
 using UnityEngine;
@@ -36,6 +38,7 @@ public class EnchantLinkButtonBoundaryPresenter
         _view.OnRestartChapterClicked -= HandleRestartChapterClicked;
     }
 
+    // 계속 진행 선택 시 버튼 선택 상태 표시와 확인 팝업 요청
     private void HandleContinueClicked()
     {
         _view.ShowSelectedButton(EnchantLinkButtonType.Continue);
@@ -75,6 +78,7 @@ public class EnchantLinkButtonBoundaryPresenter
         _confirmPopupPresenter.Open(_restartChapterMessage, RestartChapter);
     }
 
+    // 현재 진행 정보 저장 후 로비 씬 이동
     private void ReturnToLobby()
     {
         SaveCurrentProgressForResume();
@@ -93,6 +97,7 @@ public class EnchantLinkButtonBoundaryPresenter
         }
     }
 
+    // 현재 챕터 재시작을 위한 진행 상태 초기화와 인게임 씬 재로드
     private void RestartChapter()
     {
         Time.timeScale = 1f;

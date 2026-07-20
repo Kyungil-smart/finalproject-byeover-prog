@@ -139,11 +139,10 @@ public class StageModel
         _spawnTimer += deltaTime;
 
         // --- 가속 스폰 로직 (제한 없이 무한정 소환) ---
-        int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
         float currentInterval = Mathf.Max(0.3f,
-            _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) - (timeFactor * 0.1f));
+            _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f));
         int currentAmount =
-            Mathf.Min(5, _currentRule.SpawnAmount + Mathf.FloorToInt((_stageLevel - 1) / 2f) + timeFactor);
+            Mathf.Min(5, _currentRule.SpawnAmount + Mathf.FloorToInt((_stageLevel - 1) / 2f));
         if (TutorialInGameDirector.TryGetTutorialSpawnOverride(out float tutorialInterval, out int tutorialAmount))
         {
             currentInterval = tutorialInterval;
@@ -240,8 +239,17 @@ public class StageModel
             if (isTimeToEnd)
             {
                 // 웨이브 종료 시 보상 지급
+                if (TutorialInGameDirector.ShouldSkipBattleRewardTriggerForTutorial())
+                {
+                    _isSpecialWaveFinished = true;
+                    return;
+                }
+
                 var repo = DataManager.Instance.RewardRepo;
-                if (repo.GetBattleRewardTrigger(_currentSpecialRule.SpecialWave_ID).Contains(REWARD_TRIGGER_WAVECLEAR))
+                var data = repo.GetBattleRewardTrigger(_currentSpecialRule.SpecialWave_ID);
+                if(data == null) return;
+                
+                if (data.Contains(REWARD_TRIGGER_WAVECLEAR))
                 {
                     if (_rewardManager == null)
                     {
@@ -297,10 +305,8 @@ public class StageModel
 
             // 일반 웨이브 상태 초기화
             _waveTimer = 0f;
-            int timeFactor = Mathf.FloorToInt(_waveTimer / 20f);
             float currentInterval = Mathf.Max(0.3f,
-                _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f) -
-                (timeFactor * 0.1f));
+                _currentRule.SpawnInterval - (_stageLevel * 0.2f) - ((_currentWaveIndex + 1) * 0.1f));
             if (TutorialInGameDirector.TryGetTutorialSpawnOverride(out float tutorialInterval, out _))
             {
                 currentInterval = tutorialInterval;
@@ -329,7 +335,9 @@ public class StageModel
             _isSpecialWaveTriggered = false;
             _isSpecialWaveFinished = false;
             _specialWaveActiveTimer = 0f;
-            _isBossKilled = false;
+            // _isBossKilled는 여기서 리셋하지 않는다(스테이지 단위 유지 - StageModel이 스테이지마다 새로 생성됨).
+            // 보스 스폰 웨이브(TimeOver)와 보스킬 판정 웨이브(TimeOverOrBossKill)가 분리된 구성에서
+            // 판정 웨이브 진입 시 리셋하면 이전 웨이브에서 잡은 보스 킬이 지워져 시간 종료로만 승리하던 버그.
 
             // 웨이브 상태 변경 및 전파
             _state = WaveState.WaveRunning;
@@ -372,7 +380,7 @@ public class StageModel
         if (poolId < 0) return new SpawnCommand { CharacterId = -1 };
 
         int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
-        var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, poolId);
+        var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, rule.MonsterWavePool_ID);
 
         // 현재 스테이지와 시작 스테이지의 차이를 계산하여 누적 횟수 산출
         int accumulateCount = 0;
@@ -380,7 +388,7 @@ public class StageModel
         {
             // 예: Start가 101이고 현재가 105라면 -> 105 - 101 = 4번 누적!
             // (만약 101스테이지 당시에 1번 누적하고 싶다면 마지막에 +1을 해주면 됩니다)
-            accumulateCount = Mathf.Max(0, _stageData.Stage_ID - scalingData.StartStage_ID);
+            accumulateCount = Mathf.Max(0, DataManager.Instance.StageRepo.GetIndexByStageId(_stageData.Stage_ID) - DataManager.Instance.StageRepo.GetIndexByStageId(scalingData.StartStage_ID));
         }
 
         return new SpawnCommand
@@ -426,12 +434,16 @@ public class StageModel
         // 전투 보상 중 특수 웨이브에 관여 된 트리거는 웨이브 클리어, 보스 킬, 엘리트 킬
         // 보스 킬, 엘리트 킬은 몬스터 사망 체인에 보상 지급을 호출해야되므로 스폰커멘드 구조체에 해당 트리거 ID를 삽입 하도록 함
 
+        bool shouldAttachBattleReward = !TutorialInGameDirector.ShouldSkipBattleRewardTriggerForTutorial();
+
         for (int i = 0; i < spawnAmount; i++)
         {
             int characterId = DataManager.Instance.StageRepo.PickMonsterFromPool(poolId, _rng);
-            var scalingData = DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, poolId);
+            // 스케일링 테이블의 MonsterPool_ID 열에는 실제로 웨이브풀 ID가 들어 있다(일반 웨이브 수정과 동일 기준).
+            // resolved poolId를 넘기면 매칭이 안 돼 특수 웨이브(러시/보스)만 스테이지 보정을 못 받는다.
+            var scalingData = _currentSpecialRule.MonsterWavePool_ID != 0 ? DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _currentSpecialRule.MonsterWavePool_ID) : DataManager.Instance.StageRepo.GetScalingForStage(_stageData.Stage_ID, _waveRules[_currentWaveIndex].MonsterWavePool_ID);
             int accumulateCount =
-                (scalingData != null) ? Mathf.Max(0, _stageData.Stage_ID - scalingData.StartStage_ID) : 0;
+                (scalingData != null) ? Mathf.Max(0, DataManager.Instance.StageRepo.GetIndexByStageId(_stageData.Stage_ID) - DataManager.Instance.StageRepo.GetIndexByStageId(scalingData.StartStage_ID)) : 0;
 
             if (characterId > 0)
             {
@@ -441,7 +453,7 @@ public class StageModel
                     ScalingData = scalingData,
                     AccumulateCount = accumulateCount,
                     Type = sType,
-                    IsContainBattleReward = true,
+                    IsContainBattleReward = shouldAttachBattleReward,
                     TriggerTargetId = _currentSpecialRule.SpecialWave_ID
                 });
             }

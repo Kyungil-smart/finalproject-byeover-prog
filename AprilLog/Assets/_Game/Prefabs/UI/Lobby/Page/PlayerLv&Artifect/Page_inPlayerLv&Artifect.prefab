@@ -7597,7 +7597,7 @@ GameObject:
   - component: {fileID: 1544950527371070536}
   - component: {fileID: 5733657088914556613}
   m_Layer: 5
-  m_Name: Btn_LvUP
+  m_Name: Btn_PlayerLevelLvUP
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8579,15 +8579,31 @@ MonoBehaviour:
   _closeButton: {fileID: 0}
   _equipButton: {fileID: 0}
   _levelUpButton: {fileID: 0}
+  _levelUpButtonLabel: {fileID: 0}
+  _levelUpLabel: "\uB808\uBCA8\uC5C5"
+  _ascendLabel: "\uB3CC\uD30C"
   _equipButtonLabel: {fileID: 0}
   _equipLabel: "\uC7A5\uCC29"
   _unequipLabel: "\uD574\uC81C"
   _gradeBg: {fileID: 0}
   _artifactIcon: {fileID: 0}
+  _popupSlotViews: []
   _nameText: {fileID: 0}
   _gradeText: {fileID: 0}
   _equipAttackText: {fileID: 0}
   _ownedAttackText: {fileID: 0}
+  _levelText: {fileID: 0}
+  _curAtkText: {fileID: 0}
+  _curHpText: {fileID: 0}
+  _nextAtkText: {fileID: 0}
+  _nextHpText: {fileID: 0}
+  _goldCostText: {fileID: 0}
+  _stoneCostText: {fileID: 0}
+  _goldCostItemId: 70001
+  _stoneCostItemId: 70004
+  _currencyModel: {fileID: 0}
+  _specialHeaderText: {fileID: 0}
+  _specialFallbackName: "\uD2B9\uC218\uB2A5\uB825"
   _specialDescText: {fileID: 0}
   _localization: {fileID: 0}
   _nameKeyPrefix: GEAR_NAME_

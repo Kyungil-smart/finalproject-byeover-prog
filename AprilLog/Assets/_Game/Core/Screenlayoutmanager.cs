@@ -30,11 +30,15 @@ public class ScreenLayoutManager : MonoBehaviour
     [Tooltip("퍼즐 영역을 SafeArea 아래로 추가 확장하는 높이(pixel). 하단 배경 노출을 가릴 때 사용")]
     [SerializeField] private float _puzzleBottomOverscan = 120f;
 
+    [Tooltip("퍼즐 영역 하단에 비워둘 높이(pixel). 화면 바닥 고정 경험치바 등이 카드에 가려지지 않게 예약. 0 = 기존 동작(하단 오버스캔)")]
+    [SerializeField] private float _puzzleBottomReservedHeight;
+
     private float _lastScreenHeight;
     private float _lastLayoutHeight;
     private float _lastBottomUnsafeHeight;
     private float _lastPuzzleBottomOverscan;
     private float _lastMiddleBarYOffset;
+    private float _lastPuzzleBottomReserved;
 
     private void Start()
     {
@@ -50,6 +54,7 @@ public class ScreenLayoutManager : MonoBehaviour
             Mathf.Abs(currentLayoutHeight - _lastLayoutHeight) > 1f ||
             Mathf.Abs(currentBottomUnsafeHeight - _lastBottomUnsafeHeight) > 1f ||
             !Mathf.Approximately(_puzzleBottomOverscan, _lastPuzzleBottomOverscan) ||
+            !Mathf.Approximately(_puzzleBottomReservedHeight, _lastPuzzleBottomReserved) ||
             !Mathf.Approximately(_middleBarYOffset, _lastMiddleBarYOffset))
         {
             ApplyLayout();
@@ -75,6 +80,7 @@ public class ScreenLayoutManager : MonoBehaviour
         _lastBottomUnsafeHeight = GetBottomUnsafeHeight(totalHeight);
         _lastPuzzleBottomOverscan = _puzzleBottomOverscan;
         _lastMiddleBarYOffset = _middleBarYOffset;
+        _lastPuzzleBottomReserved = _puzzleBottomReservedHeight;
 
         float middleH = _middleBar != null ? _middleBarHeight : 0f;
         float usableHeight = Mathf.Max(0f, totalHeight - middleH);
@@ -97,8 +103,13 @@ public class ScreenLayoutManager : MonoBehaviour
         // 추가: 조규민 - 하단 SafeArea 바깥으로 퍼즐 영역을 확장해 MainCanvas 배경 노출을 막는다.
         float puzzleBottomOverscanRatio = GetPuzzleBottomOverscanRatio(totalHeight);
 
-        // 수정자: 조규민 - 소트 구역(PuzzleArea)을 하단 SafeArea 바깥까지 확장해 빈 하단 노출을 줄인다.
-        _puzzleArea.anchorMin = new Vector2(0f, -puzzleBottomOverscanRatio);
+        // 하단 예약 높이가 있으면 퍼즐 콘텐츠 바닥을 화면 바닥에서 그만큼 위로 올린다(경험치바 자리 확보).
+        // 0이면 기존처럼 하단 SafeArea 바깥까지 확장(조규민).
+        float puzzleContentBottomRatio = _puzzleBottomReservedHeight > 0f
+            ? Mathf.Clamp01(_puzzleBottomReservedHeight / totalHeight)
+            : -puzzleBottomOverscanRatio;
+
+        _puzzleArea.anchorMin = new Vector2(0f, puzzleContentBottomRatio);
         _puzzleArea.anchorMax = new Vector2(1f, middleBottomRatio);
         _puzzleArea.offsetMin = Vector2.zero;
         _puzzleArea.offsetMax = Vector2.zero;

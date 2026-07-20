@@ -4,6 +4,9 @@
 // 수정자 : 김영찬 
 // 수정 내용 : UI에서 조합식이 등록되었음을 알수 있도록 이벤트 추가
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인챈트 교체로 제거된 조합 레시피가 더 이상 발동하지 않도록 해제 이벤트와 API 추가
+
 using System;
 using UnityEngine;
 
@@ -16,6 +19,7 @@ public class CombinationModel : MonoBehaviour
     public event Action<int, int> OnIngredientFulfilled;    // recipeIdx, ingredientIdx
     public event Action<int> OnRecipeCompleted;             // recipeIdx
     public event Action<int> OnRecipeConsumed;              // recipeIdx
+    public event Action<int> OnRecipeUnregistered;          // recipeIdx
     public event Action<int, int, int[]> OnRecipeRegistered; // slotIndex, recipeKey(baseId), ingredients
 
     // ---------- 상수 ----------
@@ -70,6 +74,28 @@ public class CombinationModel : MonoBehaviour
     }
 
     // 정렬 성공할 때마다 호출. 같은 테이블 같은 재료는 1개만 충족 (기획서 3-1-3-2)
+    public bool UnregisterRecipe(int recipeKey)
+    {
+        for (int r = 0; r < MAX_RECIPES; r++)
+        {
+            if (_recipes[r] == null || !_recipes[r].isActive || _recipes[r].recipeKey != recipeKey)
+            {
+                continue;
+            }
+
+            _recipes[r].isActive = false;
+            if (_recipes[r].fulfilled != null)
+            {
+                Array.Clear(_recipes[r].fulfilled, 0, _recipes[r].fulfilled.Length);
+            }
+
+            OnRecipeUnregistered?.Invoke(r);
+            return true;
+        }
+
+        return false;
+    }
+
     public void CheckIngredient(UnitType type)
     {
         int typeInt = (int)type;

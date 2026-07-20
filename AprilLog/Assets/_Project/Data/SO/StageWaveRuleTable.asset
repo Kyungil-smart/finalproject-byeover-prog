@@ -31,7 +31,7 @@ MonoBehaviour:
     WaveOrder: 1
     WaveDuration: 60
     WaveEndType: TimeOver
-    WaveEndAction: KeepAlive
+    WaveEndAction: DespawnRemaining
     SpawnInterval: 2
     SpawnAmount: 1
     MonsterWavePool_ID: 1000011
@@ -41,8 +41,8 @@ MonoBehaviour:
     RangedChance: 0
     InfestedChance: 0
     SpecialWave_ID: 1500002
-  - Stage_ID: 980101
-    WaveOrder: 2
+  - Stage_ID: 980102
+    WaveOrder: 1
     WaveDuration: 20
     WaveEndType: TimeOverOrBossKill
     WaveEndAction: DespawnRemaining

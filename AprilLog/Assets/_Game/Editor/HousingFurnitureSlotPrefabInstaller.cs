@@ -9,6 +9,8 @@ using UnityEngine.UI;
 /// <summary>
 /// Page_Housing 프리팹의 FurnitureRoot에 고정 배치 슬롯을 구성합니다.
 /// </summary>
+// 가구 위치별 슬롯 이미지 생성과 RectTransform·Image 설정 복사
+// 고정 가구의 상호작용 컴포넌트와 책장 다시보기 입력 연결
 public static class HousingFurnitureSlotPrefabInstaller
 {
     private const string _prefabPath = "Assets/_Game/Prefabs/UI/Lobby/Page/Housing/Page_Housing.prefab";
@@ -76,6 +78,7 @@ public static class HousingFurnitureSlotPrefabInstaller
     };
 
     [MenuItem("Tools/Housing/Install FurnitureRoot Location Slots")]
+    // 가구 루트 위치별 슬롯과 고정 가구 상호작용 구성 설치
     public static void InstallFurnitureRootSlots()
     {
         GameObject _prefabRoot = PrefabUtility.LoadPrefabContents(_prefabPath);
@@ -144,6 +147,7 @@ public static class HousingFurnitureSlotPrefabInstaller
         StretchToParent(_rootRect);
     }
 
+    // 기존 위치 이미지 재사용 또는 신규 슬롯 Image 생성
     private static Image EnsureSlotImage(Transform _prefabRoot, Transform _furnitureRoot, SlotDefinition _definition)
     {
         Transform _slot = _furnitureRoot.Find(_definition.SlotName);
@@ -288,6 +292,7 @@ public static class HousingFurnitureSlotPrefabInstaller
         _staticFurniture.gameObject.SetActive(true);
     }
 
+    // 고정 가구 Raycast와 책장 다시보기 컴포넌트 설정
     private static void ConfigureStaticFurnitureInteraction(GameObject _target, Image _image, bool _enableReplayStory)
     {
         if (_target == null)

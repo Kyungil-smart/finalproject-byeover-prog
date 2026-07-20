@@ -1,4 +1,5 @@
 // 담당자 : 조규민
+// 시작 화면 활성화 시 로딩 진행률 표시와 완료 후 다음 부팅 흐름 요청
 // 구현원리 : Boot 기본 화면의 하단 로딩바 진행 완료를 Bootstrap에 이벤트로 전달하고 앱 버전을 표시한다.
 
 using System;
@@ -42,6 +43,7 @@ public class StartView : MonoBehaviour
     }
 
     // 로딩 상태를 초기화하고 Slider 참조가 있으면 0%부터 채우기 시작한다.
+    // 시작 화면 로딩 코루틴 재시작과 초기 진행률 표시
     private void StartLoading()
     {
         StopLoading();
@@ -88,6 +90,7 @@ public class StartView : MonoBehaviour
     }
 
     // 로딩 완료 상태를 기록하고 Bootstrap에 완료 이벤트를 전달한다.
+    // 로딩 완료 표시 후 Bootstrap 다음 단계 요청
     private void CompleteLoading()
     {
         if (IsLoadingCompleted) return;

@@ -1,4 +1,5 @@
 //담당자: 조규민
+//스토리 다시보기 팝업 자동 탐색 시 씬 전체 Transform 배열 생성을 제거
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,6 +7,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 하우징 책장에서 스토리 다시보기 팝업을 엽니다.
 /// </summary>
+// 책장 선택 입력을 다시보기 컨텍스트에 저장하고 시나리오 선택 팝업 열기
 public class HousingBookshelfReplayBinder : MonoBehaviour
 {
     [Header("책장 버튼")]
@@ -21,6 +23,7 @@ public class HousingBookshelfReplayBinder : MonoBehaviour
         ResolveMissingReferences();
     }
 
+    // 책장 버튼 클릭 이벤트 중복 제거 후 등록
     private void OnEnable()
     {
         ResolveMissingReferences();
@@ -45,8 +48,10 @@ public class HousingBookshelfReplayBinder : MonoBehaviour
         _bookshelfButton.onClick.RemoveListener(OpenReplayStoryPopup);
     }
 
+    // 하우징 복귀 정보를 저장하고 다시보기 팝업 표시
     private void OpenReplayStoryPopup()
     {
+        AudioManager.Play(SfxId.HousingBookshelf);   // SFX 가이드 하우징 4: 책장 터치
         ResolveMissingReferences();
 
         if (_replayStoryPopup == null)
@@ -70,37 +75,6 @@ public class HousingBookshelfReplayBinder : MonoBehaviour
             return;
         }
 
-        _replayStoryPopup = FindSceneComponentByName<ReplayStoryPopup>("POPUp_RePlayStory");
-
-        if (_replayStoryPopup == null)
-        {
-            _replayStoryPopup = FindSceneComponentByName<ReplayStoryPopup>("POPUP_RePlayStory");
-        }
-    }
-
-    private static T FindSceneComponentByName<T>(string _objectName) where T : Component
-    {
-        Transform[] _transforms = Resources.FindObjectsOfTypeAll<Transform>();
-
-        for (int _index = 0; _index < _transforms.Length; _index++)
-        {
-            Transform _target = _transforms[_index];
-
-            if (_target == null || _target.name != _objectName)
-            {
-                continue;
-            }
-
-            GameObject _gameObject = _target.gameObject;
-
-            if (_gameObject.scene.IsValid() == false)
-            {
-                continue;
-            }
-
-            return _gameObject.GetComponent<T>();
-        }
-
-        return null;
+        _replayStoryPopup = FindFirstObjectByType<ReplayStoryPopup>(FindObjectsInactive.Include);
     }
 }

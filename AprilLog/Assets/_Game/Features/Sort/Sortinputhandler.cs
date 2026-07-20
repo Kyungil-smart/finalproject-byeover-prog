@@ -130,6 +130,7 @@ public class SortInputHandler : MonoBehaviour
             if (Vector2.Distance(screenPos, _touchStartScreen) > _dragThreshold)
             {
                 _isDragging = true;
+                AudioManager.Play(SfxId.UnitSelect);   // SFX 가이드 15: 유닛 선택(드래그 시작)
                 OnDragStarted?.Invoke(_selectedTable, _selectedSlot);
             }
         }

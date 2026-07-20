@@ -3,6 +3,7 @@
 /// <summary>
 /// 하우징 플레이어 터치 반응 상태를 관리합니다.
 /// </summary>
+// 플레이어 연속 터치 횟수와 초기화 시간을 관리하고 단계별 반응 문구 선택
 public class HousingPlayerReactionPresenter
 {
     private const float DisplaySeconds = 2f;
@@ -13,6 +14,7 @@ public class HousingPlayerReactionPresenter
     private float _resetTimer;
     private bool _isShowing;
 
+    // 연속 터치 횟수 증가와 단계별 반응 문구 반환
     public string HandleTouched()
     {
         _touchCount++;
@@ -20,9 +22,12 @@ public class HousingPlayerReactionPresenter
         _resetTimer = TouchCountResetSeconds;
         _isShowing = true;
 
+        AudioManager.Play(SfxId.HousingText);   // SFX 가이드 하우징 2: 에이프릴 대사 출력
+
         return GetReactionMessage(_touchCount);
     }
 
+    // 무입력 경과 시간 누적과 반응 초기화 시점 확인
     public bool Update(float _deltaTime)
     {
         UpdateResetTimer(_deltaTime);
@@ -43,6 +48,7 @@ public class HousingPlayerReactionPresenter
         return true;
     }
 
+    // 터치 횟수와 반응 유지 시간 초기화
     public void Reset()
     {
         _touchCount = 0;

@@ -88,16 +88,16 @@ public class EnchantCardUI : MonoBehaviour
 
         // 인챈트 타입 라벨 반영 (Presenter가 stat-type 기반으로 채움)
         if (_typeText != null)
-            _typeText.text = data.TypeLabel;
+            _typeText.text = EnchantGroupIDToEnchantGroupTypeMapper.GetLabelText(data.TypeLabel);
         
         // 인챈트 이름 반영 (예: "공격력 증가", "체인 라이트닝" 등)
         if (_nameText != null) 
-            _nameText.text = data.Name;
+            _nameText.text = EnchantColorMapper.SetColorHexCodeText(data.Name, data.ElementalType);
         
         // 인챈트 상세 설명 반영
         if (_descriptionText != null)
         {
-            _descriptionText.text = RemoveDescriptionTags(data.Description);
+            _descriptionText.text = data.Description;
         }
 
         // 추가: 조규민 - 인챈트 선택 카드의 ImageKey를 Resources/EnchantIcons 경로의 Sprite로 표시한다.
@@ -128,22 +128,21 @@ public class EnchantCardUI : MonoBehaviour
         return string.Join("\n", _descriptionLines);
     }
 
-    public void SetRerollState(bool available, int remaining)
+    // visible = 리롤 기능 자체가 켜졌는지(전역). interactable = 이 카드가 지금 리롤 가능한지(잔여/사용 여부).
+    // 버튼 노출은 기능 활성 여부로만 결정해 항상 보이게 하고, 사용된 카드는 비활성(회색)으로 둔다.
+    public void SetRerollState(bool visible, bool interactable)
     {
         EnsureRerollUI();
 
-        bool hasReroll = available && remaining != 0;
-
         if (_rerollRoot != null)
         {
-            _rerollRoot.gameObject.SetActive(available);
+            _rerollRoot.gameObject.SetActive(visible);
         }
 
         if (_rerollButton != null)
         {
-            _rerollButton.interactable = hasReroll;
+            _rerollButton.interactable = interactable;
         }
-
     }
 
     public void AttachRerollOverlay(RectTransform overlay)

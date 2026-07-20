@@ -10,7 +10,7 @@
 // 수정 내용 : 세이브 개선
 //
 // 4차 수정자 : 조규민
-// 수정 내용 : 계정별 최초 진입 상태 마이그레이션과 최초 스토리 시작·튜토리얼 완료 저장 API 추가
+// 수정 내용 : 계정별 최초 진입 상태 마이그레이션, 최초 스토리 시작·튜토리얼 완료 저장 API, 인증 UID 기반 아티팩트 종료 체크포인트 추가
 
 using System;
 using System.Collections;
@@ -38,6 +38,7 @@ public class GameManager : MonoBehaviour
     public event Action<AuthLoginFailureType, string> OnLoginFailedWithType; // 추가: 조규민 - Google 로그인 실패 안내 문구를 구분할 수 있도록 실패 유형을 전달한다.
     public event Action OnRegistrationRequired;
     public event Action<string> OnRegistrationFailed;
+    public event Action OnCloudDataReady; // 추가 - 김영찬 : 클라우드 데이터가 스크립트 내부 로직보다 늦게 로딩 되는 경우 대비하여 이벤트 발송
 
     // ---------- SerializeField ----------
     [Header("네트워크 서비스")]
@@ -60,6 +61,8 @@ public class GameManager : MonoBehaviour
     public string UserUID => _authService != null ? _authService.UserUID : null;
     public bool IsLoggedIn => _authService != null && _authService.IsLoggedIn;
     public bool LastSignInWasGoogle => _authService != null && _authService.LastSignInWasGoogle;
+    public bool IsGuestSession => _authService != null && _authService.IsGuestSession;
+    public string CurrentAuthProvider => _authService != null ? _authService.CurrentProvider : "none";
     public bool RequiresEditorGoogleEmailPasswordInput => _authService != null && _authService.RequiresEditorGoogleEmailPasswordInput;
     public bool IsOfflineMode { get; private set; }
 
@@ -68,6 +71,9 @@ public class GameManager : MonoBehaviour
 
     // 로비에서 선택한 챕터
     public int SelectedChapterId { get; set; }
+    
+    // 재생 해야 될 시나리오 그룹
+    public int SelectedScenarioGroupId { get; set; }
 
     // ---------- 생명주기 ----------
     // 추가: 조규민 - Unity Splash 이전에 Portrait를 먼저 고정해 첫 화면 회전 보정이 늦게 적용되는 상황을 줄인다.
@@ -138,14 +144,27 @@ public class GameManager : MonoBehaviour
     // (기획 #300: 종료로 죽음/손해를 회피하는 세이브스컴 차단. 의도적 이어하기는 '로비로' 버튼으로만.)
     private void OnApplicationPause(bool isPaused)
     {
-        if (isPaused && _currentState == GameState.InGame)
+        if (!isPaused)
+        {
+            return;
+        }
+
+        CheckpointArtifactState();
+
+        if (_currentState == GameState.InGame)
+        {
             DeleteLocalSave();
+        }
     }
 
     private void OnApplicationQuit()
     {
+        CheckpointArtifactState();
+
         if (_currentState == GameState.InGame)
+        {
             DeleteLocalSave();
+        }
     }
 
     // ---------- 이벤트 핸들러 ----------
@@ -161,6 +180,8 @@ public class GameManager : MonoBehaviour
         // Firestore 서비스에 uid 전달
         if (_firestoreService != null)
             _firestoreService.Initialize(resolvedUid);
+
+        Debug.Log($"[GameManager] 인증 계정 확인: Provider={CurrentAuthProvider}, UID={MaskUid(resolvedUid)}");
 
         if (_authService != null && _authService.LastSignInWasGoogle)
         {
@@ -258,6 +279,7 @@ public class GameManager : MonoBehaviour
     public void LoadLobby()
     {
         ChangeState(GameState.Lobby);
+        AudioManager.Bgm(SfxId.LobbyBgm);   // SFX 가이드 1.0: 로그인/로딩/로비 공용 BGM
         StartCoroutine(LoadSceneCoroutine("_Lobby")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
     }
 
@@ -267,18 +289,31 @@ public class GameManager : MonoBehaviour
         StartCoroutine(LoadSceneCoroutine("_InGame")); // 추가: 조규민 - 실제 씬 파일명과 Build Settings 경로에 맞춘다.
     }
 
+    public void LoadInGame(int chapterId)
+    {
+        SelectedChapterId = chapterId;
+        ChangeState(GameState.InGame);
+        StartCoroutine(LoadSceneCoroutine("_InGame"));
+    }
+
     // 추가: 정승우 - 최초 실행 튜토리얼 인트로 시나리오 씬으로 진입.
     // 시나리오 종료 시 그 씬의 흐름(TempStoryToGameFlow 등)이 인게임으로 넘긴다.
     public void LoadScenarioIntro()
     {
+        SelectedScenarioGroupId = 3001; // 인트로 그룹 ID
         StartCoroutine(LoadSceneCoroutine("_Story")); // 시나리오 재생 씬(_Boot/_Lobby/_InGame/_Story 규칙)
+    }
+
+    public void LoadScenarioByGroupId(int groupId)
+    {
+        SelectedScenarioGroupId = groupId;
+        StartCoroutine(LoadSceneCoroutine("_Story"));
     }
 
     private IEnumerator LoadSceneCoroutine(string sceneName)
     {
-        var op = SceneManager.LoadSceneAsync(sceneName);
-        while (!op.isDone)
-            yield return null;
+        SceneTransition.Load(sceneName); // 전환 오버레이가 내부에서 비동기 로드까지 처리
+        yield break;
     }
 
     // ---------- Firebase 초기화 ----------
@@ -576,6 +611,7 @@ public class GameManager : MonoBehaviour
 
         // 3. 로컬 데이터 초기화
         DeleteLocalSave();
+        _firestoreService?.DeleteLocalBackup();   // 게스트 로컬 백업(cloud_backup*.json)까지 지워야 재로그인 시 옛 데이터가 안 돌아온다.
         PlayerPrefs.DeleteAll();
         CloudData = null;
 
@@ -608,6 +644,8 @@ public class GameManager : MonoBehaviour
         // 이벤트가 안 왔으면 대기
         if (!loaded)
             yield return new WaitUntil(() => loaded);
+
+        OnCloudDataReady?.Invoke();
     }
 
     public void LoadLocalProgress()
@@ -707,6 +745,12 @@ public class GameManager : MonoBehaviour
         EnsureCloudIdentity(data);
         CloudData = data;
 
+        // 튜토리얼 진행 중에는 실제 저장을 보류
+        // 미러는 계속 갱신하되 디스크/클라우드 쓰기는 완료 시점에 한 번에 확정
+        // 완료 시 IsRunning=false가 되어 이 지점을 통과한다.
+        if (TutorialManager.Instance != null && TutorialManager.Instance.IsRunning)
+            return;
+
         if (IsLoggedIn)
             StartCoroutine(_firestoreService.SaveCoroutine(data));   // 클라우드(+내부에서 로컬백업도)
         else
@@ -755,6 +799,25 @@ public class GameManager : MonoBehaviour
         manager.MyArtifacts = CloneArtifactList(CloudData.myArtifacts);
     }
 
+    // 튜토리얼 시작 시 아웃게임 상태(아티팩트/캐릭터 레벨)를 기본값으로 되돌린다.
+    // 이전에 저장된 진행이 남아 있어도 튜토리얼은 항상 같은 시작 상태에서 진행되어야 한다.
+    // (예: 이미 max로 저장된 아티팩트가 남으면 강화 단계가 진행되지 않는다.)
+    // SyncToCloud 게이트로 실제 저장은 보류되고, 튜토리얼 완료 시점에 최종 상태가 한 번에 확정 저장된다.
+    public void ResetOutGameStateForTutorial(PlayerProgressModel progressModel, ArtifactManager artifactManager)
+    {
+        if (CloudData != null)
+        {
+            CloudData.myArtifacts = new List<ArtifactInstance>();
+            CloudData.characterLevel = PlayerProgressModel.StartLevel;
+        }
+
+        if (artifactManager != null)
+            artifactManager.MyArtifacts = new List<ArtifactInstance>();
+
+        if (progressModel != null)
+            progressModel.SetCharacterLevel(PlayerProgressModel.StartLevel);
+    }
+
     public void SaveOutGameProgress(PlayerProgressModel progressModel)
     {
         if (!IsLoggedIn)
@@ -783,7 +846,11 @@ public class GameManager : MonoBehaviour
     {
         var data = CloudData ?? UserCloudData.CreateDefault();
         EnsureCloudIdentity(data);
-        
+
+        // 판이 정산으로 끝났으므로 인챈트 리세마라 방지 스냅샷을 비운다(다음 판은 새 뽑기).
+        // 포기/강제종료 경로는 정산을 안 타므로 스냅샷이 남아 재진입 시 같은 카드가 복원된다 - 그게 방지 목적.
+        ClearEnchantDrawSnapshots(data);
+
         AddCurrency(Mathf.Max(0, rewardGold), Mathf.Max(0, rewardParchment));
         AddDiamond(Mathf.Max(0, rewardDiamond));
 
@@ -805,6 +872,72 @@ public class GameManager : MonoBehaviour
 
         SyncToCloud(data);
         RaiseCurrencyChanged();   // 단계②: 전투 보상이 View(로비 등)에 전파되도록 단일 이벤트 발행
+    }
+
+    // ---------- 인챈트 리세마라 방지 스냅샷 ----------
+    // 인챈트 팝업의 카드 구성을 '뜬 순간'과 '리롤한 순간'에 저장해, 강제종료 후 재진입해도
+    // 같은 뽑기 순번에서 같은 카드가 복원되게 한다. 소거는 정산(SaveChapterResult)에서만.
+
+    /// <summary>해당 뽑기 순번의 저장된 스냅샷. 없으면 null.</summary>
+    public EnchantDrawSnapshot GetEnchantDrawSnapshot(int drawIndex)
+    {
+        var draws = CloudData?.pendingEnchantDraws;
+        if (draws == null) return null;
+
+        for (int i = 0; i < draws.Count; i++)
+            if (draws[i] != null && draws[i].drawIndex == drawIndex) return draws[i];
+        return null;
+    }
+
+    /// <summary>스냅샷 저장(같은 drawIndex는 교체) + 즉시 영속. 카드가 화면에 보이기 전에 호출해야
+    /// '표시 후 저장 전 강제종료' 틈으로 리롤이 성립하지 않는다.</summary>
+    public void SaveEnchantDrawSnapshot(EnchantDrawSnapshot snapshot)
+    {
+        if (snapshot == null) return;
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+
+        if (data.pendingEnchantDraws == null) data.pendingEnchantDraws = new List<EnchantDrawSnapshot>();
+        for (int i = data.pendingEnchantDraws.Count - 1; i >= 0; i--)
+            if (data.pendingEnchantDraws[i] == null || data.pendingEnchantDraws[i].drawIndex == snapshot.drawIndex)
+                data.pendingEnchantDraws.RemoveAt(i);
+
+        data.pendingEnchantDraws.Add(snapshot);
+        SyncToCloud(data);
+    }
+
+    private static void ClearEnchantDrawSnapshots(UserCloudData data)
+    {
+        if (data?.pendingEnchantDraws == null || data.pendingEnchantDraws.Count == 0) return;
+        data.pendingEnchantDraws.Clear();
+    }
+
+    // ---------- 시나리오 저장/조회 ----------
+    public void SaveFirstReadScenario(int groupId)
+    {
+        var data = CloudData ?? UserCloudData.CreateDefault();
+        EnsureCloudIdentity(data);
+        
+        CloudData.firstReadScenarios ??= new List<int>();
+        
+        if (!IsFirstReadScenario(groupId))
+        {
+            CloudData.firstReadScenarios.Add(groupId);
+        }
+        
+        SyncToCloud(data);
+    }
+
+    public bool IsFirstReadScenario(int groupId)
+    {
+        if (CloudData != null)
+        {
+            CloudData.firstReadScenarios ??= new List<int>();
+            return CloudData.firstReadScenarios.Contains(groupId);
+        }
+        
+        Debug.LogWarning("[GameManager] 클라우드 데이터를 찾을 수 없음");
+        return false;
     }
 
     // ---------- 최초 클리어 보상 (1회성, 영속) ----------
@@ -866,24 +999,72 @@ public class GameManager : MonoBehaviour
 
         foreach (var data in rewardList)
         {
-            AddResource(data.itemId, data.amount);
+            AddResource(data.itemId, data.amount, "최초 클리어 보상", false);
             
             debugLog.Append($"+ID({data.itemId}): {data.amount} ");
         }
         
         debugLog.Append(")");
         Debug.Log(debugLog.ToString());
+        
+        SyncAndSaveResourceCloudData();
         return true;
     }
 
     public void SaveArtifact(List<ArtifactInstance> myArtifacts)
     {
-        var data = CloudData ?? UserCloudData.CreateDefault();
-        EnsureCloudIdentity(data);
+        if (!IsLoggedIn || string.IsNullOrWhiteSpace(UserUID))
+        {
+            Debug.LogWarning("[GameManager] 로그인 UID가 없어 아티팩트 저장을 건너뜁니다.");
+            return;
+        }
 
-        data.myArtifacts = CloneArtifactList(myArtifacts);
+        var _data = CloudData ?? UserCloudData.CreateDefault();
+        if (!string.IsNullOrWhiteSpace(_data.uid)
+            && !string.Equals(_data.uid, UserUID, StringComparison.Ordinal))
+        {
+            Debug.LogError("[GameManager] 현재 인증 UID와 로드된 데이터 UID가 달라 아티팩트 저장을 차단했습니다.");
+            return;
+        }
 
-        SyncToCloud(data);
+        EnsureCloudIdentity(_data);
+
+        _data.myArtifacts = CloneArtifactList(myArtifacts);
+        _data.artifactRevision = _data.artifactRevision == int.MaxValue
+            ? int.MaxValue
+            : Mathf.Max(0, _data.artifactRevision) + 1;
+        _data.artifactUpdatedAt = DateTime.UtcNow.ToString("o");
+        CloudData = _data;
+
+        // 추가: 조규민 - 종료 직전 비동기 Firestore 저장이 끝나지 않아도 UID별 로컬 체크포인트는 즉시 남긴다.
+        _firestoreService?.SaveLocalBackup(_data);
+        SyncToCloud(_data);
+    }
+
+    private void CheckpointArtifactState()
+    {
+        if (!IsLoggedIn || string.IsNullOrWhiteSpace(UserUID))
+        {
+            return;
+        }
+
+        GameStateManager _stateManager = GameStateManager.Instance;
+        ArtifactManager _artifactManager = _stateManager != null ? _stateManager.ArtifactManager : null;
+        if (_artifactManager == null || !_artifactManager.HasLoadedData || _artifactManager.MyArtifacts == null)
+        {
+            return;
+        }
+
+        if (_artifactManager.MyArtifacts.Count == 0
+            && CloudData != null
+            && CloudData.myArtifacts != null
+            && CloudData.myArtifacts.Count > 0)
+        {
+            Debug.LogWarning("[GameManager] 런타임 아티팩트가 아직 비어 있어 종료 체크포인트 덮어쓰기를 건너뜁니다.");
+            return;
+        }
+
+        SaveArtifact(_artifactManager.MyArtifacts);
     }
 
     // 아티팩트 목록의 저장/로드 복사 경계. CloudData와 런타임(ArtifactManager.MyArtifacts)이 같은 인스턴스를
@@ -900,10 +1081,14 @@ public class GameManager : MonoBehaviour
         return result;
     }
 
-    // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) — 영속 원본 = CloudData.gold/parchment =====
-    // 단계 a(재화 관리 통일): 전투 보상·업적·로그인 보상·상점/레벨업 소비를 전부 이 API로 모은다.
-    // 새 싱글톤 안 만들고 영속 GameManager를 권위로 사용. CurrencyModel 등 씬 모델은 OnCurrencyChanged 구독하는 View로 이관 예정(단계 ②③).
+    // ===== 재화 단일 API (모든 획득/소비의 유일한 출입구) =====
+    // 계약: 게임플레이/UI 코드는 ResourceRepo를 직접 만지지 않고 이 지갑 API만 쓴다.
+    //   지급 = AddResource(itemId, amount, reason) / 차감 = UseResource / 다중 비용 = TrySpendResources(원자적).
+    //   Set 계열(SetCurrency, repo.SetItemCount)은 로드·디버그 전용. CurrencyModel류 씬 모델은 표시 View(쓰기 경로 아님).
+    // 런타임 원장 = ResourceRepo 아이템 컨테이너(골드 70001, 양피지 70002, 다이아 70003, 강화석 70004, 조각 70005, 티켓 70006).
+    // 영속 = SyncAndSaveResourceCloudData(원장 → CloudData 미러 → Firestore+로컬백업). 변이당 1회.
     public event Action<int, int> OnCurrencyChanged;   // (gold, parchment) — 변경 시 전역 발행
+    public event Action<int, int> OnItemChanged;       // (itemId, 변경 후 수량) — 모든 재화/아이템 공통. 신규 UI는 이것 하나만 구독하면 된다.
 
     public int Gold => CloudData != null ? CloudData.gold : 0;
     public int Parchment => CloudData != null ? CloudData.parchment : 0;
@@ -913,46 +1098,102 @@ public class GameManager : MonoBehaviour
     private const int ParchmentId = 70002;
     private const int DiamondId = 70003;
 
-    // 기존의 파편화된 함수 호출과 하드코딩된 분기를 이 안으로 완전히 격리함
-    public void AddResource(int itemId, int amount)
+    /// <summary>아이템/재화 보유량 조회(런타임 원장 기준). 골드류도 같은 아이템ID로 조회된다.</summary>
+    public int GetResourceCount(int itemId)
     {
-        if (itemId == GoldId) 
-        {
-            AddCurrency(amount, 0, "보상");
-        }
-        else if (itemId == ParchmentId) 
-        {
-            AddCurrency(0, amount, "보상");
-        }
-        else if (itemId == DiamondId) 
-        {
-            AddDiamond(amount);
-        }
-        else 
-        {
-            DataManager.Instance.ResourceRepo.AddItem(itemId, amount);
-            SyncAndSaveResourceCloudData();
-        }
+        var repo = DataManager.Instance?.ResourceRepo;
+        return repo != null ? repo.GetItemCount(itemId) : 0;
     }
 
-    public bool UseResource(int itemId, int amount)
+    private void RaiseItemChanged(int itemId)
+        => OnItemChanged?.Invoke(itemId, GetResourceCount(itemId));
+
+    // 기존의 파편화된 함수 호출과 하드코딩된 분기를 이 안으로 완전히 격리함
+    public void AddResource(int itemId, int amount, string reason = null, bool autoSave = true)
     {
         if (itemId == GoldId)
         {
-            return TrySpendCurrency(amount, 0);
+            AddCurrency(amount, 0, reason ?? "보상", autoSave);
         }
-        if (itemId == ParchmentId) 
+        else if (itemId == ParchmentId)
         {
-            return TrySpendCurrency(0, amount);
+            AddCurrency(0, amount, reason ?? "보상", autoSave);
+        }
+        else if (itemId == DiamondId)
+        {
+            AddDiamond(amount, reason, autoSave);
+        }
+        else
+        {
+            if (amount <= 0) return;
+            DataManager.Instance.ResourceRepo.AddItem(itemId, amount);
+            Debug.Log($"[재화] +아이템 {itemId} x{amount} ({reason}) → 보유 {GetResourceCount(itemId)}");
+            RaiseItemChanged(itemId);
+            if(autoSave) SyncAndSaveResourceCloudData();
+        }
+    }
+
+    public bool UseResource(int itemId, int amount, bool autoSave = true)
+    {
+        if (itemId == GoldId)
+        {
+            return TrySpendCurrency(amount, 0, autoSave);
+        }
+        if (itemId == ParchmentId)
+        {
+            return TrySpendCurrency(0, amount, autoSave);
         }
         if (itemId == DiamondId)
         {
-            return TrySpendDiamond(amount);
+            return TrySpendDiamond(amount, autoSave);
         }
-        
+
         var result = DataManager.Instance.ResourceRepo.UseItem(itemId, amount);
         if(!result) return false;
-        
+
+        RaiseItemChanged(itemId);
+        if(autoSave) SyncAndSaveResourceCloudData();
+        return true;
+    }
+
+    /// <summary>다중 비용 원자 차감 — 전부 검사한 뒤 전부 차감하고 영속/이벤트는 1회만 처리한다.
+    /// 아티팩트 강화(골드+강화석)처럼 비용이 여러 개일 때 수동 롤백 없이 이걸 쓴다. 하나라도 부족하면 false(변경 없음).</summary>
+    public bool TrySpendResources(string reason, params (int itemId, int amount)[] costs)
+    {
+        var repo = DataManager.Instance?.ResourceRepo;
+        if (repo == null || costs == null) return false;
+
+        // 같은 아이템이 중복으로 들어와도 합산해서 검사한다.
+        var merged = new Dictionary<int, int>();
+        foreach (var (itemId, amount) in costs)
+        {
+            if (amount <= 0) continue;
+            merged[itemId] = merged.TryGetValue(itemId, out int prev) ? prev + amount : amount;
+        }
+        if (merged.Count == 0) return true;
+
+        foreach (var cost in merged)
+            if (repo.GetItemCount(cost.Key) < cost.Value) return false;
+
+        string detail = "";
+        foreach (var cost in merged)
+        {
+            if (!repo.UseItem(cost.Key, cost.Value))
+            {
+                // 사전 검사를 통과했는데 차감이 거부되면 원장 구현 불일치다. 이미 차감된 앞 항목을 되돌리고 실패 처리.
+                Debug.LogError($"[GameManager] TrySpendResources 차감 불일치: 아이템 {cost.Key} x{cost.Value} ({reason})");
+                foreach (var refund in merged)
+                {
+                    if (refund.Key == cost.Key) break;
+                    repo.AddItem(refund.Key, refund.Value);
+                }
+                return false;
+            }
+            detail += $"{cost.Key} x{cost.Value} ";
+        }
+
+        Debug.Log($"[재화] 지출 ({reason}): {detail}");
+        foreach (var cost in merged) RaiseItemChanged(cost.Key);
         SyncAndSaveResourceCloudData();
         return true;
     }
@@ -965,7 +1206,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>재화 가산 — 전투 보상/업적/로그인 보상 공통 진입점. reason은 로그·추적용.</summary>
-    public void AddCurrency(int gold, int parchment, string reason = null)
+    public void AddCurrency(int gold, int parchment, string reason = null, bool autoSave = true)
     {
         gold = Mathf.Max(0, gold);
         parchment = Mathf.Max(0, parchment);
@@ -979,11 +1220,13 @@ public class GameManager : MonoBehaviour
         }
 
         Debug.Log($"[재화] +골드 {gold} +양피지 {parchment} ({reason}) → 골드 {Gold} / 양피지 {Parchment}");
-        SyncAndSaveResourceCloudData();
+        if (gold > 0) RaiseItemChanged(GoldId);
+        if (parchment > 0) RaiseItemChanged(ParchmentId);
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
 
     /// <summary>재화 차감 시도 — 상점/레벨업 등 소비 공통 진입점. 부족하면 false(변경 없음).</summary>
-    public bool TrySpendCurrency(int gold, int parchment)
+    public bool TrySpendCurrency(int gold, int parchment, bool autoSave = true)
     {
         if (!CanAffordCurrency(gold, parchment)) return false;
 
@@ -1002,16 +1245,18 @@ public class GameManager : MonoBehaviour
             if (!goldSuccess || !parchmentSuccess)
             {
                 Debug.LogError($"[GameManager] 재화 차감 실패! (CanAfford는 통과했으나 UseItem에서 거부됨) - Gold:{goldSuccess}, Parchment:{parchmentSuccess}");
-                return false; 
+                return false;
             }
         }
 
-        SyncAndSaveResourceCloudData();
+        if (gold > 0) RaiseItemChanged(GoldId);
+        if (parchment > 0) RaiseItemChanged(ParchmentId);
+        if(autoSave)SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>재화를 지정 값으로 설정 — 하이드레이션/리셋·테스트용(가산 아님). 값 동일하면 무시.</summary>
-    public void SetCurrency(int gold, int parchment)
+    public void SetCurrency(int gold, int parchment, bool autoSave = true)
     {
         var repo = DataManager.Instance?.ResourceRepo;
         if (repo != null)
@@ -1019,7 +1264,7 @@ public class GameManager : MonoBehaviour
             repo.SetItemCount(GoldId, Mathf.Max(0, gold));
             repo.SetItemCount(ParchmentId, Mathf.Max(0, parchment));
         }
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
 
     // ===== 다이아 API (gold/parchment와 동일 패턴. 영속 원본 = CloudData.diamond) =====
@@ -1027,18 +1272,19 @@ public class GameManager : MonoBehaviour
         => CloudData != null && CloudData.diamond >= Mathf.Max(0, diamond);
 
     /// <summary>다이아 가산. reason은 로그·추적용.</summary>
-    public void AddDiamond(int diamond, string reason = null)
+    public void AddDiamond(int diamond, string reason = null, bool autoSave = true)
     {
         diamond = Mathf.Max(0, diamond);
         if (diamond == 0) return;
 
         DataManager.Instance?.ResourceRepo?.AddItem(DiamondId, diamond);
         Debug.Log($"[재화] +다이아 {diamond} ({reason}) → 다이아 {Diamond}");
-        SyncAndSaveResourceCloudData();
+        RaiseItemChanged(DiamondId);
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
 
     /// <summary>다이아 차감 시도. 부족하면 false(변경 없음).</summary>
-    public bool TrySpendDiamond(int diamond)
+    public bool TrySpendDiamond(int diamond, bool autoSave = true)
     {
         if (!CanAffordDiamond(diamond)) return false;
         
@@ -1052,16 +1298,17 @@ public class GameManager : MonoBehaviour
                 return false;
             }
         }
-        
-        SyncAndSaveResourceCloudData();
+
+        if (diamond > 0) RaiseItemChanged(DiamondId);
+        if(autoSave)SyncAndSaveResourceCloudData();
         return true;
     }
 
     /// <summary>다이아를 지정 값으로 설정 — 하이드레이션/리셋·테스트용. 값 동일하면 무시.</summary>
-    public void SetDiamond(int diamond)
+    public void SetDiamond(int diamond, bool autoSave = true)
     {
         DataManager.Instance?.ResourceRepo?.SetItemCount(DiamondId, Mathf.Max(0, diamond));
-        SyncAndSaveResourceCloudData();
+        if(autoSave)SyncAndSaveResourceCloudData();
     }
     
     // ResourceRepo의 최신 상태를 CloudData로 복사 및 저장
@@ -1288,10 +1535,21 @@ public class GameManager : MonoBehaviour
             data.uid = UserUID;
         }
 
-        if (string.IsNullOrWhiteSpace(data.provider))
+        if (!string.Equals(CurrentAuthProvider, "none", StringComparison.Ordinal))
         {
-            data.provider = LastSignInWasGoogle ? "google" : "guest";
+            data.provider = CurrentAuthProvider;
         }
+    }
+
+    private static string MaskUid(string uid)
+    {
+        if (string.IsNullOrWhiteSpace(uid))
+        {
+            return "none";
+        }
+
+        const int _visibleLength = 6;
+        return uid.Length <= _visibleLength ? uid : "***" + uid.Substring(uid.Length - _visibleLength);
     }
 
     private static List<int> CloneUnlockedStages(List<int> unlockedStages)

@@ -198,7 +198,7 @@ public class DummyCombatTester : MonoBehaviour
         _spawnerAliveList.Add(ai);
     }
 
-    private void HandleDummyMonsterDeath(MonsterAI monster, bool isKamikaze = false, bool isBoss = false)
+    private void HandleDummyMonsterDeath(MonsterAI monster, bool isKamikaze = false, bool isBoss = false, bool isElite = false)
     {
         monster.OnDeath -= HandleDummyMonsterDeath;
         _spawnerAliveList.Remove(monster);

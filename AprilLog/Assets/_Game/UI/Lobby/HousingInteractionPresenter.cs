@@ -1,5 +1,7 @@
 ﻿//담당자: 조규민
 
+// 상호작용 ID를 초기화 시 검증하고 캐싱하여 클릭마다 전체 View를 탐색하지 않도록 변경
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,6 +9,8 @@ using UnityEngine;
 /// <summary>
 /// 가구 입력과 상호작용 상태 및 플레이어 연출을 중재합니다.
 /// </summary>
+// 가구·종료 View 입력과 Model 상태 이벤트 연결
+// 상호작용 시작·종료에 따른 플레이어 이동과 캐릭터 표시 상태 조정
 public class HousingInteractionPresenter
 {
     private readonly HousingInteractionModel _model;
@@ -14,6 +18,8 @@ public class HousingInteractionPresenter
     private readonly HousingInteractionExitView _exitView;
     private readonly Action _pausePlayerMovement;
     private readonly Action<bool> _resumePlayerMovement;
+    private readonly Dictionary<string, HousingInteractionView> _viewByInteractionId = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _duplicateInteractionIds = new(StringComparer.Ordinal);
 
     private bool _isInitialized;
 
@@ -31,6 +37,7 @@ public class HousingInteractionPresenter
         this._resumePlayerMovement = _resumePlayerMovement;
     }
 
+    // 가구·종료 View 입력과 Model 상태 변경 이벤트 등록
     public void Initialize()
     {
         if (_isInitialized)
@@ -43,6 +50,8 @@ public class HousingInteractionPresenter
             Debug.LogWarning("[HousingInteractionPresenter] MVP 연결이 올바르지 않습니다.");
             return;
         }
+
+        CacheInteractionViews();
 
         for (int _index = 0; _index < _interactionViews.Count; _index++)
         {
@@ -91,9 +100,12 @@ public class HousingInteractionPresenter
             _model.OnActiveInteractionChanged -= HandleActiveInteractionChanged;
         }
 
+        _viewByInteractionId.Clear();
+        _duplicateInteractionIds.Clear();
         _isInitialized = false;
     }
 
+    // 동일 가구 재선택 방지 후 선택 상호작용 활성화
     private void HandleFurnitureClicked(HousingInteractionView _view)
     {
         if (_view == null)
@@ -101,13 +113,19 @@ public class HousingInteractionPresenter
             return;
         }
 
-        if (HasDuplicateId(_view.InteractionId))
+        string _interactionId = NormalizeInteractionId(_view.InteractionId);
+
+        if (string.IsNullOrEmpty(_interactionId) || _duplicateInteractionIds.Contains(_interactionId))
         {
             Debug.LogWarning($"[HousingInteractionPresenter] 중복된 상호작용 ID입니다: {_view.InteractionId}");
             return;
         }
 
-        _model.Activate(_view.InteractionId);
+        _model.Activate(_interactionId);
+
+        // SFX 가이드 하우징 5: 침대 터치. 클립은 기획 미확정이라 SoundLibrary.asset에 비워져 있음 - 꽂으면 즉시 재생된다.
+        if (_interactionId == "bed_sleep")
+            AudioManager.Play(SfxId.HousingBed);
     }
 
     private void HandleExitClicked()
@@ -115,6 +133,7 @@ public class HousingInteractionPresenter
         _model.Clear();
     }
 
+    // 이전·현재 상호작용 View 표시와 플레이어 이동 상태 갱신
     private void HandleActiveInteractionChanged(string _previousId, string _currentId)
     {
         HousingInteractionView _previousView = FindView(_previousId);
@@ -146,50 +165,48 @@ public class HousingInteractionPresenter
 
     private HousingInteractionView FindView(string _interactionId)
     {
-        if (string.IsNullOrWhiteSpace(_interactionId) || _interactionViews == null)
+        string _normalizedId = NormalizeInteractionId(_interactionId);
+
+        if (string.IsNullOrEmpty(_normalizedId))
         {
             return null;
         }
 
-        for (int _index = 0; _index < _interactionViews.Count; _index++)
-        {
-            HousingInteractionView _view = _interactionViews[_index];
-
-            if (_view != null && string.Equals(_view.InteractionId, _interactionId, StringComparison.Ordinal))
-            {
-                return _view;
-            }
-        }
-
-        return null;
+        return _viewByInteractionId.TryGetValue(_normalizedId, out HousingInteractionView _view)
+            ? _view
+            : null;
     }
 
-    private bool HasDuplicateId(string _interactionId)
+    private void CacheInteractionViews()
     {
-        if (string.IsNullOrWhiteSpace(_interactionId))
-        {
-            return true;
-        }
-
-        int _matchCount = 0;
+        _viewByInteractionId.Clear();
+        _duplicateInteractionIds.Clear();
 
         for (int _index = 0; _index < _interactionViews.Count; _index++)
         {
             HousingInteractionView _view = _interactionViews[_index];
+            string _interactionId = NormalizeInteractionId(_view != null ? _view.InteractionId : null);
 
-            if (_view == null || string.Equals(_view.InteractionId, _interactionId, StringComparison.Ordinal) == false)
+            if (_view == null || string.IsNullOrEmpty(_interactionId))
+            {
+                Debug.LogWarning($"[HousingInteractionPresenter] 비어 있는 상호작용 ID가 있습니다. Index: {_index}");
+                continue;
+            }
+
+            if (_viewByInteractionId.TryAdd(_interactionId, _view))
             {
                 continue;
             }
 
-            _matchCount++;
-
-            if (_matchCount > 1)
-            {
-                return true;
-            }
+            _duplicateInteractionIds.Add(_interactionId);
+            Debug.LogWarning($"[HousingInteractionPresenter] 중복된 상호작용 ID입니다: {_interactionId}");
         }
+    }
 
-        return false;
+    private static string NormalizeInteractionId(string _interactionId)
+    {
+        return string.IsNullOrWhiteSpace(_interactionId)
+            ? string.Empty
+            : _interactionId.Trim();
     }
 }

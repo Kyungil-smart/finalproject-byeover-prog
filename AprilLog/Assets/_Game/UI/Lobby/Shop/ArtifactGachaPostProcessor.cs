@@ -13,6 +13,9 @@ using UnityEngine;
 // 수정자 : 김영찬
 // 수정 내용 : 실제 재화에 반영 하는 부분을 ArtifactManager에서 담당하도록 수정
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 중복 아티팩트 수량 증가 시 Manager 저장 이벤트가 누락되지 않도록 변경
+
 public class ArtifactGachaPostProcessor : MonoBehaviour
 {
     [Header("시스템 참조")]
@@ -56,7 +59,7 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
         if (result.TotalStone > 0) mgr.AddStone(result.TotalStone);
         if (result.TotalShard > 0) mgr.AddShard(result.TotalShard);
 
-        // 직접 +1(중복) 케이스는 OnInventoryUpdated 가 발행되지 않으므로 리스트를 강제 갱신
+        // Manager 이벤트 외에도 선택형 Binder가 즉시 같은 목록을 보여주도록 갱신한다.
         if (_listBinder != null) _listBinder.RefreshInventory();
 
         // 누적(마일리지) 보상 구간 처리 + 즉시 재화 지급 (무료뽑기는 applyMileage=false 로 건너뜀)
@@ -94,8 +97,11 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
 
         if (existing.CurrentCount < currentLimit)
         {
-            // 한도 이내 → 보유 수량 직접 증가
-            existing.CurrentCount++;
+            // 한도 이내 → Manager의 저장 이벤트 경로로 보유 수량 증가
+            if (!mgr.TryAddArtifactCount(existing.UniqueId, 1))
+            {
+                Debug.LogWarning($"[ArtifactGachaPostProcessor] 아티팩트 수량 증가 실패: UniqueId={existing.UniqueId}");
+            }
         }
         else
         {
@@ -182,6 +188,8 @@ public class ArtifactGachaPostProcessor : MonoBehaviour
 
         result.MileageRewardItem = reward.FirstRewardItem;
         result.MileageRewardAmount = reward.FirstRewardAmount;
+        result.MileageRewardItem2 = reward.SecondRewardAmount > 0 ? reward.SecondRewardItem : 0;
+        result.MileageRewardAmount2 = reward.SecondRewardAmount > 0 ? reward.SecondRewardAmount : 0;
 
         // 누적 보상 아이템(데이터의 FirstRewardItem)은 뽑기권/랜덤기어보상/재료 등 아이템 타입이라,
         // 현재 프로젝트엔 이를 지급할 공용 아이템/인벤토리 시스템이 없다. 지금은 결과 팝업에 '표시만' 한다.

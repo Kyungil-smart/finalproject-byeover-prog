@@ -178,7 +178,13 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
         for (int i = 0; i < _currentChoices.Count; i++)
         {
             var candidate = _currentChoices[i];
-
+            var enchantGroupType = EnchantGroupIDToEnchantGroupTypeMapper.GetEnchantGroupType(
+                candidate.Type == EnchantType.Skill ?
+                    candidate.SkillData.SkillGroup_ID : candidate.StatData.StatGroup_ID);
+            var elementalType = TagToElementalMapper.GetElemental(
+                candidate.Type == EnchantType.Skill ? 
+                    candidate.SkillData.Tag_ID_1 : candidate.StatData.Target_2);
+            
             if (_localizationManager == null)
             {
                 Debug.LogWarning("No localization manager found. No Localization.");
@@ -187,7 +193,7 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
                     EnchantId = candidate.Specific_ID,
                     Level = candidate.Level,
                     // 카드 상단에 스킬/스탯 텍스트 표시
-                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                    TypeLabel = enchantGroupType, 
                 
                     // 번역 데이터가 없음으로 ID를 출력함
                     Name = $"NameID: {candidate.Name_ID}", 
@@ -197,7 +203,8 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
                     // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
                     ImageKey = candidate.Type == EnchantType.Skill ? 
                         $"{candidate.SkillData.SkillIcon_ID}" : 
-                        $"{candidate.StatData.Image_ID}"
+                        $"{candidate.StatData.Image_ID}",
+                    ElementalType = elementalType
                 };
             }
             else
@@ -207,15 +214,16 @@ public class EnchantSelectPresenter : IEnchantSelectPresenter
                     EnchantId = candidate.Specific_ID,
                     Level = candidate.Level,
                     // 카드 상단에 스킬/스탯 텍스트 표시
-                    TypeLabel = candidate.Type == EnchantType.Skill ? "스킬" : "스탯", 
+                    TypeLabel = enchantGroupType, 
                     Name = _localizationManager.Get(candidate.Name_ID, LocalizingType.Enchant), 
                     Description = candidate.Type == EnchantType.Skill ? 
-                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant) : 
+                        _localizationManager.Get(candidate.SkillData.Skill_Descrip, LocalizingType.Enchant, candidate.SkillData.RequiredValue_1) : 
                         _localizationManager.Get(candidate.StatData.StatDescrip, LocalizingType.Enchant),
                     // 추가: 조규민 - 카드 UI가 테이블의 아이콘 키로 Resources/EnchantIcons Sprite를 찾을 수 있게 전달한다.
                     ImageKey = candidate.Type == EnchantType.Skill ? 
                         $"{candidate.SkillData.SkillIcon_ID}" : 
-                        $"{candidate.StatData.Image_ID}"
+                        $"{candidate.StatData.Image_ID}",
+                    ElementalType = elementalType
                 };
             }
         }

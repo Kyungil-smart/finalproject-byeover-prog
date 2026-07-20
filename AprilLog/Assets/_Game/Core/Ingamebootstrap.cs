@@ -25,6 +25,9 @@
 // 8차 수정자 : 김영찬
 // 데이터 로드 개선
 
+// 9차 수정자 : 조규민
+// 수정 내용 : 정산 UI가 실제 지급된 초회/반복 재화 보상 내역을 슬롯 단위로 표시하도록 보상 표시 목록 생성 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -258,11 +261,19 @@ public class InGameBootstrap : MonoBehaviour
                 _rewardManager.LoadRewardData(saveData.accumulatedRewards);
         }
 
+        AudioManager.Bgm(SfxId.Chapter1Bgm);   // SFX 가이드 인게임 1.0: 챕터 진입 BGM (챕터별 곡이 늘면 chapterId로 분기)
+
         Debug.Log("[InGameBootstrap] === InGame 초기화 완료 ===");
     }
 
     private int ResolveStartChapterId(bool isResume, InGameSaveData saveData)
     {
+        // _Test 씬 밸런스 콘솔의 스테이지 선택이 최우선 (테스트 씬 밖에서는 항상 0)
+        if (BalanceTestConsole.PendingStageId > 0)
+        {
+            return BalanceTestConsole.PendingStageId / 100;
+        }
+
         if (isResume && saveData != null)
         {
             return Mathf.Max(1, saveData.chapterId);
@@ -302,6 +313,12 @@ public class InGameBootstrap : MonoBehaviour
 
     private int ResolveStartStageIndex(bool isResume, InGameSaveData saveData)
     {
+        // _Test 씬 밸런스 콘솔의 스테이지 선택이 최우선 (테스트 씬 밖에서는 항상 0)
+        if (BalanceTestConsole.PendingStageId > 0)
+        {
+            return Mathf.Max(0, BalanceTestConsole.PendingStageId % 100 - 1);
+        }
+
         if (isResume && saveData != null)
         {
             return Mathf.Max(0, saveData.clearedStage);
@@ -386,6 +403,7 @@ public class InGameBootstrap : MonoBehaviour
 
     // 웨이브 시스템(StageLoopManager+StageBootstrapper)을 보장하고 챕터를 시작한다.
     // 씬에 없으면 런타임 생성 — 두 컴포넌트가 서로/스포너/플레이어를 자동 탐색해 연결된다.
+    // 추가 - 클리어 시 스토리 연결을 위한 InGameNextSceneLoader의 연결작업을 병행한다.
     private void StartWaveSystem(int chapterId, int startStageIndex, int seed)
     {
         var loop = FindFirstObjectByType<StageLoopManager>();
@@ -395,10 +413,31 @@ public class InGameBootstrap : MonoBehaviour
             go.AddComponent<StageBootstrapper>();
             loop = go.AddComponent<StageLoopManager>();
         }
+        
+        var sceneLoader = FindAnyObjectByType<InGameNextSceneLoader>();
+        if (sceneLoader == null)
+        {
+            var go = new GameObject("InGameNextSceneLoader");
+            sceneLoader = go.AddComponent<InGameNextSceneLoader>();
+            sceneLoader.SetLoopManager(loop);
+        }
 
+        // 챕터당 고유 BG가 있음 - 기획 요청 사항
+        // 없으면 배경만 생략하고 진행한다. 여기서 NRE가 나면 아래 StartChapter까지 도달하지 못해
+        // 몬스터가 안 나오는 빈 인게임(소프트락)이 된다.
+        var bgController = FindAnyObjectByType<InGameBackgroundImageController>();
+        if (bgController != null)
+            bgController.SetBackground(chapterId);
+        else
+            Debug.LogWarning("[InGameBootstrap] InGameBackgroundImageController가 씬에 없어 배경 설정을 건너뜁니다.");
+        
         // 챕터 종료(승/패) → 정산 팝업
         loop.OnChapterEnd -= ShowSettlement; // 중복 구독 방지
         loop.OnChapterEnd += ShowSettlement;
+
+        // 챕터 종료(승/패) -> 승리 했을 경우 초회 스토리 있을 시 씬 이동 전 또는 재시작 전에 감상하도록 하기 위함
+        loop.OnChapterEnd -= sceneLoader.HandleChapterCleared; // 중복 구독 방지
+        loop.OnChapterEnd += sceneLoader.HandleChapterCleared;
 
         // 튜토리얼 마지막 단계(ChapterClear)가 챕터 승리로 진행/완료되도록 훅 연결.
         // (이 연결이 없으면 마지막 단계가 영원히 안 끝나 매 전투가 튜토 챕터로 반복된다.)
@@ -423,6 +462,9 @@ public class InGameBootstrap : MonoBehaviour
             Debug.LogWarning("[InGameBootstrap] SettlementView를 찾지 못해 정산 팝업을 띄우지 못했습니다.");
             return;
         }
+
+        // SFX 가이드 인게임 11/12: 정산 화면 노출 시 클리어/게임오버 효과음
+        AudioManager.Play(isVictory ? SfxId.GameClear : SfxId.GameOver);
 
         int maxCombo = _comboModel != null ? _comboModel.MaxComboThisRun : 0;
         int maxDamage = RunStats.HighestDamage;
@@ -453,23 +495,43 @@ public class InGameBootstrap : MonoBehaviour
         int gold = 0;
         int parchment = 0;
         int diamond = 0;
+        Dictionary<int, long> _firstRewardAmounts = CreateCurrencyRewardMap();
+        Dictionary<int, long> _repeatRewardAmounts = CreateCurrencyRewardMap();
         
         var battleRewards = _rewardManager != null ?
             _rewardManager.GetAndClearAccumulatedRewards() : null;
         if (battleRewards != null && battleRewards.Count > 0)
         {
-            if(battleRewards.TryGetValue(goldId, out var battleGold)) gold += battleGold;
-            if(battleRewards.TryGetValue(parchmentId, out var battleParchment)) parchment += battleParchment;
-            if(battleRewards.TryGetValue(diamondId, out var battleDiamond)) diamond += battleDiamond;
+            if(battleRewards.TryGetValue(goldId, out var battleGold))
+            {
+                gold += battleGold;
+                AddCurrencyRewardAmount(_repeatRewardAmounts, goldId, battleGold);
+            }
+
+            if(battleRewards.TryGetValue(parchmentId, out var battleParchment))
+            {
+                parchment += battleParchment;
+                AddCurrencyRewardAmount(_repeatRewardAmounts, parchmentId, battleParchment);
+            }
+
+            if(battleRewards.TryGetValue(diamondId, out var battleDiamond))
+            {
+                diamond += battleDiamond;
+                AddCurrencyRewardAmount(_repeatRewardAmounts, diamondId, battleDiamond);
+            }
         }
 
         var loop = FindFirstObjectByType<StageLoopManager>();
         int chapterId = loop != null ? loop.CurrentChapterId : _defaultChapterId;
         int completedStageCount = loop != null ? loop.CompletedStageCount : 0;
-        int stageId = DataManager.Instance.StageRepo.GetStageId(chapterId, completedStageCount);
+        int _rewardStageOrder = ResolveRewardStageOrder(isVictory, completedStageCount);
+        int stageId = DataManager.Instance.StageRepo.GetStageId(chapterId, _rewardStageOrder);
         
+        int clearedStageId = completedStageCount > 0 ? DataManager.Instance.StageRepo.GetStageId(chapterId, completedStageCount) : -1;
+
         var firstChapterList = _rewardManager.AddChangeChapterReward(chapterId, isVictory);
-        _rewardManager.AddChangeStageReward(stageId, 
+        
+        _rewardManager.AddChangeStageReward(stageId, clearedStageId, 
             out var firstStageList, out var repeatList);
 
         if (repeatList != null && repeatList.Count > 0)
@@ -480,12 +542,18 @@ public class InGameBootstrap : MonoBehaviour
                 {
                     case goldId:
                         gold += data.amount;
+                        AddCurrencyRewardAmount(_repeatRewardAmounts, goldId, data.amount);
                         break;
                     case parchmentId:
                         parchment += data.amount;
+                        AddCurrencyRewardAmount(_repeatRewardAmounts, parchmentId, data.amount);
                         break;
                     case diamondId:
                         diamond += data.amount;
+                        AddCurrencyRewardAmount(_repeatRewardAmounts, diamondId, data.amount);
+                        break;
+                    default:
+                        Debug.LogWarning($"[InGameBootstrap] 정산 UI는 재화 3종만 표시합니다. 반복 보상 아이템 ID {data.itemId}는 표시에서 제외됩니다.");
                         break;
                 }
             }
@@ -508,12 +576,18 @@ public class InGameBootstrap : MonoBehaviour
                     {
                         case goldId:
                             gold += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, goldId, data.amount);
                             break;
                         case parchmentId:
                             parchment += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, parchmentId, data.amount);
                             break;
                         case diamondId:
                             diamond += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, diamondId, data.amount);
+                            break;
+                        default:
+                            Debug.LogWarning($"[InGameBootstrap] 정산 UI는 재화 3종만 표시합니다. 챕터 초회 보상 아이템 ID {data.itemId}는 표시에서 제외됩니다.");
                             break;
                     }
                 }
@@ -530,12 +604,18 @@ public class InGameBootstrap : MonoBehaviour
                     {
                         case goldId:
                             gold += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, goldId, data.amount);
                             break;
                         case parchmentId:
                             parchment += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, parchmentId, data.amount);
                             break;
                         case diamondId:
                             diamond += data.amount;
+                            AddCurrencyRewardAmount(_firstRewardAmounts, diamondId, data.amount);
+                            break;
+                        default:
+                            Debug.LogWarning($"[InGameBootstrap] 정산 UI는 재화 3종만 표시합니다. 스테이지 초회 보상 아이템 ID {data.itemId}는 표시에서 제외됩니다.");
                             break;
                     }
                 }
@@ -544,7 +624,8 @@ public class InGameBootstrap : MonoBehaviour
             _settlementRewardGranted = true;
         }
 
-        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment);
+        List<ResultRewardEntry> _resultRewardEntries = CreateResultRewardEntries(_firstRewardAmounts, _repeatRewardAmounts);
+        view.Show(isVictory, maxCombo, maxDamage, topEnchantEntries, gold, parchment, diamond, _resultRewardEntries);
 
         // 기획 1-3-1: 승/패 확정 즉시 플레이어 조작 비활성화.
         // 정산 팝업(UI)은 월드 좌표 기반 퍼즐 드래그를 막지 못하므로 입력 핸들러를 직접 끈다.
@@ -566,7 +647,73 @@ public class InGameBootstrap : MonoBehaviour
             sortInput.enabled = false;
     }
 
+    // 추가: 조규민 - 패배 정산은 완료한 스테이지가 아니라 현재 플레이한 스테이지 보상을 기준으로 계산한다.
+    private static int ResolveRewardStageOrder(bool _isVictory, int _completedStageCount)
+    {
+        if (_isVictory)
+        {
+            return Mathf.Max(1, _completedStageCount);
+        }
+
+        return Mathf.Max(1, _completedStageCount + 1);
+    }
+
     // 실제 웨이브로 진행하므로 에디터 테스트용 더미 스포너를 끈다.
+    private static Dictionary<int, long> CreateCurrencyRewardMap()
+    {
+        return new Dictionary<int, long>
+        {
+            { 70001, 0 },
+            { 70002, 0 },
+            { 70003, 0 }
+        };
+    }
+
+    private static void AddCurrencyRewardAmount(Dictionary<int, long> _rewardAmounts, int _itemId, long _amount)
+    {
+        if (_amount <= 0 || _rewardAmounts == null || !_rewardAmounts.ContainsKey(_itemId))
+        {
+            return;
+        }
+
+        _rewardAmounts[_itemId] += _amount;
+    }
+
+    private static List<ResultRewardEntry> CreateResultRewardEntries(
+        Dictionary<int, long> _firstRewardAmounts,
+        Dictionary<int, long> _repeatRewardAmounts)
+    {
+        List<ResultRewardEntry> _entries = new List<ResultRewardEntry>(6);
+
+        AddResultRewardEntry(_entries, _firstRewardAmounts, 70001, "초회 보상");
+        AddResultRewardEntry(_entries, _firstRewardAmounts, 70002, "초회 보상");
+        AddResultRewardEntry(_entries, _firstRewardAmounts, 70003, "초회 보상");
+        AddResultRewardEntry(_entries, _repeatRewardAmounts, 70001, "반복 보상");
+        AddResultRewardEntry(_entries, _repeatRewardAmounts, 70002, "반복 보상");
+        AddResultRewardEntry(_entries, _repeatRewardAmounts, 70003, "반복 보상");
+
+        return _entries;
+    }
+
+    private static void AddResultRewardEntry(
+        List<ResultRewardEntry> _entries,
+        Dictionary<int, long> _rewardAmounts,
+        int _itemId,
+        string _label)
+    {
+        if (_entries == null || _rewardAmounts == null)
+        {
+            return;
+        }
+
+        if (!_rewardAmounts.TryGetValue(_itemId, out long _amount) || _amount <= 0)
+        {
+            return;
+        }
+
+        _entries.Add(new ResultRewardEntry(_itemId, _amount, _label));
+    }
+
     private void DisableDummyTester()
     {
 #if UNITY_EDITOR
@@ -656,13 +803,15 @@ public class InGameBootstrap : MonoBehaviour
         skillSystem.RegisterHazardSkill(4033, discharge);
 
         // 사슬 번개 4021~23 (조합): 랜덤 시작→가까운 적 순차 연결 최대 5마리, 4회 반복 타격(PelletCount 4)·LineRenderer 번개줄 (기획 4-2). 5마리×4회 구현.
-        var chainLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningChain, widthPx = 700, heightPx = 200, pulseInterval = 0.375f, flashColor = new Color(0.9f, 0.85f, 1f, 0.4f) };
+        // skipDbHitSize: 여기 크기는 튕김(hop) 탐색 존이라 DB HitSize(구슬 자체 크기 100×100)와 의미가 다르다.
+        var chainLightning = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.LightningChain, widthPx = 700, heightPx = 200, skipDbHitSize = true, pulseInterval = 0.375f, flashColor = new Color(0.9f, 0.85f, 1f, 0.4f) };
         skillSystem.RegisterHazardSkill(4021, chainLightning);
         skillSystem.RegisterHazardSkill(4022, chainLightning);
         skillSystem.RegisterHazardSkill(4023, chainLightning);
 
         // 벼락 4041~43: 엘리트/보스 우선 타겟(없으면 최단거리) 정사각 낙뢰 4히트(PelletCount 4). 실제 VFX(Lightning_Big)·피격 675×675 (기획 450×450 +50% 요청). Lv3 스턴(1.5초) 구현.
-        var thunderbolt = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 675, heightPx = 675, pulseInterval = 0.1f, flashColor = new Color(1f, 0.9f, 0.4f, 0.45f) };
+        // dbSizeScale 1.5: DB HitSize 450×450에 대한 +50% 확대는 QA 승인 사항 — DB 연동 후에도 유지(450×1.5=675).
+        var thunderbolt = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 675, heightPx = 675, dbSizeScale = 1.5f, pulseInterval = 0.1f, flashColor = new Color(1f, 0.9f, 0.4f, 0.45f) };
         skillSystem.RegisterHazardSkill(4041, thunderbolt);
         skillSystem.RegisterHazardSkill(4042, thunderbolt);
         skillSystem.RegisterHazardSkill(4043, thunderbolt);
@@ -676,13 +825,16 @@ public class InGameBootstrap : MonoBehaviour
         // ===== 물 속성 장판 (VFX=WaterSkillVfxLibrary 연결, 슬로우/넉백=DealHazardDamage CC, 물폭탄/파도/하이드로=전용 루틴) =====
         Color waterFlash = new Color(0.2f, 0.5f, 1f, 0.4f);
         // 물 폭탄 2011~13 (일반): 장벽서 물 공이 최단거리 타겟으로 날아가 착탄 폭발 250×250 + 50% 슬로우 (WaterBombRoutine).
-        var waterBomb = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.WaterBombImpact, widthPx = 250, heightPx = 250, pulseInterval = 0.2f, flashColor = waterFlash };
+        // skipDbHitSize: 폭발 반경 250은 협의된 오버라이드 값. DB HitSize(100×100)를 그대로 쓰면 폭발이 1/6로 줄어든다
+        // — 시트가 폭발 반경 기준으로 정리되면 이 예외를 풀 것.
+        var waterBomb = new HazardConfig { placement = HazardPlacement.NearestTarget, style = HazardStyle.WaterBombImpact, widthPx = 250, heightPx = 250, skipDbHitSize = true, pulseInterval = 0.2f, flashColor = waterFlash };
         skillSystem.RegisterHazardSkill(2011, waterBomb);
         skillSystem.RegisterHazardSkill(2012, waterBomb);
         skillSystem.RegisterHazardSkill(2013, waterBomb);
 
-        // 탄환 세례 2021~23 (조합): 최단거리 광역 장판 600×700, 1/1/2히트(PelletCount) + 넉백 + 10% 슬로우. Water_Splash_B VFX.
-        var bulletShower = new HazardConfig { placement = HazardPlacement.NearestTarget, widthPx = 600, heightPx = 700, pulseInterval = 0.15f, flashColor = waterFlash };
+        // 탄환 세례 2021~23 (조합): 물대포 — 에이프릴 머리 위에서 일직선(세로 컬럼 600×700)으로 발사, 1/1/2히트(PelletCount) + 넉백 + 10% 슬로우.
+        // 하이드로펌프(205)와 같은 플레이어 기준 컬럼 판정. VFX(Water_Splash_B)도 발사점 위에서 뿜는다.
+        var bulletShower = new HazardConfig { placement = HazardPlacement.PlayerColumn, widthPx = 600, heightPx = 700, pulseInterval = 0.15f, flashColor = waterFlash };
         skillSystem.RegisterHazardSkill(2021, bulletShower);
         skillSystem.RegisterHazardSkill(2022, bulletShower);
         skillSystem.RegisterHazardSkill(2023, bulletShower);
@@ -804,6 +956,12 @@ public class InGameBootstrap : MonoBehaviour
     // 클라우드 데이터에서 캐릭터 레벨 가져오기 (홍정옥)
     private int GetCharacterLevel()
     {
+        // _Test 씬 밸런스 콘솔의 성장 레벨 시뮬레이션 (테스트 씬 밖에서는 항상 0)
+        if (BalanceTestConsole.OverrideCharacterLevel > 0)
+        {
+            return BalanceTestConsole.OverrideCharacterLevel;
+        }
+
         if (GameManager.Instance == null || GameManager.Instance.CloudData == null)
         {
             Debug.LogWarning("[InGameBootstrap] 클라우드 데이터를 찾을 수 없음. 아웃 게임 레벨 1");
@@ -842,8 +1000,8 @@ public class InGameBootstrap : MonoBehaviour
             if (master == null) continue;
 
             GearLevelData level = repo.GetGearLevel(inst.MasterId);
-            int atkPer = level != null ? level.AttackValue : 0;
-            int hpPer = level != null ? level.MaxHPValue : 0;
+            float atkPer = level != null ? level.AttackValue : 0;
+            float hpPer = level != null ? level.MaxHPValue : 0;
 
             attackBonus += ComputeArtifactStat(master.AttackBaseAmount, atkPer, inst.CurrentLevel);
             hpBonus += ComputeArtifactStat(master.MaxHPBaseAmount, hpPer, inst.CurrentLevel);
@@ -851,6 +1009,6 @@ public class InGameBootstrap : MonoBehaviour
     }
 
     // 최종값 = base + (base × perLevel) × (현재레벨 - 1)
-    private static int ComputeArtifactStat(int baseAmount, int perLevelValue, int level)
-        => baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
+    private static int ComputeArtifactStat(int baseAmount, float perLevelValue, int level)
+        => baseAmount + Mathf.RoundToInt(baseAmount * perLevelValue * Mathf.Max(0, level - 1));
 }

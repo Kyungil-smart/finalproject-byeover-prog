@@ -26,6 +26,7 @@ public class LocalizationManager : MonoBehaviour
     [SerializeField] private GearLocalizationTable _gearTable;
     [SerializeField] private UILocalizationTable _uiTable;
     [SerializeField] private HousingLocalizationTable _housingTable;
+    [SerializeField] private ChapterLocalizationTable _chapterTable;
 
     // ---------- Dictionary ----------
     private Dictionary<string, Legacy_LanguageEntry> _entries;
@@ -33,6 +34,8 @@ public class LocalizationManager : MonoBehaviour
     private Dictionary<int, LocalizationData> _gearLocalizingData;
     private Dictionary<int, LocalizationData> _uiLocalizingData;
     private Dictionary<int, LocalizationData> _housingLocalizingData;
+    private Dictionary<int, LocalizationData> _chapterLocalizingData;
+    private Dictionary<LocalizingType, Dictionary<int, LocalizationData>> _localizingDictionary;
     
     // ---------- 상태 ----------
     private string _currentLang;  // "ko" or "en"
@@ -61,6 +64,8 @@ public class LocalizationManager : MonoBehaviour
         _gearLocalizingData = BuildDictionary(_gearTable, nameof(_gearTable), r => r.Language_ID);
         _uiLocalizingData = BuildDictionary(_uiTable, nameof(_uiTable), r => r.Language_ID);
         _housingLocalizingData = BuildDictionary(_housingTable, nameof(_housingTable), r => r.Language_ID);
+        _chapterLocalizingData = BuildDictionary(_chapterTable, nameof(_chapterTable), r => r.Language_ID);
+        _localizingDictionary = BuildLocalizationDictionary();
 
         // 저장된 언어 설정 불러오기
         string saved = PlayerPrefs.GetString("Language", "");
@@ -128,52 +133,26 @@ public class LocalizationManager : MonoBehaviour
     {
         if (!_isInitialized)
         {
-            Debug.LogWarning("[Localization] Not initialized. Return Localizing Code");
+            Debug.LogWarning("[Localization] 초기화 안됨. Return Localizing Code");
             return $"[{id}]";
         }
         
-        LocalizationData entry = null;
-        
-        switch (localizingType)
+        if (!_localizingDictionary.TryGetValue(localizingType, out var targetDictionary))
         {
-            case  LocalizingType.Enchant:
-                if (!_enchantLocalizingData.TryGetValue(id, out entry))
-                {
-                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
-                    return $"[{id}]";
-                }
-                break;
-            case LocalizingType.Gear:
-                if (!_gearLocalizingData.TryGetValue(id, out entry))
-                {
-                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
-                    return $"[{id}]";
-                }
-                break;
-            case LocalizingType.UI:
-                if (!_uiLocalizingData.TryGetValue(id, out entry))
-                {
-                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
-                    return $"[{id}]";
-                }
-                break;
-            case LocalizingType.Housing:
-                if (!_housingLocalizingData.TryGetValue(id, out entry))
-                {
-                    Debug.LogWarning($"[Localization] {localizingType} : {id} is not found. Return Localizing Code");
-                    return $"[{id}]";
-                }
-                break;
+            Debug.LogWarning($"[Localization] {localizingType} Dictionary is Not Found. Return Localizing Code");
+            return $"[{id}]";
         }
         
-        if(entry == null)
+        if (!targetDictionary.TryGetValue(id, out var entry))
         {
-            Debug.LogWarning($"[Localization] {localizingType} is wrong Localizing type of this id : {id}. Return Localizing Code");
+            Debug.LogWarning($"[Localization] ID{id} data is not found in {localizingType} Dictionary. Return Localizing Code");
             return $"[{id}]";
         }
         
         // 현재 언어에 맞는 텍스트 반환
         // 나중에 언어 추가할 때 여기에 case 추가하면 됨
+        // 성공 경로 로그 금지: UI 목록 하나 열 때마다 조회 수십 회가 발생해(호출부 50여 곳)
+        // 릴리스에서도 문자열 할당 + 로그 비용이 그대로 쌓인다.
         switch (_currentLang)
         {
             case "ko": return entry.KR;
@@ -188,7 +167,8 @@ public class LocalizationManager : MonoBehaviour
     public string Get(int id, LocalizingType localizingType, params object[] args)
     {
         string template = Get(id, localizingType);
-        if (template.StartsWith("[")) return template;
+        if (template.StartsWith("[") || args == null || args.Length == 0) 
+            return template;
 
         try
         {
@@ -266,4 +246,18 @@ public class LocalizationManager : MonoBehaviour
 
         return result;
     }
+
+    private Dictionary<LocalizingType, Dictionary<int, LocalizationData>> BuildLocalizationDictionary()
+    {
+        var result = new Dictionary<LocalizingType, Dictionary<int, LocalizationData>>();
+        
+        result.Add(LocalizingType.Enchant, _enchantLocalizingData);
+        result.Add(LocalizingType.Gear, _gearLocalizingData);
+        result.Add(LocalizingType.UI, _uiLocalizingData);
+        result.Add(LocalizingType.Housing, _housingLocalizingData);
+        result.Add(LocalizingType.Chapter, _chapterLocalizingData);
+        
+        return  result;
+    }
+    
 }

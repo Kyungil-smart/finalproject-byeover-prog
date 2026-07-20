@@ -2,7 +2,7 @@
 // 설명   : Firebase 인증 서비스 -- 구글 로그인(Google Sign-In) + 게스트 로그인
 
 // 2차 수정자 : 조규민
-// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름, 기존 Editor Email/Password 계정 로그인 전용 흐름, 기존 익명 세션 재사용 방어 추가
+// 수정 내용 : 게스트/Firebase 초기화 실패 처리, 중복 로그인 방어, Google 설정 검증, Web Client ID 자동 해석, 로그인 실패 유형 전달, Editor 전용 Google 로그인 흐름 테스트, 테스트 전 기존 세션 로그아웃 옵션, 고정 테스트 유저 키 로그인 옵션, 게임 화면 입력 기반 Email/Password 테스트 로그인 실패 원인 로그 보강, Editor Email/Password 계정 자동 생성 흐름, 기존 Editor Email/Password 계정 로그인 전용 흐름, 기존 익명 세션 재사용 방어 및 인증 제공자 상태 노출 추가, Google 로그인 실패 유형 전달 누락 보정, 자동 로그인 후 로그아웃 시 GoogleSignIn 미설정 인스턴스 생성 방지
 
 #if FIREBASE_ENABLED
 using Firebase;
@@ -21,6 +21,7 @@ public class FirebaseAuthService : MonoBehaviour
 {
     private const float DEFAULT_GOOGLE_SIGN_IN_TIMEOUT_SECONDS = 30f;
     private const float DEFAULT_FIREBASE_AUTH_TIMEOUT_SECONDS = 20f;
+    private const string _dummyGuestUidKey = "Auth.DummyGuestUid";
 
     public event Action<string> OnLoginSuccess;
 #pragma warning disable CS0067 // 추가: 조규민 - Editor에서 FIREBASE_ENABLED가 꺼진 경우에도 Android 빌드용 실패 이벤트를 유지한다.
@@ -39,7 +40,7 @@ public class FirebaseAuthService : MonoBehaviour
     [Tooltip("Google ID Token을 Firebase Credential로 교환할 때 기다릴 최대 시간입니다.")]
     [SerializeField] private float _firebaseAuthTimeoutSeconds = DEFAULT_FIREBASE_AUTH_TIMEOUT_SECONDS;
 
-#if UNITY_EDITOR
+    // 직렬화 필드는 항상 컴파일해야 에디터/빌드 레이아웃이 일치한다(값의 사용만 에디터 전용).
     [Header("에디터 테스트")]
     [Tooltip("Unity Editor에서 구글 로그인 이후 흐름을 테스트할 때만 켭니다. 실제 구글 계정 인증은 안드로이드 빌드에서 진행해야 합니다.")]
     [SerializeField] private bool _enableEditorGoogleLoginTest;
@@ -53,13 +54,24 @@ public class FirebaseAuthService : MonoBehaviour
     [SerializeField] private string _editorGoogleTestUserKey = "google_test_01";
     [Tooltip("에디터 구글 로그인 테스트에서 프로필 생성 흐름에 전달할 표시 이름입니다.")]
     [SerializeField] private string _editorGoogleTestDisplayName = "Editor Google Tester";
-#endif
 
     public string UserUID { get; private set; }
     public string UserEmail { get; private set; }
     public string UserDisplayName { get; private set; }
     public bool LastSignInWasGoogle { get; private set; }
     public bool IsLoggedIn => !string.IsNullOrEmpty(UserUID);
+    public bool IsGuestSession
+    {
+        get
+        {
+#if FIREBASE_ENABLED
+            return _auth != null && _auth.CurrentUser != null && _auth.CurrentUser.IsAnonymous;
+#else
+            return IsLoggedIn && !LastSignInWasGoogle;
+#endif
+        }
+    }
+    public string CurrentProvider => LastSignInWasGoogle ? "google" : IsGuestSession ? "guest" : "none";
     public bool IsFirebaseReady { get; private set; }
     public bool IsSigningIn { get; private set; } // 추가: 조규민 - 로그인 중복 요청을 막기 위한 상태값
     public bool RequiresEditorGoogleEmailPasswordInput
@@ -77,6 +89,8 @@ public class FirebaseAuthService : MonoBehaviour
 #if FIREBASE_ENABLED
     private FirebaseAuth _auth;
     private string _resolvedWebClientId;
+    private string _configuredGoogleWebClientId;
+    private bool _hasGoogleSignInInstance;
 #endif
 
     public IEnumerator InitializeFirebase()
@@ -152,7 +166,7 @@ public class FirebaseAuthService : MonoBehaviour
         catch (Exception exception)
         {
             LogExceptionDetails("[Auth][GoogleSignIn] SignIn() call exception", exception);
-            CompleteFailedSignIn(GetGoogleSignInExceptionMessage(exception));
+            CompleteFailedSignIn(GetGoogleSignInFailureType(exception), GetGoogleSignInExceptionMessage(exception));
             yield break;
         }
 
@@ -167,14 +181,14 @@ public class FirebaseAuthService : MonoBehaviour
         if (signInTask.IsCanceled)
         {
             Debug.LogWarning("[Auth][GoogleSignIn] SignIn() task canceled.");
-            CompleteFailedSignIn("구글 로그인이 취소되었습니다.");
+            CompleteFailedSignIn(AuthLoginFailureType.Canceled, "구글 로그인이 취소되었습니다.");
             yield break;
         }
 
         if (signInTask.IsFaulted)
         {
             LogExceptionDetails("[Auth][GoogleSignIn] SignIn() task faulted", signInTask.Exception);
-            CompleteFailedSignIn(GetGoogleSignInExceptionMessage(signInTask.Exception));
+            CompleteFailedSignIn(GetGoogleSignInFailureType(signInTask.Exception), GetGoogleSignInExceptionMessage(signInTask.Exception));
             yield break;
         }
 
@@ -493,7 +507,7 @@ public class FirebaseAuthService : MonoBehaviour
         if (authTask.IsFaulted)
         {
             LogExceptionDetails("[Auth][FirebaseAuth] SignInWithCredentialAsync faulted", authTask.Exception);
-            CompleteFailedSignIn(GetExceptionMessage(authTask.Exception, "Firebase 인증 실패"));
+            CompleteFailedSignIn(AuthLoginFailureType.FirebaseAuth, GetExceptionMessage(authTask.Exception, "Firebase 인증 실패"));
             yield break;
         }
 
@@ -550,7 +564,13 @@ public class FirebaseAuthService : MonoBehaviour
         OnLoginSuccess?.Invoke(UserUID);
 #else
         Debug.Log("[Auth] 게스트 로그인 더미 모드");
-        UserUID = "guest_" + UnityEngine.Random.Range(10000, 99999);
+        UserUID = PlayerPrefs.GetString(_dummyGuestUidKey, string.Empty);
+        if (string.IsNullOrWhiteSpace(UserUID))
+        {
+            UserUID = "guest_" + Guid.NewGuid().ToString("N");
+            PlayerPrefs.SetString(_dummyGuestUidKey, UserUID);
+            PlayerPrefs.Save();
+        }
         UserEmail = null;
         UserDisplayName = null;
         LastSignInWasGoogle = false;
@@ -561,14 +581,24 @@ public class FirebaseAuthService : MonoBehaviour
 
     public void SignOut()
     {
-#if FIREBASE_ENABLED
-        try
+#if !FIREBASE_ENABLED
+        if (IsGuestSession)
         {
-            GoogleSignIn.DefaultInstance.SignOut();
+            PlayerPrefs.DeleteKey(_dummyGuestUidKey);
+            PlayerPrefs.Save();
         }
-        catch (Exception exception)
+#endif
+#if FIREBASE_ENABLED
+        if (_hasGoogleSignInInstance)
         {
-            Debug.LogWarning("[Auth] Google Sign-In 로그아웃 정리 실패: " + exception.Message);
+            try
+            {
+                GoogleSignIn.DefaultInstance.SignOut();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("[Auth] Google Sign-In 로그아웃 정리 실패: " + exception.Message);
+            }
         }
 
         _auth?.SignOut();
@@ -627,6 +657,8 @@ public class FirebaseAuthService : MonoBehaviour
         onResult?.Invoke(succeeded);
 #else
         // Firebase 미설정 환경에서는 바로 성공 처리
+        PlayerPrefs.DeleteKey(_dummyGuestUidKey);
+        PlayerPrefs.Save();
         UserUID = null;
         UserEmail = null;
         UserDisplayName = null;
@@ -682,6 +714,18 @@ public class FirebaseAuthService : MonoBehaviour
     {
         _resolvedWebClientId = ResolveWebClientId();
         Debug.Log("[Auth][GoogleSignIn] ConfigureGoogleSignIn WebClientId=" + MaskWebClientId(_resolvedWebClientId));
+
+        if (_hasGoogleSignInInstance)
+        {
+            if (!string.Equals(_configuredGoogleWebClientId, _resolvedWebClientId, StringComparison.Ordinal))
+            {
+                Debug.LogWarning("[Auth][GoogleSignIn] 이미 생성된 GoogleSignIn 인스턴스가 있어 기존 WebClientId를 유지합니다. Existing=" + MaskWebClientId(_configuredGoogleWebClientId) + ", Requested=" + MaskWebClientId(_resolvedWebClientId));
+            }
+
+            GoogleSignIn.DefaultInstance.EnableDebugLogging(Debug.isDebugBuild);
+            return;
+        }
+
         GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
             ForceTokenRefresh = true,
@@ -692,6 +736,8 @@ public class FirebaseAuthService : MonoBehaviour
         };
 
         GoogleSignIn.DefaultInstance.EnableDebugLogging(Debug.isDebugBuild);
+        _configuredGoogleWebClientId = _resolvedWebClientId;
+        _hasGoogleSignInInstance = true;
     }
 
     private string ResolveWebClientId()
@@ -717,6 +763,14 @@ public class FirebaseAuthService : MonoBehaviour
             Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=generated google-services.xml value=" + MaskWebClientId(generatedXmlClientId));
             return generatedXmlClientId.Trim();
         }
+
+        string googleSignInJsonClientId = TryGetGoogleServicesJsonWebClientId();
+        if (!string.IsNullOrWhiteSpace(googleSignInJsonClientId))
+        {
+            Debug.Log("[Auth][GoogleSignIn] ResolveWebClientId source=Assets/GoogleSignIn/google-services.json value=" + MaskWebClientId(googleSignInJsonClientId));
+            return googleSignInJsonClientId.Trim();
+        }
+
         Debug.LogWarning("[Auth][GoogleSignIn] ResolveWebClientId failed: default_web_client_id is null/empty in all sources.");
 
         return null;
@@ -778,6 +832,56 @@ public class FirebaseAuthService : MonoBehaviour
         }
 
         return xml.Substring(valueStart + 1, valueEnd - valueStart - 1);
+    }
+
+    // 추가: 조규민 - Assets/GoogleSignIn/google-services.json을 사용하는 프로젝트 기준에 맞춰 Web Client ID 보조 해석 경로를 둔다.
+    private string TryGetGoogleServicesJsonWebClientId()
+    {
+        string path = Path.Combine(Application.dataPath, "GoogleSignIn/google-services.json");
+        if (!File.Exists(path))
+        {
+            Debug.Log("[Auth][GoogleSignIn] google-services.json fallback not found. path=" + path);
+            return null;
+        }
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            string clientTypeMarker = "\"client_type\": 3";
+            int clientTypeIndex = json.IndexOf(clientTypeMarker, StringComparison.Ordinal);
+            if (clientTypeIndex < 0)
+            {
+                Debug.LogWarning("[Auth][GoogleSignIn] google-services.json fallback missing client_type 3 web client.");
+                return null;
+            }
+
+            int clientIdKeyIndex = json.LastIndexOf("\"client_id\"", clientTypeIndex, StringComparison.Ordinal);
+            if (clientIdKeyIndex < 0)
+            {
+                Debug.LogWarning("[Auth][GoogleSignIn] google-services.json fallback missing client_id before client_type 3.");
+                return null;
+            }
+
+            return ReadJsonStringValue(json, clientIdKeyIndex);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning("[Auth][GoogleSignIn] google-services.json fallback read failed: " + exception.Message);
+            return null;
+        }
+    }
+
+    private string ReadJsonStringValue(string json, int keyIndex)
+    {
+        int colonIndex = json.IndexOf(':', keyIndex);
+        int valueStart = colonIndex < 0 ? -1 : json.IndexOf('"', colonIndex + 1);
+        int valueEnd = valueStart < 0 ? -1 : json.IndexOf('"', valueStart + 1);
+        if (valueStart < 0 || valueEnd < 0 || valueEnd <= valueStart)
+        {
+            return null;
+        }
+
+        return json.Substring(valueStart + 1, valueEnd - valueStart - 1);
     }
 
     private IEnumerator WaitForTask(Task task, float timeoutSeconds, Action<bool> onCompleted)

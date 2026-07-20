@@ -141,5 +141,35 @@ public enum LocalizingType
     Enchant,
     Gear,
     UI,
-    Housing
+    Housing,
+    Chapter
+}
+
+public enum CrowdControlType
+{
+    None,
+    Knockback,
+    Root,
+    Stun,
+    Slow
+}
+
+public enum ElementalType
+{
+    None,
+    Fire,
+    Ice,
+    Water,
+    Wind,
+    Lightning
+}
+
+public enum EnchantType { Skill, Stat }
+
+public enum EnchantGroupType
+{
+    None,
+    Normal,
+    Combination,
+    Combo,
 }

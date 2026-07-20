@@ -43,6 +43,8 @@ public class GachaProgressView : MonoBehaviour
     [SerializeField] private Image _reward1Icon;
     [Tooltip("두 번째 보상 아이콘 Image(Reward2)")]
     [SerializeField] private Image _reward2Icon;
+    [Tooltip("두 번째 보상 루트 오브젝트(프레임 포함). 보상 1종일 때 통째로 끈다. 비우면 아이콘만 끔")]
+    [SerializeField] private GameObject _reward2Root;
     [Tooltip("Reward1 의 RectTransform(1종일 때 중앙 이동용)")]
     [SerializeField] private RectTransform _reward1Rect;
     [Tooltip("보상 2종일 때 Reward1 위치(좌측)")]
@@ -133,11 +135,14 @@ public class GachaProgressView : MonoBehaviour
             if (hasFirst) SetIcon(_reward1Icon, firstItemId);
         }
 
-        if (_reward2Icon != null)
-        {
+        // 두 번째 보상은 프레임까지 통째로 껐다 켠다(1종일 때 빈 프레임이 남지 않게).
+        if (_reward2Root != null)
+            _reward2Root.SetActive(hasSecond);
+        else if (_reward2Icon != null)
             _reward2Icon.gameObject.SetActive(hasSecond);
-            if (hasSecond) SetIcon(_reward2Icon, secondItemId);
-        }
+
+        if (_reward2Icon != null && hasSecond)
+            SetIcon(_reward2Icon, secondItemId);
 
         // 보상 1종이면 Reward1 을 중앙으로, 2종이면 좌측 기본 위치로.
         if (_reward1Rect != null && hasFirst)

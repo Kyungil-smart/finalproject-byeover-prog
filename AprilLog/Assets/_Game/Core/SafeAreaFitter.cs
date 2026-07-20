@@ -22,7 +22,9 @@ public class SafeAreaFitter : MonoBehaviour
     [Tooltip("활성화될 때 즉시 Safe Area를 적용할지 여부")]
     [SerializeField] private bool _applyOnEnable = true;
 
-#if UNITY_EDITOR
+    // 직렬화 필드는 항상 컴파일되어야 에디터/빌드 직렬화 레이아웃이 일치한다.
+    // (필드를 #if UNITY_EDITOR로 감싸면 빌드에서 레이아웃이 어긋나 같은 씬의 다른 컴포넌트까지 역직렬화가 깨진다.)
+    // 오버라이드 값의 '사용'만 에디터로 제한한다.
     [Header("에디터 테스트")]
     [Tooltip("에디터에서 실제 기기 Safe Area 대신 테스트 값을 사용할지 여부")]
     [SerializeField] private bool _useEditorOverride;
@@ -32,7 +34,6 @@ public class SafeAreaFitter : MonoBehaviour
 
     [Tooltip("에디터 테스트용 화면 크기")]
     [SerializeField] private Vector2Int _editorScreenSizeOverride = new Vector2Int(1080, 2280);
-#endif
 
     // ---------- 상태 ----------
     private RectTransform _rect;

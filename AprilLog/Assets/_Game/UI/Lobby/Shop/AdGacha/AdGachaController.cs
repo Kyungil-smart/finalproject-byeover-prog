@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +24,11 @@ public class AdGachaController : MonoBehaviour
     }
 
     private enum Phase { Available, PendingFreeDraw, Cooldown }
+
+    private const float LoadingDotInterval = 0.25f;
+
+    private bool _adLoadFailed;
+    private Coroutine _loadingDotsRoutine;
 
     [Header("시스템 참조")]
     [Tooltip("보상형 광고 서비스")]
@@ -63,6 +69,8 @@ public class AdGachaController : MonoBehaviour
     [SerializeField] private string _pendingMessage = "지금 뽑기 가능!";
     [Tooltip("오프라인일 때 표시 문구")]
     [SerializeField] private string _offlineMessage = "오프라인 상태입니다.";
+    [Tooltip("광고 로딩 중 표시 문구. 뒤에 로딩 화면과 같은 점 애니메이션이 붙는다.")]
+    [SerializeField] private string _loadingMessage = "NOW LOADING";
     [Tooltip("광고 로딩 중 표시 오브젝트")]
     [SerializeField] private GameObject _loadingIndicator;
     [Tooltip("광고 로드 실패 표시 오브젝트")]
@@ -91,6 +99,7 @@ public class AdGachaController : MonoBehaviour
 
     private void OnEnable()
     {
+        SubscribeLocalization();
         if (_actionButton != null) _actionButton.onClick.AddListener(OnClickAction);
 
         if (_adService != null)
@@ -100,12 +109,14 @@ public class AdGachaController : MonoBehaviour
         }
 
         Load();
-        GrantFirstRunRewardIfNeeded();
         RefreshUI();
     }
 
     private void OnDisable()
     {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= RefreshUI;
+
         if (_actionButton != null) _actionButton.onClick.RemoveListener(OnClickAction);
 
         if (_adService != null)
@@ -113,6 +124,13 @@ public class AdGachaController : MonoBehaviour
             _adService.OnAdLoaded -= HandleAdLoaded;
             _adService.OnAdLoadFailed -= HandleAdLoadFailed;
         }
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= RefreshUI;
+        LocalizationManager.Instance.OnLanguageChanged += RefreshUI;
     }
 
     private void Update()
@@ -154,7 +172,8 @@ public class AdGachaController : MonoBehaviour
         if (_isShowingAd) return;
         if (GetPhase() != Phase.Available) return;
 
-        if (_networkChecker != null && !_networkChecker.IsOnline)
+        // 준비된 광고가 없을 때만 오프라인으로 막는다. 이미 로드된 광고는 오프라인이어도 재생 가능.
+        if (_networkChecker != null && !_networkChecker.IsOnline && (_adService == null || !_adService.IsAdReady))
         {
             SetStatus("오프라인 상태입니다. 네트워크 연결 후 시청해 주세요.");
             return;
@@ -210,21 +229,6 @@ public class AdGachaController : MonoBehaviour
         RefreshUI();
     }
 
-    // 첫 실행(uid별 최초 1회)에는 광고 없이 무료 뽑기를 즉시 지급한다.
-    // firstRewardGranted 영속 플래그로 평생 1회만 동작한다.
-    private void GrantFirstRunRewardIfNeeded()
-    {
-        if (_save.firstRewardGranted) return;
-
-        _save.firstRewardGranted = true;
-
-        // 쿨타임 중이거나 이미 지급(미사용) 상태가 아니면 즉시 뽑기 가능 상태로 만든다.
-        if (!_save.hasPendingFreeDraw && !IsCooldownActive())
-            _save.hasPendingFreeDraw = true;
-
-        Save();
-    }
-
     // ---------- 광고 이벤트 ----------
     private void HandleRewardEarned()
     {
@@ -236,8 +240,17 @@ public class AdGachaController : MonoBehaviour
         // UI 갱신은 onClosed 콜백에서 _isShowingAd 해제 후 수행된다.
     }
 
-    private void HandleAdLoaded() => RefreshUI();
-    private void HandleAdLoadFailed() => RefreshUI();
+    private void HandleAdLoaded()
+    {
+        _adLoadFailed = false;
+        RefreshUI();
+    }
+
+    private void HandleAdLoadFailed()
+    {
+        _adLoadFailed = true;
+        RefreshUI();
+    }
 
     // ---------- 상태 판정 ----------
     private Phase GetPhase()
@@ -270,7 +283,9 @@ public class AdGachaController : MonoBehaviour
         Phase phase = GetPhase();
 
         bool adReady = _adService != null && _adService.IsAdReady;
-        bool online = _networkChecker == null || _networkChecker.IsOnline;
+        // 이미 로드된 보상형 광고는 오프라인이어도 재생 가능하므로 네트워크 판정보다 우선한다.
+        // (Application.internetReachability가 실제와 무관하게 오프라인으로 잡히는 경우가 있음)
+        bool online = _networkChecker == null || _networkChecker.IsOnline || adReady;
 
         // 단일 겸용 버튼 활성/비활성 + 문구
         bool canWatch = phase == Phase.Available && adReady && online && !_isShowingAd;
@@ -278,15 +293,52 @@ public class AdGachaController : MonoBehaviour
         if (_actionButton != null)
             _actionButton.interactable = canWatch || canDraw;
         if (_actionLabel != null)
-            _actionLabel.text = phase == Phase.PendingFreeDraw ? _drawLabel : _watchLabel;
+            _actionLabel.text = phase == Phase.PendingFreeDraw
+                ? GetUiText(11088, _drawLabel, "Open x1")
+                : GetUiText(11107, _watchLabel, "Watch an Ad to Open");
 
-        // 로딩/실패 인디케이터
-        bool loading = phase == Phase.Available && _adService != null && !adReady;
-        if (_loadingIndicator != null) _loadingIndicator.SetActive(loading && online);
-        if (_loadFailedIndicator != null) _loadFailedIndicator.SetActive(loading && !online);
+        // 로드 시도가 끝나기 전까지는 로딩으로 본다. 실패가 확정돼야 오프라인/실패 표시로 넘어간다.
+        bool loading = phase == Phase.Available && _adService != null && !adReady && !_adLoadFailed;
+        if (_loadingIndicator != null) _loadingIndicator.SetActive(loading);
+        if (_loadFailedIndicator != null) _loadFailedIndicator.SetActive(phase == Phase.Available && _adLoadFailed);
 
         // 메인 텍스트 한곳에 상태별 표시(남은시간/안내문구 통합). 항상 표시 — 빈칸 안 생김.
-        SetMainText(BuildMainText(phase, online));
+        if (loading)
+        {
+            StartLoadingDots();
+        }
+        else
+        {
+            StopLoadingDots();
+            SetMainText(BuildMainText(phase, online));
+        }
+    }
+
+    // 로딩 점 애니메이션. 프레임/간격은 SceneTransition 로딩 화면과 맞춰 둔다.
+    private void StartLoadingDots()
+    {
+        if (_loadingDotsRoutine != null) return;
+        _loadingDotsRoutine = StartCoroutine(AnimateLoadingDots());
+    }
+
+    private void StopLoadingDots()
+    {
+        if (_loadingDotsRoutine == null) return;
+        StopCoroutine(_loadingDotsRoutine);
+        _loadingDotsRoutine = null;
+    }
+
+    private IEnumerator AnimateLoadingDots()
+    {
+        string[] dotFrames = { "·..", ".·.", "..·" };
+        int index = 0;
+
+        while (true)
+        {
+            SetMainText(GetUiText(0, _loadingMessage, "NOW LOADING") + dotFrames[index]);
+            index = (index + 1) % dotFrames.Length;
+            yield return new WaitForSecondsRealtime(LoadingDotInterval);
+        }
     }
 
     // 현재 상태에 맞는 메인 표시 문구를 만든다.
@@ -296,13 +348,33 @@ public class AdGachaController : MonoBehaviour
         {
             case Phase.Cooldown:
                 TimeSpan t = RemainingCooldown();
-                return _cooldownPrefix + string.Format("{0:00} : {1:00} : {2:00}",
+                string time = string.Format("{0:00} : {1:00} : {2:00}",
                     (int)t.TotalHours, t.Minutes, t.Seconds);
+                string cooldown = GetUiText(11106, _cooldownPrefix + "{time}", "Time until next reward: {time}");
+                return cooldown.Replace("{time}", time);
             case Phase.PendingFreeDraw:
-                return _pendingMessage;
+                return GetUiText(11088, _pendingMessage, "Open Now!");
             default: // Available
-                return online ? _availableMessage : _offlineMessage;
+                return online
+                    ? GetUiText(11107, _availableMessage, "Watch an Ad to Open")
+                    : GetUiText(0, _offlineMessage, "You are offline.");
         }
+    }
+
+    private static string GetUiText(int id, string fallbackKr, string fallbackEn)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null)
+            return Application.systemLanguage == SystemLanguage.Korean ? fallbackKr : fallbackEn;
+
+        if (id > 0)
+        {
+            string localized = lm.Get(id, LocalizingType.UI);
+            if (!string.IsNullOrEmpty(localized) && !localized.StartsWith("["))
+                return localized;
+        }
+
+        return lm.CurrentLanguage == "ko" ? fallbackKr : fallbackEn;
     }
 
     // 메인 텍스트(Text_Button_Time) 갱신. 레거시 _statusText 가 있으면 함께 표시.
@@ -407,14 +479,13 @@ public class AdGachaController : MonoBehaviour
             onFailed: () => Debug.Log("[AdGachaController] (DEBUG) 광고 실패"));
     }
 
-    // 테스트용 : 첫 실행 상태로 완전 초기화(첫 무료 지급 다시 받기)
+    // 테스트용 : 쿨타임/지급 상태를 모두 비워 광고 시청 가능 상태로 되돌린다.
     [ContextMenu("DEBUG/첫 실행 상태로 초기화")]
     private void DebugResetToFirstRun()
     {
         _save.nextAvailableAtUtc = "";
         _save.hasPendingFreeDraw = false;
-        _save.firstRewardGranted = false;
-        GrantFirstRunRewardIfNeeded();
+        Save();
         RefreshUI();
     }
 #endif

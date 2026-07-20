@@ -2,10 +2,16 @@
 <!-- 담당자 : 조규민 -->
 <!-- 구현원리 : Android 런처 Activity 생성 시점부터 portrait를 강제해 Unity Splash가 반대로 표시된 뒤 회전되는 현상을 방지한다. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
-  <application>
+  <application android:allowBackup="false" tools:replace="android:allowBackup">
+    <!-- 앱 삭제 시 Android Auto Backup 복원을 막아 로컬 데이터(게스트 세이브 포함)가 완전히 지워지게 한다. -->
     <!-- 추가: 조규민 - Unity 기본 런처 Activity의 화면 방향을 Android Manifest 병합 단계에서 portrait로 고정한다. -->
-    <activity android:name="com.develrocket.Aprilogueunity3d.player.UnityPlayerActivity" android:screenOrientation="portrait" android:resizeableActivity="false" tools:replace="android:screenOrientation,android:resizeableActivity" />
+    <activity android:name="com.unity3d.player.UnityPlayerActivity" android:exported="true" android:screenOrientation="portrait" android:resizeableActivity="false" tools:replace="android:screenOrientation,android:resizeableActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
     <!-- 추가: 조규민 - Unity 6000 GameActivity 사용 빌드에서도 동일하게 portrait를 강제한다. -->
-    <activity android:name="com.develrocket.Aprilogueunity3d.player.UnityPlayerGameActivity" android:screenOrientation="portrait" android:resizeableActivity="false" tools:replace="android:screenOrientation,android:resizeableActivity" />
+    <activity android:name="com.unity3d.player.UnityPlayerGameActivity" android:screenOrientation="portrait" android:resizeableActivity="false" tools:replace="android:screenOrientation,android:resizeableActivity" />
   </application>
 </manifest>

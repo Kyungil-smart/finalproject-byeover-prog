@@ -9,6 +9,9 @@
 // 수정내용 : 모든 플레이어 공격을 직선 탄 전용 경로로 발사하여 발사 시 객체 생성을 줄임.
 // 수정내용 : ProjectileController.Setup과 SetupStraight의 사용 기준을 호출부 주석으로 명확화.
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인챈트 교체 시 제거된 자동공격/콤보 스킬 등록을 해제할 수 있는 API 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -255,6 +258,19 @@ public class SkillSystem : MonoBehaviour
     }
 
     /// <summary>같은 스킬군(StandardID)의 기존 등록을 제거하고 새로 등록 (인챈트 레벨업 시 상위 레벨로 교체).</summary>
+    public void UnregisterAutoAttackSkillByStandardId(int standardId)
+    {
+        for (int i = _autoAttackSkills.Count - 1; i >= 0; i--)
+        {
+            if (_autoAttackSkills[i].data == null || _autoAttackSkills[i].data.StandardID != standardId)
+            {
+                continue;
+            }
+
+            _autoAttackSkills.RemoveAt(i);
+        }
+    }
+
     public void ReplaceComboSkill(int comboMultiple, Legacy_SkillData data)
     {
         if (data == null) return;
@@ -265,6 +281,19 @@ public class SkillSystem : MonoBehaviour
     }
 
     /// <summary>장판형 스킬 등록. 등록된 SkillID는 FireSkill에서 투사체 대신 장판으로 발동된다.</summary>
+    public void UnregisterComboSkillByStandardId(int standardId)
+    {
+        for (int i = _comboSkills.Count - 1; i >= 0; i--)
+        {
+            if (_comboSkills[i].data == null || _comboSkills[i].data.StandardID != standardId)
+            {
+                continue;
+            }
+
+            _comboSkills.RemoveAt(i);
+        }
+    }
+
     public void RegisterHazardSkill(int skillId, HazardConfig config)
     {
         _hazardConfigs[skillId] = config;
@@ -327,6 +356,20 @@ public class SkillSystem : MonoBehaviour
     {
         if (data == null) return;
 
+        // 강공 효과음(SFX 가이드 인게임 17~21): 원소별 대표기(메테오/파도/허리케인/뇌격/얼음결정) 발동 시점.
+        switch (data.StandardID)
+        {
+            case 105: AudioManager.Play(SfxId.StrongFire); break;
+            case 204: AudioManager.Play(SfxId.StrongWater); break;
+            case 304: AudioManager.Play(SfxId.StrongWind); break;
+            case 405:
+                // 뇌격 클립이 레이저 빔 지속시간보다 길어 이펙트 종료 후에도 소리가 남는다 → 빔 지속만큼만 재생.
+                AudioManager.Play(SfxId.StrongLightning,
+                    LightningVfx != null && LightningVfx.laserSustainSec > 0f ? LightningVfx.laserSustainSec : 2f);
+                break;
+            case 504: AudioManager.Play(SfxId.StrongIce); break;
+        }
+
         // 소환 스킬(화염 정령 등)은 투사체 대신 소환 경로로 분기.
         if (_summonConfigs.TryGetValue(data.SkillID, out var summonCfg))
         {
@@ -367,7 +410,22 @@ public class SkillSystem : MonoBehaviour
         ResolveReferences();
         if (_monsterSpawner == null || _firePoint == null) yield break;
 
-        Vector2 sizeWorld = new Vector2(PxToWorld(cfg.widthPx), PxToWorld(cfg.heightPx));
+        // 장판 기본 크기: DB(SkillEnchantTable HitSize_X/Y, 레벨별 행)가 정본. 행이 없거나 0이면 config 폴백.
+        // 기존엔 부트스트랩 하드코딩만 써서 시트의 레벨별 성장(파이어브레스 Lv3, 돌풍, 허리케인 등)이 무시됐다.
+        float basisWidthPx = cfg.widthPx;
+        float basisHeightPx = cfg.heightPx;
+        if (!cfg.skipDbHitSize)
+        {
+            var dbRow = ResolveNewSkillRow(data);
+            if (dbRow != null && dbRow.HitSize_X > 0f && dbRow.HitSize_Y > 0f)
+            {
+                float sizeScale = cfg.dbSizeScale > 0f ? cfg.dbSizeScale : 1f;
+                basisWidthPx = dbRow.HitSize_X * sizeScale;
+                basisHeightPx = dbRow.HitSize_Y * sizeScale;
+            }
+        }
+
+        Vector2 sizeWorld = new Vector2(PxToWorld(basisWidthPx), PxToWorld(basisHeightPx));
         // 인챈트 범위 확장(HitSize_X/Y). 보유 인챈트 없으면 1f라 무변화. DealHazardDamage·VFX 둘 다 sizeWorld 기반이라 동시 적용됨.
         if (_enchantCalculator != null)
         {
@@ -573,7 +631,12 @@ public class SkillSystem : MonoBehaviour
                 else if (TryGetWaterVfx(data, out GameObject wvfx2, out float wscale2))
                 {
                     // 물 하자드(탄환세례 202·급류 203): center에 VFX 1회 소환·재생.
-                    var wv2 = SpawnVfx(wvfx2, center, wscale2, 52);
+                    // 탄환세례(202)는 물대포 — 판정은 PlayerColumn(플레이어 위 세로 컬럼, 부트스트랩 설정)이고,
+                    // VFX는 플레이어 머리 위(발사점 + 오프셋)에서 위로 뿜는다.
+                    Vector2 waterVfxPos = center;
+                    if (data.StandardID == 202 && _firePoint != null && WaterVfx != null)
+                        waterVfxPos = (Vector2)_firePoint.position + new Vector2(0f, WaterVfx.bulletShowerHeadOffsetY);
+                    var wv2 = SpawnVfx(wvfx2, waterVfxPos, wscale2, 52);
                     if (wv2 != null)
                     {
                         if (WaterVfx != null) ApplyParticleRotation(wv2, data.StandardID == 203 ? WaterVfx.torrentRotationDeg : WaterVfx.bulletShowerRotationDeg);
@@ -644,8 +707,8 @@ public class SkillSystem : MonoBehaviour
         var lib = WaterVfx;
         float baseY = _firePoint != null ? _firePoint.position.y : 0f;
         Vector2 cur = new Vector2(target.x, baseY + sizeWorld.y * 0.5f);   // 타겟 X · 장벽 Y에서 시작
-        float speed = PxToWorld(125f);     // 나미 R식: 천천히 전진하며 적을 밀기 (QA 피드백으로 250→125로 감속)
-        const float duration = 4.0f;       // 속도 절반이라 같은 거리 도달하도록 지속 2.0→4.0초로 보정
+        float speed = PxToWorld(62.5f);    // 나미 R식: 천천히 전진하며 적을 밀기 (QA 피드백으로 250→125→62.5 두 차례 감속)
+        const float duration = 8.0f;       // 속도 절반마다 같은 거리에 도달하도록 지속을 2배로 보정 (2.0→4.0→8.0초)
 
         GameObject vfx = null;
         if (lib != null && lib.waveVfx != null)
@@ -660,7 +723,7 @@ public class SkillSystem : MonoBehaviour
         }
         else SpawnHazardFlash(cur, sizeWorld, new Color(0.4f, 0.7f, 1f, 0.35f));
 
-        const float tickGap = 0.4f;   // 속도 절반(125px/s)에 맞춰 0.2→0.4초: 4초 동안 총 틱 수(데미지/넉백)는 기존 2초·0.2초와 동일하게 유지
+        const float tickGap = 0.8f;   // 감속에 맞춰 0.2→0.4→0.8초: 지속 8초 동안 총 틱 수(데미지/넉백)를 최초 2초·0.2초와 동일하게 유지
         float tickT = tickGap, elapsed = 0f;
         DealHazardDamage(data, cur, sizeWorld);
         while (elapsed < duration)
@@ -1275,7 +1338,12 @@ public class SkillSystem : MonoBehaviour
         foreach (var r in go.GetComponentsInChildren<ParticleSystemRenderer>(true))
             r.sortingOrder = sortingOrder;
 
-        _activeSkillVfx.Add(go);   // 추적: 전투 종료 시 ClearActiveSkillVfx에서 일괄 정리
+        // 추적: 전투 종료 시 ClearActiveSkillVfx에서 일괄 정리.
+        // 개별 VFX는 타임드 Destroy로 사라져도 리스트에서 안 빠지므로, 커지면 파괴된 항목을 압축해
+        // 긴 챕터에서 리스트가 무한정 자라는 것을 막는다.
+        if (_activeSkillVfx.Count >= 64)
+            _activeSkillVfx.RemoveAll(v => v == null);
+        _activeSkillVfx.Add(go);
         return go;
     }
 
@@ -1470,6 +1538,7 @@ public class SkillSystem : MonoBehaviour
             if (_activeSpirits[i] != null) Destroy(_activeSpirits[i].gameObject);
         _activeSpirits.Clear();
 
+        var lib = Vfx;
         int count = Mathf.Max(1, data.PelletCount); // 정령 수 (테이블 ActiveCount=2)
         for (int i = 0; i < count; i++)
         {
@@ -1478,12 +1547,34 @@ public class SkillSystem : MonoBehaviour
 
             var go = new GameObject("FireSpirit");
             go.transform.position = pos;
-            go.transform.localScale = Vector3.one * 0.35f;
 
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = SpriteFactory.Square();
-            sr.color = new Color(1f, 0.45f, 0.1f); // 주황 (화염 정령 플레이스홀더)
-            sr.sortingOrder = 60;
+            if (lib != null && lib.spiritBody != null)
+            {
+                // 정령 본체 (MonsterPack/Summon/100152). 팩 비주얼은 100PPU 대형이라 라이브러리 스케일로 축소.
+                var visual = Instantiate(lib.spiritBody, go.transform);
+                visual.transform.localPosition = lib.spiritOffset;
+                float mirror = (side < 0f) ? 1f : -1f; // 좌우 정령이 서로 마주 보도록 미러
+                visual.transform.localScale = new Vector3(lib.spiritScale * mirror, lib.spiritScale, 1f);
+
+                // 파츠 조립형(꼬리/몸/얼굴이 각각 SpriteRenderer)이라 sortingOrder를 한 값으로
+                // 밀면 파츠 앞뒤가 깨져 뒷모습처럼 보인다. 프리팹의 상대 순서를 보존한 채 전체만 끌어올린다.
+                var renderers = visual.GetComponentsInChildren<Renderer>(true);
+                int minOrder = int.MaxValue;
+                foreach (var r in renderers)
+                    if (r.sortingOrder < minOrder) minOrder = r.sortingOrder;
+                if (minOrder == int.MaxValue) minOrder = 0;
+                foreach (var r in renderers)
+                    r.sortingOrder += 60 - minOrder;
+            }
+            else
+            {
+                // 프리팹 미배선 폴백: 주황 사각형 플레이스홀더
+                go.transform.localScale = Vector3.one * 0.35f;
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.Square();
+                sr.color = new Color(1f, 0.45f, 0.1f);
+                sr.sortingOrder = 60;
+            }
 
             var spirit = go.AddComponent<FireSpirit>();
             spirit.Init(this, cfg.castSkill, cfg.lifetime, cfg.castInterval);
@@ -1552,10 +1643,11 @@ public class SkillSystem : MonoBehaviour
     {
         // 화염 작렬(StandardID 102)만 0.25초 간격, 그 외 다발 스킬은 기본(0.08초) 유지.
         float interval = data.StandardID == 102 ? FlameBurstShotInterval : BurstShotInterval;
+        var wait = new WaitForSeconds(interval);   // 발사마다 재할당하지 않고 버스트당 1회만
         for (int i = 0; i < shots; i++)
         {
             FireOneProjectile(data, type);
-            yield return new WaitForSeconds(interval);
+            yield return wait;
         }
     }
 
@@ -1597,7 +1689,12 @@ public class SkillSystem : MonoBehaviour
         else if (data.StandardID == 305)
         {
             maxPierce = 6 + 2 * lv;                                       // 템페스트 관통 8/10/12
-            hitMul = data.NumberOfCycle > 0 ? data.NumberOfCycle : 1;     // 피격 시 8회 대미지
+            // 멀티히트는 DB(SkillEnchantTable Count 8/10/12, 레벨 성장)가 정본.
+            // 레거시 NumberOfCycle은 전 레벨 8 고정이라 Lv2/3 성장이 무시되고 있었다. 행 없으면 레거시 폴백.
+            var tempestRow = ResolveNewSkillRow(data);
+            hitMul = tempestRow != null && tempestRow.Count > 1f
+                ? Mathf.RoundToInt(tempestRow.Count)
+                : (data.NumberOfCycle > 0 ? data.NumberOfCycle : 1);
         }
         else if (data.StandardID == 502) maxPierce = 15 + 5 * lv;         // 글레이셜 피어스 관통 20/25/30
         controller.SetupStraight(damage, _firePoint.position, targetPos, projectileSpeed, pierce, maxPierce, hitMul, data.StandardID);
@@ -1674,9 +1771,33 @@ public class SkillSystem : MonoBehaviour
     }
 
     /// <returns>실제로 발사했으면 true. 타겟 부재 등으로 스킵하면 false (자동공격 카운트는 발사 성공만 센다).</returns>
+    // 기본(60005)/자동(60010) 공격의 DB 행 캐시. 매 발사 딕셔너리 조회/미스 경고 스팸 방지.
+    private SkillTableData _sortBasicRow;
+    private SkillTableData _autoBasicRow;
+    private bool _basicRowsResolved;
+
+    private const int SortBasicSkillId = 60005;   // DB '일반 공격' (Dmg 100 = 100%)
+    private const int AutoBasicSkillId = 60010;   // DB '자동 공격' (Dmg 30 = 30%)
+
+    private void ResolveBasicAttackRows()
+    {
+        if (_basicRowsResolved) return;
+        var repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        if (repo == null) return;   // 아직 준비 전이면 다음 발사 때 재시도
+        _sortBasicRow = repo.GetSkillData(SortBasicSkillId);
+        _autoBasicRow = repo.GetSkillData(AutoBasicSkillId);
+        _basicRowsResolved = true;
+    }
+
     public bool FireBasicAttack(AttackType type = AttackType.Auto)
     {
-        float temp = _combatSystem.CalculateDamage(1.0f);
+        // 기본/자동 공격 위력은 DB(SkillEnchantTable 60005/60010)가 정본 - 일반 100% / 자동 30%.
+        // 기존엔 두 공격이 같은 하드코딩 배율(1.0)로 나가 DB를 무시했고 자동공격이 과대 데미지였다.
+        ResolveBasicAttackRows();
+        var row = type == AttackType.Auto ? _autoBasicRow : _sortBasicRow;
+        float dmgRate = row != null && row.Dmg > 0 ? row.Dmg / 100f : 1f;
+
+        float temp = _combatSystem.CalculateDamage(dmgRate);
         int baseDmg = CalGroupDamageBonus(temp, DamageGroupType.None);
 
         if (!TryFindAttackTargetPosition(out Vector2 targetPos))
@@ -1763,6 +1884,22 @@ public class SkillSystem : MonoBehaviour
     {
         if (NewDamageIdOverride.TryGetValue(legacySkillId, out int o)) return o;
         return (legacySkillId / 1000) * 10000 + (legacySkillId % 1000);   // insert-0: 2011→20011, 5053→50053
+    }
+
+    // 새 DB(SkillEnchantTable) 행 캐시 조회. 발동마다 딕셔너리 재조회/미스 경고 스팸을 막는다(미스도 null로 캐시).
+    private readonly Dictionary<int, SkillTableData> _newRowCache = new Dictionary<int, SkillTableData>();
+
+    private SkillTableData ResolveNewSkillRow(Legacy_SkillData data)
+    {
+        if (data == null) return null;
+        if (_newRowCache.TryGetValue(data.SkillID, out var cached)) return cached;
+
+        var repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        if (repo == null) return null;   // 아직 준비 전이면 캐시하지 않고 다음 발동 때 재시도
+
+        var row = repo.GetSkillData(MapToNewDamageId(data.SkillID));
+        _newRowCache[data.SkillID] = row;
+        return row;
     }
 
     // 새 인챈트 경로 데미지: DamageCalculate(ATK/크리/스킬·그룹보너스) × 콤보(보존). 매핑 데미지 0(분할 본체/미정의)·계산기 부재 시 레거시 공식 폴백 → 0뎀으로 안 깨짐.
@@ -1856,10 +1993,15 @@ public struct HazardConfig
 {
     public HazardPlacement placement;
     public HazardStyle style;
-    public float widthPx;        // 기획 테이블 px 좌표계 (화면 폭 1440px 기준)
+    public float widthPx;        // 기획 테이블 px 좌표계 (화면 폭 1440px 기준). DB 행이 없을 때의 폴백
     public float heightPx;
     public float pulseInterval;  // 다회 타격 간격(초)
     public Color flashColor;
+
+    // 장판 크기는 DB(SkillEnchantTable HitSize_X/Y)가 정본이고 위 widthPx/heightPx는 폴백이다.
+    // 구현 방식이 DB 좌표 의미와 다른 스킬(에너지볼 hop 존 등)만 skipDbHitSize로 코드 값을 유지한다.
+    public bool skipDbHitSize;   // true면 DB HitSize를 읽지 않고 widthPx/heightPx 사용
+    public float dbSizeScale;    // DB 값에 곱하는 승인된 보정 배율. 0이면 1로 취급 (예: 벼락 +50% QA 요청 = 1.5)
 }
 
 public struct SummonConfig

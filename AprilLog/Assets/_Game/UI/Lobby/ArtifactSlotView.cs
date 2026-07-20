@@ -10,6 +10,8 @@ using UnityEngine.UI;
 //          장착용(ArtifactEquipSlotView) / 리스트용(ArtifactListSlotView) 이 상속해 각자 표시를 추가한다.
 public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
 {
+    private const string IconResourceFolder = "Artifact/";
+
     [Header("공통 표시")]
     [SerializeField] protected Image _iconImage;        // 아이콘
     [SerializeField] protected Image _gradeBackground;  // 배경 = 등급 이미지 (등급은 이미지로 구분)
@@ -46,6 +48,8 @@ public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
             _gradeBackground.sprite = ArtifactGradeInfo.SlotSprite(grade);
             _gradeBackground.color = Color.white; // 이미지 원본 색 유지(틴트 제거)
         }
+
+        SetIcon(LoadIcon(data.IconSpriteKey));
         SetAscensionBorder(0);
     }
 
@@ -64,8 +68,16 @@ public abstract class ArtifactSlotView : MonoBehaviour, IPointerClickHandler
     // 아이콘. 아이콘 소스 연동 시 호출.
     public void SetIcon(Sprite icon)
     {
-        if (_iconImage != null && icon != null)
-            _iconImage.sprite = icon;
+        if (_iconImage == null)
+            return;
+
+        _iconImage.sprite = icon;
+        _iconImage.enabled = icon != null;
+    }
+
+    private static Sprite LoadIcon(int iconId)
+    {
+        return Resources.Load<Sprite>(IconResourceFolder + iconId);
     }
     
     public virtual void OnPointerClick(PointerEventData eventData)

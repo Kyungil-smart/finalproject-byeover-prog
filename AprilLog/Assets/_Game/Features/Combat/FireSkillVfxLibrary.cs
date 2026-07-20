@@ -40,7 +40,7 @@ public class FireSkillVfxLibrary : ScriptableObject
     public float iceCurtainScale = 1f;
     [Tooltip("글레이셜 피어스 502(투사체) — Eff_Water_Epic_HarshJudgmentSkill_07")]
     public GameObject harshJudgmentVfx;
-    public float harshJudgmentScale = 2f;
+    public float harshJudgmentScale = 0.5f;
     [Tooltip("글레이셜 피어스 진행방향 회전 보정(도). 뒤집히면 180")]
     public float harshJudgmentRotationTrimDeg = 0f;
     [Tooltip("빙결 지대 503 / 절대영도 505 — FX_Snow_Freeze")]
@@ -49,9 +49,9 @@ public class FireSkillVfxLibrary : ScriptableObject
     [Tooltip("얼음 결정 504 — Eff_Water_Epic_IceStorm_08")]
     public GameObject iceStormVfx;
     public float iceStormScale = 1f;
-    [Tooltip("절대영도 505 — Eff_Water_Common_IceshowerSkill_01")]
+    [Tooltip("절대영도 505 — Eff_Water_Common_IceshowerSkill_01. 프리팹 scalingMode를 Hierarchy로 바꿔 이 레버가 실제로 먹는다")]
     public GameObject absoluteZeroVfx;
-    public float absoluteZeroScale = 1f;
+    public float absoluteZeroScale = 0.5f;
 
     [Tooltip("생성 구역(ellipse) 표시 후 낙하 시작까지 (예고 시간)")]
     public float meteorTelegraph = 0.5f;
@@ -103,7 +103,15 @@ public class FireSkillVfxLibrary : ScriptableObject
     public float earthCrackScale = 0.2f;
     public GameObject earthCrackEmber;      // fire_big (잔불, 옵션 — 현재 미사용)
 
-    [Header("추후 연결 — 정령")]
+    [Header("화염 정령 (연결됨) — MonsterPack/Summon/100152")]
+    [Tooltip("정령 본체 (몬스터팩 애니메이션 프리팹). 비우면 주황 사각형 플레이스홀더로 대체")]
+    public GameObject spiritBody;
+    [Tooltip("정령 스케일 — 몬스터팩 비주얼은 100PPU 대형이라 크게 축소해야 한다 (몬스터 0.005 대비 정령은 1/4 크기)")]
+    public float spiritScale = 0.00125f;
+    [Tooltip("정령 비주얼 위치 보정(월드 단위). 팩 프리팹은 몸체가 원점 위쪽에 떠 있어 아래로 내려 소환 위치에 맞춘다 (스케일에 비례해 조정)")]
+    public Vector2 spiritOffset = new Vector2(0f, -0.85f);
+
+    [Header("추후 연결 — 정령 투사체")]
     public GameObject spiritAttack;         // Uzi_red (용도 확인 중)
     public GameObject[] hitEffects;         // expl_01_01~05
 }

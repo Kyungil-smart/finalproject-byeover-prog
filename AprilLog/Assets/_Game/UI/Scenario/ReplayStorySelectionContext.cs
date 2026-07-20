@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 하우징 책장에서 선택한 다시보기 정보를 시나리오 화면까지 임시 전달하고 사용 후 초기화
 //설명: 시나리오 다시보기 팝업에서 선택한 챕터 정보를 _Story 씬으로 전달한다.
 
 /// <summary>
@@ -15,6 +16,7 @@ public static class ReplayStorySelectionContext
     public static bool HasReturnLobbyPage { get; private set; }
     public static LobbyPageType ReturnLobbyPage { get; private set; } = LobbyPageType.Main;
 
+    // 선택한 챕터와 로비 복귀 정보를 다시보기 씬 전환 전 임시 저장
     public static void SetReplay(
         int _chapterIndex,
         string _chapterLabel,
@@ -46,6 +48,7 @@ public static class ReplayStorySelectionContext
         ReturnLobbyPage = _returnLobbyPage;
     }
 
+    // 다시보기 정보 사용 완료 후 모든 임시 상태 초기화
     public static void Clear()
     {
         // 기능: 다시보기 종료 후 일반 스토리 진입과 섞이지 않도록 선택 정보를 초기화한다.

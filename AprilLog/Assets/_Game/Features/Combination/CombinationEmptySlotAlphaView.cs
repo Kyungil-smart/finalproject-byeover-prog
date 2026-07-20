@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 조합 슬롯 상태를 확인해 비어 있는 슬롯 이미지의 투명도 갱신
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,6 +15,7 @@ public class CombinationEmptySlotAlphaView : MonoBehaviour
 
     private Image[] _ingredientImages;
 
+    // 조합 재료 슬롯 이미지 수집과 최초 투명도 갱신
     private void Awake()
     {
         CacheIngredientImages();
@@ -57,9 +59,10 @@ public class CombinationEmptySlotAlphaView : MonoBehaviour
         }
 
         string name = image.gameObject.name;
-        return name == "Unit_1" || name == "Unit_2" || name == "Unit_3";
+        return name == "Unit_1" || name == "Unit_2" || name == "Unit_3" || name == "Skill_Icon";
     }
 
+    // 슬롯 비어 있음 여부에 따른 내부 이미지 투명도 적용
     private void RefreshAlpha()
     {
         if (_ingredientImages == null)

@@ -170,9 +170,9 @@ public class Bootstrap : MonoBehaviour
         yield return StartCoroutine(PlayLobbyLoadingVideo());
 
         // [8] 진입 분기.
-        // 최초 실행(튜토리얼 미완료)이면 인트로 시나리오 → (씬 흐름이) 인게임으로. 로비 안 거침(기획 v1.04 튜토 1-3).
-        // 그 외(튜토 완료/재실행)는 평소대로 로비.
-        if (GameManager.Instance.ShouldStartInitialStory())
+        // 튜토리얼 미완료면(강제종료 후 재진입 포함) 인트로 시나리오부터 처음 다시 진행 → 인게임. 로비 안 거침(기획 v1.04 튜토 1-3).
+        // 진행 단계는 저장하지 않고 매번 처음부터 다시 로드한다(잦은 저장 비용을 피하는 선택). 완료 상태면 평소대로 로비.
+        if (!GameManager.Instance.IsTutorialCompleted())
         {
             Debug.Log("[Bootstrap] === 최초 실행 감지 — 튜토리얼 인트로 시나리오로 진입 ===");
             // 추가: 조규민 - 최초 로그인 이벤트를 Story 이동 전에 기록해 전투 도중 종료해도 재접속 시 반복하지 않는다.

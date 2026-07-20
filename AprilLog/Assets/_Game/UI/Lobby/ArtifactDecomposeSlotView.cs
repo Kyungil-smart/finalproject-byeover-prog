@@ -15,6 +15,8 @@ public class ArtifactDecomposeSlotView : ArtifactSlotView
     [SerializeField] private GameObject _selectedHighlight;
     [Tooltip("분해 가능 수량(보유 - 본체 1개) 표시. 없으면 비워둬도 됨")]
     [SerializeField] private TMP_Text _spareText;
+    [Tooltip("아티팩트 현재 레벨 표시(Text_ArtifactsLv). 없으면 비워둬도 됨")]
+    [SerializeField] private TMP_Text _levelText;
 
     // 클릭 시 선택 토글 요청 (인자 = 이 슬롯의 UniqueId)
     public event Action<int> SelectionToggled;
@@ -37,6 +39,9 @@ public class ArtifactDecomposeSlotView : ArtifactSlotView
 
         if (_spareText != null)
             _spareText.text = $"x{Spare}";
+
+        if (_levelText != null)
+            _levelText.text = $"LV.{instance.CurrentLevel}";
 
         SetSelected(false);
     }

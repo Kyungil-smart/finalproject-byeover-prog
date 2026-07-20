@@ -1,4 +1,7 @@
 //담당자: 조규민
+// 팝업 Model과 View 연결 및 확인·취소 입력에 따른 콜백 실행과 닫음 처리
+
+// 수정 내용 : 데드락 안내 팝업 취소 콜백과 공유 View 다중 구독 방어 추가
 
 using System;
 
@@ -10,6 +13,7 @@ public class InGameConfirmPopupPresenter
     private readonly InGameConfirmPopupModel _model;
     private readonly InGameConfirmPopupView _view;
     private Action _confirmAction;
+    private Action _cancelAction;
 
     public InGameConfirmPopupPresenter(InGameConfirmPopupModel model, InGameConfirmPopupView view)
     {
@@ -32,23 +36,39 @@ public class InGameConfirmPopupPresenter
         _view.OnCloseClicked -= HandleCancelClicked;
     }
 
+    // 확인 동작 보관 후 Model 팝업 열기 요청
     public void Open(string message, Action confirmAction)
     {
+        Open(message, confirmAction, null);
+    }
+
+    public void Open(string message, Action confirmAction, Action cancelAction)
+    {
         _confirmAction = confirmAction;
+        _cancelAction = cancelAction;
         _model.Open(message);
     }
 
+    // 팝업 닫음 후 보관된 확인 동작 일회 실행
     private void HandleYesClicked()
     {
+        if (!_model.IsVisible) return;
+
         Action _action = _confirmAction;
         _confirmAction = null;
+        _cancelAction = null;
         _model.Close();
         _action?.Invoke();
     }
 
     private void HandleCancelClicked()
     {
+        if (!_model.IsVisible) return;
+
+        Action _action = _cancelAction;
         _confirmAction = null;
+        _cancelAction = null;
         _model.Close();
+        _action?.Invoke();
     }
 }

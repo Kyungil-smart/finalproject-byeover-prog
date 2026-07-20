@@ -32,6 +32,7 @@
 *.DotSettings.user
 //추가
 .idea/
+.vscode/
 *.sln.iml
 
 # Visual Studio cache directory
@@ -114,6 +115,8 @@ Assets/Imports/**
 # 팀원들은 각자 Firebase Console → 프로젝트 설정에서 개별 다운로드
 /[Aa]ssets/google-services.json
 /[Aa]ssets/google-services.json.meta
+/[Aa]ssets/GoogleSignIn/google-services.json
+/[Aa]ssets/GoogleSignIn/google-services.json.meta
 /[Aa]ssets/GoogleService-Info.plist
 /[Aa]ssets/GoogleService-Info.plist.meta
 /[Aa]ssets/StreamingAssets/google-services-desktop.json
@@ -230,6 +233,15 @@ $RECYCLE.BIN/
 # EDM4U (External Dependency Manager, Firebase와 함께 임포트됨)
 /[Aa]ssets/ExternalDependencyManager/
 /[Aa]ssets/ExternalDependencyManager.meta
+
+# EDM4U가 Resolve 시 재생성하는 로컬 maven repo / 의존성 목록
+/[Aa]ssets/GeneratedLocalRepo/
+/[Aa]ssets/GeneratedLocalRepo.meta
+/ProjectSettings/AndroidResolverDependencies.xml
+
+# Unity 퍼포먼스 테스트 로컬 생성물
+/[Aa]ssets/Resources/PerformanceTestRun*.json
+/[Aa]ssets/Resources/PerformanceTestRun*.json.meta
 
 # Firebase 관련 Editor Default Resources (Firebase 아이콘 등)
 /[Aa]ssets/Editor Default Resources/Firebase/

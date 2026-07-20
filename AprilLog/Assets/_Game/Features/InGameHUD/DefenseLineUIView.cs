@@ -1,4 +1,5 @@
 //담당자: 조규민
+// 월드 방어선 위치를 UI Canvas 좌표로 변환하고 전용 렌더러 표시 상태 갱신
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -43,6 +44,7 @@ public class DefenseLineUIView : MonoBehaviour
         UpdatePosition();
     }
 
+    // 방어선 월드 좌표를 Canvas 로컬 좌표로 변환
     public void UpdatePosition()
     {
         if (_defenseLine == null)
@@ -65,6 +67,7 @@ public class DefenseLineUIView : MonoBehaviour
         transform.localScale = Vector3.one;
     }
 
+    // LineRenderer 누락 시 전용 렌더러 생성과 설정 적용
     private void EnsureRenderer()
     {
         if (_lineRenderer == null)

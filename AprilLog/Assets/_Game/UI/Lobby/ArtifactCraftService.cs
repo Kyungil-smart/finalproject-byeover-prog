@@ -81,6 +81,7 @@ public class ArtifactCraftService
 
         mgr.UseShard(_craftCost);           // 1) 조각 차감
         mgr.AddArtifact(gearId);            // 2) 보유 추가(수량 1, OnInventoryUpdated 발행 → 리스트 자동 갱신)
+        AudioManager.Play(SfxId.ArtifactCraft);   // SFX 가이드 아웃게임 6: 아티팩트 제조
         Debug.Log($"[ArtifactCraftService] 제작 성공. Gear_ID: {gearId}, 잔여 조각: {mgr.LegendaryShard}");
         return true;
     }

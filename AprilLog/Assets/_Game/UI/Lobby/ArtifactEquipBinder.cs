@@ -58,12 +58,16 @@ public class ArtifactEquipBinder : MonoBehaviour
     {
         _spawned = new ArtifactEquipSlotView[_slots.Length];
         _slotHandlers = new Action<int>[_slots.Length];
+
+        // Controller.Start의 장착 데이터 동기화보다 먼저 기본 슬롯 상태를 준비한다.
+        // Start에서 초기화하면 실행 순서에 따라 이미 표시한 장착 카드가 다시 지워질 수 있다.
+        ClearAll();
+        SetSelectionHighlight(false);
     }
 
     private void Start()
     {
-        // 기본 : 전부 비어 있는 상태(EmptySlot 켜짐)로 시작.
-        ClearAll();
+        // 선택 강조는 활성화 시점에도 기본 상태를 유지한다.
         SetSelectionHighlight(false);
     }
 

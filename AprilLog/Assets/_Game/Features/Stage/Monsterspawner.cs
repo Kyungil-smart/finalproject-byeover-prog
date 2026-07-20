@@ -12,6 +12,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 
 // 수정자 : 정승우
@@ -23,6 +24,9 @@ using UnityEngine;
 // 수정자 : 김영찬
 // 몬스터 및 웨이브 관련 DB에 맞춰 소환 로직 최신화 및 책임 분산
 
+// 수정자 : 최동훈
+// 수정내용 : 엘리트 몬스터 추가
+
 /// <summary>
 /// StageSpawnRule 기반으로 몬스터를 스폰한다.
 /// 웨이브가 올라갈수록 GrowthType에 따라 스폰량이 증가하고 간격이 짧아진다.
@@ -33,6 +37,7 @@ public class MonsterSpawner : MonoBehaviour
     public event Action<MonsterAI, bool> OnMonsterDied;
     public event Action IsBossDeath;
     public event Action RequestRewardManager;
+    public event Action OnEliteDeath;
 
     // ---------- SerializeField ----------
     [Header("고정 스폰 포인트")]
@@ -67,10 +72,10 @@ public class MonsterSpawner : MonoBehaviour
     public float NormalSpawnLineXMin => _normalSpawnLineXMin;
     public float NormalSpawnLineXMax => _normalSpawnLineXMax;
 
-    // ---------- Update ----------
-    public void Tick(float deltaTime)
+    // ---------- Life Cycle ----------
+    private void OnDestroy()
     {
-
+        PoolManager.Instance.DespawnAllPools();
     }
 
     // 일반 스폰 라인(상단 Y + 좌우 X 범위)을 외부에서 설정. InGameBootstrap이 카메라 기준으로 맞춤.
@@ -107,11 +112,12 @@ public class MonsterSpawner : MonoBehaviour
         {
             var cmd = queue.Dequeue();
             Vector3 spawnPos = PickSpawnPosition(cmd.Type);
+
+            bool isBoss = cmd.Type == StageModel.SpawnType.Boss;
+            bool isElite = cmd.Type == StageModel.SpawnType.Elite;            
             
-            bool isBoss = cmd.Type == StageModel.SpawnType.Elite || cmd.Type == StageModel.SpawnType.Boss;
-            
-            var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss);
-            Debug.Log($"Monster ID : {cmd.CharacterId} 소환됨");
+            // 소환 개별 로그 금지: 러시 웨이브에서 초당 다수 스폰과 겹쳐 릴리스에서도 프레임 부담이 된다.
+            var ai = SpawnMonster(cmd.CharacterId, spawnPos, isBoss, isElite); //엘리트 인자 추가
 
             if (ai != null && cmd.ScalingData != null)
             {
@@ -154,10 +160,19 @@ public class MonsterSpawner : MonoBehaviour
 
         // 고정 포인트 중 하나를 무작위로 고름
         int idx = _rng.Next(0, _spawnPoints.Length);
-        return _spawnPoints[idx] != null ? _spawnPoints[idx].position : Vector3.zero;
+        Vector3 pos = _spawnPoints[idx] != null
+            ? _spawnPoints[idx].position
+            : new Vector3(Mathf.Lerp(_normalSpawnLineXMin, _normalSpawnLineXMax, (float)_rng.NextDouble()), _normalSpawnLineY, 0f);
+
+        // 씬의 고정 포인트는 y가 구 좌표(화면 중간, y=2)로 남아 있어 그대로 쓰면 보스/엘리트가
+        // 전투구역 한가운데서 스폰된다(#518). X 레인 배치만 쓰고 Y는 카메라 기준 상단 라인으로 통일한다.
+        // (부트스트랩이 SetNormalSpawnLine으로 상단 Y를 넣기 전(0)에는 포인트 원값 유지)
+        if (_normalSpawnLineY != 0f)
+            pos.y = _normalSpawnLineY;
+        return pos;
     }
 
-    private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss)
+    private MonsterAI SpawnMonster(int characterId, Vector3 position, bool isBoss, bool isElite)
     {
         var characterRepo = DataManager.Instance.CharacterRepo;
         var stats = characterRepo.GetCommonStatus(characterId);
@@ -180,7 +195,7 @@ public class MonsterSpawner : MonoBehaviour
 
         if (ai != null)
         {
-            ai.Initialize(stats, monsterStats, characterId, isBoss);
+            ai.Initialize(stats, monsterStats, characterId, isBoss, isElite);
             ai.SetPlayerModel(ResolvePlayerModel());
             ai.OnDeath += HandleMonsterDeath;
             ai.OnRewardContained += HandlePrizeReward;
@@ -277,9 +292,11 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // ---------- 몬스터 사망 ----------
-    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss)
+    private void HandleMonsterDeath(MonsterAI monster, bool isKamikaze, bool isBoss, bool isElite)
     {
         monster.OnDeath -= HandleMonsterDeath;
+        monster.OnRewardContained -= HandlePrizeReward;
+        
         _aliveMonsters.Remove(monster);
 
         OnMonsterDied?.Invoke(monster, isKamikaze);
@@ -287,6 +304,11 @@ public class MonsterSpawner : MonoBehaviour
         if(isBoss)
         {
             IsBossDeath?.Invoke();
+        }
+
+        if (isElite)
+        {
+            OnEliteDeath?.Invoke();
         }
 
         // 스폰 때와 동일한 키 해석을 써야 풀이 어긋나지 않는다.
@@ -297,7 +319,6 @@ public class MonsterSpawner : MonoBehaviour
 
     private void HandlePrizeReward(MonsterAI monster, int triggerId)
     {
-        monster.OnDeath -= HandleMonsterDeath;
         if (_rewardManager == null)
         {
             RequestRewardManager?.Invoke();

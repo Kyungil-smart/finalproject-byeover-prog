@@ -8,6 +8,8 @@ using UnityEngine.UI;
 //          팝업 표시/닫기까지가 UI 영역이며, 내부 데이터 채우기는 OnPopupOpened(Gear_ID)를 구독해 처리한다.
 public class ArtifactDetailPopupPresenter : MonoBehaviour
 {
+    private const string IconResourceFolder = "Artifact/";
+
     [Header("슬롯 클릭 소스")]
     [SerializeField] private ArtifactListBinder _listBinder;   // 리스트 슬롯 클릭
     [SerializeField] private ArtifactEquipBinder _equipBinder; // 장착 슬롯 클릭(선택)
@@ -109,6 +111,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     private void OnEnable()
     {
         ResolveLevelUpButtonReference();
+        SubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked += HandleSlotClicked;
         if (_equipBinder != null) _equipBinder.OnSlotClicked += HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.AddListener(Close);
@@ -123,6 +126,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     private void OnDisable()
     {
+        UnsubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked -= HandleSlotClicked;
         if (_equipBinder != null) _equipBinder.OnSlotClicked -= HandleSlotClicked;
         if (_closeButton != null) _closeButton.onClick.RemoveListener(Close);
@@ -131,6 +135,26 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
             _levelUpButton.onClick.RemoveListener(HandleLevelUpClicked);
         _levelUpButtonListenerRegistered = false;
         UnsubscribeInventoryUpdated();
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+        LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
+    private void HandleLanguageChanged()
+    {
+        if (CurrentGearId == 0 || _popup == null || !_popup.activeInHierarchy) return;
+        Populate(CurrentGearId);
+        RefreshOwnedState(CurrentGearId);
     }
 
     // 장착 버튼 클릭 → 현재 표시 중인 아티팩트의 장착/해제를 컨트롤러에 요청.
@@ -218,11 +242,15 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_levelUpButtonLabel == null)
             _levelUpButtonLabel = ResolveLevelUpButtonLabel();
         if (_levelUpButtonLabel != null)
-            _levelUpButtonLabel.text = isLevelCapReached ? _ascendLabel : _levelUpLabel;
+            _levelUpButtonLabel.text = isLevelCapReached
+                ? LocalizedText(11071, _ascendLabel, "Breakthrough") // 돌파
+                : LocalizedText(11069, _levelUpLabel, "Level Up");   // 레벨업
 
         // 장착 버튼 라벨 : 이미 장착된 아티팩트면 '해제', 아니면 '장착'.
         if (_equipButtonLabel != null)
-            _equipButtonLabel.text = (owned && inst.IsEquipped) ? _unequipLabel : _equipLabel;
+            _equipButtonLabel.text = (owned && inst.IsEquipped)
+                ? LocalizedText(13071, _unequipLabel)     // 해제
+                : LocalizedText(11068, _equipLabel);      // 장착
 
         RefreshPopupSlotViews(gearId, inst);
         PopulateLevelStats(gearId, inst);
@@ -337,18 +365,32 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_artifactIcon != null)
         {
             Sprite icon = LoadIcon(master.IconSpriteKey);
-            if (icon != null)
-            {
-                _artifactIcon.sprite = icon;
-                _artifactIcon.enabled = true;
-            }
+            _artifactIcon.sprite = icon;
+            _artifactIcon.enabled = icon != null;
+
+            // 등급 배경(불투명한 레전더리 배경 등)이 아이콘보다 앞에 그려지면 아이콘을 덮으므로, 배경을 아이콘 뒤로 보낸다.
+            int iconSib = _artifactIcon.transform.GetSiblingIndex();
+            bool sameParent = _gradeBg != null && _gradeBg.transform.parent == _artifactIcon.transform.parent;
+            if (sameParent && _gradeBg.transform.GetSiblingIndex() > iconSib)
+                _gradeBg.transform.SetSiblingIndex(iconSib);
         }
 
         if (_nameText != null) _nameText.text = ResolveName(master);
-        if (_gradeText != null) _gradeText.text = ArtifactGradeInfo.DisplayName(grade);
-        if (_equipAttackText != null) _equipAttackText.text = $"장착 시 공격력 +{master.AttackBaseAmount}";
-        if (_ownedAttackText != null) _ownedAttackText.text = $"보유 시 공격력 +{ResolveOwnedAttack(master)}";
+        if (_gradeText != null) _gradeText.text = LocalizedGrade(grade);
+        SetAttackValueText(_equipAttackText, master.AttackBaseAmount);
+        SetAttackValueText(_ownedAttackText, ResolveOwnedAttack(master));
         if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
+    }
+
+    private static void SetAttackValueText(TMP_Text text, int value)
+    {
+        if (text == null || IsHeaderText(text)) return;
+        text.text = value.ToString();
+    }
+
+    private static bool IsHeaderText(TMP_Text text)
+    {
+        return text != null && text.gameObject.name.StartsWith("Text_Header");
     }
 
     private void RefreshPopupSlotViews(int gearId, ArtifactInstance inst)
@@ -399,8 +441,8 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         if (_levelText != null)
             _levelText.text = $"Lv.{level}";
 
-        int atkPer = levelData != null ? levelData.AttackValue : 0;
-        int hpPer  = levelData != null ? levelData.MaxHPValue  : 0;
+        float atkPer = levelData != null ? levelData.AttackValue : 0;
+        float hpPer  = levelData != null ? levelData.MaxHPValue  : 0;
 
         // 현재 레벨 스탯
         if (_curAtkText != null) _curAtkText.text = ComputeStat(master.AttackBaseAmount, atkPer, level).ToString();
@@ -432,29 +474,37 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     // 특수능력 코드(Special) → 표시 이름. 데이터에 한글 이름이 없어 코드로 매핑한다.
     // (문구는 확정되면 수정)
-    private string ResolveSpecialName(string code) => code switch
+    // UI 라벨을 현지화 테이블에서 조회한다. 매니저 없음/미존재([id])면 인스펙터 기본 한글로 폴백.
+    private static string LocalizedText(int id, string fallback)
     {
-        "ATKPercent"      => "공격력 증가",
-        "HPPercent"       => "체력 증가",
-        "CriticalRate"    => "치명타 확률",
-        "GoldBonus"       => "골드 획득",
-        "PlainDMG"        => "추가 피해",
-        "FireDMG"         => "화염 피해",
-        "IceDMG"          => "냉기 피해",
-        "LightingDMG"     => "전격 피해",
-        "WindDMG"         => "바람 피해",
-        "WaterDMG"        => "물 피해",
-        "ElementDMG"      => "속성 피해",
-        "WaveHealPencent" => "웨이브 회복",
-        "AutoDMG"         => "자동 포탑 피해",
-        "RecipeDMG"       => "조합 피해",
-        "ComboDMG"        => "콤보 피해",
-        "Execute"         => "처형",
-        "Revive"          => "부활",
-        "CastPerKillCount"=> "처치 시 시전",
-        "Reroll"          => "리롤",
-        _                 => string.IsNullOrEmpty(code) ? _specialFallbackName : code
-    };
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null) return fallback;
+        string s = lm.Get(id, LocalizingType.UI);
+        return string.IsNullOrEmpty(s) || s.StartsWith("[") ? fallback : s;
+    }
+
+    private static string LocalizedText(int id, string fallbackKr, string fallbackEn)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        string fallback = lm != null && lm.CurrentLanguage == "en" ? fallbackEn : fallbackKr;
+        return LocalizedText(id, fallback);
+    }
+
+    // 등급 표시명을 현지화한다(레어 11053 / 에픽 11054 / 레전더리 11055).
+    private static string LocalizedGrade(ArtifactGrade grade)
+    {
+        int id = grade switch
+        {
+            ArtifactGrade.Rare => 11053,
+            ArtifactGrade.Epic => 11054,
+            ArtifactGrade.Legendary => 11055,
+            _ => 0
+        };
+        return id != 0 ? LocalizedText(id, ArtifactGradeInfo.DisplayName(grade)) : ArtifactGradeInfo.DisplayName(grade);
+    }
+
+    private string ResolveSpecialName(string code)
+        => ArtifactSpecialNameLocalization.Resolve(code, _specialFallbackName);
 
     private static int CostOf(GearRepo repo, int gearId, int level, int itemId)
     {
@@ -498,9 +548,9 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
     }
 
     // 시트 정의 : 최종값 = base + (base × perLevel) × (현재레벨 - 1)
-    private static int ComputeStat(int baseAmount, int perLevelValue, int level)
+    private static int ComputeStat(int baseAmount, float perLevelValue, int level)
     {
-        return baseAmount + (baseAmount * perLevelValue) * Mathf.Max(0, level - 1);
+        return baseAmount + Mathf.RoundToInt(baseAmount * perLevelValue * Mathf.Max(0, level - 1));
     }
 
     private static bool IsFinalLevelMax(ArtifactInstance inst)
@@ -508,24 +558,52 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
         return inst != null && !inst.CanLevelUp() && !inst.CanAscend();
     }
 
+    // 기어 이름은 GearMasterData.GearName(번역 연결 ID)로 Gear 현지화 테이블에서 조회한다.
     private string ResolveName(GearMasterData gear)
     {
-        if (_localization != null)
-            return _localization.Get(_nameKeyPrefix + gear.Gear_ID);
+        if (gear == null) return string.Empty;
+
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm != null && gear.GearName != 0)
+        {
+            string name = lm.Get(gear.GearName, LocalizingType.Gear);
+            if (!string.IsNullOrEmpty(name) && !name.StartsWith("[")) return name;
+        }
         return $"{gear.GearGrade} #{gear.Gear_ID}";
     }
 
+    // 특수능력 설명은 GearMasterData.SpecialExplanation(번역 연결 ID)로 Gear 테이블에서 조회한다.
+    // 설명 템플릿에 있는 {0} 자리는 특수효과 수치로 채운다(예: "공격력을 {0}% 증가" → "... 10% 증가").
     private string ResolveSpecialDesc(GearMasterData gear)
     {
-        if (_localization != null)
-        {
-            string desc = _localization.Get(_specialKeyPrefix + gear.Special_ID);
-            if (!string.IsNullOrEmpty(desc)) return desc;
-        }
+        if (gear == null) return "특수능력 정보 없음";
 
         GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
         GearSpecialEffectData eff = repo != null ? repo.GetGearSpecialEffect(gear.Special_ID) : null;
+
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm != null && gear.SpecialExplanation != 0)
+        {
+            string desc = lm.Get(gear.SpecialExplanation, LocalizingType.Gear);
+            if (!string.IsNullOrEmpty(desc) && !desc.StartsWith("["))
+                return FillSpecialAmount(desc, eff);
+        }
+
         return eff != null ? eff.Special : "특수능력 정보 없음";
+    }
+
+    // 설명 템플릿의 {0}을 특수효과 기본 수치(BaseAmount)로 치환한다. {0}이 없으면 원본 그대로 반환.
+    private static string FillSpecialAmount(string template, GearSpecialEffectData eff)
+    {
+        if (string.IsNullOrEmpty(template) || !template.Contains("{0}")) return template;
+
+        float amount = eff != null ? eff.BaseAmount : 0f;
+        string amountText = Mathf.Approximately(amount, Mathf.Round(amount))
+            ? Mathf.RoundToInt(amount).ToString()
+            : amount.ToString();
+
+        try { return string.Format(template, amountText); }
+        catch (System.FormatException) { return template; }
     }
 
     // 보유 시 공격력 : 보유 특수효과(OwnedSpecial_ID)의 기본 값(베스트 에포트).
@@ -539,8 +617,7 @@ public class ArtifactDetailPopupPresenter : MonoBehaviour
 
     private static Sprite LoadIcon(int iconId)
     {
-        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
-        return null;
+        return Resources.Load<Sprite>(IconResourceFolder + iconId);
     }
 
     private static ArtifactGrade ToGrade(string gradeName)

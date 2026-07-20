@@ -6,6 +6,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 튜토리얼 돌파 재료 지급을 ArtifactManager 저장 이벤트 경로로 통합
+
 // 로비 아티팩트 튜토리얼(7-3-3)을 구동한다. 레벨5 강화→돌파→장착 흐름을 감지·연출한다.
 public class TutorialLobbyDirector : MonoBehaviour
 {
@@ -13,11 +16,15 @@ public class TutorialLobbyDirector : MonoBehaviour
     [SerializeField] private int _sealGearId = 50001;
 
     [Header("시나리오 ID")]
-    [SerializeField] private int _breakthroughScenarioStartId = 100061;
-    [SerializeField] private int _breakthroughScenarioEndId = 100064;
-    [SerializeField] private int _equipDoneScenarioStartId = 100065;
-    [SerializeField] private int _equipDoneScenarioEndId = 100067;
+    [SerializeField] private int _breakthroughScenarioStartId = 100068;
+    [SerializeField] private int _breakthroughScenarioEndId = 100071;
+    [SerializeField] private int _equipDoneScenarioStartId = 100072;
+    [SerializeField] private int _equipDoneScenarioEndId = 100074;
     [SerializeField] private int _scenarioSourceGroupId = 3002;
+
+    [Header("아티팩트 선택 단계(뽑은 아티팩트 지목)")]
+    [Tooltip("비우면 씬에서 자동 탐색한다.")]
+    [SerializeField] private ArtifactListBinder _artifactList;
 
     [Header("팝업/버튼 참조")]
     [SerializeField] private ArtifactDetailPopupPresenter _detailPopup;
@@ -29,6 +36,11 @@ public class TutorialLobbyDirector : MonoBehaviour
     [Tooltip("시나리오 중 전체 입력을 막을 CanvasGroup(전체화면 블로커)")]
     [SerializeField] private CanvasGroup _inputBlocker;
 
+    [Header("버블")]
+    [SerializeField] private InGameTalkBubble _talkBubble;
+    [SerializeField] private Vector2 _bubbleViewportPosition = new Vector2(0.5f, 0.72f);
+    [SerializeField] private Vector2 _bubbleScreenOffset;
+
     private ArtifactManager _artifacts;
     private ScenarioDataDriver _scenarioDriver;
     private TutorialFingerGuide _finger;
@@ -37,12 +49,18 @@ public class TutorialLobbyDirector : MonoBehaviour
     private TMP_Text _ascendButtonText;
 
     private bool _active;
+    private bool _artifactSelectGuideShown;
+    private bool _levelUpGuideShown;
     private bool _level5Handled;
     private bool _ascendHandled;
     private bool _equipHandled;
+    private bool _inventorySubscribed;
+    private bool _isPlayingBubble;
     private int _lastKnownAscensionCount;
+    private int _playedLobbyScenarioStepId = -1;
     private Coroutine _level5Routine;
     private Coroutine _equipRoutine;
+    private Coroutine _stepScenarioRoutine;
 
     private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
     private static FieldInfo _linesField, _indexField, _isPlayingField, _finishedField;
@@ -50,26 +68,33 @@ public class TutorialLobbyDirector : MonoBehaviour
 
     private void Start()
     {
-        var tm = TutorialManager.Instance;
-        _active = tm != null && tm.IsRunning;
-        if (!_active) return;
-
-        ResolveSystems();
-        if (_artifacts != null) _artifacts.OnInventoryUpdated += HandleInventoryUpdated;
-        SetInputBlocked(false);
-        HandleInventoryUpdated();
+        TryActivate();
     }
 
     private void OnDestroy()
     {
-        if (_artifacts != null) _artifacts.OnInventoryUpdated -= HandleInventoryUpdated;
+        if (_artifacts != null && _inventorySubscribed)
+            _artifacts.OnInventoryUpdated -= HandleInventoryUpdated;
         SetInputBlocked(false);
         HideGuide();
     }
 
     private void Update()
     {
-        if (!_active || !_ascendHandled || _equipHandled) return;
+        if (!TryActivate()) return;
+
+        TryPlayLobbyStepScenario();
+
+        HandleArtifactSelectStep();
+
+        if (!IsArtifactUpgradeStepActive())
+            return;
+
+        HandleInventoryUpdated();
+
+        UpdateLevelUpGuide();
+
+        if (!_ascendHandled || _equipHandled) return;
 
         ArtifactInstance seal = FindSealArtifact();
         if (seal == null || !seal.IsEquipped) return;
@@ -85,9 +110,37 @@ public class TutorialLobbyDirector : MonoBehaviour
         _artifacts = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
         if (_detailPopup == null) _detailPopup = FindFirstObjectByType<ArtifactDetailPopupPresenter>(FindObjectsInactive.Include);
         if (_scenarioDriver == null) _scenarioDriver = FindFirstObjectByType<ScenarioDataDriver>(FindObjectsInactive.Include);
+        if (_talkBubble == null) _talkBubble = FindFirstObjectByType<InGameTalkBubble>(FindObjectsInactive.Include);
+        if (_talkBubble != null) _talkBubble.Hide();
         _finger = transform.root.GetComponentInChildren<TutorialFingerGuide>(true);
         _dimMask = transform.root.GetComponentInChildren<TutorialDimMask>(true);
         ResolveAscendButtonComponents();
+    }
+
+    private bool TryActivate()
+    {
+        var tm = TutorialManager.Instance;
+        if (tm == null || !tm.IsRunning)
+            return false;
+
+        if (!_active)
+        {
+            _active = true;
+            ResolveSystems();
+            SetInputBlocked(false);
+        }
+
+        if (_artifacts == null)
+            _artifacts = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+
+        if (_artifacts != null && !_inventorySubscribed)
+        {
+            _artifacts.OnInventoryUpdated += HandleInventoryUpdated;
+            _inventorySubscribed = true;
+            HandleInventoryUpdated();
+        }
+
+        return true;
     }
 
     private ArtifactInstance FindSealArtifact()
@@ -103,6 +156,7 @@ public class TutorialLobbyDirector : MonoBehaviour
     private void HandleInventoryUpdated()
     {
         if (!_active) return;
+        if (!IsArtifactUpgradeStepActive()) return;
 
         if (_artifacts == null)
             ResolveSystems();
@@ -129,6 +183,18 @@ public class TutorialLobbyDirector : MonoBehaviour
         {
             _lastKnownAscensionCount = seal.AscensionCount;
         }
+    }
+
+    private static bool IsArtifactUpgradeStepActive()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        if (step == null || step.scene != TutorialScene.Lobby)
+            return false;
+
+        return step.stepId == 12
+            || string.Equals(step.highlightTargetId, "ArtifactLevelUpButton", StringComparison.Ordinal)
+            || step.gameAction == TutorialGameAction.ArtifactEquip;
     }
 
     private IEnumerator HandleLevel5Reached()
@@ -177,7 +243,7 @@ public class TutorialLobbyDirector : MonoBehaviour
         // 돌파는 같은 장비를 소모하는데, AddArtifact로 중복을 지급하면 소유 상한(MaxOwned-1)을
         // 넘겨 곧바로 자동 분해된다. 돌파에 필요한 여유분을 직접 확보한다.
         int required = ResolveAscensionCostAmount(seal);
-        seal.CurrentCount = Mathf.Max(seal.CurrentCount, required + 1);
+        _artifacts.EnsureArtifactCount(seal.UniqueId, required + 1);
 
         if (_detailPopup != null)
             _detailPopup.RefreshCurrentArtifact();
@@ -193,11 +259,82 @@ public class TutorialLobbyDirector : MonoBehaviour
         return cost != null ? Mathf.Max(1, cost.CostAmount) : 1;
     }
 
+    // 스텝11(뽑은 아티팩트 선택): 튜토리얼 아티팩트 슬롯만 남기고 나머지를 딤·터치차단, 손가락으로 지목한다.
+    // 리스트는 맨 위로 스크롤해 대상이 보이도록 한다. 딤 구멍이 대상만 통과시키므로 엉뚱한 아티팩트를 눌러 진행되는 것도 막힌다.
+    private void HandleArtifactSelectStep()
+    {
+        if (!IsArtifactSelectStepActive())
+        {
+            if (_artifactSelectGuideShown)
+            {
+                HideGuide();
+                _artifactSelectGuideShown = false;
+            }
+            return;
+        }
+
+        if (_artifactSelectGuideShown)
+            return;   // 이미 표시 중이면 딤/손가락이 대상 슬롯을 매 프레임 추적한다.
+
+        ArtifactListBinder list = ResolveArtifactList();
+        if (list == null) return;
+
+        RectTransform slot = list.GetSlotRect(_sealGearId);
+        if (slot == null || !slot.gameObject.activeInHierarchy) return;
+
+        ResolveGuideIfNeeded();
+        list.ScrollToTop();
+        if (_dimMask != null) _dimMask.ShowWithHole(slot);
+        if (_finger != null) _finger.PointAt(slot);
+        _artifactSelectGuideShown = true;
+    }
+
+    private static bool IsArtifactSelectStepActive()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        if (step == null || step.scene != TutorialScene.Lobby)
+            return false;
+
+        return step.gameAction == TutorialGameAction.ArtifactOpen;
+    }
+
+    private ArtifactListBinder ResolveArtifactList()
+    {
+        if (_artifactList == null)
+            _artifactList = FindFirstObjectByType<ArtifactListBinder>(FindObjectsInactive.Include);
+        return _artifactList;
+    }
+
+    // step12: 레벨업 5회를 채우는 동안 레벨업(=돌파) 버튼을 계속 손가락으로 강조한다.
+    // 레벨5 도달 후에는 HandleLevel5Reached → 돌파/장착 가이드가 같은 버튼을 이어받는다.
+    private void UpdateLevelUpGuide()
+    {
+        if (_level5Handled) return;   // 레벨5 이후는 돌파/장착 흐름이 담당
+
+        // 팝업이 닫혀 버튼이 사라지면 딤도 걷고, 다시 열릴 때 재강조하도록 초기화한다.
+        if (_ascendButton == null || !_ascendButton.gameObject.activeInHierarchy)
+        {
+            if (_levelUpGuideShown) HideGuide();
+            _levelUpGuideShown = false;
+            return;
+        }
+
+        if (_levelUpGuideShown) return;
+
+        ResolveGuideIfNeeded();
+        // 레벨업 버튼만 구멍으로 열고 나머지(장착 등)는 딤이 막아 튜토리얼 순서를 벗어난 클릭을 차단한다.
+        if (_dimMask != null) _dimMask.ShowWithHole(_ascendButton);
+        if (_finger != null) _finger.PointAt(_ascendButton);
+        _levelUpGuideShown = true;
+    }
+
     private void ShowAscendGuide()
     {
         ResolveGuideIfNeeded();
         SetAscendButtonState(true);
-        if (_dimMask != null) _dimMask.Hide();
+        // 돌파 단계도 돌파 버튼만 열고 장착 버튼은 막아 순서를 강제한다.
+        if (_dimMask != null) _dimMask.ShowWithHole(_ascendButton);
         if (_finger != null) _finger.PointAt(_ascendButton);
     }
 
@@ -255,33 +392,133 @@ public class TutorialLobbyDirector : MonoBehaviour
 
     private IEnumerator PlayScenarioRange(int startId, int endId)
     {
-        if (_scenarioDriver == null)
-            _scenarioDriver = FindFirstObjectByType<ScenarioDataDriver>();
-
-        if (_scenarioDriver == null)
+        List<Story_TalkData> lines = CollectTutorialScenarioLines(startId, endId);
+        if (lines.Count == 0)
         {
-            Debug.LogWarning("[TutorialLobbyDirector] 시나리오 드라이버를 찾지 못했습니다.");
+            Debug.LogWarning($"[TutorialLobbyDirector] 튜토리얼 시나리오 ID {startId}~{endId} 대사를 찾지 못했습니다.");
             yield break;
         }
 
-        bool finished = false;
-        Action handleFinished = () => finished = true;
-        _scenarioDriver.OnFinished += handleFinished;
-
-        if (!TryPlayTutorialScenarioRange(startId, endId))
-        {
-            _scenarioDriver.OnFinished -= handleFinished;
-            yield break;
-        }
-
-        while (!finished)
-            yield return null;
-
-        _scenarioDriver.OnFinished -= handleFinished;
+        yield return PlayBubbleLines(lines);
     }
 
-    // 담당자 스크립트(StoryRepo/ScenarioDataDriver)를 수정하지 않기 위해,
-    // 튜토리얼 전용으로 GroupID 3002 대사 목록에서 Talk ID 범위만 골라 ScenarioDataDriver에 주입한다.
+    private void TryPlayLobbyStepScenario()
+    {
+        TutorialManager tm = TutorialManager.Instance;
+        TutorialStep step = tm != null ? tm.CurrentStep : null;
+        if (step == null || step.scene != TutorialScene.Lobby)
+            return;
+        if (_playedLobbyScenarioStepId == step.stepId)
+            return;
+        if (_isPlayingBubble || _stepScenarioRoutine != null || _level5Routine != null || _equipRoutine != null)
+            return;
+
+        if (TryGetLobbyStepScenarioRange(step.stepId, out int startId, out int endId))
+        {
+            _playedLobbyScenarioStepId = step.stepId;
+            _stepScenarioRoutine = StartCoroutine(PlayLobbyStepScenario(startId, endId));
+            return;
+        }
+
+        _playedLobbyScenarioStepId = step.stepId;
+    }
+
+    private IEnumerator PlayLobbyStepScenario(int startId, int endId)
+    {
+        yield return PlayScenarioRange(startId, endId);
+        _stepScenarioRoutine = null;
+    }
+
+    private IEnumerator PlayLobbyStepGuideText(string text)
+    {
+        var line = new Story_TalkData { name_KR = string.Empty, Text_KR = text };
+        yield return PlayBubbleLines(new List<Story_TalkData> { line });
+        _stepScenarioRoutine = null;
+    }
+
+    public static bool HasScenarioForStep(int stepId)
+        => TryGetLobbyStepScenarioRange(stepId, out _, out _);
+
+    private static bool TryGetLobbyStepScenarioRange(int stepId, out int startId, out int endId)
+    {
+        switch (stepId)
+        {
+            case 4:
+                // 도서관 입장(로비 도착) 직후 성장 도입 대사. 성장 버튼 안내 전에 재생.
+                startId = 100048;
+                endId = 100053;
+                return true;
+            case 6:
+                startId = 100054;
+                endId = 100058;
+                return true;
+            case 7:
+                startId = 100059;
+                endId = 100062;
+                return true;
+            case 8:
+                startId = 100063;
+                endId = 100064;
+                return true;
+            case 10:
+                startId = 100065;
+                endId = 100067;
+                return true;
+            default:
+                startId = 0;
+                endId = 0;
+                return false;
+        }
+    }
+
+    private IEnumerator PlayBubbleLines(List<Story_TalkData> sourceLines)
+    {
+        if (_talkBubble == null)
+            _talkBubble = FindFirstObjectByType<InGameTalkBubble>(FindObjectsInactive.Include);
+        if (_talkBubble == null)
+        {
+            Debug.LogWarning("[TutorialLobbyDirector] 로비 튜토리얼 버블을 찾지 못했습니다.");
+            yield break;
+        }
+
+        _talkBubble.UseViewportPosition(_bubbleViewportPosition, _bubbleScreenOffset);
+        _talkBubble.Bind(null, Camera.main);
+        SetInputBlocked(false);
+        _isPlayingBubble = true;
+
+        foreach (Story_TalkData line in sourceLines)
+        {
+            if (line == null) continue;
+
+            bool advanced = false;
+            Action handleAdvance = () => advanced = true;
+            _talkBubble.OnAdvanceRequested += handleAdvance;
+            _talkBubble.PlayLine(
+                ResolveLocalizedDialogue(line.name_KR, line.name_EN),
+                ResolveLocalizedDialogue(line.Text_KR, line.Text_EN));
+
+            while (!advanced)
+                yield return null;
+
+            _talkBubble.OnAdvanceRequested -= handleAdvance;
+        }
+
+        _talkBubble.Hide();
+        _talkBubble.UseAnchorPosition();
+        _isPlayingBubble = false;
+    }
+
+    private static string ResolveLocalizedDialogue(string korean, string english)
+    {
+        bool useEnglish = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "en"
+            : Application.systemLanguage != SystemLanguage.Korean;
+
+        return useEnglish && !string.IsNullOrWhiteSpace(english) ? english : korean;
+    }
+
+    // 기존 ScenarioDataDriver 재생 흐름을 그대로 사용하기 위해,
+    // 튜토리얼 전용 GroupID 3002 대사 목록에서 Talk ID 범위만 골라 주입한다.
     private bool TryPlayTutorialScenarioRange(int startId, int endId)
     {
         if (_scenarioDriver == null)
@@ -309,6 +546,19 @@ public class TutorialLobbyDirector : MonoBehaviour
         }
 
         return TryInjectScenarioLines(_scenarioDriver, rangeLines);
+    }
+
+    private List<Story_TalkData> CollectTutorialScenarioLines(int startId, int endId)
+    {
+        StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
+        if (repo == null)
+        {
+            Debug.LogWarning("[TutorialLobbyDirector] StoryRepo를 찾지 못했습니다.");
+            return new List<Story_TalkData>();
+        }
+
+        List<Story_TalkData> sourceLines = repo.GetTalkGroup(_scenarioSourceGroupId);
+        return CollectTutorialScenarioLines(sourceLines, startId, endId);
     }
 
     private static List<Story_TalkData> CollectTutorialScenarioLines(List<Story_TalkData> sourceLines, int startId, int endId)

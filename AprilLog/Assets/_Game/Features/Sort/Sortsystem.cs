@@ -4,6 +4,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 로드 기능 추가 및 현재 진행 중 시드 세이브
 
+// 3차 수정자 : 조규민
+// 수정 내용 : 데드락 자동 패널티/퍼즐 재생성 제거 및 안내 팝업 선택 결과 기반 복구 분리
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -37,6 +40,7 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
     // ---------- Private ----------
     private bool _isProcessing;
+    private bool _isDeadlockRecoveryPending;
     private System.Random _rng;
     // FillEmptyTablesFromQueue() 안에 if (!_isAutoFillEnabled) return;이랑 후에 삭제
     private bool _isAutoFillEnabled = true;
@@ -126,9 +130,11 @@ public class SortSystem : MonoBehaviour, ISortNotifier
 
         if (_model.IsTableMatched(toTable))
         {
-            StartCoroutine(ProcessMatch(toTable));
+            StartCoroutine(ProcessMatch(toTable));   // 매칭이면 드롭음 대신 sort 성공음이 나간다(SFX 가이드 16: SORT 성공 시 드롭음 출력 X)
             return;
         }
+
+        AudioManager.Play(SfxId.UnitDrop);   // SFX 가이드 16: 유닛 드롭(일반 이동)
 
         // 이동으로 빈 테이블(3슬롯 모두 공백)이 생기면 대기열로 채워 빈 공간을 없앤다 (기획 2)
         FillEmptyTablesFromQueue();
@@ -385,8 +391,54 @@ public class SortSystem : MonoBehaviour, ISortNotifier
     // ---------- 데드락 ----------
     private void CheckDeadlock()
     {
+        if (_isDeadlockRecoveryPending) return;
+        if (_deadlockDetector == null || _model == null) return;
         if (_deadlockDetector.IsDeadlock(_model))
-            StartCoroutine(HandleDeadlock());
+            RequestDeadlockRecovery();
+    }
+
+    private void RequestDeadlockRecovery()
+    {
+        if (_isDeadlockRecoveryPending) return;
+
+        // 안내 팝업(구독자)이 없으면 timeScale=0 + 처리 플래그가 풀 방법 없이 고착된다.
+        // 그 경우 팝업 없이 즉시 복구를 실행해 게임이 멈추지 않게 한다.
+        if (OnDeadlockDetected == null)
+        {
+            Debug.LogWarning("[SortSystem] 데드락 안내 팝업 구독자가 없어 즉시 보드를 재생성합니다.");
+            _isProcessing = true;
+            _isDeadlockRecoveryPending = true;
+            RecoverFromDeadlock();
+            return;
+        }
+
+        _isProcessing = true;
+        _isDeadlockRecoveryPending = true;
+
+        Time.timeScale = 0f;
+        OnDeadlockDetected?.Invoke();
+    }
+
+    // 추가: 조규민 - 안내 팝업 예 선택 시 경험치 패널티 후 퍼즐 재생성
+    public void RecoverFromDeadlock()
+    {
+        if (!_isDeadlockRecoveryPending) return;
+
+        _model.ResetBoard();
+        FillEmptyTablesFromQueue();
+
+        _isDeadlockRecoveryPending = false;
+        Time.timeScale = ScreenNavigator.IsMenuOpen ? 0f : 1f;
+        _isProcessing = false;
+    }
+
+    public void CancelDeadlockRecovery()
+    {
+        if (!_isDeadlockRecoveryPending) return;
+
+        _isDeadlockRecoveryPending = false;
+        Time.timeScale = ScreenNavigator.IsMenuOpen ? 0f : 1f;
+        _isProcessing = false;
     }
 
     private IEnumerator HandleDeadlock()
@@ -402,17 +454,27 @@ public class SortSystem : MonoBehaviour, ISortNotifier
         _model.ResetBoard();                          // 4-2-3 퍼즐 유닛 전체 삭제
         FillEmptyTablesFromQueue();                   // 4-2-4 대기 테이블에서 채우기
 
-        Time.timeScale = 1f;                          // 4-2-5 인게임 진행 재개
+        // 4-2-5 인게임 진행 재개 - 단, 그 사이 정지형 팝업(인챈트 선택/교체 등)이 열렸다면 정지를 유지한다.
+        // (Realtime 대기 1.5초는 timeScale=0에도 흘러서, 무조건 1f를 대입하면 팝업 뒤로 전투가 재개되던 버그.
+        //  팝업 쪽 정지는 팝업이 닫힐 때 ScreenNavigator.CloseMenu가 풀어준다.)
+        Time.timeScale = ScreenNavigator.IsMenuOpen ? 0f : 1f;
         _isProcessing = false;
     }
 
     // 초기 배치 메서드 구현
     private void PreFillBoard(int count)
     {
-        var emptySlots = new List<(int t, int s)>();
         for (int t = 0; t < SortModel.TABLE_COUNT; t++)
         {
-            for (int s = 0; s < SortModel.SLOTS_PER_TABLE; s++)
+            int unit = RandomUnit();
+            _model.PlaceUnit(t, 0, unit);
+        }
+
+        var emptySlots = new List<(int t, int s)>();
+
+        for (int t = 0; t < SortModel.TABLE_COUNT; t++)
+        {
+            for (int s = 1; s < SortModel.SLOTS_PER_TABLE; s++)
             {
                 emptySlots.Add((t, s));
             }
@@ -426,7 +488,8 @@ public class SortSystem : MonoBehaviour, ISortNotifier
             emptySlots[randomIndex] = temp;
         }
 
-        int filled = 0;
+        int filled = 9;
+
         foreach (var slot in emptySlots)
         {
             if (filled >= count) break;

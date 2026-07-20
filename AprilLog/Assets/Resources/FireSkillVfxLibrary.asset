@@ -12,29 +12,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d4e9f2a8c3b4d5ea6f708192a3b4c01, type: 3}
   m_Name: FireSkillVfxLibrary
   m_EditorClassIdentifier: Assembly-CSharp::FireSkillVfxLibrary
-  meteorMarker: {fileID: 2003924206195108358, guid: e0dca90bf6c64a2498fc0ad591df2381, type: 3}
-  meteorBall: {fileID: 6471748739544416966, guid: e6554feae77802d4da59e494a6b0935b, type: 3}
-  meteorExplosion: {fileID: 6744752361442629276, guid: 841ed43f37cc5094baefce97ff85c969, type: 3}
+  meteorMarker: {fileID: 2003924206195108358, guid: 95cffd0b468ebecd12f0224b87ae94a8, type: 3}
+  meteorBall: {fileID: 6471748739544416966, guid: 5259e53f8e9d969d914984b1df32e97e, type: 3}
+  meteorExplosion: {fileID: 6744752361442629276, guid: e01c3a8887c7a2d9ca329b780562683e, type: 3}
   meteorMarkerScale: 0.5
   meteorBallScale: 0.36
   meteorExplosionScale: 0.35
-  autoAttackVfx: {fileID: 5908590108238534918, guid: 9230ea0069309c74b853d18540b4412d, type: 3}
-  autoAttackScale: 2
+  autoAttackVfx: {fileID: 5908590108238534918, guid: 7b3e9e130f24d77f008a5c900994ed8b, type: 3}
+  autoAttackScale: 1
   autoAttackRotationTrimDeg: 0
-  sortAttackVfx: {fileID: 1454783045257088019, guid: 5165198777ff2a84c968ef3510824b47, type: 3}
+  sortAttackVfx: {fileID: 1454783045257088019, guid: 1b4d1f51d56e4e05fb8e59539b61c4a8, type: 3}
   sortAttackScale: 0.5
   sortAttackRotationTrimDeg: 0
-  iceCurtainVfx: {fileID: 3049512194806965537, guid: fa9fa86f965b22344a8c885c6ad7fed8, type: 3}
+  iceCurtainVfx: {fileID: 3049512194806965537, guid: e0814c15376a0b014f1741d94b268f22, type: 3}
   iceCurtainScale: 0.25
-  harshJudgmentVfx: {fileID: 7015809079440366762, guid: 483ea44b1588eba4faca1e42ddc3ac59, type: 3}
-  harshJudgmentScale: 1
+  harshJudgmentVfx: {fileID: 7015809079440366762, guid: e6b7b150bd0fe8a850b8d18263d6cac2, type: 3}
+  harshJudgmentScale: 0.5
   harshJudgmentRotationTrimDeg: 0
-  snowFreezeVfx: {fileID: 8130313230906341736, guid: d87f725955b4ec94dbca306980fa93ee, type: 3}
+  snowFreezeVfx: {fileID: 8130313230906341736, guid: 66205a6b488aee8e58e87e94e4e0b1e8, type: 3}
   snowFreezeScale: 1
-  iceStormVfx: {fileID: 3742201975255865789, guid: 7b9f83217b04a32458bc85a9249ffb43, type: 3}
+  iceStormVfx: {fileID: 3742201975255865789, guid: b58775a510fc1d8ece231831a3d950e4, type: 3}
   iceStormScale: 1
-  absoluteZeroVfx: {fileID: 7562292424868551654, guid: dcddfa73689af354facc1d74237cd388, type: 3}
-  absoluteZeroScale: 1
+  absoluteZeroVfx: {fileID: 7562292424868551654, guid: cc3c2e39c690d52323aa3608debeb73e, type: 3}
+  absoluteZeroScale: 0.5
   meteorTelegraph: 0.5
   meteorFallTime: 0.35
   meteorFallHeight: 3.5
@@ -43,18 +43,21 @@ MonoBehaviour:
   meteorExplosionDelay: 0.05
   meteorExplosionOffsetYPx: 130
   debugShowHitArea: 0
-  fireballProjectile: {fileID: 3551597606300281390, guid: 01512958f5f0b344da66347feb3a5a23, type: 3}
+  fireballProjectile: {fileID: 3551597606300281390, guid: f96b2b54fe4f5e9d4d275296e0a32485, type: 3}
   fireballProjectileScale: 0.5
   fireballRotationTrimDeg: 0
-  fireBreathCrystal: {fileID: 4305094256947007182, guid: 68c48dec2f8785e4c867a2aba5f1cf8e, type: 3}
+  fireBreathCrystal: {fileID: 4305094256947007182, guid: bae5006d2121a8a009e3b17979bcf8cc, type: 3}
   fireBreathCrystalScale: 0.047
-  fireBreathFlame: {fileID: 292769683306214135, guid: 09a3a43743bb0514c95f21ed2800c93b, type: 3}
+  fireBreathFlame: {fileID: 292769683306214135, guid: b01a690a34ecaf05d1f654561e68c64b, type: 3}
   fireBreathFlameScale: 0.4
   fireBreathFlameInterval: 0.5
   fireBreathFlameYOffsetPx: 400
   fireBreathFlameRotationTrimDeg: 0
-  earthCrackExplosion: {fileID: 5156201333536720014, guid: 5c19e78b91d8fd645b0265d5cc9b9541, type: 3}
+  earthCrackExplosion: {fileID: 5156201333536720014, guid: 5dc5c5f0f5e6848da13f3091a8bebb8c, type: 3}
   earthCrackScale: 0.2
   earthCrackEmber: {fileID: 0}
+  spiritBody: {fileID: 1931901441399752, guid: 46857e6470352944989daf233fce3cca, type: 3}
+  spiritScale: 0.00125
+  spiritOffset: {x: 0, y: -0.85}
   spiritAttack: {fileID: 0}
   hitEffects: []

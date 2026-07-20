@@ -14,6 +14,8 @@ using UnityEngine.UI;
 
 public class ArtifactCraftPopupPresenter : MonoBehaviour
 {
+    private const string IconResourceFolder = "Artifact/";
+
     [Header("제작 팝업 (POPUP_ArtifactCraft)")]
     [Tooltip("팝업 루트. 비우면 이 컴포넌트가 붙은 게임오브젝트를 사용한다.")]
     [SerializeField] private GameObject _popup;
@@ -28,7 +30,10 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
     [SerializeField] private TMP_Text _gradeText;          // Text_ArtifactGrade
     [SerializeField] private TMP_Text _equipAttackText;    // Text_EquipAttack
     [SerializeField] private TMP_Text _ownedAttackText;    // Text_OwnedAttack
+    [SerializeField] private TMP_Text _specialNameText;    // Text_SpecialAbilityName (스킬명 헤더)
     [SerializeField] private TMP_Text _specialDescText;    // Text_SpecialAbilityDesc
+    [Tooltip("스킬명을 못 찾았을 때 표시할 기본 문구")]
+    [SerializeField] private string _specialFallbackName = "특수 능력";
 
     [Header("제작 비용 슬롯 (CostSlot)")]
     [SerializeField] private Image _pieceIcon;             // IMG_PieceIcon (선택)
@@ -95,18 +100,39 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
 
     private void OnEnable()
     {
+        SubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked += HandleSlotClicked;
         TrySubscribeInventory();
     }
 
     private void OnDisable()
     {
+        UnsubscribeLocalization();
         if (_listBinder != null) _listBinder.OnSlotClicked -= HandleSlotClicked;
         if (_subscribedManager != null)
         {
             _subscribedManager.OnInventoryUpdated -= HandleInventoryUpdated;
             _subscribedManager = null;
         }
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+        LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
+    private void HandleLanguageChanged()
+    {
+        if (_currentGearId >= 0 && Root != null && Root.activeInHierarchy)
+            Refresh();
     }
 
     private void Start()
@@ -171,15 +197,13 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         if (_artifactIcon != null)
         {
             Sprite icon = LoadIcon(master.IconSpriteKey);
-            if (icon != null)
-            {
-                _artifactIcon.sprite = icon;
-                _artifactIcon.enabled = true;
-            }
+            _artifactIcon.sprite = icon;
+            _artifactIcon.enabled = icon != null;
         }
 
         if (_nameText != null) _nameText.text = ResolveName(master);
-        if (_gradeText != null) _gradeText.text = ArtifactGradeInfo.DisplayName(grade);
+        if (_gradeText != null) _gradeText.text = LocalizedGrade(grade);
+        if (_specialNameText != null) _specialNameText.text = ResolveSpecialName(master);
         if (_equipAttackText != null) _equipAttackText.text = $"장착 시 공격력 +{master.AttackBaseAmount}";
         if (_ownedAttackText != null) _ownedAttackText.text = $"보유 시 공격력 +{ResolveOwnedAttack(master)}";
         if (_specialDescText != null) _specialDescText.text = ResolveSpecialDesc(master);
@@ -193,7 +217,10 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
         // 제작 버튼 상태
         bool canCraft = Service.CanCraft(_currentGearId);
         if (_craftButton != null) _craftButton.interactable = canCraft;
-        if (_craftButtonLabel != null) _craftButtonLabel.text = canCraft ? _craftLabelNormal : _craftLabelShort;
+        if (_craftButtonLabel != null)
+            _craftButtonLabel.text = canCraft
+                ? LocalizedText(11072, _craftLabelNormal)
+                : LocalizedShortageText();
     }
 
     
@@ -319,24 +346,94 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
     
     // 표시 헬퍼
     
+    // 기어 이름은 GearMasterData.GearName(번역 연결 ID)로 Gear 현지화 테이블에서 조회한다. (상세 팝업과 동일 방식)
     private string ResolveName(GearMasterData gear)
     {
-        if (_localization != null)
-            return _localization.Get(_nameKeyPrefix + gear.Gear_ID);
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm != null && gear.GearName != 0)
+        {
+            string name = lm.Get(gear.GearName, LocalizingType.Gear);
+            if (!string.IsNullOrEmpty(name) && !name.StartsWith("[")) return name;
+        }
         return $"{gear.GearGrade} #{gear.Gear_ID}";
     }
 
-    private string ResolveSpecialDesc(GearMasterData gear)
+    // 스킬(특수능력) 이름. 현지화 테이블에 스킬명용 ID가 없어 코드로 매핑한다(상세 팝업과 동일 한계 — 영어 모드에서도 한글).
+    private string ResolveSpecialName(GearMasterData gear)
     {
-        if (_localization != null)
-        {
-            string desc = _localization.Get(_specialKeyPrefix + gear.Special_ID);
-            if (!string.IsNullOrEmpty(desc)) return desc;
-        }
-
         GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
         GearSpecialEffectData eff = repo != null ? repo.GetGearSpecialEffect(gear.Special_ID) : null;
+        return eff != null ? ResolveSpecialName(eff.Special) : _specialFallbackName;
+    }
+
+    private string ResolveSpecialName(string code)
+        => ArtifactSpecialNameLocalization.Resolve(code, _specialFallbackName);
+
+    private string LocalizedShortageText()
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null)
+            return Application.systemLanguage == SystemLanguage.Korean ? _craftLabelShort : "Not Enough Shards";
+
+        return lm.CurrentLanguage == "ko" ? _craftLabelShort : "Not Enough Shards";
+    }
+
+    private static string LocalizedText(int id, string fallback)
+    {
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null) return fallback;
+        string text = lm.Get(id, LocalizingType.UI);
+        return string.IsNullOrEmpty(text) || text.StartsWith("[") ? fallback : text;
+    }
+
+    // 특수능력 설명은 SpecialExplanation(번역 ID)로 조회하고, 템플릿의 {0}은 특수효과 수치로 채운다. (상세 팝업과 동일 방식)
+    private string ResolveSpecialDesc(GearMasterData gear)
+    {
+        GearRepo repo = DataManager.Instance != null ? DataManager.Instance.GearRepo : null;
+        GearSpecialEffectData eff = repo != null ? repo.GetGearSpecialEffect(gear.Special_ID) : null;
+
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm != null && gear.SpecialExplanation != 0)
+        {
+            string desc = lm.Get(gear.SpecialExplanation, LocalizingType.Gear);
+            if (!string.IsNullOrEmpty(desc) && !desc.StartsWith("["))
+                return FillSpecialAmount(desc, eff);
+        }
+
         return eff != null ? eff.Special : "특수능력 정보 없음";
+    }
+
+    // 설명 템플릿의 {0}을 특수효과 기본 수치(BaseAmount)로 치환한다.
+    private static string FillSpecialAmount(string template, GearSpecialEffectData eff)
+    {
+        if (string.IsNullOrEmpty(template) || !template.Contains("{0}")) return template;
+
+        float amount = eff != null ? eff.BaseAmount : 0f;
+        string amountText = Mathf.Approximately(amount, Mathf.Round(amount))
+            ? Mathf.RoundToInt(amount).ToString()
+            : amount.ToString();
+
+        try { return string.Format(template, amountText); }
+        catch (System.FormatException) { return template; }
+    }
+
+    // 등급 표시명을 현지화한다(레어 11053 / 에픽 11054 / 레전더리 11055).
+    private static string LocalizedGrade(ArtifactGrade grade)
+    {
+        int id = grade switch
+        {
+            ArtifactGrade.Rare => 11053,
+            ArtifactGrade.Epic => 11054,
+            ArtifactGrade.Legendary => 11055,
+            _ => 0
+        };
+        if (id == 0) return ArtifactGradeInfo.DisplayName(grade);
+
+        LocalizationManager lm = LocalizationManager.Instance;
+        if (lm == null) return ArtifactGradeInfo.DisplayName(grade);
+
+        string s = lm.Get(id, LocalizingType.UI);
+        return string.IsNullOrEmpty(s) || s.StartsWith("[") ? ArtifactGradeInfo.DisplayName(grade) : s;
     }
 
     // 보유 시 공격력 : 보유 특수효과(OwnedSpecial_ID)의 기본 값을 사용(베스트 에포트).
@@ -350,8 +447,7 @@ public class ArtifactCraftPopupPresenter : MonoBehaviour
 
     private static Sprite LoadIcon(int iconId)
     {
-        // ToDo : 아이콘 받아서 경로 확정되면 수정 할 것
-        return null;
+        return Resources.Load<Sprite>(IconResourceFolder + iconId);
     }
 
     private static ArtifactGrade ToGrade(string gradeName)

@@ -1,4 +1,6 @@
 //담당자: 조규민
+// 광고 보상 Model·버튼·팝업 View 이벤트 연결과 상태 기반 UI 갱신
+// 광고 시청 요청 결과에 따른 팝업 표시와 확인·취소 흐름 처리
 
 using System;
 using UnityEngine;
@@ -27,6 +29,7 @@ public class HousingAdRewardPresenter
         this._onAdWatchRequested = _onAdWatchRequested;
     }
 
+    // Model·버튼·팝업 이벤트 구독과 최초 화면 상태 동기화
     public void Initialize()
     {
         if (_isInitialized)
@@ -48,6 +51,7 @@ public class HousingAdRewardPresenter
         _isInitialized = true;
     }
 
+    // Presenter 종료 시 모든 입력과 상태 이벤트 구독 해제
     public void Release()
     {
         if (_buttonView != null)
@@ -86,6 +90,7 @@ public class HousingAdRewardPresenter
         _model.Show();
     }
 
+    // 광고 시청 요청 결과에 따른 진행 상태 또는 실패 안내 표시
     private void HandleConfirmClicked()
     {
         if (!_model.CurrentState.CanConfirm)
@@ -108,6 +113,7 @@ public class HousingAdRewardPresenter
         _model.Hide();
     }
 
+    // Model 상태 기반 버튼 입력과 팝업 UI 갱신
     private void HandleStateChanged(HousingAdRewardState _state)
     {
         _popupView.Refresh(_state);

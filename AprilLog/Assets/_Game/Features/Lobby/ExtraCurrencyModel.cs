@@ -25,11 +25,9 @@ public class ExtraCurrencyModel : MonoBehaviour
     [SerializeField] private bool initializeWithTestValues = true;
     [SerializeField] private int testStartTicket = TestStartTicket;
 
-    private bool _initialized;
-
     private void Awake()
     {
-        if (initializeWithTestValues && !_initialized)
+        if (initializeWithTestValues && GameManager.Instance == null)
             Initialize(testStartTicket);
     }
     
@@ -47,7 +45,7 @@ public class ExtraCurrencyModel : MonoBehaviour
     // ---------- 초기화/리셋 ----------
     public void Initialize(int ticket)
     {
-        if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
+        if (GameManager.Instance != null)
         {
             DataManager.Instance.ResourceRepo.SetItemCount(GachaTicketId, Mathf.Max(0, ticket));
             GameManager.Instance.SyncAndSaveResourceCloudData();
@@ -60,12 +58,12 @@ public class ExtraCurrencyModel : MonoBehaviour
     }
 
     // ---------- 뽑기 티켓 ----------
+    // 쓰기는 GameManager 지갑 API에 위임한다(영속+이벤트는 지갑 책임). 이 모델은 표시/로컬 폴백만.
     public void AddTicket(int amount)
     {
         if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
         {
-            DataManager.Instance.ResourceRepo.AddItem(GachaTicketId, Mathf.Max(0, amount));
-            GameManager.Instance.SyncAndSaveResourceCloudData();
+            GameManager.Instance.AddResource(GachaTicketId, Mathf.Max(0, amount), "뽑기 티켓 지급");
         }
         else
         {
@@ -80,12 +78,9 @@ public class ExtraCurrencyModel : MonoBehaviour
     {
         if (GameManager.Instance != null && DataManager.Instance?.ResourceRepo != null)
         {
-            if (GachaTicket < amount) return false;
-            if (!DataManager.Instance.ResourceRepo.UseItem(GachaTicketId, Mathf.Max(0, amount))) return false;
-            GameManager.Instance.SyncAndSaveResourceCloudData();
-            return true;
+            return GameManager.Instance.UseResource(GachaTicketId, Mathf.Max(0, amount));
         }
-        
+
         if (_localTicket < amount) return false;
         _localTicket -= amount;
         RaiseChanged();

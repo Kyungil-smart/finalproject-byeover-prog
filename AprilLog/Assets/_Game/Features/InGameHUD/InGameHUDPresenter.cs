@@ -7,6 +7,7 @@
 // 수정자 : 김영찬
 // 수정내용 : 인게임 UI에 넘겨줄 정보 최신화
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class InGameHUDPresenter
@@ -17,8 +18,13 @@ public class InGameHUDPresenter
     private readonly InGameGrowthSystem _growthSystem;
     private readonly StageLoopManager _loopManager;
     private readonly StageModel _stage;
+    private readonly StateFeedBackColorSO _feedBackColor;
 
-    public InGameHUDPresenter(IInGameHUDView view, PlayerModel player, ComboModel combo, InGameGrowthSystem growthSystem, StageLoopManager loopManager,StageModel stage)
+    private float _onHitFeedBackTimer = -1;
+    private bool _isFeedBackBarColorOrigin;
+    private readonly Color _defaultColor = new Color(1f, 1f, 1f, 0);
+
+    public InGameHUDPresenter(IInGameHUDView view, PlayerModel player, ComboModel combo, InGameGrowthSystem growthSystem, StageLoopManager loopManager,StageModel stage, StateFeedBackColorSO feedBackColor)
     {
         _view = view;
         _player = player;
@@ -26,10 +32,12 @@ public class InGameHUDPresenter
         _growthSystem = growthSystem;
         _loopManager = loopManager;
         _stage = stage;
+        _feedBackColor = feedBackColor;
 
         if (player != null)
         {
             _player.OnHPChanged += HandleHp;
+            _player.OnHit += HandleOnHit;
         }
 
         if (combo != null)
@@ -67,6 +75,11 @@ public class InGameHUDPresenter
 
         if (_growthSystem != null)
             _growthSystem.EmitCurrentState();
+        
+        if (_loopManager != null)
+            _loopManager.GetStageProgress();
+        
+        ResetEffectColor();
     }
 
     public void Dispose()
@@ -74,6 +87,7 @@ public class InGameHUDPresenter
         if (_player != null)
         {
             _player.OnHPChanged -= HandleHp;
+            _player.OnHit -= HandleOnHit;
         }
 
         if (_combo != null)
@@ -118,5 +132,70 @@ public class InGameHUDPresenter
     private void HandleTimer(float remainTime) => _view.UpdateStageTimer(remainTime);
     private void HandleWaveState(StageModel.WaveState state) => _view.UpdateWaveStateText(state);
     private void HandleSpecialWaveEntered(StageModel.SpawnType type) => _view.UpdateSpecialWavePopup(type);
-    private void HandleStageProgress(int stageId) => _view.UpdateStageProgress(stageId);
+    private void HandleOnHit(float duration) => SetOnHit(duration);
+
+    private void HandleStageProgress(int stageId)
+    {
+        int chapterId = stageId / 100;
+        int stageOrder = stageId % 100;
+        int chapterOrder = DataManager.Instance.StageRepo.GetIndexByChapterId(chapterId) + 1;
+        
+        _view.UpdateStageProgress(chapterOrder, stageOrder);
+    }
+    
+    // ---------- 보조 함수 ----------
+    public void Update(float deltaTime)
+    {
+        Tick(deltaTime);
+        PlayEffect();
+    }
+    
+    private void Tick(float deltaTime)
+    {
+        if(_onHitFeedBackTimer > 0)
+            _onHitFeedBackTimer -= deltaTime;
+    }
+
+    private void SetOnHit(float duration)
+    {
+        _onHitFeedBackTimer = duration;
+    }
+
+    private void PlayEffect()
+    {
+        if (_onHitFeedBackTimer > 0)
+        {
+            if (_isFeedBackBarColorOrigin) 
+            {
+                ApplyEffectColor(_feedBackColor.GetOnHitColor());
+            }
+        }
+        else 
+        {
+            if (!_isFeedBackBarColorOrigin)
+            {
+                ResetEffectColor();
+            }
+        }
+    }
+
+    private void ApplyEffectColor(Color color)
+    {
+        if (color == _defaultColor)
+        {
+            _view.SetFeedBackBarColor(color);
+        }
+        else
+        {
+            var alphaAdjustedHitColor = new Color(color.r, color.g, color.b, 150);
+            _view.SetFeedBackBarColor(alphaAdjustedHitColor);
+        }
+        
+        _isFeedBackBarColorOrigin = color == _defaultColor;
+    }
+    
+    private void ResetEffectColor()
+    {
+        ApplyEffectColor(_defaultColor);
+    }
 }

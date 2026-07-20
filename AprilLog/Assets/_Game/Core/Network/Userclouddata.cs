@@ -14,7 +14,7 @@ using System.Collections.Generic;
 // 수정 내용 : 재화 및 스태미너와 아티펙트 관련 데이터 저장 필드 추가
 //
 // 4차 수정자 : 조규민
-// 수정 내용 : 계정별 최초 스토리 시작과 튜토리얼 완료 상태 및 기존 계정 마이그레이션 상태 추가
+// 수정 내용 : 계정별 최초 스토리 시작과 튜토리얼 완료 상태, 기존 계정 마이그레이션 상태, 아티팩트 저장 리비전 추가
 
 [Serializable]
 public class UserCloudData
@@ -35,6 +35,13 @@ public class UserCloudData
     // 키는 데이터의 실제 Stage_ID(10101, 980101 등)를 쓸 것 — StageData.Stage_ID / StageRepo.GetStageId 값 그대로.
     public List<int> firstClearRewardedStages = new ();
     public List<int> firstClearRewardedChapters = new ();
+    public List<int> firstReadScenarios = new();
+
+    // ---------- 인챈트 리세마라 방지 스냅샷 ----------
+    // 인챈트 팝업이 뜬 순간(그리고 리롤한 순간)의 카드 구성을 저장한다. 강제종료 후 재진입해도
+    // 같은 뽑기 순번(drawIndex)에서 같은 카드가 복원되어 껐다 켜기 리롤이 무의미해진다.
+    // 수명: 판 정산(승/패) 때만 비운다. 포기/강제종료로는 비우지 않는다(그게 방지 목적).
+    public List<EnchantDrawSnapshot> pendingEnchantDraws = new ();
 
     // ---------- 최초 진입 상태 (조규민 4차: 최초 스토리/튜토리얼 노출 제어 + 기존 계정 마이그레이션) ----------
     // 참조 코드(GameManager/FirestoreService)엔 있는데 본문에서 빠져 컴파일 에러였음 → 복구.
@@ -51,6 +58,8 @@ public class UserCloudData
     
     // ---------- 아티펙트 ----------
     public List<ArtifactInstance> myArtifacts = new ();
+    public int artifactRevision;
+    public string artifactUpdatedAt;
     
     // ---------- 하우징 ----------
     public string housingAutoCurrencyLastClaimAt;
@@ -92,6 +101,7 @@ public class UserCloudData
             unlockedStages = new List<int> { 10101 },   // 첫 챕터(101) 1스테이지의 실 Stage_ID
             firstClearRewardedStages = new (),
             firstClearRewardedChapters = new (),
+            firstReadScenarios = new (),
             
             // 신규 계정은 스키마 보유 상태 → 기존계정 마이그레이션(최초콘텐츠 스킵) 대상 아님. story/tutorial는 false로 시작해 신규 유저가 최초 스토리·튜토리얼을 보게 한다.
             _hasInitialFlowState = true,
@@ -107,6 +117,8 @@ public class UserCloudData
             
             // 아티펙트
             myArtifacts = new List<ArtifactInstance>(),
+            artifactRevision = 0,
+            artifactUpdatedAt = DateTime.UtcNow.ToString("o"),
             
             // 하우징
             housingAutoCurrencyLastClaimAt = DateTime.UtcNow.ToString("o"),
@@ -123,6 +135,19 @@ public class UserCloudData
             createdAt = DateTime.UtcNow.ToString("o")
         };
     }
+}
+
+/// <summary>인챈트 팝업 1회분의 카드 구성 스냅샷(리세마라 방지). 카드들은 병렬 리스트로 저장한다.
+/// 복원 시 (type, groupId, nameId)로 체인을 재조회해 후보를 다시 조립하므로 수치 데이터는 저장하지 않는다.</summary>
+[Serializable]
+public class EnchantDrawSnapshot
+{
+    public int drawIndex;                     // EnchantModel.TotalDrawCount 기준 몇 번째 팝업인지
+    public int rerollRemaining;               // 남은 새로고침 횟수(같이 저장 안 하면 재시작으로 리롤 횟수가 리셋된다)
+    public List<int> cardTypes = new ();      // EnchantType (0=Skill, 1=Stat)
+    public List<int> cardGroupIds = new ();   // SkillGroup_ID / StatGroup_ID
+    public List<int> cardNameIds = new ();    // Name_ID / Stat_Name_ID
+    public List<int> cardRerollUsed = new (); // 카드별 개별 리롤 사용 여부(0/1)
 }
 
 [Serializable]

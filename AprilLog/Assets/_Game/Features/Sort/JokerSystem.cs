@@ -31,17 +31,52 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
     [SerializeField] private UnitDataManager _dataManager;
 
     private JokerPatternData _activePattern;
+
     private int _currentIndex = 0;
-    private int _currentCount = 2;
-    private float _lastUsedTime = -5f;
-    private const float _coolDown = 5f;
-    private int _currentActiveIndex = 1; // 조커 몬스터 완성시 삭제 예정
+    private int _currentCount = 0;
+    private float _lastUsedTime = -60f;
+    private const float _coolDown = 60f;
+    private float _totalInGameTime = 0f;
+    private bool _isLobby = false;
+    private bool _isRestoredFromSave = false;
+    private Coroutine _activeJokerRoutine;
+
+    private void Update()
+    {
+        if (!_isLobby)
+        {
+            _totalInGameTime += Time.deltaTime;
+        }
+    }
 
     private void Start()
     {
+        if (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null)
+        {
+            if (_isRestoredFromSave) return;
+
+            var am = GameStateManager.Instance.ArtifactManager;
+            am.OnInventoryUpdated += RefreshJokerCount;
+            am.OnEquipmentChanged += RefreshJokerCount;
+
+            RefreshJokerCount();
+        }
+
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
         if (_coolDownText != null) _coolDownText.enabled = false;
+
+        SyncCooldownUI();
         UpdateJokerUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (GameStateManager.Instance != null && GameStateManager.Instance.ArtifactManager != null)
+        {
+            var am = GameStateManager.Instance.ArtifactManager;
+            am.OnInventoryUpdated -= RefreshJokerCount;
+            am.OnEquipmentChanged -= RefreshJokerCount;
+        }
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -49,9 +84,11 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         ActivateJoker();
     }
 
+    public void SetLobbyMode(bool isLobby) => _isLobby = isLobby;
+
     public void ActivateJoker()
     {
-        if (Time.time - _lastUsedTime < _coolDown)
+        if (_totalInGameTime - _lastUsedTime < _coolDown)
         {
             Debug.Log("쿨타임 중입니다!");
             return;
@@ -65,10 +102,12 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
         if (IsActive || _patternLibrary == null || _patternLibrary.patterns.Count == 0) return;
 
+        AudioManager.Play(SfxId.JokerClick);   // SFX 가이드 14: 조커 사용(쿨타임/미보유 거부는 무음)
         _currentCount--;
         UpdateJokerUI();
 
-        _lastUsedTime = Time.time;
+        _lastUsedTime = _totalInGameTime;
+
         StartCoroutine(CooldownRoutine());
         _activePattern = _patternLibrary.patterns[Random.Range(0, _patternLibrary.patterns.Count)];
         _currentIndex = 0;
@@ -76,7 +115,7 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         int firstTargetTable = _activePattern.tableIndices[0];
         int baseUnitType = FindFirstValidUnitInTable(firstTargetTable);
 
-        StartCoroutine(JokerRoutine(baseUnitType));
+        _activeJokerRoutine = StartCoroutine(JokerRoutine(baseUnitType));
     }
 
     private void UpdateJokerUI()
@@ -139,6 +178,33 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         IsActive = false;
     }
 
+    public void ForceStopJokerEffect()
+    {
+        // 조커 미작동 중에는 아무것도 만지지 않는다. 보스 킬은 보스 스테이지마다 발생하므로,
+        // 가드 없이는 유휴 상태의 마스크 알파(아래 0.78 일괄 대입)까지 건드려 퍼즐이 어두워질 수 있다.
+        if (!IsActive) return;
+
+        if (_activeJokerRoutine != null)
+        {
+            StopCoroutine(_activeJokerRoutine);
+            _activeJokerRoutine = null;
+        }
+
+        if (_effectSprite != null)
+        {
+            _effectSprite.gameObject.SetActive(false);
+        }
+
+        IsActive = false;
+        if (_inputHandler != null) _inputHandler.enabled = true;
+        if (_view != null) _view._isHintBlocked = false;
+
+        foreach (var group in _maskCanvasGroups)
+        {
+            if (group != null) group.alpha = 0.78f;
+        }
+    }
+
     private void HighlightTable(int targetIndex)
     {
         for (int i = 0; i < _maskCanvasGroups.Length; i++)
@@ -166,17 +232,20 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
 
         if (_coolDownText != null) _coolDownText.enabled = true;
 
-        float timer = _coolDown;
+        float timer = GetRemainingCooldown();
 
         while (timer > 0)
         {
-            timer -= Time.deltaTime;
+            if (!_isLobby)
+            {
+                timer -= Time.deltaTime;
 
-            if (_coolTimeImage != null) _coolTimeImage.fillAmount = timer / _coolDown;
+                if (_coolTimeImage != null) _coolTimeImage.fillAmount = timer / _coolDown;
 
-            if (_coolDownText != null) _coolDownText.text = Mathf.CeilToInt(timer).ToString();
+                if (_coolDownText != null) _coolDownText.text = Mathf.CeilToInt(timer).ToString();
 
-            yield return null;
+                yield return null;
+            }
         }
 
         if (_coolTimeImage != null) _coolTimeImage.enabled = false;
@@ -193,28 +262,81 @@ public class JokerSystem : MonoBehaviour, IPointerClickHandler
         _currentCount = 2;
         UpdateJokerUI();
     }
-    
-    
+
+    public void RefreshJokerCount()
+    {
+        if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted)
+        {
+            return;
+        }
+
+        var am = GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
+
+        if (am == null)
+        {
+            return;
+        }
+
+        int baseCount = 0;
+        int bonus = 0;
+
+        var equippedArtifacts = am.MyArtifacts.FindAll(a => a.IsEquipped);
+
+        foreach (var artifact in equippedArtifacts)
+        {
+            if (artifact.MasterId == 56002) 
+            {
+                bonus += 1;
+
+                if (artifact.CurrentLevel >= artifact.GetMaxLevelLimit())
+                {
+                    bonus += 1;
+                }
+            }
+        }
+
+        _currentCount = baseCount + bonus;
+        UpdateJokerUI();
+    }
+
+    private void SyncCooldownUI()
+    {
+        float remaining = GetRemainingCooldown();
+        if (remaining > 0)
+        {
+            if (_coolTimeImage != null) _coolTimeImage.enabled = true;
+            if (_coolDownText != null) _coolDownText.enabled = true;
+
+            StartCoroutine(CooldownRoutine());
+        }
+        else
+        {
+            if (_coolTimeImage != null) _coolTimeImage.enabled = false;
+            if (_coolDownText != null) _coolDownText.enabled = false;
+        }
+    }
+
     // ---------- 세이브 / 로드 (추가) ----------
-    
-    // 현재 조커 보유량 반환 (Index + 1)
+
+        // 현재 조커 보유량 반환 (Index + 1)
     public int GetJokerCount() => _currentCount;
     
     public float GetRemainingCooldown()
     {
-        float elapsed = Time.time - _lastUsedTime;
+        float elapsed = _totalInGameTime - _lastUsedTime;
         return elapsed >= _coolDown ? 0f : _coolDown - elapsed;
     }
 
     // 세이브된 보유량을 바탕으로 시스템 복구
     public void RestoreFromSave(int savedJokerCount, float savedRemainingCooldown)
     {
+        _isRestoredFromSave = true;
         _currentCount = savedJokerCount;
         UpdateJokerUI();
-        
+
         if (savedRemainingCooldown > 0)
         {
-            _lastUsedTime = Time.time - (_coolDown - savedRemainingCooldown);
+            _lastUsedTime = _totalInGameTime - (_coolDown - savedRemainingCooldown);
             StartCoroutine(CooldownRoutine());
         }
         else

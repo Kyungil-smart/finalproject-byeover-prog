@@ -23,18 +23,19 @@ public class TutorialManager : MonoBehaviour
 
     [SerializeField] private TutorialStepData _stepData;
 
-#if UNITY_EDITOR
+    // 직렬화 필드는 항상 컴파일해야 에디터/빌드 레이아웃이 일치한다(사용만 에디터 전용).
     [Tooltip("0 이상이면 Start에서 그 단계부터 시작한다(에디터 테스트용).")]
     [SerializeField] private int _debugStartIndex = -1;
-#endif
 
     private const string DONE_KEY = "Tutorial_Completed";
     private const string IN_GAME_SCENE_NAME = "_InGame";
     private const string IN_GAME_OVERLAY_RESOURCE = "Tutorial/TutorialInGameOverlay";
+    private const string LOBBY_SCENE_NAME = "_Lobby";
 
     private int _currentIndex = -1;     // -1 = 진행 중 아님
     private ITutorialView _view;        // 현재 씬의 오버레이(있을 때만)
     private GameObject _spawnedInGameOverlay;
+    private string _previousSceneName;  // 직전 로드된 씬 이름(전투 복귀 판별용)
 
     public bool IsCompleted => GameManager.Instance != null
         ? GameManager.Instance.IsTutorialCompleted()
@@ -154,23 +155,56 @@ public class TutorialManager : MonoBehaviour
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name != IN_GAME_SCENE_NAME)
+        // 씬별 튜토리얼 오버레이를 진행 중일 때만 스폰한다. 이전 씬 오버레이는 씬 언로드로 이미 파괴됐으니 참조만 정리.
+        // 로비 오버레이(--- Tutorial ---)는 _Lobby 씬에 프리팹 인스턴스로 직접 배치되어 있어 여기서 스폰하지 않는다.
+        if (scene.name == IN_GAME_SCENE_NAME)
+        {
+            TrySpawnOverlay(IN_GAME_OVERLAY_RESOURCE, ref _spawnedInGameOverlay);
+        }
+        else
         {
             _spawnedInGameOverlay = null;
-            return;
         }
 
-        if (!IsRunning || _spawnedInGameOverlay != null) return;
+        HealStaleInGameStepOnLobbyReturn(scene.name);
+        _previousSceneName = scene.name;
+    }
 
-        GameObject prefab = Resources.Load<GameObject>(IN_GAME_OVERLAY_RESOURCE);
+    // 인게임 전투에서 로비로 돌아왔는데 튜토리얼 단계가 아직 InGame 단계에 멈춰 있으면
+    // 다음 로비 단계까지 이어 붙인다. (예: 방치 사망이 범람 패배 흐름을 타지 못해 단계 전진이 누락된 경우)
+    // 최초 튜토리얼은 로비에서 InGame 단계로 시작해 인게임으로 넘어가므로, 그 첫 전투를 건너뛰지 않도록
+    // 직전 씬이 인게임이었을 때(=전투에서 복귀한 경우)만 보정한다.
+    private void HealStaleInGameStepOnLobbyReturn(string loadedSceneName)
+    {
+        if (loadedSceneName != LOBBY_SCENE_NAME) return;
+        if (_previousSceneName != IN_GAME_SCENE_NAME) return;
+        if (!IsRunning) return;
+
+        // 첫 전투(방치 사망이 문제되는 stepId 0~3)에 한정한다. 후반 재진입(step14) 실패 복귀까지
+        // 이어붙이면 튜토리얼이 조기 완료될 수 있어 제외한다.
+        TutorialStep step = CurrentStep;
+        if (step == null || step.scene != TutorialScene.InGame || step.stepId > 3) return;
+
+        Debug.LogWarning("[Tutorial] 전투 복귀 후 첫 전투 InGame 단계가 남아 있어 다음 로비 단계로 이어붙입니다.");
+        while (IsRunning && CurrentStep != null && CurrentStep.scene == TutorialScene.InGame && CurrentStep.stepId <= 3)
+        {
+            AdvanceStep();
+        }
+    }
+
+    private void TrySpawnOverlay(string resourcePath, ref GameObject spawned)
+    {
+        if (!IsRunning || spawned != null) return;
+
+        GameObject prefab = Resources.Load<GameObject>(resourcePath);
         if (prefab == null)
         {
-            Debug.LogWarning($"[Tutorial] 인게임 오버레이 프리팹을 찾지 못했습니다: Resources/{IN_GAME_OVERLAY_RESOURCE}");
+            Debug.LogWarning($"[Tutorial] 튜토리얼 오버레이 프리팹을 찾지 못했습니다: Resources/{resourcePath}");
             return;
         }
 
-        _spawnedInGameOverlay = Instantiate(prefab);
-        _spawnedInGameOverlay.name = prefab.name;
+        spawned = Instantiate(prefab);
+        spawned.name = prefab.name;
     }
 
     private bool IsStepForActiveScene(TutorialStep step)

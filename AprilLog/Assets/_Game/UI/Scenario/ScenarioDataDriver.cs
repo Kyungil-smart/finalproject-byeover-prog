@@ -32,7 +32,7 @@ public class ScenarioDataDriver : MonoBehaviour
     [SerializeField] private bool _playOnStart = false;
 
     [Header("언어")]
-    [Tooltip("켜면 영어(name_EN/Text_EN), 끄면 한국어. 추후 LocalizationManager 연동 예정")]
+    [Tooltip("LocalizationManager가 없을 때 사용할 언어. 켜면 영어, 끄면 한국어")]
     [SerializeField] private bool _useEnglish = false;
 
     [Header("스프라이트 경로 (Resources 하위, 끝에 / 포함)")]
@@ -54,11 +54,22 @@ public class ScenarioDataDriver : MonoBehaviour
     private bool _isPlaying;
     private bool _finished;
     private bool _subscribed;
-
+    private bool _isCloudDataLoaded;
+    
     private void Awake()
     {
         if (_view == null) _view = GetComponent<ScenarioView>();
         if (_view == null) _view = FindFirstObjectByType<ScenarioView>();
+        
+        if (GameManager.Instance != null)
+        {
+            _isCloudDataLoaded = GameManager.Instance.CloudData != null;
+            
+            if (TutorialManager.Instance != null && !TutorialManager.Instance.IsCompleted) return;
+            
+            _startGroupId = GameManager.Instance.SelectedScenarioGroupId != 0 ? 
+                GameManager.Instance.SelectedScenarioGroupId : _startGroupId;
+        }
     }
 
     private void OnEnable()  => Subscribe();
@@ -101,6 +112,8 @@ public class ScenarioDataDriver : MonoBehaviour
         _index = 0;
         _finished = false;
         _isPlaying = true;
+        _startGroupId = groupId;
+        SaveUnlockScenario(groupId);
         Show();
     }
 
@@ -141,8 +154,15 @@ public class ScenarioDataDriver : MonoBehaviour
     {
         Story_TalkData line = _lines[_index];
 
-        string speakerName = _useEnglish ? line.name_EN : line.name_KR;
-        string text        = _useEnglish ? line.Text_EN : line.Text_KR;
+        bool useEnglish = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "en"
+            : _useEnglish;
+        string speakerName = useEnglish && !string.IsNullOrWhiteSpace(line.name_EN)
+            ? line.name_EN
+            : line.name_KR;
+        string text = useEnglish && !string.IsNullOrWhiteSpace(line.Text_EN)
+            ? line.Text_EN
+            : line.Text_KR;
 
         // 초상화 슬롯 매핑(임시 규칙): portrait1=좌 / portrait2=중 / portrait3=우.
         //   data의 direction1/2/3(방향/배치) 의미는 기획 확정 후 반영. (현재 데이터 전부 0이라 미사용)
@@ -159,20 +179,24 @@ public class ScenarioDataDriver : MonoBehaviour
         bool showTextbox = line.TextBox != 0;
 
         _view.ShowLine(speakerName, text, showTextbox, pLeft, pCenter, pRight, speaker, bg, cg);
+        
     }
 
     // ---------- 스프라이트 해석 ----------
 
     // 캐릭터 ID → Story_CharacterData.Resource_ID → Resources에서 스프라이트 로드.
-    private Sprite ResolvePortrait(int characterId)
+    private Sprite ResolvePortrait(int portraitId)
     {
-        if (characterId <= 0) return null;
+        if (portraitId <= 0) return null;
 
+        // 데이터가 캐릭터 ID를 넣은 경우: 캐릭터의 Resource_ID로 매핑한다.
         StoryRepo repo = DataManager.Instance != null ? DataManager.Instance.StoryRepo : null;
-        Story_CharacterData ch = repo != null ? repo.GetCharacterData(characterId) : null;
-        if (ch == null || ch.Resource_ID <= 0) return null;
+        Story_CharacterData ch = repo != null ? repo.GetCharacterData(portraitId) : null;
+        if (ch != null && ch.Resource_ID > 0)
+            return LoadSprite(_portraitPath + ch.Resource_ID);
 
-        return LoadSprite(_portraitPath + ch.Resource_ID);
+        // 데이터가 Resource_ID(그림 파일 번호)를 직접 넣은 경우: 값 그대로 로드한다.
+        return LoadSprite(_portraitPath + portraitId);
     }
 
     private Sprite ResolveScene(string pathPrefix, int resourceId)
@@ -190,6 +214,17 @@ public class ScenarioDataDriver : MonoBehaviour
             Debug.Log($"[ScenarioDataDriver] 스프라이트 없음(텍스트만 진행): Resources/{path}");
         return sprite;
     }
+    
+    // ---------- BGM 해석 ----------
+    private SfxId ResolveBGM(int bgmId)
+    {
+        return SfxId.None;
+    }
+
+    private void PlayBGM(SfxId bgmId)
+    {
+        AudioManager.Bgm(bgmId);
+    }
 
     // ---------- 이벤트 구독 ----------
 
@@ -198,6 +233,8 @@ public class ScenarioDataDriver : MonoBehaviour
         if (_subscribed || _view == null) return;
         _view.OnAdvanceRequested += Next;
         _view.OnSkipRequested    += Finish;   // 스킵 = 끝내고 다음으로
+        if(GameManager.Instance != null && !_isCloudDataLoaded)
+            GameManager.Instance.OnCloudDataReady += HandleCloudDataLoaded;
         _subscribed = true;
     }
 
@@ -206,6 +243,32 @@ public class ScenarioDataDriver : MonoBehaviour
         if (!_subscribed || _view == null) return;
         _view.OnAdvanceRequested -= Next;
         _view.OnSkipRequested    -= Finish;
+        if(GameManager.Instance != null)
+            GameManager.Instance.OnCloudDataReady -= HandleCloudDataLoaded;
         _subscribed = false;
+    }
+
+    private void SaveUnlockScenario(int groupId)
+    {
+        if (DataManager.Instance == null)
+        {
+            Debug.LogWarning("[ScenarioDataDriver] DataManager 미 감지. 시나리오 진행 저장되지 않음.");
+            return;
+        }
+
+        if (!_isCloudDataLoaded)
+        {
+            LoadedScenarioTempContainer.UnsavedFirstReadScenarioResister(groupId);
+            return;
+        }
+        
+        GameManager.Instance.SaveFirstReadScenario(groupId);
+    }
+
+    private void HandleCloudDataLoaded()
+    {
+        if(_isCloudDataLoaded) return;
+        LoadedScenarioTempContainer.SaveContainScenario();
+        _isCloudDataLoaded = true;
     }
 }

@@ -1,10 +1,13 @@
 ﻿//담당자: 조규민
 //팝업의 시간당 생산량과 현재 수령 가능 수량이 섞이지 않도록 생산량 상태를 분리
-// 수정 내용 : 보상 지급 성공 전에는 마지막 수령 시각과 누적 상태를 초기화하지 않도록 수령 준비와 확정을 분리
+// 수정 내용 : 보상 지급 성공 전에는 마지막 수령 시각과 누적 상태를 초기화하지 않도록 수령 준비와 확정을 분리,
+// 실제 적립된 시간 단위와 UI 진행률이 일치하도록 진행률 계산 기준을 통일
 
 using System;
 using UnityEngine;
 
+// 경과 시간과 보상 테이블 기반 누적 보상·게이지·수령 가능 상태 계산
+// 보상 수령 확정 시 충전 시작 시간 갱신과 상태 변경 알림
 public class HousingIdleRewardModel
 {
     private readonly int _maxChargeSeconds;
@@ -29,6 +32,7 @@ public class HousingIdleRewardModel
         _currentState = CalculateState(this._chargeStartUtc);
     }
 
+    // 현재 UTC 시각 기준 누적 보상 상태 재계산과 변경 알림
     public void Refresh()
     {
         HousingIdleRewardState _newState = CalculateState(DateTime.UtcNow);
@@ -42,6 +46,7 @@ public class HousingIdleRewardModel
         OnStateChanged?.Invoke(_currentState);
     }
 
+    // 현재 수령 가능 여부와 지급 수량을 고정한 수령 요청 생성
     public HousingIdleRewardClaimResult CreateClaimRequest()
     {
         DateTime _claimedAtUtc = DateTime.UtcNow;
@@ -50,6 +55,7 @@ public class HousingIdleRewardModel
         return new HousingIdleRewardClaimResult(_claimedState, _claimedAtUtc);
     }
 
+    // 지급 성공 결과를 기준으로 충전 시작 시각 갱신
     public void CommitClaim(HousingIdleRewardClaimResult _claimResult)
     {
         _chargeStartUtc = EnsureUtc(_claimResult.ClaimedAtUtc);
@@ -63,13 +69,15 @@ public class HousingIdleRewardModel
         OnStateChanged?.Invoke(_currentState);
     }
 
+    // 경과 시간과 최대 누적 시간 기반 게이지·재화 수량 계산
     private HousingIdleRewardState CalculateState(DateTime _nowUtc)
     {
         double _elapsedSeconds = Math.Max(0d, (_nowUtc - _chargeStartUtc).TotalSeconds);
         double _cappedElapsedSeconds = Math.Min(_elapsedSeconds, _maxChargeSeconds);
         // 1시간이 완전히 지난 횟수만 보상으로 인정하고, 최대 누적 시간 이후에는 더 쌓지 않습니다.
         int _rewardCount = Mathf.Clamp(Mathf.FloorToInt((float)(_cappedElapsedSeconds / _rewardIntervalSeconds)), 0, _maxRewardCount);
-        float _progress = Mathf.Clamp01((float)(_cappedElapsedSeconds / _maxChargeSeconds));
+        // 보상은 시간 단위로 적립되므로 진행률도 실제 적립된 횟수를 기준으로 단계적으로 표시합니다.
+        float _progress = Mathf.Clamp01((float)_rewardCount / _maxRewardCount);
         int _progressPercent = Mathf.Clamp(Mathf.FloorToInt(_progress * 100f), 0, 100);
 
         return new HousingIdleRewardState(

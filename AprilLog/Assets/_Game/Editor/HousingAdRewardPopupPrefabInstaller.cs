@@ -8,6 +8,7 @@ using UnityEngine.UI;
 /// <summary>
 /// Page_Housing 프리팹에 광고 보기 팝업 UI를 배치합니다.
 /// </summary>
+// 로비 Prefab에 광고 보상 팝업 UI와 Controller 오브젝트 생성 및 직렬화 참조 연결
 public static class HousingAdRewardPopupPrefabInstaller
 {
     private const string _prefabPath = "Assets/_Game/Prefabs/UI/Lobby/Page/Housing/Page_Housing.prefab";
@@ -16,6 +17,7 @@ public static class HousingAdRewardPopupPrefabInstaller
     private const string _controllerRootName = "HousingAdRewardRoot";
 
     [MenuItem("Tools/Housing/Install Ad Reward Popup UI")]
+    // 대상 로비 Prefab 로드와 광고 보상 UI 설치 후 저장
     public static void Install()
     {
         GameObject _prefabRoot = PrefabUtility.LoadPrefabContents(_prefabPath);
@@ -70,6 +72,7 @@ public static class HousingAdRewardPopupPrefabInstaller
         _controllerObject.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    // 광고 상태·보상 아이콘·확인 버튼을 포함한 팝업 계층 생성
     private static HousingAdRewardPopupView CreatePopup(Transform _pageRoot, Sprite _furnitureSprite)
     {
         GameObject _popupRoot = CreateRectObject(
@@ -157,7 +160,6 @@ public static class HousingAdRewardPopupPrefabInstaller
 
         SerializedObject _popupObject = new SerializedObject(_popupView);
         _popupObject.FindProperty("_popupRoot").objectReferenceValue = _popupRoot;
-        _popupObject.FindProperty("_keepInspectorTextValues").boolValue = true;
         _popupObject.FindProperty("_rewardFurnitureIconImage").objectReferenceValue = _furnitureIcon;
         _popupObject.FindProperty("_messageText").objectReferenceValue = _messageText;
         _popupObject.FindProperty("_rewardTitleText").objectReferenceValue = _rewardTitleText;
@@ -172,6 +174,7 @@ public static class HousingAdRewardPopupPrefabInstaller
         return _popupView;
     }
 
+    // 광고 보상 Controller 생성과 직렬화 참조 연결
     private static HousingAdRewardController CreateController(Transform _pageRoot)
     {
         GameObject _controllerRoot = CreateRectObject(

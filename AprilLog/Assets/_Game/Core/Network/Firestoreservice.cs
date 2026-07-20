@@ -3,7 +3,7 @@
 // 2차 수정자 : 조규민
 // 수정 내용 : FirebaseFirestore 필드 복구, UID/DB 방어, 로컬 백업 실패 방어 추가
 // 3차 수정자 : 조규민
-// 수정 내용 : UserCloudData 직접 저장 대신 Firestore Dictionary 변환 저장으로 직렬화 오류 수정
+// 수정 내용 : UserCloudData 직접 저장 대신 Firestore Dictionary 변환 저장으로 직렬화 오류 수정, UID별 최신 아티팩트 체크포인트 복구 추가
 
 // 수정 내용 : 하우징 구매 보유 가구 ID를 Firestore 저장/로드에 포함
 
@@ -122,10 +122,36 @@ public class FirestoreService : MonoBehaviour
 
         if (task.Result.Exists)
         {
-            var data = ConvertSnapshotToUserCloudData(task.Result);
+            // 문서 필드 타입 불일치 같은 파싱 예외가 이 코루틴을 죽이면 OnDataLoaded가 안 불려
+            // 부팅 대기가 영구 정지된다. 예외 시 로컬 백업/기본값으로 복구하고 로드를 반드시 완료시킨다.
+            UserCloudData data = null;
+            bool converted = false;
+            try
+            {
+                data = ConvertSnapshotToUserCloudData(task.Result);
+                converted = true;
+            }
+            catch (Exception exception)
+            {
+                OnError?.Invoke(GetExceptionMessage(exception, "클라우드 데이터 변환 실패"));
+            }
+
+            if (!converted)
+            {
+                data = LoadLocalBackup() ?? UserCloudData.CreateDefault();
+                data.uid = _uid;
+                OnDataLoaded?.Invoke(data);
+                yield break;
+            }
+
             MergeLocalInitialFlowState(data);
+            bool _shouldResyncArtifacts = MergeLocalArtifactState(data);
             SaveLocalBackup(data);
             OnDataLoaded?.Invoke(data);
+            if (_shouldResyncArtifacts)
+            {
+                StartCoroutine(SaveCoroutine(data));
+            }
         }
         else
         {
@@ -399,6 +425,9 @@ public class FirestoreService : MonoBehaviour
             { "inventory", CreateItemDictionaries(userData.inventory) },
             { "staminaData", CreateStaminaDictionaries(userData.staminaData) },
             { "myArtifacts", CreateArtifactDictionaries(userData.myArtifacts) },
+            { "artifactRevision", userData.artifactRevision },
+            { "artifactUpdatedAt", userData.artifactUpdatedAt ?? string.Empty },
+            { "pendingEnchantDraws", CreateEnchantDrawDictionaries(userData.pendingEnchantDraws) },
             { "language", userData.language },
             { "sfxVolume", userData.sfxVolume },
             { "bgmVolume", userData.bgmVolume },
@@ -471,6 +500,29 @@ public class FirestoreService : MonoBehaviour
         }
 
         return staminaDictionaries;
+    }
+
+    // 인챈트 리세마라 방지 스냅샷을 Dictionary 목록으로 변환한다.
+    private List<Dictionary<string, object>> CreateEnchantDrawDictionaries(List<EnchantDrawSnapshot> draws)
+    {
+        var drawDictionaries = new List<Dictionary<string, object>>();
+        if (draws == null) return drawDictionaries;
+
+        foreach (var draw in draws)
+        {
+            if (draw == null) continue;
+            drawDictionaries.Add(new Dictionary<string, object>
+            {
+                { "drawIndex", draw.drawIndex },
+                { "rerollRemaining", draw.rerollRemaining },
+                { "cardTypes", draw.cardTypes ?? new List<int>() },
+                { "cardGroupIds", draw.cardGroupIds ?? new List<int>() },
+                { "cardNameIds", draw.cardNameIds ?? new List<int>() },
+                { "cardRerollUsed", draw.cardRerollUsed ?? new List<int>() }
+            });
+        }
+
+        return drawDictionaries;
     }
 
     // 아티팩트 보유 목록을 Dictionary 목록으로 변환한다. (IsAscended는 AscensionCount 계산 프로퍼티라 저장하지 않는다)
@@ -610,9 +662,22 @@ public class FirestoreService : MonoBehaviour
         if (snapshot.TryGetValue("myArtifacts", out object myArtifacts))
             data.myArtifacts = ConvertArtifacts(myArtifacts);
 
+        if (snapshot.TryGetValue("artifactRevision", out object artifactRevision))
+            data.artifactRevision = ConvertNumberToInt(artifactRevision);
+
+        if (snapshot.TryGetValue("artifactUpdatedAt", out string artifactUpdatedAt))
+            data.artifactUpdatedAt = artifactUpdatedAt;
+
+        if (snapshot.TryGetValue("pendingEnchantDraws", out object pendingEnchantDraws))
+            data.pendingEnchantDraws = ConvertEnchantDraws(pendingEnchantDraws);
+
         // 계정 생성일 복원. 없으면 CreateDefault의 현재시각이 남아 저장 때마다 생성일이 전진한다.
-        if (snapshot.TryGetValue("createdAt", out string createdAt))
-            data.createdAt = createdAt;
+        // createdAt은 프로필 생성 경로에서 ServerTimestamp(Timestamp 타입)로 저장되므로 string으로 직접 읽으면
+        // 변환 예외가 난다. object로 받아 Timestamp면 ISO 문자열로 바꾼다.
+        if (snapshot.TryGetValue("createdAt", out object createdAtRaw))
+            data.createdAt = createdAtRaw is Timestamp createdAtStamp
+                ? createdAtStamp.ToDateTime().ToUniversalTime().ToString("o")
+                : createdAtRaw as string;
 
         return data;
     }
@@ -717,6 +782,32 @@ public class FirestoreService : MonoBehaviour
         return artifacts;
     }
 
+    // Firestore Dictionary 목록을 EnchantDrawSnapshot 목록으로 복원한다.
+    private List<EnchantDrawSnapshot> ConvertEnchantDraws(object drawObjects)
+    {
+        var draws = new List<EnchantDrawSnapshot>();
+        var enumerableDraws = drawObjects as IEnumerable;
+        if (enumerableDraws == null) return draws;
+
+        foreach (var drawObject in enumerableDraws)
+        {
+            var drawDictionary = drawObject as IDictionary<string, object>;
+            if (drawDictionary == null) continue;
+
+            draws.Add(new EnchantDrawSnapshot
+            {
+                drawIndex = GetIntValue(drawDictionary, "drawIndex"),
+                rerollRemaining = GetIntValue(drawDictionary, "rerollRemaining"),
+                cardTypes = ConvertIntList(drawDictionary.TryGetValue("cardTypes", out var types) ? types : null),
+                cardGroupIds = ConvertIntList(drawDictionary.TryGetValue("cardGroupIds", out var groups) ? groups : null),
+                cardNameIds = ConvertIntList(drawDictionary.TryGetValue("cardNameIds", out var names) ? names : null),
+                cardRerollUsed = ConvertIntList(drawDictionary.TryGetValue("cardRerollUsed", out var used) ? used : null)
+            });
+        }
+
+        return draws;
+    }
+
     // Firestore Dictionary에서 string 값을 안전하게 읽는다.
     private string GetStringValue(IDictionary<string, object> dictionary, string key)
     {
@@ -797,6 +888,21 @@ public class FirestoreService : MonoBehaviour
         // 추가: 조규민 - 로컬 백업 실패가 로그인 흐름 전체를 중단하지 않도록 예외를 이벤트로 전달한다.
         try
         {
+            if (data == null)
+            {
+                OnError?.Invoke("로컬 백업에 저장할 유저 데이터가 없습니다.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_uid)
+                && !string.IsNullOrWhiteSpace(data.uid)
+                && !string.Equals(data.uid, _uid, StringComparison.Ordinal))
+            {
+                OnError?.Invoke("현재 인증 UID와 다른 유저 데이터의 로컬 백업을 차단했습니다.");
+                return;
+            }
+
+            PreserveNewerLocalArtifactState(data);
             File.WriteAllText(GetBackupPath(), JsonUtility.ToJson(data, true));
         }
         catch (Exception exception)
@@ -839,7 +945,89 @@ public class FirestoreService : MonoBehaviour
         cloudData._tutorialCompleted |= localData._tutorialCompleted;
     }
 
+    private void PreserveNewerLocalArtifactState(UserCloudData data)
+    {
+        UserCloudData _existingData = LoadLocalBackup();
+        if (_existingData == null
+            || !string.Equals(_existingData.uid, data.uid, StringComparison.Ordinal)
+            || _existingData.artifactRevision <= data.artifactRevision)
+        {
+            return;
+        }
+
+        data.myArtifacts = CloneArtifacts(_existingData.myArtifacts);
+        data.artifactRevision = _existingData.artifactRevision;
+        data.artifactUpdatedAt = _existingData.artifactUpdatedAt;
+    }
+
+    private bool MergeLocalArtifactState(UserCloudData cloudData)
+    {
+        if (cloudData == null || string.IsNullOrWhiteSpace(_uid))
+        {
+            return false;
+        }
+
+        UserCloudData _localData = LoadLocalBackup();
+        if (_localData == null || !string.Equals(_localData.uid, _uid, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(cloudData.uid)
+            && !string.Equals(cloudData.uid, _uid, StringComparison.Ordinal))
+        {
+            Debug.LogError("[FirestoreService] 인증 UID와 클라우드 문서 UID가 달라 로컬 아티팩트 병합을 차단했습니다.");
+            return false;
+        }
+
+        if (_localData.artifactRevision <= cloudData.artifactRevision)
+        {
+            return false;
+        }
+
+        cloudData.uid = _uid;
+        cloudData.myArtifacts = CloneArtifacts(_localData.myArtifacts);
+        cloudData.artifactRevision = _localData.artifactRevision;
+        cloudData.artifactUpdatedAt = _localData.artifactUpdatedAt;
+        Debug.Log($"[FirestoreService] 최신 로컬 아티팩트 체크포인트를 복구했습니다. Revision={cloudData.artifactRevision}");
+        return true;
+    }
+
+    private static List<ArtifactInstance> CloneArtifacts(List<ArtifactInstance> artifacts)
+    {
+        var _result = new List<ArtifactInstance>();
+        if (artifacts == null)
+        {
+            return _result;
+        }
+
+        foreach (ArtifactInstance _artifact in artifacts)
+        {
+            if (_artifact != null)
+            {
+                _result.Add(_artifact.Clone());
+            }
+        }
+
+        return _result;
+    }
+
     public bool HasLocalBackup() => File.Exists(GetBackupPath());
+
+    // 계정 삭제/초기화 시 로컬 백업(cloud_backup*.json)을 전부 지운다.
+    // 게스트는 로컬 백업이 사실상 유일한 저장소라, 이걸 남기면 재로그인 시 옛 데이터가 복원된다.
+    public void DeleteLocalBackup()
+    {
+        try
+        {
+            foreach (string file in Directory.GetFiles(Application.persistentDataPath, "cloud_backup*.json"))
+                File.Delete(file);
+        }
+        catch (Exception exception)
+        {
+            OnError?.Invoke(exception.Message);
+        }
+    }
 
     private string GetBackupPath()
     {

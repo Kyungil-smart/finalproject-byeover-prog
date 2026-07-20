@@ -4,6 +4,7 @@
 //          - DOTween으로 카드 슬라이드 인/아웃 연출
 //          - 첫 번째/마지막 챕터면 이동 불가 버튼 숨김
 
+using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +13,7 @@ public class PageMainLobbyController : MonoBehaviour
 {
     // ------------------------------------------------------------------
     [Header("데이터")]
-    [SerializeField] private ChapterTestDataSO _data;
+    [SerializeField] private ChapterDataSO _data;
 
     [Header("슬롯")]
     [Tooltip("슬라이드 애니메이션할 챕터 카드의 RectTransform")]
@@ -23,6 +24,7 @@ public class PageMainLobbyController : MonoBehaviour
     [Header("버튼")]
     [SerializeField] private Button _btnPrev;
     [SerializeField] private Button _btnNext;
+    [SerializeField] private Button _btnStart;
 
     [Header("슬라이드 애니메이션")]
     [SerializeField] private float _slideWidth    = 1440f;
@@ -32,6 +34,8 @@ public class PageMainLobbyController : MonoBehaviour
     // ------------------------------------------------------------------
     private int  _currentIndex;
     private bool _isAnimating;
+    private bool _isInitialized;
+    public event Action<int> OnGameStart; 
 
     // ------------------------------------------------------------------
     private void Awake()
@@ -41,6 +45,11 @@ public class PageMainLobbyController : MonoBehaviour
 
         if (_btnNext != null) _btnNext.onClick.AddListener(OnNextClicked);
         else Debug.LogWarning("[PageMainLobbyController] Btn_Next 미연결", this);
+        
+        if (_btnStart != null) _btnStart.onClick.AddListener(OnStartClicked);
+        else Debug.LogWarning("[PageMainLobbyController] Btn_Start 미연결", this);
+        
+        if (_data == null) _data = ScriptableObject.CreateInstance<ChapterDataSO>();
     }
 
     private void OnEnable()
@@ -50,12 +59,45 @@ public class PageMainLobbyController : MonoBehaviour
             Debug.LogWarning("[PageMainLobbyController] ChapterTestDataSO 미연결", this);
             return;
         }
+        
+        if (GameManager.Instance != null) GameManager.Instance.OnCloudDataReady += HandleCloudDataReady;
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+        _data.InitChapters();
         ShowChapter(0, instant: true);
+    }
+
+    private void OnDisable()
+    {
+        if(GameManager.Instance != null) GameManager.Instance.OnCloudDataReady -= HandleCloudDataReady;
+        if(LocalizationManager.Instance != null) 
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+    }
+
+    private void Start()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+        _data.InitChapters();
+        _isInitialized = true;
+        ShowChapter(0, instant: true);
+    }
+
+    private void OnDestroy()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
     }
 
     // ------------------------------------------------------------------
     private void OnPrevClicked() => Navigate(-1);
     private void OnNextClicked() => Navigate(+1);
+    private void OnStartClicked() => GameStart(_currentIndex);
+
+    private void GameStart(int index)
+    {
+        OnGameStart?.Invoke(index);
+    }
 
     private void Navigate(int direction)
     {
@@ -98,6 +140,8 @@ public class PageMainLobbyController : MonoBehaviour
 
     private void ShowChapter(int index, bool instant)
     {
+        if(!_isInitialized) return;
+        
         _currentIndex = Mathf.Clamp(index, 0, _data != null ? _data.ChapterCount - 1 : 0);
         UpdateSlotData();
 
@@ -125,6 +169,9 @@ public class PageMainLobbyController : MonoBehaviour
         // 첫 챕터면 이전 숨김, 마지막 챕터면 다음 숨김 (그 외엔 보이고 활성)
         SetButtonVisible(_btnPrev, hasPrev);
         SetButtonVisible(_btnNext, hasNext);
+        
+        // 클라우드 세이브의 맵 해금 상태를 확인하여 현재 스타트 버튼의 활성화 여부를 제어한다.
+        SwitchStartButtonInteractable();
     }
 
     private void SetButtonsInteractable(bool value)
@@ -141,5 +188,55 @@ public class PageMainLobbyController : MonoBehaviour
         if (button == null) return;
         button.gameObject.SetActive(visible);
         button.interactable = visible;
+    }
+    
+    private void SetStartButtonInteractable(bool value)
+    {
+        if(_btnStart != null) _btnStart.interactable = value;
+    }
+
+    private bool GetChapterUnLock(int index)
+    {
+        if(GameManager.Instance == null)
+        {
+            Debug.LogWarning("[PageMainLobbyController] 게임 매니저 미 감지. 임시로 전 스테이지 해금.");
+            return true;
+        }
+        
+        if (GameManager.Instance.CloudData == null)
+        {
+            Debug.LogError("[PageMainLobbyController]클라우드 데이터를 찾을 수 없습니다. 클라우드 데이터를 확인해주세요");
+            return false;
+        }
+
+        var repo = DataManager.Instance.StageRepo;
+        int chapterId = repo.GetChapterIdByIndex(index);
+        if (chapterId == -1)
+        {
+            Debug.LogError($"[PageMainLobbyController]잘못된 인덱스로 접근 {index}. 인덱스를 확인해주세요.");
+            return false;
+        }
+        int stageId = repo.GetStageId(chapterId, 1);
+        
+        if (stageId != -1) return GameManager.Instance.CloudData.unlockedStages.Contains(stageId);
+        
+        Debug.LogError($"[PageMainLobbyController]잘못된 인덱스로 접근 {index}. 인덱스를 확인해주세요.");
+        return false;
+    }
+
+    private void SwitchStartButtonInteractable()
+    {
+       SetStartButtonInteractable(GetChapterUnLock(_currentIndex));
+    }
+    
+    private void HandleCloudDataReady()
+    {
+        RefreshButtons();
+    }
+    
+    private void HandleLanguageChanged()
+    {
+        _data.LanguageChanged();
+        ShowChapter(_currentIndex, true);
     }
 }

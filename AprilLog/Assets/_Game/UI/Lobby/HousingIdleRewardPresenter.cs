@@ -8,6 +8,8 @@ using UnityEngine;
 /// <summary>
 /// 시간 누적 보상 가구 입력, 팝업 갱신, 수령 요청 흐름을 중재합니다.
 /// </summary>
+// 방치 보상 Model과 버튼·팝업 View 이벤트 연결 및 상태 기반 UI 갱신
+// 수령 요청 검증과 지급 성공 시 Model 확정 처리
 public class HousingIdleRewardPresenter
 {
     private readonly HousingIdleRewardModel _model;
@@ -30,6 +32,7 @@ public class HousingIdleRewardPresenter
         this._onClaimRequested = _onClaimRequested;
     }
 
+    // Model·보상 버튼·팝업 View 이벤트 연결과 최초 상태 갱신
     public void Initialize()
     {
         if (_model == null || _popupView == null || _rewardButtonView == null)
@@ -83,6 +86,7 @@ public class HousingIdleRewardPresenter
         _popupView.Show();
     }
 
+    // Model 수령 요청 생성과 Controller 지급 결과 확정 처리
     private void HandleConfirmClicked()
     {
         if (_isClaiming || !_model.CurrentState.HasClaimableReward)
@@ -122,6 +126,7 @@ public class HousingIdleRewardPresenter
         _popupView.Hide();
     }
 
+    // 누적 보상 상태 기반 버튼과 팝업 화면 갱신
     private void HandleStateChanged(HousingIdleRewardState _state)
     {
         _popupView.Refresh(_state);

@@ -30,6 +30,14 @@ public class LobbyCharacterLevelUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI textNextStern;
     [SerializeField] private TextMeshProUGUI textNextSlow;
 
+    [Header("MAX 레벨 표시")]
+    [Tooltip("현재→다음 레벨 화살표. 만렙이면 숨긴다.")]
+    [SerializeField] private GameObject nextLevelArrow;
+    [Tooltip("현재 능력치 그룹. 만렙이면 아래 위치로 옮겨 가운데 정렬한다. 비우면 이동 안 함.")]
+    [SerializeField] private RectTransform currentStatGroup;
+    [Tooltip("만렙일 때 현재 능력치 그룹의 anchoredPosition (인스펙터에서 가운데로 지정).")]
+    [SerializeField] private Vector2 currentStatMaxPosition;
+
     [Header("능력치 아이콘")]
     [SerializeField] private Image iconCurrentHP;
     [SerializeField] private Image iconCurrentATK;
@@ -98,6 +106,10 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         GameStateManager.Instance != null ? GameStateManager.Instance.ArtifactManager : null;
 
     private Coroutine _popupCoroutine;
+
+    // 현재 능력치 그룹 기본 위치 캐시 (만렙 가운데 정렬 복원용)
+    private Vector2 _statGroupDefaultPos;
+    private bool _statGroupPosCached;
 
     // 재화 애니메이션용 표시값 (실제 값과 별도 관리)
     private float _displayGold;
@@ -348,6 +360,7 @@ public class LobbyCharacterLevelUI : MonoBehaviour
         }
 
         progressModel.SetCharacterLevel(currentLevel + 1);
+        AudioManager.Play(SfxId.CharacterLevelUp);   // SFX 가이드 아웃게임 2: 레벨 업 성공
 
         // 레벨업 후 다음 레벨 소모량 계산 (or MAX)
         int nextLevel = progressModel.CharacterLevel;
@@ -397,6 +410,20 @@ public class LobbyCharacterLevelUI : MonoBehaviour
 
         if (charNextLvInfo != null)
             charNextLvInfo.SetActive(!isMaxLevel);
+
+        // 만렙: 다음 레벨 화살표를 숨기고, 현재 능력치 그룹을 가운데로 옮긴다.
+        if (nextLevelArrow != null)
+            nextLevelArrow.SetActive(!isMaxLevel);
+
+        if (currentStatGroup != null)
+        {
+            if (!_statGroupPosCached)
+            {
+                _statGroupDefaultPos = currentStatGroup.anchoredPosition;
+                _statGroupPosCached = true;
+            }
+            currentStatGroup.anchoredPosition = isMaxLevel ? currentStatMaxPosition : _statGroupDefaultPos;
+        }
 
         if (!isMaxLevel)
         {

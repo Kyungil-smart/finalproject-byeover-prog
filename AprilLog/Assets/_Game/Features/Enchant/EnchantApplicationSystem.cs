@@ -15,6 +15,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 해당 부분이 확정된 인첸트 기획과 맞지 않아 Legacy처리 함
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 스탯 인챈트 교체 시 제거된 레거시 스탯 효과가 남지 않도록 제거 이벤트와 역적용 처리 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -33,6 +36,7 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
 
     [SerializeField] private PlayerModel _playerModel;
     private EnchantModel _enchantModel;
+    private readonly Dictionary<int, int> _appliedStatLevels = new Dictionary<int, int>();
 
     /// <summary>PlayerModel/EnchantModel 주입 후 이벤트 구독. 재호출 시 중복구독 방지.</summary>
     public void Initialize(PlayerModel playerModel, EnchantModel enchantModel)
@@ -40,6 +44,7 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
         Unsubscribe();
         if (playerModel != null) _playerModel = playerModel;
         _enchantModel = enchantModel;
+        _appliedStatLevels.Clear();
         Subscribe();
     }
 
@@ -48,6 +53,7 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
         if (_enchantModel == null) return;
         _enchantModel.OnStatAcquired += HandleAcquired;
         _enchantModel.OnStatLevelUp += HandleLevelUp;
+        _enchantModel.OnStatRemoved += HandleRemoved;
     }
 
     private void Unsubscribe()
@@ -55,6 +61,7 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
         if (_enchantModel == null) return;
         _enchantModel.OnStatAcquired -= HandleAcquired;
         _enchantModel.OnStatLevelUp -= HandleLevelUp;
+        _enchantModel.OnStatRemoved -= HandleRemoved;
     }
 
     private void OnDestroy() => Unsubscribe();
@@ -70,6 +77,21 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
     {
         Debug.Log($"[인챈트이벤트] 레벨업 id={enchantId} lv={newLevel} → 효과 적용 시도");
         ApplyDelta(enchantId, newLevel);
+    }
+
+    private void HandleRemoved(int enchantId)
+    {
+        if (!_appliedStatLevels.TryGetValue(enchantId, out int level))
+        {
+            return;
+        }
+
+        for (int currentLevel = level; currentLevel >= 1; currentLevel--)
+        {
+            ApplyDelta(enchantId, currentLevel, true);
+        }
+
+        _appliedStatLevels.Remove(enchantId);
     }
 
     /// <summary>
@@ -93,7 +115,7 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
 
     // 실시간 획득/강화 + 이어하기 재생 공용: Value[level] - Value[level-1] 만큼만 적용.
     // 라이브와 이어하기가 동일 경로를 타므로 세이브/로드 왕복 시 스탯이 보존된다.
-    private void ApplyDelta(int enchantId, int level)
+    private void ApplyDelta(int enchantId, int level, bool isRemoving = false)
     {
         if (!TryGetMaster(enchantId, out var master)) return;
 
@@ -102,7 +124,13 @@ public class Legacy_EnchantApplicationSystem : MonoBehaviour
 
         float current = GetValue(enchantId, level);
         float prev = level > 1 ? GetValue(enchantId, level - 1) : 0f;
-        ApplyStat(enchantId, master.LinkedStatType, current - prev);
+        float amount = isRemoving ? prev - current : current - prev;
+        ApplyStat(enchantId, master.LinkedStatType, amount);
+
+        if (!isRemoving)
+        {
+            _appliedStatLevels[enchantId] = level;
+        }
     }
 
     private bool TryGetMaster(int enchantId, out Legacy_EnchantMasterData master)

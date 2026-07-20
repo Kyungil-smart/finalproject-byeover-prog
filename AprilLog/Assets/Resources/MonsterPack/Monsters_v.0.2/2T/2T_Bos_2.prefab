@@ -4736,6 +4736,7 @@ GameObject:
   - component: {fileID: -8700485168774701873}
   - component: {fileID: -27727828658382094}
   - component: {fileID: 2219299368159247159}
+  - component: {fileID: 7372317909715728654}
   m_Layer: 0
   m_Name: 2T_Bos_2
   m_TagString: Untagged
@@ -4772,7 +4773,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterAI
   _defenseLineY: -3
-  _animator: {fileID: 0}
+  _onHitRootTime: 0.1
 --- !u!61 &-27727828658382094
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -4836,6 +4837,20 @@ MonoBehaviour:
   scaleFactor: 0.0015
   alignToBottom: 1
   manualOffset: {x: 0, y: -0.15}
+--- !u!114 &7372317909715728654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1904039686378628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8dfe7de8b4c59e4e9fc6e595a66e34f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterVisualController
+  _targetAttackDuration: 1
+  _feedBackColor: {fileID: 11400000, guid: 4228a91638976d446bc513f3b989a4ee, type: 2}
 --- !u!1 &1924169730811018
 GameObject:
   m_ObjectHideFlags: 0

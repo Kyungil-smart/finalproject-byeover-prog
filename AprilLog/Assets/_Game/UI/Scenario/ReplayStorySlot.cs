@@ -9,8 +9,21 @@ using UnityEngine.UI;
 // 각 슬롯은 챕터 제목, 에피소드 제목, 상태 텍스트를 표시하며, 클리어된 경우에만 보기 버튼이 활성화됩니다. 
 // 잠긴 경우에는 잠김 표시가 나타납니다.
 
+// 1차 수정자 : 조규민
+// 수정 내용 : 다시보기 슬롯의 고정 문구와 데이터 표시 형식을 LocalizationManager ID 기반으로 갱신,
+// LocalizationManager 초기화 전에는 숫자 ID 대신 기본 문구를 표시,
+// 챕터/에피소드/잠금 상태 텍스트에 지정된 UI Language ID와 동적 자리표시자를 적용
+
 public class ReplayStorySlot : MonoBehaviour
 {
+    private const int _headerReplayTextId = 11015;
+    private const int _episodeTitleTextId = 11014;
+    private const int _viewButtonTextId = 13025;
+    private const int _lockedStateTextId = 13026;
+    private const string _chapterPlaceholder = "{chaptername}";
+    private const string _viewButtonFallbackKr = "다시보기";
+    private const string _viewButtonFallbackEn = "Replay";
+
     [Header("텍스트")]
     [SerializeField] private TextMeshProUGUI textHeaderReplay;
     [SerializeField] private TextMeshProUGUI textEpisodeTitle;
@@ -18,11 +31,30 @@ public class ReplayStorySlot : MonoBehaviour
 
     [Header("버튼")]
     [SerializeField] private Button buttonView;
+    [SerializeField] private TextMeshProUGUI _textView;
+
+    [Header("배경")]
+    [Tooltip("스토리별 배경/컷씬 이미지를 표시할 Image (보통 BG)")]
+    [SerializeField] private Image backgroundImage;
 
     [Header("잠김 표시")]
     [SerializeField] private GameObject dim;
+    [Tooltip("미해금 슬롯 딤 알파 (0~255)")]
+    [SerializeField, Range(0, 255)] private int dimAlpha = 250;
 
     private UnityAction currentClickHandler;
+    private ReplayStoryData _currentData;
+
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        UpdateLocalizedTexts();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeLocalization();
+    }
 
     public void SetData(ReplayStoryData data, Action<ReplayStoryData> onClick)
     {
@@ -32,12 +64,11 @@ public class ReplayStorySlot : MonoBehaviour
             return;
         }
 
+        _currentData = data;
         ResolveMissingReferences();
         ValidateReferences();
         EnsureDim();
-        SetText(textHeaderReplay, data.ChapterTitle);
-        SetText(textEpisodeTitle, data.EpisodeTitle);
-        SetText(textState, GetStateText(data));
+        UpdateLocalizedTexts();
 
         bool isCleared = data.State == ReplayStoryState.Cleared;
 
@@ -46,8 +77,9 @@ public class ReplayStorySlot : MonoBehaviour
             if (currentClickHandler != null)
                 buttonView.onClick.RemoveListener(currentClickHandler);
 
-            buttonView.interactable = isCleared;
             currentClickHandler = null;
+            buttonView.interactable = isCleared;
+            buttonView.gameObject.SetActive(isCleared); // 미해금은 다시보기 버튼을 숨긴다.
 
             if (isCleared && onClick != null)
             {
@@ -60,14 +92,176 @@ public class ReplayStorySlot : MonoBehaviour
             Debug.LogWarning("[ReplayStorySlot] Button_View 참조가 비어 있습니다.", this);
         }
 
-        if (dim != null)
-            dim.SetActive(!isCleared);
+        ApplyBackground(data.BackgroundResourcePath);
+        ApplyDim(!isCleared);
+    }
+
+    // 데이터의 배경 경로로 Resources에서 스프라이트를 로드해 슬롯 배경에 넣는다. (없으면 기존 이미지 유지)
+    private void ApplyBackground(string resourcePath)
+    {
+        if (backgroundImage == null)
+        {
+            Debug.LogWarning("[ReplayStorySlot] Background Image 참조가 없습니다. (BG 자동 탐색 실패)", this);
+            return;
+        }
+
+        backgroundImage.raycastTarget = false; // 배경이 버튼 클릭을 가로채지 않게
+
+        if (string.IsNullOrEmpty(resourcePath))
+            return;
+
+        Sprite sprite = Resources.Load<Sprite>(resourcePath);
+        if (sprite != null)
+        {
+            backgroundImage.sprite = sprite;
+            backgroundImage.enabled = true;
+        }
+        else
+        {
+            Debug.LogWarning($"[ReplayStorySlot] 배경 로드 실패: Resources/{resourcePath}", this);
+        }
+    }
+
+    private void ApplyDim(bool locked)
+    {
+        if (dim == null)
+            return;
+
+        dim.SetActive(locked);
+
+        Image image = dim.GetComponent<Image>();
+        if (image != null)
+        {
+            Color color = image.color;
+            color.a = dimAlpha / 255f;
+            image.color = color;
+            image.raycastTarget = false; // 딤이 버튼 클릭을 가로채지 않게
+        }
     }
 
     private void OnDestroy()
     {
+        UnsubscribeLocalization();
         if (buttonView != null && currentClickHandler != null)
             buttonView.onClick.RemoveListener(currentClickHandler);
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null)
+            return;
+
+        LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+        LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedTexts;
+    }
+
+    private void UnsubscribeLocalization()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedTexts;
+    }
+
+    private void UpdateLocalizedTexts()
+    {
+        SetText(_textView, GetLocalizedText(_viewButtonTextId, _viewButtonFallbackKr, _viewButtonFallbackEn));
+
+        if (_currentData == null)
+            return;
+
+        SetText(textHeaderReplay, GetHeaderDisplayText(_currentData));
+        SetText(textEpisodeTitle, GetEpisodeDisplayText(_currentData));
+        SetText(textState, GetStateDisplayText(_currentData));
+    }
+
+    private static string GetHeaderDisplayText(ReplayStoryData _data)
+    {
+        string _chapterValue = GetChapterDisplayValue(_data.ChapterTitle);
+
+        if (LocalizationManager.Instance == null)
+            return _data.ChapterTitle ?? string.Empty;
+
+        string _localizedText = LocalizationManager.Instance.Get(
+            _headerReplayTextId,
+            LocalizingType.UI,
+            _chapterValue);
+
+        return IsMissingLocalizationText(_localizedText, _headerReplayTextId)
+            ? _data.ChapterTitle ?? string.Empty
+            : _localizedText;
+    }
+
+    private static string GetChapterDisplayValue(string _chapterTitle)
+    {
+        if (string.IsNullOrWhiteSpace(_chapterTitle))
+            return string.Empty;
+
+        const string _chapterPrefix = "CHAPTER";
+        string _trimmedTitle = _chapterTitle.Trim();
+
+        if (!_trimmedTitle.StartsWith(_chapterPrefix, StringComparison.OrdinalIgnoreCase))
+            return _trimmedTitle;
+
+        string _chapterValue = _trimmedTitle.Substring(_chapterPrefix.Length).Trim(' ', '.', ':', '-');
+        return string.IsNullOrWhiteSpace(_chapterValue) ? _trimmedTitle : _chapterValue;
+    }
+
+    private static string GetEpisodeDisplayText(ReplayStoryData _data)
+    {
+        string _episodeTitle = _data.EpisodeTitle ?? string.Empty;
+
+        if (LocalizationManager.Instance == null)
+            return _episodeTitle;
+
+        string _template = LocalizationManager.Instance.Get(_episodeTitleTextId, LocalizingType.UI);
+        if (IsMissingLocalizationText(_template, _episodeTitleTextId))
+            return _episodeTitle;
+
+        return _template.Contains(_chapterPlaceholder)
+            ? _template.Replace(_chapterPlaceholder, _episodeTitle)
+            : _template;
+    }
+
+    // 해금 상태별 안내문구. 해금 완료면 비우고, 미해금이면 해금 조건을 보여준다.
+    private static string GetStateDisplayText(ReplayStoryData data)
+    {
+        if (data.State == ReplayStoryState.Cleared)
+            return string.Empty;
+
+        if (LocalizationManager.Instance == null)
+            return data.UnlockConditionText ?? string.Empty;
+
+        string _localizedText = LocalizationManager.Instance.Get(_lockedStateTextId, LocalizingType.UI);
+        return IsMissingLocalizationText(_localizedText, _lockedStateTextId)
+            ? data.UnlockConditionText ?? string.Empty
+            : _localizedText;
+    }
+
+    private static string GetLocalizedText(int _id, string _fallbackKr, string _fallbackEn)
+    {
+        return GetLocalizedText(_id, _fallbackKr, _fallbackEn, null);
+    }
+
+    private static string GetLocalizedText(int _id, string _fallbackKr, string _fallbackEn, params object[] _args)
+    {
+        if (LocalizationManager.Instance == null)
+            return GetSystemLanguageFallback(_fallbackKr, _fallbackEn);
+
+        string _text = _args == null
+            ? LocalizationManager.Instance.Get(_id, LocalizingType.UI)
+            : LocalizationManager.Instance.Get(_id, LocalizingType.UI, _args);
+        return IsMissingLocalizationText(_text, _id)
+            ? GetSystemLanguageFallback(_fallbackKr, _fallbackEn)
+            : _text;
+    }
+
+    private static bool IsMissingLocalizationText(string _text, int _id)
+    {
+        return string.IsNullOrWhiteSpace(_text) || _text == $"[{_id}]";
+    }
+
+    private static string GetSystemLanguageFallback(string _fallbackKr, string _fallbackEn)
+    {
+        return Application.systemLanguage == SystemLanguage.Korean ? _fallbackKr : _fallbackEn;
     }
 
     private void EnsureDim()
@@ -92,7 +286,7 @@ public class ReplayStorySlot : MonoBehaviour
         rectTransform.offsetMax = Vector2.zero;
 
         Image image = dimObject.GetComponent<Image>();
-        image.color = new Color(0f, 0f, 0f, 100f / 255f);
+        image.color = new Color(0f, 0f, 0f, dimAlpha / 255f);
         image.raycastTarget = false;
 
         Transform bg = transform.Find("BG");
@@ -110,17 +304,6 @@ public class ReplayStorySlot : MonoBehaviour
             return;
 
         text.text = value ?? string.Empty;
-    }
-
-    private static string GetStateText(ReplayStoryData data)
-    {
-        if (data.State == ReplayStoryState.Cleared)
-            return "클리어 완료";
-
-        if (string.IsNullOrWhiteSpace(data.UnlockConditionText))
-            return "잠김 : 해금 조건 필요";
-
-        return $"잠김 : {data.UnlockConditionText}";
     }
 
     private void ValidateReferences()
@@ -144,10 +327,17 @@ public class ReplayStorySlot : MonoBehaviour
             textEpisodeTitle = FindChildComponentByName<TextMeshProUGUI>("Text_EpisodeTitle");
 
         if (textState == null)
-            textState = FindChildComponentByName<TextMeshProUGUI>("Text_State");
+            textState = FindChildComponentByName<TextMeshProUGUI>("Text_State")
+                        ?? FindChildComponentByName<TextMeshProUGUI>("Text_state");
 
         if (buttonView == null)
             buttonView = FindChildComponentByName<Button>("Button_View");
+
+        if (_textView == null && buttonView != null)
+            _textView = FindChildComponentByName<TextMeshProUGUI>("Text_View");
+
+        if (backgroundImage == null)
+            backgroundImage = FindChildComponentByName<Image>("BG");
 
         if (dim == null)
         {

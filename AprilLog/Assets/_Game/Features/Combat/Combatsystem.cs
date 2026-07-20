@@ -43,6 +43,10 @@ public class CombatSystem : MonoBehaviour
     private ISortNotifier _sortNotifier;
     private float _autoAttackTimer;
     private int _autoAttackCount; // 누적 자동공격 횟수 (N회마다 일반 스킬 인챈트 발동용)
+    // 자동공격 간격 = 플레이어 공속 스탯(AttackSpeed, 초). 참조가 아직 없거나 스탯이 0 이하로 내려간
+    // 경우엔 인스펙터 기본 간격으로 폴백 -- 매 프레임 NRE/0간격 연사 방지.
+    private float _playerAttackSpeed =>
+        _playerModel != null && _playerModel.AttackSpeed > 0f ? _playerModel.AttackSpeed : _autoAttackInterval;
 
     private void Awake()
     {
@@ -110,7 +114,7 @@ public class CombatSystem : MonoBehaviour
         ExpireHasteIfDue();
 
         _autoAttackTimer += Time.deltaTime;
-        if (_autoAttackTimer >= _autoAttackInterval * _hasteIntervalMul) // 헤이스트 시 간격 단축
+        if (_autoAttackTimer >= _playerAttackSpeed * _hasteIntervalMul) // 헤이스트 시 간격 단축
         {
             _autoAttackTimer = 0f;
 
@@ -119,6 +123,7 @@ public class CombatSystem : MonoBehaviour
             // 파이어브레스 발동이 무음 소실되는 것을 방지.
             if (_skillSystem.FireBasicAttack(AttackType.Auto))
             {
+                AudioManager.Play(SfxId.AutoAttackShot);
                 _autoAttackCount++;
                 var autoSkills = _skillSystem.GetTriggeredAutoAttackSkills(_autoAttackCount);
                 for (int i = 0; i < autoSkills.Count; i++)
@@ -134,7 +139,7 @@ public class CombatSystem : MonoBehaviour
  
     private void HandleSortCompleted(UnitType type)
     {
-        Debug.Log($"[전투진단] 정렬 완성 수신: type={type} → 공격 발동 시도");
+        AudioManager.Play(SfxId.SortSuccess);
 
         ResolveSpellRepository();
         ResolveSystemReferences();
@@ -216,7 +221,8 @@ public class CombatSystem : MonoBehaviour
     }
 
     // 헤이스트(바람 301): 발동 시 공격력↑ + 자동공격 간격↓. 수치 placeholder(기획 확정 시 조정).
-    // Develop 머지 후 교체 필수: ApplyAttackBonus_Add/_RemoveA(삭제됨) → StatusEnhance(PlayerStatus.Attack, CalFormula.Add, x, false/true).
+    // 공격력 보너스는 PlayerStatus.Attack으로 가산한다. (한때 AttackSpeed로 잘못 들어가
+    // 공격력 버프는 안 걸리고 공속 스탯만 오염됐음 — 간격 단축은 _hasteIntervalMul이 별도 담당)
     private float _hasteEndTime;
     private int _hasteAtkBonus;          // 적용 중 공격력 보너스(해제용)
     private float _hasteIntervalMul = 1f; // 자동공격 간격 배율(작을수록 빠름)
@@ -229,13 +235,13 @@ public class CombatSystem : MonoBehaviour
         float[] dur = { 5f, 5f, 6f };         // 지속(초)
 
         if (_hasteAtkBonus > 0 && _playerModel != null)   // 갱신: 기존 보너스 먼저 해제
-            _playerModel.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, _hasteAtkBonus, true);
+            _playerModel.StatusEnhance(PlayerStatus.Attack, CalFormula.Add, _hasteAtkBonus, true);
 
         _hasteAtkBonus = atk[lv - 1];
         _hasteIntervalMul = mul[lv - 1];
         _hasteEndTime = Time.time + dur[lv - 1];
-        if (_playerModel != null) 
-            _playerModel.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, _hasteAtkBonus, false);
+        if (_playerModel != null)
+            _playerModel.StatusEnhance(PlayerStatus.Attack, CalFormula.Add, _hasteAtkBonus, false);
     }
 
     private void ExpireHasteIfDue()
@@ -243,8 +249,8 @@ public class CombatSystem : MonoBehaviour
         if (_hasteAtkBonus == 0) return;
         if (Time.time >= _hasteEndTime)
         {
-            if (_playerModel != null) 
-                _playerModel.StatusEnhance(PlayerStatus.AttackSpeed, CalFormula.Add, _hasteAtkBonus, true);
+            if (_playerModel != null)
+                _playerModel.StatusEnhance(PlayerStatus.Attack, CalFormula.Add, _hasteAtkBonus, true);
             _hasteAtkBonus = 0;
             _hasteIntervalMul = 1f;
         }

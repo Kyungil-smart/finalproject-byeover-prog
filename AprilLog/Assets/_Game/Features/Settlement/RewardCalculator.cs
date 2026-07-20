@@ -7,16 +7,13 @@ public static class RewardCalculator
     private const string GROWTH_TYPE_RATE = "Rate";
 
     private static RewardRepo _rewardRepo;
+    private static StageRepo _stageRepo;
 
     public static Dictionary<int, List<ItemSaveEntry>> GetAmountFirstChapter(List<RewardRecipe> rewardList)
     {
         var result = new Dictionary<int, List<ItemSaveEntry>>();
         _rewardRepo ??= DataManager.Instance.RewardRepo;
-        if (_rewardRepo == null)
-        {
-            Debug.LogError("Reward Repo is null");
-            return result;
-        }
+        _stageRepo ??= DataManager.Instance.StageRepo;
 
         if (rewardList == null || rewardList.Count == 0)
         {
@@ -30,9 +27,9 @@ public static class RewardCalculator
             int rewardType = data.RewardType;
             int amount = data.BaseAmount;
 
-            for (int i = 0; i < list.currentStep; i++)
+            for (int i = 0; i <= list.currentStep; i++)
             {
-                int temp = _rewardRepo.GetChapterIdByStep(list.TargetId, i);
+                int temp = _stageRepo.GetChapterIdByStep(list.TargetId, i);
                 if(!result.TryGetValue(temp, out List<ItemSaveEntry> items))
                 {
                     items = new List<ItemSaveEntry>();
@@ -50,11 +47,7 @@ public static class RewardCalculator
     {
         var result = new Dictionary<int, List<ItemSaveEntry>>();
         _rewardRepo ??= DataManager.Instance.RewardRepo;
-        if (_rewardRepo == null)
-        {
-            Debug.LogError("Reward Repo is null");
-            return result;
-        }
+        _stageRepo ??= DataManager.Instance.StageRepo;
         
         if (rewardList == null || rewardList.Count == 0)
         {
@@ -68,9 +61,9 @@ public static class RewardCalculator
             int rewardType = data.RewardType;
             int amount = data.BaseAmount;
 
-            for (int i = 0; i < list.currentStep; i++)
+            for (int i = 0; i <= list.currentStep; i++)
             {
-                int temp = _rewardRepo.GetStageIdByStep(list.TargetId, i);
+                int temp = _stageRepo.GetStageIdByStep(list.TargetId, i);
                 if(!result.TryGetValue(temp, out List<ItemSaveEntry> items))
                 {
                     items = new List<ItemSaveEntry>();
@@ -88,11 +81,6 @@ public static class RewardCalculator
     {
         var result = new List<ItemSaveEntry>();
         _rewardRepo ??= DataManager.Instance.RewardRepo;
-        if (_rewardRepo == null)
-        {
-            Debug.LogError("Reward Repo is null");
-            return result;
-        }
         
         if (rewardList == null || rewardList.Count == 0)
         {

@@ -6,6 +6,9 @@
 // 수정자 : 김영찬
 // 수정 내용 : 스킬 DB에 기반하여 조합식 등록하는 함수 추가
 
+// 2차 수정자 : 조규민
+// 수정 내용 : 인챈트 교체로 제거된 스킬 인챈트가 자동공격/콤보/조합 발동 목록에 남지 않도록 제거 이벤트 처리 추가
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,6 +23,20 @@ public class SkillEnchantSystem : MonoBehaviour
     private SkillSystem _skillSystem;
     private CombinationModel _combinationModel;
     private CombatSystem _combatSystem;
+
+    // 발동 조건(콤보 배수/자동공격 N회)은 시트 RequiredValue_1이 정본이다.
+    // 아래 케이던스 배열과 케이스 안의 숫자들은 시트에 행이 없을 때만 쓰는 폴백으로 남긴다.
+    private static int TriggerFromDb(Legacy_SkillData data, int fallback)
+    {
+        if (data == null) return fallback;
+        var repo = DataManager.Instance != null ? DataManager.Instance.SpellRepo : null;
+        if (repo == null) return fallback;
+
+        // 트리거 값은 분할(본체/폭발) 스킬도 '본체' 행에 있으므로 데미지용 오버라이드 없이 insert-0 매핑을 쓴다.
+        int newId = (data.SkillID / 1000) * 10000 + (data.SkillID % 1000);
+        var row = repo.GetSkillData(newId);
+        return row != null && row.RequiredValue_1 > 0f ? Mathf.RoundToInt(row.RequiredValue_1) : fallback;
+    }
 
     // 파이어브레스 트리거 주기 (인챈트 테이블 v1.03: Lv1=15 / Lv2=13 / Lv3=10회 자동공격마다)
     private static readonly int[] FireBreathCadence = { 15, 13, 10 };
@@ -60,6 +77,7 @@ public class SkillEnchantSystem : MonoBehaviour
         if (_enchantModel == null) return;
         _enchantModel.OnSkillAcquired += HandleChanged;
         _enchantModel.OnSkillLevelUp += HandleChanged;
+        _enchantModel.OnSkillRemoved += HandleRemoved;
     }
 
     private void Unsubscribe()
@@ -67,6 +85,7 @@ public class SkillEnchantSystem : MonoBehaviour
         if (_enchantModel == null) return;
         _enchantModel.OnSkillAcquired -= HandleChanged;
         _enchantModel.OnSkillLevelUp -= HandleChanged;
+        _enchantModel.OnSkillRemoved -= HandleRemoved;
     }
 
     private void OnDestroy() => Unsubscribe();
@@ -74,6 +93,11 @@ public class SkillEnchantSystem : MonoBehaviour
     private void HandleChanged(int enchantId, int level)
     {
         Apply(enchantId, level);
+    }
+
+    private void HandleRemoved(int enchantId)
+    {
+        Remove(enchantId);
     }
 
     /// <summary>
@@ -165,7 +189,7 @@ public class SkillEnchantSystem : MonoBehaviour
         switch (baseId)
         {
             case 1011: // 파이어브레스 (일반 스킬 인챈트): 자동공격 N회 트리거
-                _skillSystem.ReplaceAutoAttackSkill(FireBreathCadence[clampedLevel - 1], data);
+                _skillSystem.ReplaceAutoAttackSkill(TriggerFromDb(data, FireBreathCadence[clampedLevel - 1]), data);
                 // 자동 공격(60010)은 일반 스킬 인챈트 획득 시 자동 획득 — 이 시점부터 자동공격 시작.
                 if (_combatSystem != null)
                     _combatSystem.EnableAutoAttack();
@@ -180,16 +204,16 @@ public class SkillEnchantSystem : MonoBehaviour
                 break;
 
             case 1041: // 대지 균열 (콤보): 콤보 7의 배수
-                _skillSystem.ReplaceComboSkill(7, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 7), data);
                 break;
 
             case 1051: // 메테오 (콤보): 콤보 9의 배수
-                _skillSystem.ReplaceComboSkill(9, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 9), data);
                 break;
 
             // ===== 바람 속성 (placeholder — VFX·버프·관통·CC 미구현, 데미지/발동만) =====
             case 3011: // 헤이스트 (일반): 자동공격 N회 발동. 발동 시 CombatSystem이 공격력↑+자동공격 간격↓ 버프 활성(StandardID 301 감지). 보조 투사체=PelletCount.
-                _skillSystem.ReplaceAutoAttackSkill(HasteCadence[clampedLevel - 1], data);
+                _skillSystem.ReplaceAutoAttackSkill(TriggerFromDb(data, HasteCadence[clampedLevel - 1]), data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
             // 조합 인챈트는 RegisterRecipe로 '인챈트 선택 순서대로 가장 왼쪽 빈 슬롯'에 배치된다 (기획 3-2-1, 최대 3개).
@@ -200,15 +224,15 @@ public class SkillEnchantSystem : MonoBehaviour
                 _combinationModel?.RegisterRecipe(baseId, new int[] { 1, 2, 4 }, skillId);
                 break;
             case 3041: // 허리케인 (콤보): 콤보 10의 배수 (v1.04) — 지속 장판 + 매 타격 슬로우(50%). 슬로우는 SkillSystem.DealHazardDamage→MonsterAI.ApplySlow.
-                _skillSystem.ReplaceComboSkill(10, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 10), data);
                 break;
             case 3051: // 템페스트 (콤보): 콤보 10의 배수 (v1.04) — 랜덤 타겟 + 관통(8/10/12) + 피격당 8히트(NumberOfCycle). SkillSystem.FireOneProjectile.
-                _skillSystem.ReplaceComboSkill(10, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 10), data);
                 break;
 
             // ===== 번개 속성 (placeholder — VFX·체인·CC 미구현, 데미지/발동만) =====
             case 4011: // 구형 번개 (일반): 자동공격 N회 — 지속 장판(12틱)
-                _skillSystem.ReplaceAutoAttackSkill(OrbLightningCadence[clampedLevel - 1], data);
+                _skillSystem.ReplaceAutoAttackSkill(TriggerFromDb(data, OrbLightningCadence[clampedLevel - 1]), data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
             case 4021: // 에너지 볼 (조합): 적들 사이를 튕겨다니는 전기 구 (Lv1·2=3회/Lv3=4회 탐색). EnergyBallRoutine.
@@ -218,15 +242,15 @@ public class SkillEnchantSystem : MonoBehaviour
                 _combinationModel?.RegisterRecipe(baseId, new int[] { 1, 0, 4 }, skillId);
                 break;
             case 4041: // 벼락 (콤보): 콤보 9의 배수 (v1.04) — 엘리트/보스 우선 타겟 + 정사각 4히트 + Lv3 스턴(1.5초). DealHazardDamage/HazardRoutine.
-                _skillSystem.ReplaceComboSkill(9, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 9), data);
                 break;
             case 4051: // 뇌격 (콤보): 콤보 10의 배수 (v1.04) — 세로 직사각 장판
-                _skillSystem.ReplaceComboSkill(10, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 10), data);
                 break;
 
             // ===== 물 속성 (골격 — placeholder VFX=색 사각형, 상태이상(슬로우)·이동장판은 폴리싱) =====
             case 2011: // 물 폭탄 (일반): 자동공격 N회 — 착탄 장판(파이어브레스식). 슬로우(13002) 미구현.
-                _skillSystem.ReplaceAutoAttackSkill(WaterBombCadence[clampedLevel - 1], data);
+                _skillSystem.ReplaceAutoAttackSkill(TriggerFromDb(data, WaterBombCadence[clampedLevel - 1]), data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
             // 조합 인챈트는 RegisterRecipe로 '인챈트 선택 순서대로 빈 슬롯'에 배치 (기획 3-2-1, 최대 3개).
@@ -237,15 +261,15 @@ public class SkillEnchantSystem : MonoBehaviour
                 _combinationModel?.RegisterRecipe(baseId, new int[] { 4, 3, 1 }, skillId);
                 break;
             case 2041: // 파도 소환 (콤보): 콤보 8의 배수 (v1.04) — 이동장판 미구현, 현재 전방 단발 장판
-                _skillSystem.ReplaceComboSkill(8, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 8), data);
                 break;
             case 2051: // 하이드로 펌프 (콤보): 콤보 10의 배수 (v1.04) — 세로 직사각 장판
-                _skillSystem.ReplaceComboSkill(10, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 10), data);
                 break;
 
             // ===== 얼음 속성 (골격 — placeholder VFX=색 사각형, 빙결/슬로우 CC·이동장판은 폴리싱) =====
             case 5011: // 마칭 아이스 (일반): 자동공격 N회 — 전방 전진 장판 6/7/8펄스
-                _skillSystem.ReplaceAutoAttackSkill(MarchingIceCadence[clampedLevel - 1], data);
+                _skillSystem.ReplaceAutoAttackSkill(TriggerFromDb(data, MarchingIceCadence[clampedLevel - 1]), data);
                 if (_combatSystem != null) _combatSystem.EnableAutoAttack();
                 break;
             case 5021: // 글레이셜 피어스 (조합): 빨강·노랑·파랑 (v1.04) — 관통 미구현, 현재 단발 투사체
@@ -255,10 +279,10 @@ public class SkillEnchantSystem : MonoBehaviour
                 _combinationModel?.RegisterRecipe(baseId, new int[] { 2, 4, 0 }, skillId);
                 break;
             case 5041: // 얼음 결정 (콤보): 콤보 5의 배수 (기획서 3-1) — IceStorm VFX + 슬로우(Lv3 지속↑). 이동장판(player→target)은 폴리싱.
-                _skillSystem.ReplaceComboSkill(5, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 5), data);
                 break;
             case 5051: // 절대영도 (콤보): 콤보 5의 배수 (기획서 3-2) — 최단거리 사각 장판(VFX=빙결 재사용). 전용 에셋/2초 빙벽 연출은 폴리싱.
-                _skillSystem.ReplaceComboSkill(5, data);
+                _skillSystem.ReplaceComboSkill(TriggerFromDb(data, 5), data);
                 break;
 
             default:
@@ -270,6 +294,29 @@ public class SkillEnchantSystem : MonoBehaviour
     }
     
     // DB기반 스킬 획득 처리 시 사용
+    private void Remove(int enchantId)
+    {
+        int legacyEnchantId = ResolveLegacyEnchantId(enchantId);
+
+        var repo = Legacy_DataManager.Instance != null ? Legacy_DataManager.Instance.CharacterRepo : null;
+        var master = repo != null ? repo.GetEnchantMaster(legacyEnchantId) : null;
+        if (master == null || master.LinkedSkillID <= 0)
+        {
+            return;
+        }
+
+        int baseId = master.LinkedSkillID;
+        int standardId = baseId / 10;
+
+        _skillSystem?.UnregisterAutoAttackSkillByStandardId(standardId);
+        _skillSystem?.UnregisterComboSkillByStandardId(standardId);
+
+        _combinationModel?.UnregisterRecipe(enchantId);
+        _combinationModel?.UnregisterRecipe(baseId);
+
+        Debug.Log($"[SkillEnchantSystem] Removed enchant trigger. nameId={enchantId}, legacyId={legacyEnchantId}, standardId={standardId}");
+    }
+
     private void RegisterCombinationFromTable(SkillTableData skillData, int nameId, int currentSkillId)
     {
         if (skillData.SkillGroup_ID == EnchantModel.GROUP_COMBINATION_SKILL)

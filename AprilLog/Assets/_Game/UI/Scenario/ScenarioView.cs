@@ -48,6 +48,8 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private GameObject _boxFrame;
     [Tooltip("이름+대사 묶음 (텍스트 페이드용, 항상 표시)")]
     [SerializeField] private GameObject _textboxRoot;
+    [SerializeField] private GameObject _nameLine;
+    [SerializeField] private GameObject _storyLine;
     [SerializeField] private TMP_Text  _nameText;
     [SerializeField] private TMP_Text  _dialogueText;
 
@@ -55,6 +57,13 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private Image _portraitLeft;    // 왼쪽 화자
     [SerializeField] private Image _portraitCenter;  // 중앙 화자
     [SerializeField] private Image _portraitRight;   // 오른쪽 화자
+
+    [Header("초상화 크기")]
+    [SerializeField] private bool _usePortraitAutoSize = true;
+    [Tooltip("초상화 표시 기준 높이(px)")]
+    [SerializeField] private float _portraitTargetHeight = 1800f;
+    [Tooltip("초상화가 너무 넓어지는 것을 막는 최대 너비(px)")]
+    [SerializeField] private float _portraitMaxWidth = 1000f;
 
     [Header("배경 / 컷씬")]
     [SerializeField] private Image _bgImage;   // BG
@@ -75,10 +84,22 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     [SerializeField] private bool  _useTextFade = false;
     [SerializeField] private float _textFadeDuration = 0.2f;
 
+    [Header("텍스트 가독성")]
+    [Tooltip("기본 대사/이름 색(대부분의 씬·텍스트박스 위).")]
+    [SerializeField] private Color _textColorDefault = Color.white;
+    [Tooltip("밝은 배경 위 boxless 라인일 때의 대사/이름 색.")]
+    [SerializeField] private Color _textColorOnBright = Color.black;
+    [Tooltip("여기에 연결한 배경/컷씬 스프라이트가 깔린 boxless 라인은 밝은 배경으로 보고 글자를 어둡게 한다. (예: 흰 화면 배경)")]
+    [SerializeField] private Sprite[] _brightScenes;
+
     [Header("자동 진행")]
     [SerializeField] private bool  _autoPlay = false;
     [Tooltip("텍스트 출력 완료 후 다음으로 넘어가기까지 대기 시간(초)")]
     [SerializeField] private float _autoDelay = 1.5f;
+    [Tooltip("자동진행 버튼 아이콘 — 자동진행 중일 때 회전")]
+    [SerializeField] private RectTransform _autoPlayIcon;
+    [Tooltip("아이콘 1회전에 걸리는 시간(초)")]
+    [SerializeField] private float _autoIconSpinDuration = 1f;
 
     [Header("초상화 슬라이드 인")]
     [SerializeField] private bool  _usePortraitSlide = true;
@@ -98,6 +119,7 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     private Coroutine _autoRoutine;
     private bool _isTyping;
     private bool _autoPaused;   // 로그 등이 열려 자동진행을 잠시 멈춘 상태
+    private Tween _autoIconTween;
 
     private Material _grayMaterial;
     private CanvasGroup _textboxGroup;
@@ -132,6 +154,24 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
             _skipButton.onClick.AddListener(() => OnSkipRequested?.Invoke());
     }
 
+    // 배경에 따라 대사/이름 색을 정한다. 밝은 배경 위 boxless 라인만 어둡게, 그 외엔 기본색.
+    private void ApplyTextColor(bool showTextbox, Sprite background, Sprite cutscene)
+    {
+        bool bright = !showTextbox && (IsBrightScene(background) || IsBrightScene(cutscene));
+        Color c = bright ? _textColorOnBright : _textColorDefault;
+
+        if (_dialogueText != null) _dialogueText.color = c;
+        if (_nameText != null)     _nameText.color = c;
+    }
+
+    private bool IsBrightScene(Sprite sprite)
+    {
+        if (sprite == null || _brightScenes == null) return false;
+        for (int i = 0; i < _brightScenes.Length; i++)
+            if (_brightScenes[i] == sprite) return true;
+        return false;
+    }
+
     private void OnDestroy()
     {
         StopAllScenarioTweens();
@@ -153,6 +193,7 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
         SetName(name);
         SetBackground(background);
         SetCutscene(cutscene);
+        ApplyTextColor(showTextbox, background, cutscene);
 
         ApplyPortrait(_portraitLeft,   0, portraitLeft,   speaker == ScenarioSpeakerSlot.Left);
         ApplyPortrait(_portraitCenter, 1, portraitCenter, speaker == ScenarioSpeakerSlot.Center);
@@ -176,6 +217,9 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
 
     public void SetName(string name)
     {
+        if (_nameLine != null)
+            _nameLine.SetActive(!string.IsNullOrWhiteSpace(name));
+
         if (_nameText != null)
             _nameText.text = name ?? string.Empty;
     }
@@ -199,6 +243,9 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
 
     public void PlayText(string text)
     {
+        if (_storyLine != null)
+            _storyLine.SetActive(!string.IsNullOrWhiteSpace(text));
+
         if (_dialogueText == null) return;
 
         StopTyping();
@@ -309,11 +356,34 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     public void SetAutoPlay(bool on)
     {
         _autoPlay = on;
+        SetAutoIconSpin(on);
         if (!on) StopAuto();
         else if (!_isTyping) OnTextFullyShown();   // 이미 텍스트 다 나왔으면 바로 타이머 시작
     }
 
     public void ToggleAutoPlay() => SetAutoPlay(!_autoPlay);
+
+    /// <summary>자동진행 중이면 아이콘을 계속 회전, 아니면 멈추고 각도 리셋</summary>
+    private void SetAutoIconSpin(bool on)
+    {
+        if (_autoPlayIcon == null) return;
+
+        _autoIconTween?.Kill();
+        _autoIconTween = null;
+
+        if (on)
+        {
+            _autoIconTween = _autoPlayIcon
+                .DORotate(new Vector3(0f, 0f, -360f), _autoIconSpinDuration, RotateMode.FastBeyond360)
+                .SetEase(Ease.Linear)
+                .SetLoops(-1, LoopType.Restart)
+                .SetUpdate(true);   // 타임스케일 영향 없이 회전
+        }
+        else
+        {
+            _autoPlayIcon.localRotation = Quaternion.identity;
+        }
+    }
 
    
     // 터치 진행
@@ -350,6 +420,7 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
         }
 
         image.sprite = sprite;
+        ApplyPortraitSize(image, sprite);
         image.gameObject.SetActive(true);
 
         // 라이팅: 화자=원본+litColor / 비화자=그레이스케일+dimColor
@@ -367,6 +438,25 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
         // 슬라이드 인: 새로 등장할 때만
         if (_usePortraitSlide && !wasActive)
             PlaySlideIn(image, slotIndex);
+    }
+
+    private void ApplyPortraitSize(Image image, Sprite sprite)
+    {
+        if (!_usePortraitAutoSize || image == null || sprite == null) return;
+        if (sprite.rect.height <= 0f) return;
+
+        float aspect = sprite.rect.width / sprite.rect.height;
+        float height = Mathf.Max(1f, _portraitTargetHeight);
+        float width = height * aspect;
+
+        if (_portraitMaxWidth > 0f && width > _portraitMaxWidth)
+        {
+            width = _portraitMaxWidth;
+            height = width / aspect;
+        }
+
+        image.preserveAspect = true;
+        image.rectTransform.sizeDelta = new Vector2(width, height);
     }
 
     private void PlaySlideIn(Image image, int slotIndex)
@@ -431,6 +521,8 @@ public class ScenarioView : MonoBehaviour, IPointerClickHandler
     {
         StopTyping();
         StopAuto();
+        _autoIconTween?.Kill();
+        _autoIconTween = null;
         if (_textboxGroup != null) _textboxGroup.DOKill();
         if (_bgImage != null) _bgImage.DOKill();
         if (_cgImage != null) _cgImage.DOKill();

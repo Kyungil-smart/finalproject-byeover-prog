@@ -79,6 +79,18 @@ public class ArtifactUIController : MonoBehaviour
         SetupDropdowns();
     }
 
+    private void OnEnable()
+    {
+        SubscribeLocalization();
+        UpdateLocalizedDropdowns();
+    }
+
+    private void OnDisable()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedDropdowns;
+    }
+
     private void Start()
     {
         // Artifact 탭은 기본 상태(Artifacts_Slot 노출, 팝업 닫힘)로 정리하고,
@@ -186,6 +198,43 @@ public class ArtifactUIController : MonoBehaviour
         {
             Debug.LogWarning("[ArtifactUIController] 필터 드롭다운이 연결되지 않았습니다.", this);
         }
+    }
+
+    private void SubscribeLocalization()
+    {
+        if (LocalizationManager.Instance == null) return;
+        LocalizationManager.Instance.OnLanguageChanged -= UpdateLocalizedDropdowns;
+        LocalizationManager.Instance.OnLanguageChanged += UpdateLocalizedDropdowns;
+    }
+
+    private void UpdateLocalizedDropdowns()
+    {
+        bool isKorean = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.CurrentLanguage == "ko"
+            : Application.systemLanguage == SystemLanguage.Korean;
+
+        SetDropdownLabels(
+            _sortingDropdown,
+            isKorean
+                ? new[] { "정렬", "등급순", "이름순", "공격순", "HP순" }
+                : new[] { "Sort", "Grade", "Name", "Attack", "HP" });
+
+        SetDropdownLabels(
+            _filterDropdown,
+            isKorean
+                ? new[] { "필터", "전체", "등급별", "보유 아티팩트", "미보유 아티팩트" }
+                : new[] { "Filter", "All", "By Grade", "Owned Artifacts", "Unowned Artifacts" });
+    }
+
+    private static void SetDropdownLabels(TMP_Dropdown dropdown, string[] labels)
+    {
+        if (dropdown == null || labels == null) return;
+
+        int count = Mathf.Min(dropdown.options.Count, labels.Length);
+        for (int i = 0; i < count; i++)
+            dropdown.options[i].text = labels[i];
+
+        dropdown.RefreshShownValue();
     }
 
     // 탭 진입 시 : 사용자가 직접 바꾼 적이 없으면 기본 정렬/필터를 표시하고 데이터 쪽에도 적용시킨다.

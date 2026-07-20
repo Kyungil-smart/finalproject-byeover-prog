@@ -11,6 +11,7 @@
 // 수정 내용 : StageBootstrapper 초기화 전에도 HP/EXP HUD Presenter가 먼저 연결될 수 있도록 초기화 조건 완화
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -27,6 +28,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     [SerializeField] private StageLoopManager _loopManager;
     [SerializeField] private StageBootstrapper _stageBootstrapper;
     [SerializeField] private InGameGrowthSystem _growthSystem;
+    [SerializeField] private StateFeedBackColorSO _feedBackColor;
 
     [Header("UI")]
     [SerializeField] private Slider _hpSlider;
@@ -39,37 +41,51 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     [SerializeField] private TMP_Text _curChapterViwerText;
     [SerializeField] private TMP_Text _curStageViwerText;
     [SerializeField] private TMP_Text _waveStateText;
+    [SerializeField] private Image _feedbackBar;
+    
+    // ---------- Dictionary ----------
+    private readonly Dictionary<string, Dictionary<string, string>> _translationDictionary = new Dictionary<string, Dictionary<string, string>>
+    {
+        { "ko", new Dictionary<string, string>
+        {
+            {"_currentChapterLabelText", "Ch."},
+            {"_currentStageLabelText", "Stage."},
+            {"_currentLevelLabelText", "Lv."}
+        }},
+        { "en", new Dictionary<string, string>
+        {
+            {"_currentChapterLabelText", "Ch."},
+            {"_currentStageLabelText", "Stage."},
+            {"_currentLevelLabelText", "Lv."}
+        }}
+    };
     
     // ---------- Private ----------
     private InGameHUDPresenter _presenter;
     private StageModel _stageModel;
+    private LocalizationManager _localizationManager;
     private bool _hasWarnedMissingCoreReferences;
+
+    private string _currentChapterLabelText;
+    private string _currentStageLabelText;
+    private string _currentLevelLabelText;
+    
+    private bool _boundToStageBootstrapper;
     
     // ---------- 이벤트 ----------
     public event Action OnComboTimerActive;
     public event Action<StageModel.SpawnType> OnSpecialWaveActive;
     
     // ---------- Const Text ----------
-    private const string CHAPTER_KOR_TEXT = "챕터";
-    private const string STAGE_KOR_TEXT = "스테이지";
-    private const string CHAPTER_ENG_TEXT = "Chapter";
-    private const string STAGE_ENG_TEXT = "Stage";
-    
-    private const string REMAIN_TIME_KOR_TEXT = "남은 시간";
-    private const string REMAIN_TIME_ENG_TEXT = "Remain Time";
-    private const string TRANSITION_TIME_KOR_TEXT = "다음 웨이브 대기";
-    private const string TRANSITION_TIME_ENG_TEXT = "Transition Time";
+    private const string REMAIN_TIME_TEMP_TEXT = "남은 시간";
+    private const string TRANSITION_TIME_TEMP_TEXT = "다음 웨이브 대기";
 
     private const string COMBO_TEXT = "COMBO";
-    
-    private const string LEVEL_KOR_TEXT = "레벨";
-    private const string LEVEL_ENG_TEXT = "Level";
-
-    private bool _boundToStageBootstrapper;
 
     // ---------- 생명주기 ----------
     private void OnEnable()
     {
+        _localizationManager ??= LocalizationManager.Instance;
         TryBindStageBootstrapper();
     }
 
@@ -82,6 +98,13 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         }
     }
 
+    private void Start()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += Translation;
+        Translation();
+    }
+
     private void Update()
     {
         // HP/EXP는 StageModel 없이도 표시 가능하므로, 스테이지 조립 이벤트만 기다리지 않는다.
@@ -92,6 +115,9 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         // 늦게라도 찾아서 구독되면 더 이상 폴링하지 않는다.
         if (!_boundToStageBootstrapper)
             TryBindStageBootstrapper();
+        
+        // 피드백 바의 깜빡임을 표현하기 위해 시간 주입이 필요하다. 차후 플레이어가 상태이상에 걸린다면 이 통로를 통해 피드백 바를 다른 색으로도 변경 가능
+        if(_presenter != null) _presenter.Update(Time.deltaTime);
     }
 
     // StageBootstrapper를 찾아 OnStageInitComplete를 구독한다.
@@ -113,6 +139,8 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
     private void OnDestroy()
     {
         _presenter?.Dispose();
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= Translation;
     }
 
     // ---------- 초기화 ----------
@@ -145,7 +173,7 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
 
         _presenter?.Dispose();
         _stageModel = stageModel;
-        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem, _loopManager, _stageModel);
+        _presenter = new InGameHUDPresenter(this, _playerModel, _comboModel, _growthSystem, _loopManager, _stageModel, _feedBackColor);
         return true;
     }
 
@@ -176,8 +204,8 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
 
     public void UpdateLevelText(int current)
     {
-        if(_levelText != null)
-            _levelText.text = $"{LEVEL_KOR_TEXT} {current}";
+        if (_levelText != null)
+            _levelText.text = $"{_currentLevelLabelText} {current}";
     }
 
     public void UpdateCombo(int count)
@@ -191,24 +219,33 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         }
     }
 
+    private float _lastShownTimer = float.MinValue;
+
     public void UpdateStageTimer(float remainingTime)
     {
-        if (_stageProgressTimer != null)
-        {
-            float displayTime = Mathf.Max(0f, remainingTime);
-            _stageProgressTimer.text = displayTime.ToString("F2");
-        }
+        if (_stageProgressTimer == null) return;
+
+        // 매 프레임 호출되지만 표시는 0.1초 단위로 변할 때만 갱신한다.
+        // (ToString+연결은 프레임당 문자열 할당 2회 + TMP 메시 재생성이라 전투 내내 부담)
+        float displayTime = Mathf.Max(0f, remainingTime);
+        float quantized = Mathf.Floor(displayTime * 10f) * 0.1f;
+        if (Mathf.Approximately(quantized, _lastShownTimer)) return;
+
+        _lastShownTimer = quantized;
+        _stageProgressTimer.SetText("{0:1}s", quantized);
     }
 
     public void UpdateWaveStateText(StageModel.WaveState waveState)
     {
+        if(_waveStateText.text == null) return;
+        
         if (waveState == StageModel.WaveState.WaveRunning)
         {
-            _waveStateText.text = REMAIN_TIME_KOR_TEXT;
+            _waveStateText.text = REMAIN_TIME_TEMP_TEXT;
         }
         else if (waveState == StageModel.WaveState.WaveTransition)
         {
-            _waveStateText.text = TRANSITION_TIME_KOR_TEXT;
+            _waveStateText.text = TRANSITION_TIME_TEMP_TEXT;
         }
     }
 
@@ -217,21 +254,55 @@ public class InGameHUDView : MonoBehaviour, IInGameHUDView
         OnSpecialWaveActive?.Invoke(spawnType);
     }
 
-    public void UpdateStageProgress(int stageId)
+    public void UpdateStageProgress(int chapterOrder, int stageOrder)
     {
-        if (_curChapterViwerText != null && _curStageViwerText != null)
+        if(_curChapterViwerText != null)
         {
-            int chapterIndex = stageId / 100;
-            int stageIndex = stageId % 100;
-            _curChapterViwerText.text = $"{chapterIndex} {CHAPTER_KOR_TEXT}";
-            _curStageViwerText.text = $"{stageIndex} {STAGE_KOR_TEXT}";
+            _curChapterViwerText.text = _localizationManager != null
+                ? _localizationManager.Get(12000, LocalizingType.UI, chapterOrder)
+                : $"{_currentChapterLabelText} {chapterOrder}";
+        }
+        
+        if(_curStageViwerText != null)
+        {
+            _curStageViwerText.text = _localizationManager != null
+                ? _localizationManager.Get(12001, LocalizingType.UI, stageOrder)
+                : $"{_currentStageLabelText} {stageOrder}";
         }
     }
 
-    public void Translation()
+    public void ShowLevelUpEffect() { /* DOTween 연출 넣을 자리 */ }
+
+    private void Translation()
     {
-        // ToDO : 차후 번역 나오면 작성
+        if (LocalizationManager.Instance == null)
+        {
+            if(!_translationDictionary.TryGetValue("ko", out var tempData)) 
+                return;
+            
+            _currentChapterLabelText = tempData.TryGetValue(nameof(_currentChapterLabelText), out var chapterLabel)
+                ? chapterLabel : string.Empty;
+            _currentStageLabelText = tempData.TryGetValue(nameof(_currentStageLabelText), out var stageLabel)
+                ? stageLabel : string.Empty;
+            _currentLevelLabelText = tempData.TryGetValue(nameof(_currentLevelLabelText), out var levelLabel)
+                ? levelLabel : string.Empty;
+        }
+        else
+        {
+            if(!_translationDictionary.TryGetValue(LocalizationManager.Instance.CurrentLanguage, out var tempData)) 
+                return;
+            
+            _currentChapterLabelText = tempData.TryGetValue(nameof(_currentChapterLabelText), out var chapterLabel)
+                ? chapterLabel : string.Empty;
+            _currentStageLabelText = tempData.TryGetValue(nameof(_currentStageLabelText), out var stageLabel)
+                ? stageLabel : string.Empty;
+            _currentLevelLabelText = tempData.TryGetValue(nameof(_currentLevelLabelText), out var levelLabel)
+                ? levelLabel : string.Empty;
+        }
     }
 
-    public void ShowLevelUpEffect() { /* DOTween 연출 넣을 자리 */ }
+    public void SetFeedBackBarColor(Color color)
+    {
+        _feedbackBar.color = color;
+    }
 }
